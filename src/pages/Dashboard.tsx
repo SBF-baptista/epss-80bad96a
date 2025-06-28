@@ -10,6 +10,7 @@ import TrackerDistribution from "@/components/dashboard/TrackerDistribution";
 import ConfigurationTypes from "@/components/dashboard/ConfigurationTypes";
 import StandbyAnalysis from "@/components/dashboard/StandbyAnalysis";
 import DashboardFilters from "@/components/dashboard/DashboardFilters";
+import Navigation from "@/components/Navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const Dashboard = () => {
@@ -69,14 +70,16 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard Analítico</h1>
-          <DashboardFilters 
-            dateRange={dateRange}
-            onDateRangeChange={setDateRange}
-            filters={filters}
-            onFiltersChange={setFilters}
-            orders={orders}
-          />
+          <Navigation />
         </div>
+
+        <DashboardFilters 
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          filters={filters}
+          onFiltersChange={setFilters}
+          orders={orders}
+        />
 
         <DashboardKPIs orders={filteredOrders} />
 

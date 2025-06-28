@@ -3,14 +3,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
-import NewOrderModal from "@/components/NewOrderModal";
+import Navigation from "@/components/Navigation";
 import { fetchOrders } from "@/services/orderService";
-import { Button } from "@/components/ui/button";
-import { Plus, BarChart3 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const Kanban = () => {
-  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
   const [filters, setFilters] = useState({
     brand: "",
     model: "",
@@ -62,21 +58,7 @@ const Kanban = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Kanban - Gestão de Pedidos</h1>
-          <div className="flex gap-3">
-            <Link to="/dashboard">
-              <Button variant="outline" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Dashboard
-              </Button>
-            </Link>
-            <Button 
-              onClick={() => setShowNewOrderModal(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Novo Pedido
-            </Button>
-          </div>
+          <Navigation />
         </div>
 
         <FilterBar 
@@ -88,15 +70,6 @@ const Kanban = () => {
         <KanbanBoard 
           orders={filteredOrders} 
           onOrderUpdate={refetch}
-        />
-
-        <NewOrderModal
-          isOpen={showNewOrderModal}
-          onClose={() => setShowNewOrderModal(false)}
-          onOrderCreated={() => {
-            setShowNewOrderModal(false);
-            refetch();
-          }}
         />
       </div>
     </div>
