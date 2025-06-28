@@ -1,88 +1,26 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
 import NewOrderModal from "@/components/NewOrderModal";
+import { fetchOrders } from "@/services/orderService";
 import { Button } from "@/components/ui/button";
-import { FolderKanban, LogOut, Plus } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { fetchOrders, createOrder } from "@/services/orderService";
-import { useToast } from "@/hooks/use-toast";
-
-export interface Vehicle {
-  brand: string;
-  model: string;
-  quantity: number;
-}
-
-export interface Tracker {
-  model: string;
-  quantity: number;
-}
+import { Plus, BarChart3 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Kanban = () => {
-  const { signOut, user } = useAuth();
-  const { toast } = useToast();
+  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
   const [filters, setFilters] = useState({
     brand: "",
     model: "",
     configurationType: ""
   });
-  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
 
-  const { data: orders = [], refetch } = useQuery({
+  const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: fetchOrders,
   });
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso."
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao fazer logout",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleAddOrder = async (newOrderData: {
-    numero_pedido: string;
-    vehicles: Vehicle[];
-    trackers: Tracker[];
-    configurationType: string;
-  }) => {
-    try {
-      await createOrder({
-        numero_pedido: newOrderData.numero_pedido,
-        vehicles: newOrderData.vehicles,
-        trackers: newOrderData.trackers,
-        configurationType: newOrderData.configurationType
-      });
-      
-      await refetch();
-      setShowNewOrderModal(false);
-      
-      toast({
-        title: "Pedido criado",
-        description: "Novo pedido criado com sucesso!"
-      });
-    } catch (error) {
-      console.error("Error creating order:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar pedido",
-        variant: "destructive"
-      });
-    }
-  };
 
   const filteredOrders = orders.filter(order => {
     const matchesBrand = !filters.brand || 
@@ -97,62 +35,70 @@ const Kanban = () => {
     
     const matchesConfig = !filters.configurationType || 
       order.configurationType.toLowerCase().includes(filters.configurationType.toLowerCase());
-
+    
     return matchesBrand && matchesModel && matchesConfig;
   });
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <FolderKanban className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Setup Flow Kanban</h1>
-                <p className="text-sm text-gray-600">Estoque e Expedição - {user?.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button
-                onClick={() => setShowNewOrderModal(true)}
-                className="flex items-center space-x-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Novo Pedido</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="flex items-center space-x-2"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sair</span>
-              </Button>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
+            <div className="h-24 bg-gray-200 rounded mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-96 bg-gray-200 rounded"></div>
+              ))}
             </div>
           </div>
         </div>
-      </header>
-
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <FilterBar filters={filters} onFiltersChange={setFilters} orders={filteredOrders} />
       </div>
+    );
+  }
 
-      {/* Kanban Board */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <KanbanBoard orders={filteredOrders} onOrderUpdate={refetch} />
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Kanban - Gestão de Pedidos</h1>
+          <div className="flex gap-3">
+            <Link to="/dashboard">
+              <Button variant="outline" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Dashboard
+              </Button>
+            </Link>
+            <Button 
+              onClick={() => setShowNewOrderModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Pedido
+            </Button>
+          </div>
+        </div>
+
+        <FilterBar 
+          filters={filters}
+          onFiltersChange={setFilters}
+          orders={filteredOrders}
+        />
+
+        <KanbanBoard 
+          orders={filteredOrders} 
+          onOrderUpdate={refetch}
+        />
+
+        <NewOrderModal
+          isOpen={showNewOrderModal}
+          onClose={() => setShowNewOrderModal(false)}
+          onOrderCreated={() => {
+            setShowNewOrderModal(false);
+            refetch();
+          }}
+        />
       </div>
-
-      {/* New Order Modal */}
-      <NewOrderModal
-        isOpen={showNewOrderModal}
-        onClose={() => setShowNewOrderModal(false)}
-        onAddOrder={handleAddOrder}
-      />
     </div>
   );
 };

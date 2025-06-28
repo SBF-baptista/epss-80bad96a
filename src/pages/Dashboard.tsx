@@ -1,0 +1,102 @@
+
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchOrders } from "@/services/orderService";
+import DashboardKPIs from "@/components/dashboard/DashboardKPIs";
+import OrdersByStatus from "@/components/dashboard/OrdersByStatus";
+import OrdersByPeriod from "@/components/dashboard/OrdersByPeriod";
+import VehicleDistribution from "@/components/dashboard/VehicleDistribution";
+import TrackerDistribution from "@/components/dashboard/TrackerDistribution";
+import ConfigurationTypes from "@/components/dashboard/ConfigurationTypes";
+import StandbyAnalysis from "@/components/dashboard/StandbyAnalysis";
+import DashboardFilters from "@/components/dashboard/DashboardFilters";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+
+const Dashboard = () => {
+  const [dateRange, setDateRange] = useState({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date()
+  });
+  
+  const [filters, setFilters] = useState({
+    status: "",
+    brand: "",
+    configurationType: ""
+  });
+
+  const { data: orders = [], isLoading, refetch } = useQuery({
+    queryKey: ['orders'],
+    queryFn: fetchOrders,
+  });
+
+  const filteredOrders = orders.filter(order => {
+    const orderDate = new Date(order.createdAt);
+    const isInDateRange = orderDate >= dateRange.from && orderDate <= dateRange.to;
+    
+    const matchesStatus = !filters.status || order.status === filters.status;
+    const matchesBrand = !filters.brand || 
+      order.vehicles.some(v => v.brand.toLowerCase().includes(filters.brand.toLowerCase()));
+    const matchesConfig = !filters.configurationType || 
+      order.configurationType.toLowerCase().includes(filters.configurationType.toLowerCase());
+    
+    return isInDateRange && matchesStatus && matchesBrand && matchesConfig;
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-64 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Analítico</h1>
+          <DashboardFilters 
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            filters={filters}
+            onFiltersChange={setFilters}
+            orders={orders}
+          />
+        </div>
+
+        <DashboardKPIs orders={filteredOrders} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <OrdersByStatus orders={filteredOrders} />
+          <OrdersByPeriod orders={filteredOrders} dateRange={dateRange} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <VehicleDistribution orders={filteredOrders} />
+          <TrackerDistribution orders={filteredOrders} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ConfigurationTypes orders={filteredOrders} />
+          <StandbyAnalysis orders={filteredOrders} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
