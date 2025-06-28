@@ -79,9 +79,12 @@ const OrderModal = ({ order, isOpen, onClose }: OrderModalProps) => {
     }
   };
 
+  const totalVehicles = order.vehicles.reduce((sum, vehicle) => sum + vehicle.quantity, 0);
+  const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-xl">
             Pedido de instalação {order.number}
@@ -106,18 +109,39 @@ const OrderModal = ({ order, isOpen, onClose }: OrderModalProps) => {
 
           <Separator />
 
-          {/* Informações do Veículo */}
+          {/* Veículos */}
           <div>
-            <h3 className="font-semibold text-lg mb-4">Informações do Veículo</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-600">Marca</label>
-                <p className="text-gray-900 font-medium">{order.brand}</p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-600">Modelo</label>
-                <p className="text-gray-900 font-medium">{order.model}</p>
-              </div>
+            <h3 className="font-semibold text-lg mb-4">Veículos ({totalVehicles} unidades)</h3>
+            <div className="space-y-3">
+              {order.vehicles.map((vehicle, index) => (
+                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{vehicle.brand} {vehicle.model}</p>
+                  </div>
+                  <Badge variant="outline" className="font-semibold">
+                    {vehicle.quantity} {vehicle.quantity === 1 ? 'unidade' : 'unidades'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Rastreadores */}
+          <div>
+            <h3 className="font-semibold text-lg mb-4">Rastreadores ({totalTrackers} unidades)</h3>
+            <div className="space-y-3">
+              {order.trackers.map((tracker, index) => (
+                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{tracker.model}</p>
+                  </div>
+                  <Badge variant="outline" className="font-semibold">
+                    {tracker.quantity} {tracker.quantity === 1 ? 'unidade' : 'unidades'}
+                  </Badge>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -126,15 +150,8 @@ const OrderModal = ({ order, isOpen, onClose }: OrderModalProps) => {
           {/* Configuração */}
           <div>
             <h3 className="font-semibold text-lg mb-4">Configuração</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-600">Rastreador</label>
-                <p className="text-gray-900 font-medium">{order.tracker}</p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-600">Tipo de Configuração</label>
-                <p className="text-gray-900 font-medium">{order.configurationType}</p>
-              </div>
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="text-blue-900 font-medium">{order.configurationType}</p>
             </div>
           </div>
 

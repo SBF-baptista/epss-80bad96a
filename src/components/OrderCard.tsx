@@ -38,6 +38,9 @@ const OrderCard = ({ order, onClick, onDragStart }: OrderCardProps) => {
 
   const isStandby = order.status === "standby";
 
+  const totalVehicles = order.vehicles.reduce((sum, vehicle) => sum + vehicle.quantity, 0);
+  const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
+
   return (
     <Card
       className={`cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] ${
@@ -61,18 +64,30 @@ const OrderCard = ({ order, onClick, onDragStart }: OrderCardProps) => {
           </div>
           
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Marca:</span>
-              <span className="font-medium text-gray-900">{order.brand}</span>
+            <div>
+              <span className="text-gray-600 font-medium">Veículos ({totalVehicles}):</span>
+              <div className="mt-1 space-y-1">
+                {order.vehicles.map((vehicle, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <span className="text-gray-700">{vehicle.brand} {vehicle.model}</span>
+                    <span className="font-medium">{vehicle.quantity}x</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Modelo:</span>
-              <span className="font-medium text-gray-900">{order.model}</span>
+            
+            <div>
+              <span className="text-gray-600 font-medium">Rastreadores ({totalTrackers}):</span>
+              <div className="mt-1 space-y-1">
+                {order.trackers.map((tracker, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <span className="text-gray-700">{tracker.model}</span>
+                    <span className="font-medium">{tracker.quantity}x</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Rastreador:</span>
-              <span className="font-medium text-gray-900">{order.tracker}</span>
-            </div>
+            
             <div className="flex justify-between">
               <span className="text-gray-600">Configuração:</span>
               <span className="font-medium text-gray-900">{order.configurationType}</span>
