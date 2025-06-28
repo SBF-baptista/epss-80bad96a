@@ -1,11 +1,10 @@
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,67 +26,59 @@ const DashboardFilters = ({
   dateRange, 
   onDateRangeChange, 
   filters, 
-  onFiltersChange, 
+  onFiltersChange,
   orders 
 }: DashboardFiltersProps) => {
-  const updateFilter = (key: string, value: string) => {
-    onFiltersChange({ ...filters, [key]: value });
-  };
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  // Extract unique values for filters
+  const statuses = [...new Set(orders.map(order => order.status))].filter(Boolean);
+  const brands = [...new Set(orders.flatMap(order => 
+    order.vehicles.map(v => v.brand)
+  ))].filter(Boolean);
+  const configTypes = [...new Set(orders.map(order => order.configurationType))].filter(Boolean);
 
   const clearFilters = () => {
-    onFiltersChange({ status: "", brand: "", configurationType: "" });
-    onDateRangeChange({ 
-      from: new Date(new Date().setDate(new Date().getDate() - 30)), 
-      to: new Date() 
+    onFiltersChange({
+      status: "",
+      brand: "",
+      configurationType: ""
     });
   };
 
-  const activeFilters = Object.values(filters).filter(value => value.length > 0).length;
+  const handleStatusChange = (value: string) => {
+    onFiltersChange({
+      ...filters,
+      status: value === "all" ? "" : value
+    });
+  };
 
-  const statusOptions = [
-    { value: "", label: "Todos os status" },
-    { value: "novos", label: "Novos Pedidos" },
-    { value: "producao", label: "Em Produção" },
-    { value: "aguardando", label: "Aguardando Envio" },
-    { value: "enviado", label: "Enviado" },
-    { value: "standby", label: "Em Stand-by" }
-  ];
+  const handleBrandChange = (value: string) => {
+    onFiltersChange({
+      ...filters,
+      brand: value === "all" ? "" : value
+    });
+  };
+
+  const handleConfigTypeChange = (value: string) => {
+    onFiltersChange({
+      ...filters,
+      configurationType: value === "all" ? "" : value
+    });
+  };
 
   return (
-    <Card className="w-full max-w-4xl">
-      <CardContent className="p-4">
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Filtros</h3>
-            <div className="flex items-center gap-2">
-              {activeFilters > 0 && (
-                <span className="text-sm text-gray-600">
-                  {activeFilters} filtro{activeFilters > 1 ? 's' : ''} ativo{activeFilters > 1 ? 's' : ''}
-                </span>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={clearFilters}
-                className="h-8"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Limpar
-              </Button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label>Período</Label>
-              <Popover>
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Período</label>
+              <Popover open={showCalendar} onOpenChange={setShowCalendar}>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
+                  <Button variant="outline" className="w-60 justify-start text-left">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(dateRange.from, "dd/MM", { locale: ptBR })} - {format(dateRange.to, "dd/MM", { locale: ptBR })}
+                    {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} - {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -97,66 +88,76 @@ const DashboardFilters = ({
                     onSelect={(range) => {
                       if (range?.from && range?.to) {
                         onDateRangeChange({ from: range.from, to: range.to });
+                        setShowCalendar(false);
                       }
                     }}
-                    numberOfMonths={2}
+                    locale={ptBR}
                   />
                 </PopoverContent>
               </Popover>
             </div>
-            
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={filters.status} onValueChange={(value) => updateFilter("status", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar status" />
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={filters.status || "all"} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statusOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  <SelectItem value="all">Todos</SelectItem>
+                  {statuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="space-y-2">
-              <Label>Marca</Label>
-              <Input
-                placeholder="Filtrar por marca..."
-                value={filters.brand}
-                onChange={(e) => updateFilter("brand", e.target.value)}
-              />
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Marca</label>
+              <Select value={filters.brand || "all"} onValueChange={handleBrandChange}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Todas as marcas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {brands.map((brand) => (
+                    <SelectItem key={brand} value={brand}>
+                      {brand}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            
-            <div className="space-y-2">
-              <Label>Configuração</Label>
-              <Input
-                placeholder="Filtrar por configuração..."
-                value={filters.configurationType}
-                onChange={(e) => updateFilter("configurationType", e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Total Filtrado</Label>
-              <div className="h-10 flex items-center justify-center bg-gray-50 rounded-md border">
-                <span className="font-semibold text-gray-900">
-                  {orders.filter(order => {
-                    const orderDate = new Date(order.createdAt);
-                    const isInDateRange = orderDate >= dateRange.from && orderDate <= dateRange.to;
-                    const matchesStatus = !filters.status || order.status === filters.status;
-                    const matchesBrand = !filters.brand || 
-                      order.vehicles.some(v => v.brand.toLowerCase().includes(filters.brand.toLowerCase()));
-                    const matchesConfig = !filters.configurationType || 
-                      order.configurationType.toLowerCase().includes(filters.configurationType.toLowerCase());
-                    return isInDateRange && matchesStatus && matchesBrand && matchesConfig;
-                  }).length} pedidos
-                </span>
-              </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Configuração</label>
+              <Select value={filters.configurationType || "all"} onValueChange={handleConfigTypeChange}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Todas as configurações" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {configTypes.map((config) => (
+                    <SelectItem key={config} value={config}>
+                      {config}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={clearFilters}
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
+            Limpar Filtros
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -26,37 +26,54 @@ export interface Order {
 }
 
 export const fetchOrders = async (): Promise<Order[]> => {
-  const { data: pedidos, error: pedidosError } = await supabase
-    .from('pedidos')
-    .select(`
-      *,
-      veiculos(*),
-      rastreadores(*)
-    `)
-    .order('created_at', { ascending: false })
+  console.log('Fetching orders from Supabase...')
+  
+  try {
+    const { data: pedidos, error: pedidosError } = await supabase
+      .from('pedidos')
+      .select(`
+        *,
+        veiculos(*),
+        rastreadores(*)
+      `)
+      .order('created_at', { ascending: false })
 
-  if (pedidosError) {
-    console.error('Error fetching orders:', pedidosError)
-    throw pedidosError
+    if (pedidosError) {
+      console.error('Error fetching orders:', pedidosError)
+      throw pedidosError
+    }
+
+    console.log('Raw orders data:', pedidos)
+
+    if (!pedidos || pedidos.length === 0) {
+      console.log('No orders found in database')
+      return []
+    }
+
+    const transformedOrders = pedidos.map((pedido: any) => ({
+      id: pedido.id,
+      number: pedido.numero_pedido,
+      vehicles: pedido.veiculos?.map((veiculo: VehicleRow) => ({
+        brand: veiculo.marca,
+        model: veiculo.modelo,
+        quantity: veiculo.quantidade
+      })) || [],
+      trackers: pedido.rastreadores?.map((rastreador: TrackerRow) => ({
+        model: rastreador.modelo,
+        quantity: rastreador.quantidade
+      })) || [],
+      configurationType: pedido.configuracao,
+      status: pedido.status,
+      createdAt: pedido.data || pedido.created_at,
+      priority: 'medium' // Default priority since it's not in the database
+    }))
+
+    console.log('Transformed orders:', transformedOrders)
+    return transformedOrders
+  } catch (error) {
+    console.error('Error in fetchOrders:', error)
+    throw error
   }
-
-  return pedidos.map((pedido: any) => ({
-    id: pedido.id,
-    number: pedido.numero_pedido,
-    vehicles: pedido.veiculos.map((veiculo: VehicleRow) => ({
-      brand: veiculo.marca,
-      model: veiculo.modelo,
-      quantity: veiculo.quantidade
-    })),
-    trackers: pedido.rastreadores.map((rastreador: TrackerRow) => ({
-      model: rastreador.modelo,
-      quantity: rastreador.quantidade
-    })),
-    configurationType: pedido.configuracao,
-    status: pedido.status,
-    createdAt: pedido.data,
-    priority: 'medium' // Default priority since it's not in the database
-  }))
 }
 
 export const createOrder = async (orderData: {
@@ -65,6 +82,8 @@ export const createOrder = async (orderData: {
   trackers: Array<{ model: string, quantity: number }>
   configurationType: string
 }): Promise<Order> => {
+  console.log('Creating order:', orderData)
+  
   const { data: user } = await supabase.auth.getUser()
   
   if (!user.user) {
@@ -78,7 +97,8 @@ export const createOrder = async (orderData: {
       usuario_id: user.user.id,
       numero_pedido: orderData.numero_pedido,
       configuracao: orderData.configurationType,
-      status: 'novos'
+      status: 'novos',
+      data: new Date().toISOString()
     })
     .select()
     .single()
@@ -139,6 +159,8 @@ export const createOrder = async (orderData: {
 }
 
 export const updateOrderStatus = async (orderId: string, status: string) => {
+  console.log('Updating order status:', orderId, status)
+  
   const { error } = await supabase
     .from('pedidos')
     .update({ status: status as any })
