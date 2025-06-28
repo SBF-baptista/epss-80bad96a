@@ -7,7 +7,7 @@ import NewOrderModal from "@/components/NewOrderModal";
 import { Button } from "@/components/ui/button";
 import { FolderKanban, LogOut, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchOrders, createOrder, Order } from "@/services/orderService";
+import { fetchOrders, createOrder } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Vehicle {

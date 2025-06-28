@@ -15,12 +15,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, X } from "lucide-react";
-import { Order, Vehicle, Tracker } from "@/pages/Kanban";
+
+export interface Vehicle {
+  brand: string;
+  model: string;
+  quantity: number;
+}
+
+export interface Tracker {
+  model: string;
+  quantity: number;
+}
 
 interface NewOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddOrder: (order: Omit<Order, "id" | "createdAt">) => void;
+  onAddOrder: (order: {
+    numero_pedido: string;
+    vehicles: Vehicle[];
+    trackers: Tracker[];
+    configurationType: string;
+  }) => void;
 }
 
 const configurationTypes = [
@@ -101,16 +116,12 @@ const NewOrderModal = ({ isOpen, onClose, onAddOrder }: NewOrderModalProps) => {
 
   const handleSubmit = () => {
     if (orderNumber && vehicles.length > 0 && trackers.length > 0 && configurationType) {
-      const newOrder: Omit<Order, "id" | "createdAt"> = {
-        number: orderNumber,
+      onAddOrder({
+        numero_pedido: orderNumber,
         vehicles,
         trackers,
-        configurationType,
-        status: "novos",
-        priority,
-        estimatedDelivery: estimatedDelivery || undefined
-      };
-      onAddOrder(newOrder);
+        configurationType
+      });
       resetForm();
     }
   };

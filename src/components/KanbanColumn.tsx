@@ -1,7 +1,7 @@
 
 import { Card } from "@/components/ui/card";
 import OrderCard from "./OrderCard";
-import { Order } from "@/pages/Kanban";
+import { Order } from "@/services/orderService";
 
 interface KanbanColumnProps {
   title: string;

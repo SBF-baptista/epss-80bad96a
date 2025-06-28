@@ -2,11 +2,12 @@
 import { useState } from "react";
 import KanbanColumn from "./KanbanColumn";
 import OrderModal from "./OrderModal";
-import { Order } from "@/pages/Kanban";
+import { Order, updateOrderStatus } from "@/services/orderService";
+import { useToast } from "@/hooks/use-toast";
 
 interface KanbanBoardProps {
   orders: Order[];
-  setOrders: (orders: Order[]) => void;
+  onOrderUpdate: () => void;
 }
 
 const columns = [
@@ -17,7 +18,8 @@ const columns = [
   { id: "standby", title: "Em Stand-by", color: "bg-red-100 border-red-200" }
 ];
 
-const KanbanBoard = ({ orders, setOrders }: KanbanBoardProps) => {
+const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
+  const { toast } = useToast();
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -29,17 +31,25 @@ const KanbanBoard = ({ orders, setOrders }: KanbanBoardProps) => {
     e.preventDefault();
   };
 
-  const handleDrop = (columnId: string) => {
-    if (draggedOrder) {
-      setOrders(
-        orders.map(order =>
-          order.id === draggedOrder.id
-            ? { ...order, status: columnId as Order["status"] }
-            : order
-        )
-      );
-      setDraggedOrder(null);
+  const handleDrop = async (columnId: string) => {
+    if (draggedOrder && draggedOrder.status !== columnId) {
+      try {
+        await updateOrderStatus(draggedOrder.id, columnId);
+        onOrderUpdate();
+        toast({
+          title: "Status atualizado",
+          description: `Pedido ${draggedOrder.number} movido para ${columns.find(c => c.id === columnId)?.title}`
+        });
+      } catch (error) {
+        console.error("Error updating order status:", error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar status do pedido",
+          variant: "destructive"
+        });
+      }
     }
+    setDraggedOrder(null);
   };
 
   const getOrdersByStatus = (status: string) => {

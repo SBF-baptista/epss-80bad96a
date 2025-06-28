@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Order } from "@/pages/Kanban";
+import { Order } from "@/services/orderService";
 
 interface OrderModalProps {
   order: Order | null;
