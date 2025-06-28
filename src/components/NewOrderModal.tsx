@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, X } from "lucide-react";
+import { createOrder } from "@/services/orderService";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Vehicle {
   brand: string;
@@ -30,12 +32,7 @@ export interface Tracker {
 interface NewOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddOrder: (order: {
-    numero_pedido: string;
-    vehicles: Vehicle[];
-    trackers: Tracker[];
-    configurationType: string;
-  }) => void;
+  onOrderCreated: () => void;
 }
 
 const configurationTypes = [
@@ -53,13 +50,14 @@ const configurationTypes = [
 const vehicleBrands = ["Mercedes-Benz", "Volvo", "Scania", "DAF", "Iveco", "Ford", "Fiat", "Renault", "Peugeot"];
 const trackerModels = ["Ruptella Smart5", "Ruptella ECO4", "Queclink GV75", "Teltonika FMB920", "Positron PX300"];
 
-const NewOrderModal = ({ isOpen, onClose, onAddOrder }: NewOrderModalProps) => {
+const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) => {
   const [orderNumber, setOrderNumber] = useState("");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [trackers, setTrackers] = useState<Tracker[]>([]);
   const [configurationType, setConfigurationType] = useState("");
   const [priority, setPriority] = useState<"high" | "medium" | "low" | undefined>(undefined);
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Vehicle form state
   const [vehicleBrand, setVehicleBrand] = useState("");
@@ -69,6 +67,8 @@ const NewOrderModal = ({ isOpen, onClose, onAddOrder }: NewOrderModalProps) => {
   // Tracker form state
   const [trackerModel, setTrackerModel] = useState("");
   const [trackerQuantity, setTrackerQuantity] = useState(1);
+
+  const { toast } = useToast();
 
   const resetForm = () => {
     setOrderNumber("");
@@ -82,6 +82,7 @@ const NewOrderModal = ({ isOpen, onClose, onAddOrder }: NewOrderModalProps) => {
     setVehicleQuantity(1);
     setTrackerModel("");
     setTrackerQuantity(1);
+    setIsSubmitting(false);
   };
 
   const handleClose = () => {
@@ -114,15 +115,35 @@ const NewOrderModal = ({ isOpen, onClose, onAddOrder }: NewOrderModalProps) => {
     setTrackers(trackers.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (orderNumber && vehicles.length > 0 && trackers.length > 0 && configurationType) {
-      onAddOrder({
-        numero_pedido: orderNumber,
-        vehicles,
-        trackers,
-        configurationType
-      });
-      resetForm();
+      setIsSubmitting(true);
+      
+      try {
+        await createOrder({
+          numero_pedido: orderNumber,
+          vehicles,
+          trackers,
+          configurationType
+        });
+        
+        toast({
+          title: "Pedido criado com sucesso!",
+          description: `Pedido ${orderNumber} foi criado e adicionado ao Kanban.`,
+        });
+        
+        onOrderCreated();
+        resetForm();
+      } catch (error) {
+        console.error('Error creating order:', error);
+        toast({
+          title: "Erro ao criar pedido",
+          description: "Ocorreu um erro ao criar o pedido. Tente novamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -172,7 +193,7 @@ const NewOrderModal = ({ isOpen, onClose, onAddOrder }: NewOrderModalProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="priority">Prioridade</Label>
-                  <Select value={priority} onValueChange={(value: "high" | "medium" | "low") => setPriority(value)}>
+                  <Select value={priority || ""} onValueChange={(value) => setPriority(value as "high" | "medium" | "low")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a prioridade" />
                     </SelectTrigger>
@@ -334,11 +355,11 @@ const NewOrderModal = ({ isOpen, onClose, onAddOrder }: NewOrderModalProps) => {
 
           {/* Botões de Ação */}
           <div className="flex justify-end space-x-3">
-            <Button variant="outline" onClick={handleClose}>
+            <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={!isFormValid}>
-              Criar Pedido
+            <Button onClick={handleSubmit} disabled={!isFormValid || isSubmitting}>
+              {isSubmitting ? "Criando..." : "Criar Pedido"}
             </Button>
           </div>
         </div>
