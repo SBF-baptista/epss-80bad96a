@@ -1,11 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
 import NewOrderModal from "@/components/NewOrderModal";
 import { Button } from "@/components/ui/button";
 import { FolderKanban, LogOut, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchOrders, createOrder, Order } from "@/services/orderService";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Vehicle {
   brand: string;
@@ -18,133 +21,67 @@ export interface Tracker {
   quantity: number;
 }
 
-export interface Order {
-  id: string;
-  number: string;
-  vehicles: Vehicle[];
-  trackers: Tracker[];
-  configurationType: string;
-  status: "novos" | "producao" | "aguardando" | "enviado" | "standby";
-  priority?: "high" | "medium" | "low";
-  createdAt: string;
-  estimatedDelivery?: string;
-}
-
-const mockOrders: Order[] = [
-  {
-    id: "1",
-    number: "001",
-    vehicles: [
-      { brand: "Mercedes-Benz", model: "75001", quantity: 2 },
-      { brand: "Volvo", model: "FH540", quantity: 3 }
-    ],
-    trackers: [
-      { model: "Ruptella Smart5", quantity: 4 },
-      { model: "Queclink GV75", quantity: 1 }
-    ],
-    configurationType: "HCV MERCEDES",
-    status: "novos",
-    priority: "high",
-    createdAt: "2024-01-15",
-    estimatedDelivery: "2024-01-25"
-  },
-  {
-    id: "2",
-    number: "002",
-    vehicles: [
-      { brand: "Volvo", model: "FH540", quantity: 1 }
-    ],
-    trackers: [
-      { model: "Ruptella ECO4", quantity: 1 }
-    ],
-    configurationType: "HCV VOLVO",
-    status: "novos",
-    priority: "medium",
-    createdAt: "2024-01-16"
-  },
-  {
-    id: "3",
-    number: "003",
-    vehicles: [
-      { brand: "Scania", model: "R450", quantity: 1 }
-    ],
-    trackers: [
-      { model: "Ruptella Smart5", quantity: 1 }
-    ],
-    configurationType: "HCV SCANIA",
-    status: "producao",
-    priority: "high",
-    createdAt: "2024-01-14",
-    estimatedDelivery: "2024-01-22"
-  },
-  {
-    id: "4",
-    number: "004",
-    vehicles: [
-      { brand: "Mercedes-Benz", model: "Actros", quantity: 1 }
-    ],
-    trackers: [
-      { model: "Ruptella ECO4", quantity: 1 }
-    ],
-    configurationType: "HCV MERCEDES",
-    status: "aguardando",
-    priority: "low",
-    createdAt: "2024-01-12"
-  },
-  {
-    id: "5",
-    number: "005",
-    vehicles: [
-      { brand: "DAF", model: "XF480", quantity: 1 }
-    ],
-    trackers: [
-      { model: "Ruptella Smart5", quantity: 1 }
-    ],
-    configurationType: "HCV DAF",
-    status: "enviado",
-    priority: "medium",
-    createdAt: "2024-01-10",
-    estimatedDelivery: "2024-01-20"
-  },
-  {
-    id: "6",
-    number: "006",
-    vehicles: [
-      { brand: "Iveco", model: "Stralis", quantity: 1 }
-    ],
-    trackers: [
-      { model: "Ruptella ECO4", quantity: 1 }
-    ],
-    configurationType: "HCV IVECO",
-    status: "standby",
-    priority: "high",
-    createdAt: "2024-01-13"
-  }
-];
-
 const Kanban = () => {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const { signOut, user } = useAuth();
+  const { toast } = useToast();
   const [filters, setFilters] = useState({
     brand: "",
     model: "",
     configurationType: ""
   });
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    navigate("/");
+  const { data: orders = [], refetch } = useQuery({
+    queryKey: ['orders'],
+    queryFn: fetchOrders,
+  });
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso."
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao fazer logout",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleAddOrder = (newOrder: Omit<Order, "id" | "createdAt">) => {
-    const order: Order = {
-      ...newOrder,
-      id: (orders.length + 1).toString(),
-      createdAt: new Date().toISOString().split('T')[0],
-      status: "novos"
-    };
-    setOrders([...orders, order]);
-    setShowNewOrderModal(false);
+  const handleAddOrder = async (newOrderData: {
+    numero_pedido: string;
+    vehicles: Vehicle[];
+    trackers: Tracker[];
+    configurationType: string;
+  }) => {
+    try {
+      await createOrder({
+        numero_pedido: newOrderData.numero_pedido,
+        vehicles: newOrderData.vehicles,
+        trackers: newOrderData.trackers,
+        configurationType: newOrderData.configurationType
+      });
+      
+      await refetch();
+      setShowNewOrderModal(false);
+      
+      toast({
+        title: "Pedido criado",
+        description: "Novo pedido criado com sucesso!"
+      });
+    } catch (error) {
+      console.error("Error creating order:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar pedido",
+        variant: "destructive"
+      });
+    }
   };
 
   const filteredOrders = orders.filter(order => {
@@ -176,7 +113,7 @@ const Kanban = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Setup Flow Kanban</h1>
-                <p className="text-sm text-gray-600">Estoque e Expedição</p>
+                <p className="text-sm text-gray-600">Estoque e Expedição - {user?.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -202,12 +139,12 @@ const Kanban = () => {
 
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <FilterBar filters={filters} onFiltersChange={setFilters} orders={orders} />
+        <FilterBar filters={filters} onFiltersChange={setFilters} orders={filteredOrders} />
       </div>
 
       {/* Kanban Board */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <KanbanBoard orders={filteredOrders} setOrders={setOrders} />
+        <KanbanBoard orders={filteredOrders} onOrderUpdate={refetch} />
       </div>
 
       {/* New Order Modal */}

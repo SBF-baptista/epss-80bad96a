@@ -1,41 +1,31 @@
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FolderKanban } from "lucide-react";
+import { FolderKanban, LogIn } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState({ email: "", password: "" });
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors = { email: "", password: "" };
-
-    if (!email) {
-      newErrors.email = "E-mail é obrigatório";
-    } else if (!email.includes("@")) {
-      newErrors.email = "E-mail inválido";
-    }
-
-    if (!password) {
-      newErrors.password = "Senha é obrigatória";
-    } else if (password.length < 3) {
-      newErrors.password = "Senha deve ter pelo menos 3 caracteres";
-    }
-
-    setErrors(newErrors);
-
-    if (!newErrors.email && !newErrors.password) {
-      // Simular login bem-sucedido
+  useEffect(() => {
+    if (!loading && user) {
       navigate("/kanban");
     }
-  };
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -53,40 +43,17 @@ const Login = () => {
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail ou usuário</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu.email@empresa.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Digite sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={errors.password ? "border-red-500" : ""}
-              />
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password}</p>
-              )}
-            </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-              Entrar
-            </Button>
-          </form>
+        <CardContent className="space-y-4">
+          <div className="text-center text-gray-600">
+            <p>Gerencie seus pedidos de configuração de forma eficiente</p>
+          </div>
+          <Button 
+            onClick={() => navigate("/auth")}
+            className="w-full bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+          >
+            <LogIn className="w-5 h-5" />
+            Entrar no Sistema
+          </Button>
         </CardContent>
       </Card>
     </div>

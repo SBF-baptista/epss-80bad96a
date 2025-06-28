@@ -9,7 +9,132 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      pedidos: {
+        Row: {
+          configuracao: string
+          created_at: string
+          data: string
+          id: string
+          numero_pedido: string
+          status: Database["public"]["Enums"]["status_pedido"]
+          usuario_id: string
+        }
+        Insert: {
+          configuracao: string
+          created_at?: string
+          data?: string
+          id?: string
+          numero_pedido: string
+          status?: Database["public"]["Enums"]["status_pedido"]
+          usuario_id: string
+        }
+        Update: {
+          configuracao?: string
+          created_at?: string
+          data?: string
+          id?: string
+          numero_pedido?: string
+          status?: Database["public"]["Enums"]["status_pedido"]
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rastreadores: {
+        Row: {
+          created_at: string
+          id: string
+          modelo: string
+          pedido_id: string
+          quantidade: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          modelo: string
+          pedido_id: string
+          quantidade?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          modelo?: string
+          pedido_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rastreadores_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      veiculos: {
+        Row: {
+          created_at: string
+          id: string
+          marca: string
+          modelo: string
+          pedido_id: string
+          quantidade: number
+          tipo: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marca: string
+          modelo: string
+          pedido_id: string
+          quantidade?: number
+          tipo?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marca?: string
+          modelo?: string
+          pedido_id?: string
+          quantidade?: number
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veiculos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +143,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      status_pedido: "novos" | "producao" | "aguardando" | "enviado" | "standby"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +258,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      status_pedido: ["novos", "producao", "aguardando", "enviado", "standby"],
+    },
   },
 } as const
