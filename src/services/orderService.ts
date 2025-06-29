@@ -82,11 +82,25 @@ export const applyAutomationRules = async (vehicles: Array<{ brand: string, mode
   let suggestedConfiguration = ''
 
   for (const vehicle of vehicles) {
-    const { data: rules, error } = await supabase
+    // Try to find a rule that matches brand and model
+    let { data: rules, error } = await supabase
       .from('regras_automacao')
       .select('*')
+      .eq('marca_veiculo', vehicle.brand.toUpperCase())
       .eq('modelo_veiculo', vehicle.model)
       .limit(1)
+
+    // If no exact match found, try with just the model
+    if (error || !rules || rules.length === 0) {
+      const result = await supabase
+        .from('regras_automacao')
+        .select('*')
+        .eq('modelo_veiculo', vehicle.model)
+        .limit(1)
+      
+      rules = result.data
+      error = result.error
+    }
 
     if (error) {
       console.error('Error fetching automation rules:', error)
@@ -96,14 +110,14 @@ export const applyAutomationRules = async (vehicles: Array<{ brand: string, mode
     if (rules && rules.length > 0) {
       const rule = rules[0]
       
-      // Add suggested tracker
+      // Add suggested tracker (assuming 1 tracker per vehicle as default)
       const existingTracker = suggestedTrackers.find(t => t.model === rule.modelo_rastreador)
       if (existingTracker) {
-        existingTracker.quantity += rule.quantidade_default * vehicle.quantity
+        existingTracker.quantity += vehicle.quantity
       } else {
         suggestedTrackers.push({
           model: rule.modelo_rastreador,
-          quantity: rule.quantidade_default * vehicle.quantity
+          quantity: vehicle.quantity
         })
       }
 

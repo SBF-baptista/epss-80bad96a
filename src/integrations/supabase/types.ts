@@ -81,30 +81,33 @@ export type Database = {
       }
       regras_automacao: {
         Row: {
+          ano_veiculo: number | null
           configuracao: string
           created_at: string | null
           id: number
+          marca_veiculo: string
           modelo_rastreador: string
           modelo_veiculo: string
-          quantidade_default: number | null
           tipo_veiculo: string | null
         }
         Insert: {
+          ano_veiculo?: number | null
           configuracao: string
           created_at?: string | null
           id?: number
+          marca_veiculo?: string
           modelo_rastreador: string
           modelo_veiculo: string
-          quantidade_default?: number | null
           tipo_veiculo?: string | null
         }
         Update: {
+          ano_veiculo?: number | null
           configuracao?: string
           created_at?: string | null
           id?: number
+          marca_veiculo?: string
           modelo_rastreador?: string
           modelo_veiculo?: string
-          quantidade_default?: number | null
           tipo_veiculo?: string | null
         }
         Relationships: []

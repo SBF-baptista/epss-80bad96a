@@ -3,20 +3,22 @@ import { supabase } from '@/integrations/supabase/client'
 
 export interface AutomationRule {
   id: number
+  marca_veiculo: string
   modelo_veiculo: string
+  ano_veiculo?: number
   tipo_veiculo?: string
   modelo_rastreador: string
   configuracao: string
-  quantidade_default: number
   created_at: string
 }
 
 export interface CreateAutomationRuleData {
+  marca_veiculo: string
   modelo_veiculo: string
+  ano_veiculo?: number
   tipo_veiculo?: string
   modelo_rastreador: string
   configuracao: string
-  quantidade_default: number
 }
 
 export const fetchAutomationRules = async (): Promise<AutomationRule[]> => {

@@ -33,6 +33,7 @@ import AutomationRuleModal from '@/components/AutomationRuleModal'
 const ConfigurationManagement = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all')
+  const [vehicleBrandFilter, setVehicleBrandFilter] = useState<string>('all')
   const [configurationFilter, setConfigurationFilter] = useState<string>('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null)
@@ -71,15 +72,18 @@ const ConfigurationManagement = () => {
   // Filter rules based on search and filters
   const filteredRules = rules.filter(rule => {
     const matchesSearch = rule.modelo_veiculo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         rule.marca_veiculo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rule.modelo_rastreador.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesVehicleType = vehicleTypeFilter === 'all' || rule.tipo_veiculo === vehicleTypeFilter
+    const matchesBrand = vehicleBrandFilter === 'all' || rule.marca_veiculo === vehicleBrandFilter
     const matchesConfiguration = configurationFilter === 'all' || rule.configuracao === configurationFilter
     
-    return matchesSearch && matchesVehicleType && matchesConfiguration
+    return matchesSearch && matchesVehicleType && matchesBrand && matchesConfiguration
   })
 
   // Get unique values for filters
   const vehicleTypes = [...new Set(rules.map(rule => rule.tipo_veiculo).filter(Boolean))]
+  const vehicleBrands = [...new Set(rules.map(rule => rule.marca_veiculo).filter(Boolean))]
   const configurations = [...new Set(rules.map(rule => rule.configuracao))]
 
   const handleEdit = (rule: AutomationRule) => {
@@ -136,7 +140,7 @@ const ConfigurationManagement = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total de Regras</CardTitle>
@@ -147,10 +151,18 @@ const ConfigurationManagement = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Marcas de Veículos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{vehicleBrands.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Modelos de Veículos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-purple-600">
               {new Set(rules.map(rule => rule.modelo_veiculo)).size}
             </div>
           </CardContent>
@@ -160,7 +172,7 @@ const ConfigurationManagement = () => {
             <CardTitle className="text-sm font-medium text-gray-600">Configurações</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{configurations.length}</div>
+            <div className="text-2xl font-bold text-orange-600">{configurations.length}</div>
           </CardContent>
         </Card>
       </div>
@@ -174,16 +186,27 @@ const ConfigurationManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Buscar por modelo..."
+                placeholder="Buscar por marca/modelo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
+            <Select value={vehicleBrandFilter} onValueChange={setVehicleBrandFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Marca do Veículo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as marcas</SelectItem>
+                {vehicleBrands.map(brand => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={vehicleTypeFilter} onValueChange={setVehicleTypeFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Tipo de Veículo" />
@@ -211,8 +234,10 @@ const ConfigurationManagement = () => {
               onClick={() => {
                 setSearchTerm('')
                 setVehicleTypeFilter('all')
+                setVehicleBrandFilter('all')
                 setConfigurationFilter('all')
               }}
+              className="col-span-2"
             >
               Limpar Filtros
             </Button>
@@ -238,11 +263,12 @@ const ConfigurationManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Marca</TableHead>
                   <TableHead>Modelo do Veículo</TableHead>
+                  <TableHead>Ano</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Modelo do Rastreador</TableHead>
                   <TableHead>Configuração</TableHead>
-                  <TableHead>Qtd. Padrão</TableHead>
                   <TableHead>Data de Criação</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -250,7 +276,17 @@ const ConfigurationManagement = () => {
               <TableBody>
                 {filteredRules.map((rule) => (
                   <TableRow key={rule.id}>
+                    <TableCell>
+                      <Badge variant="outline">{rule.marca_veiculo}</Badge>
+                    </TableCell>
                     <TableCell className="font-medium">{rule.modelo_veiculo}</TableCell>
+                    <TableCell>
+                      {rule.ano_veiculo ? (
+                        <span className="text-sm text-gray-600">{rule.ano_veiculo}</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {rule.tipo_veiculo ? (
                         <Badge variant="secondary">{rule.tipo_veiculo}</Badge>
@@ -262,7 +298,6 @@ const ConfigurationManagement = () => {
                     <TableCell>
                       <Badge variant="outline">{rule.configuracao}</Badge>
                     </TableCell>
-                    <TableCell>{rule.quantidade_default}</TableCell>
                     <TableCell>
                       {new Date(rule.created_at).toLocaleDateString('pt-BR')}
                     </TableCell>
