@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="mx-2 h-4 w-px bg-sidebar-border" />
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-semibold text-gray-900">
-                Sistema de Homologação
+                Menu
               </h1>
             </div>
           </header>

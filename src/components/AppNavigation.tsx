@@ -28,7 +28,7 @@ const navigationItems = [
   },
   { 
     to: "/dashboard", 
-    label: "Dashboard", 
+    label: "Dash esteira de pedidos", 
     icon: BarChart3,
     description: "Análises e relatórios"
   },
@@ -64,7 +64,7 @@ export function AppNavigation() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-sm font-semibold text-gray-700">
-            {!isCollapsed && "Sistema de Homologação"}
+            {!isCollapsed && "Menu"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
