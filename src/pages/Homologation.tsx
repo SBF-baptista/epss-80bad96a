@@ -14,6 +14,7 @@ const Homologation = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [newBrand, setNewBrand] = useState("");
   const [newModel, setNewModel] = useState("");
+  const [newYear, setNewYear] = useState("");
 
   const { data: cards = [], isLoading, refetch } = useQuery({
     queryKey: ['homologation-cards'],
@@ -30,15 +31,26 @@ const Homologation = () => {
       return;
     }
 
+    const year = newYear.trim() ? parseInt(newYear.trim()) : undefined;
+    if (newYear.trim() && (isNaN(year!) || year! < 1900 || year! > new Date().getFullYear() + 1)) {
+      toast({
+        title: "Ano inválido",
+        description: "Por favor, insira um ano válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsCreating(true);
     try {
-      await createHomologationCard(newBrand.trim(), newModel.trim());
+      await createHomologationCard(newBrand.trim(), newModel.trim(), year);
       setNewBrand("");
       setNewModel("");
+      setNewYear("");
       refetch();
       toast({
         title: "Card criado",
-        description: `Card de homologação criado para ${newBrand} ${newModel}`
+        description: `Card de homologação criado para ${newBrand} ${newModel}${year ? ` (${year})` : ""}`
       });
     } catch (error) {
       console.error("Error creating homologation card:", error);
@@ -83,7 +95,7 @@ const Homologation = () => {
           <div className="flex gap-4 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Marca
+                Marca *
               </label>
               <Input
                 value={newBrand}
@@ -93,12 +105,25 @@ const Homologation = () => {
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Modelo
+                Modelo *
               </label>
               <Input
                 value={newModel}
                 onChange={(e) => setNewModel(e.target.value)}
                 placeholder="Ex: Corolla"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ano (opcional)
+              </label>
+              <Input
+                type="number"
+                value={newYear}
+                onChange={(e) => setNewYear(e.target.value)}
+                placeholder="Ex: 2024"
+                min="1900"
+                max={new Date().getFullYear() + 1}
               />
             </div>
             <Button

@@ -52,6 +52,7 @@ export type Database = {
           requested_by: string | null
           status: Database["public"]["Enums"]["homologation_status"]
           updated_at: string
+          year: number | null
         }
         Insert: {
           brand: string
@@ -62,6 +63,7 @@ export type Database = {
           requested_by?: string | null
           status?: Database["public"]["Enums"]["homologation_status"]
           updated_at?: string
+          year?: number | null
         }
         Update: {
           brand?: string
@@ -72,8 +74,50 @@ export type Database = {
           requested_by?: string | null
           status?: Database["public"]["Enums"]["homologation_status"]
           updated_at?: string
+          year?: number | null
         }
         Relationships: []
+      }
+      homologation_photos: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          homologation_card_id: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          homologation_card_id: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          homologation_card_id?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homologation_photos_homologation_card_id_fkey"
+            columns: ["homologation_card_id"]
+            isOneToOne: false
+            referencedRelation: "homologation_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pedidos: {
         Row: {
