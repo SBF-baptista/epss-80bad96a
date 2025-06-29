@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, X, Sparkles } from "lucide-react";
 import { createOrder, applyAutomationRules } from "@/services/orderService";
+import { fetchAutomationRules } from "@/services/automationRulesService";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Vehicle {
@@ -66,6 +67,7 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApplyingRules, setIsApplyingRules] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
 
   // Vehicle form state
   const [vehicleBrand, setVehicleBrand] = useState("");
@@ -78,6 +80,51 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
   const [trackerQuantity, setTrackerQuantity] = useState(1);
 
   const { toast } = useToast();
+
+  // Load available models from automation rules
+  useEffect(() => {
+    const loadAvailableModels = async () => {
+      try {
+        const rules = await fetchAutomationRules();
+        const models = [...new Set(rules.map(rule => rule.model))].sort();
+        setAvailableModels(models);
+      } catch (error) {
+        console.error('Error loading available models:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadAvailableModels();
+    }
+  }, [isOpen]);
+
+  // Auto-fill tracker and configuration when brand/model changes
+  useEffect(() => {
+    const autoFillFields = async () => {
+      if (vehicleBrand && vehicleModel) {
+        try {
+          const suggestions = await applyAutomationRules([{
+            brand: vehicleBrand,
+            model: vehicleModel,
+            quantity: 1,
+            year: vehicleYear || undefined
+          }]);
+
+          if (suggestions.trackers.length > 0) {
+            setTrackerModel(suggestions.trackers[0].model);
+          }
+
+          if (suggestions.configuration) {
+            setConfigurationType(suggestions.configuration);
+          }
+        } catch (error) {
+          console.error('Error auto-filling fields:', error);
+        }
+      }
+    };
+
+    autoFillFields();
+  }, [vehicleBrand, vehicleModel, vehicleYear]);
 
   const resetForm = () => {
     setOrderNumber("");
@@ -240,21 +287,6 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="configurationType">Tipo de Configuração*</Label>
-                  <Select value={configurationType} onValueChange={setConfigurationType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a configuração" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {configurationTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
                   <Label htmlFor="priority">Prioridade</Label>
                   <Select value={priority || ""} onValueChange={(value) => setPriority(value as "high" | "medium" | "low")}>
                     <SelectTrigger>
@@ -267,15 +299,15 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="estimatedDelivery">Previsão de Entrega</Label>
-                  <Input
-                    id="estimatedDelivery"
-                    type="date"
-                    value={estimatedDelivery}
-                    onChange={(e) => setEstimatedDelivery(e.target.value)}
-                  />
-                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="estimatedDelivery">Previsão de Entrega</Label>
+                <Input
+                  id="estimatedDelivery"
+                  type="date"
+                  value={estimatedDelivery}
+                  onChange={(e) => setEstimatedDelivery(e.target.value)}
+                />
               </div>
             </CardContent>
           </Card>
@@ -302,11 +334,16 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
                 </div>
                 <div className="space-y-2">
                   <Label>Modelo</Label>
-                  <Input
-                    value={vehicleModel}
-                    onChange={(e) => setVehicleModel(e.target.value)}
-                    placeholder="Ex: FH540"
-                  />
+                  <Select value={vehicleModel} onValueChange={setVehicleModel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Modelo" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-48 overflow-y-auto">
+                      {availableModels.map(model => (
+                        <SelectItem key={model} value={model}>{model}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Ano</Label>
@@ -375,12 +412,12 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
           {/* Rastreadores */}
           <Card>
             <CardHeader>
-              <CardTitle>Rastreadores</CardTitle>
+              <CardTitle>Rastreadores e Configuração</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label>Modelo</Label>
+                  <Label>Modelo do Rastreador</Label>
                   <Select value={trackerModel} onValueChange={setTrackerModel}>
                     <SelectTrigger>
                       <SelectValue placeholder="Modelo" />
@@ -400,6 +437,19 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
                     value={trackerQuantity}
                     onChange={(e) => setTrackerQuantity(Number(e.target.value))}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="configurationType">Tipo de Configuração*</Label>
+                  <Select value={configurationType} onValueChange={setConfigurationType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a configuração" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {configurationTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-end">
                   <Button onClick={addTracker} className="w-full">
@@ -432,6 +482,15 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
                     </div>
                   </div>
                 </>
+              )}
+
+              {configurationType && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="secondary">Configuração Selecionada</Badge>
+                    <span className="text-sm font-medium">{configurationType}</span>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
