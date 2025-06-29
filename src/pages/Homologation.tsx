@@ -92,8 +92,8 @@ const Homologation = () => {
 
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Criar Nova Homologação</h2>
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Marca *
               </label>
@@ -103,7 +103,7 @@ const Homologation = () => {
                 placeholder="Ex: Toyota"
               />
             </div>
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Modelo *
               </label>
@@ -113,9 +113,9 @@ const Homologation = () => {
                 placeholder="Ex: Corolla"
               />
             </div>
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ano (opcional)
+                Ano
               </label>
               <Input
                 type="number"
@@ -126,14 +126,16 @@ const Homologation = () => {
                 max={new Date().getFullYear() + 1}
               />
             </div>
-            <Button
-              onClick={handleCreateCard}
-              disabled={isCreating}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              {isCreating ? "Criando..." : "Criar Card"}
-            </Button>
+            <div>
+              <Button
+                onClick={handleCreateCard}
+                disabled={isCreating}
+                className="flex items-center gap-2 w-full"
+              >
+                <Plus className="h-4 w-4" />
+                {isCreating ? "Criando..." : "Criar Card"}
+              </Button>
+            </div>
           </div>
         </div>
 
