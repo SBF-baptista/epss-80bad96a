@@ -189,7 +189,7 @@ const ConfigurationManagement = () => {
                 <SelectValue placeholder="Tipo de Veículo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os tipos</SelectItem>
+                <SelectItem value="all">Todos os tipos</SelectItem>
                 {vehicleTypes.map(type => (
                   <SelectItem key={type} value={type!}>{type}</SelectItem>
                 ))}
@@ -200,7 +200,7 @@ const ConfigurationManagement = () => {
                 <SelectValue placeholder="Configuração" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas configurações</SelectItem>
+                <SelectItem value="all">Todas configurações</SelectItem>
                 {configurations.map(config => (
                   <SelectItem key={config} value={config}>{config}</SelectItem>
                 ))}
