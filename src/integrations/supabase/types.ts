@@ -42,6 +42,39 @@ export type Database = {
         }
         Relationships: []
       }
+      homologation_cards: {
+        Row: {
+          brand: string
+          created_at: string
+          id: string
+          model: string
+          notes: string | null
+          requested_by: string | null
+          status: Database["public"]["Enums"]["homologation_status"]
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          id?: string
+          model: string
+          notes?: string | null
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["homologation_status"]
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          id?: string
+          model?: string
+          notes?: string | null
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["homologation_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           configuracao: string
@@ -176,6 +209,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      homologation_status:
+        | "homologar"
+        | "em_homologacao"
+        | "em_testes_finais"
+        | "homologado"
       status_pedido: "novos" | "producao" | "aguardando" | "enviado" | "standby"
     }
     CompositeTypes: {
@@ -292,6 +330,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      homologation_status: [
+        "homologar",
+        "em_homologacao",
+        "em_testes_finais",
+        "homologado",
+      ],
       status_pedido: ["novos", "producao", "aguardando", "enviado", "standby"],
     },
   },

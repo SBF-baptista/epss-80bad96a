@@ -89,6 +89,41 @@ serve(async (req) => {
     // Check if vehicle was found
     if (!vehicles || vehicles.length === 0) {
       console.log(`Vehicle not found: ${brand} ${model}`)
+      
+      // Create homologation card for the missing vehicle
+      try {
+        // First check if a homologation card already exists for this brand/model
+        const { data: existingCard } = await supabase
+          .from('homologation_cards')
+          .select('id')
+          .eq('brand', brand.trim())
+          .eq('model', model.trim())
+          .limit(1)
+
+        if (!existingCard || existingCard.length === 0) {
+          // Create new homologation card
+          const { data: newCard, error: cardError } = await supabase
+            .from('homologation_cards')
+            .insert({
+              brand: brand.trim(),
+              model: model.trim(),
+              status: 'homologar',
+              notes: `Automatically created from vehicle verification request on ${new Date().toISOString()}`
+            })
+            .select()
+
+          if (cardError) {
+            console.error('Error creating homologation card:', cardError)
+          } else {
+            console.log(`Created homologation card for ${brand} ${model}`)
+          }
+        } else {
+          console.log(`Homologation card already exists for ${brand} ${model}`)
+        }
+      } catch (cardCreationError) {
+        console.error('Error in homologation card creation process:', cardCreationError)
+      }
+
       return new Response(
         JSON.stringify({ 
           error: 'Vehicle not found',
