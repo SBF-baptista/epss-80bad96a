@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      automation_rules_extended: {
+        Row: {
+          brand: string
+          category: string
+          configuration: string
+          created_at: string | null
+          id: number
+          model: string
+          model_year: string | null
+          tracker_model: string
+        }
+        Insert: {
+          brand: string
+          category: string
+          configuration: string
+          created_at?: string | null
+          id?: number
+          model: string
+          model_year?: string | null
+          tracker_model: string
+        }
+        Update: {
+          brand?: string
+          category?: string
+          configuration?: string
+          created_at?: string | null
+          id?: number
+          model?: string
+          model_year?: string | null
+          tracker_model?: string
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           configuracao: string
@@ -78,39 +111,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      regras_automacao: {
-        Row: {
-          ano_veiculo: number | null
-          configuracao: string
-          created_at: string | null
-          id: number
-          marca_veiculo: string
-          modelo_rastreador: string
-          modelo_veiculo: string
-          tipo_veiculo: string | null
-        }
-        Insert: {
-          ano_veiculo?: number | null
-          configuracao: string
-          created_at?: string | null
-          id?: number
-          marca_veiculo?: string
-          modelo_rastreador: string
-          modelo_veiculo: string
-          tipo_veiculo?: string | null
-        }
-        Update: {
-          ano_veiculo?: number | null
-          configuracao?: string
-          created_at?: string | null
-          id?: number
-          marca_veiculo?: string
-          modelo_rastreador?: string
-          modelo_veiculo?: string
-          tipo_veiculo?: string | null
-        }
-        Relationships: []
       }
       usuarios: {
         Row: {

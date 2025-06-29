@@ -22,12 +22,19 @@ interface AutomationRuleModalProps {
   editingRule?: AutomationRule | null
 }
 
-const vehicleTypes = ['HCV', 'LCV', 'VAN', 'PICKUP']
-const vehicleBrands = ['MERCEDES', 'VOLVO', 'SCANIA', 'DAF', 'IVECO', 'FORD', 'FIAT', 'RENAULT', 'PEUGEOT']
-const trackerModels = ['Ruptella Smart5', 'Ruptella ECO4', 'Queclink GV75', 'Teltonika FMB920', 'Positron PX300']
+const vehicleCategories = ['PESADO', 'LEVE', 'MÁQUINA', 'VAN', 'PICKUP']
+const vehicleBrands = ['VOLKSWAGEN', 'CATERPILLAR', 'XCMG', 'FORD', 'BMW', 'CITROEN', 'HYUNDAI', 'MERCEDES', 'VOLVO', 'SCANIA', 'DAF', 'IVECO', 'FIAT', 'RENAULT', 'PEUGEOT']
+const trackerModels = ['SMART5', 'Ruptella Smart5', 'Ruptella ECO4', 'Queclink GV75', 'Teltonika FMB920', 'Positron PX300']
 const configurationTypes = [
+  'FMS250',
+  'Testar Truck14, Truck18 ou FMS250',
+  'J1939 + FMS250', 
+  'HCV - Truck3 + FMS250',
+  'OBD - BMW / LCV - BMW18',
+  'LCV group - CITROEN13 / OBD - CITROEN',
+  'J1939',
   'HCV MERCEDES',
-  'HCV VOLVO', 
+  'HCV VOLVO',
   'HCV SCANIA',
   'HCV DAF',
   'HCV IVECO',
@@ -39,12 +46,12 @@ const configurationTypes = [
 
 const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: AutomationRuleModalProps) => {
   const [formData, setFormData] = useState({
-    marca_veiculo: '',
-    modelo_veiculo: '',
-    ano_veiculo: '',
-    tipo_veiculo: '',
-    modelo_rastreador: '',
-    configuracao: ''
+    category: '',
+    brand: '',
+    model: '',
+    model_year: '',
+    tracker_model: '',
+    configuration: ''
   })
 
   const { toast } = useToast()
@@ -53,21 +60,21 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
   useEffect(() => {
     if (editingRule) {
       setFormData({
-        marca_veiculo: editingRule.marca_veiculo,
-        modelo_veiculo: editingRule.modelo_veiculo,
-        ano_veiculo: editingRule.ano_veiculo ? editingRule.ano_veiculo.toString() : '',
-        tipo_veiculo: editingRule.tipo_veiculo || '',
-        modelo_rastreador: editingRule.modelo_rastreador,
-        configuracao: editingRule.configuracao
+        category: editingRule.category,
+        brand: editingRule.brand,
+        model: editingRule.model,
+        model_year: editingRule.model_year || '',
+        tracker_model: editingRule.tracker_model,
+        configuration: editingRule.configuration
       })
     } else {
       setFormData({
-        marca_veiculo: '',
-        modelo_veiculo: '',
-        ano_veiculo: '',
-        tipo_veiculo: '',
-        modelo_rastreador: '',
-        configuracao: ''
+        category: '',
+        brand: '',
+        model: '',
+        model_year: '',
+        tracker_model: '',
+        configuration: ''
       })
     }
   }, [editingRule, isOpen])
@@ -113,7 +120,7 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
   })
 
   const handleSubmit = () => {
-    if (!formData.marca_veiculo || !formData.modelo_veiculo || !formData.modelo_rastreador || !formData.configuracao) {
+    if (!formData.category || !formData.brand || !formData.model || !formData.tracker_model || !formData.configuration) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -123,12 +130,12 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
     }
 
     const submitData = {
-      marca_veiculo: formData.marca_veiculo,
-      modelo_veiculo: formData.modelo_veiculo,
-      ano_veiculo: formData.ano_veiculo ? parseInt(formData.ano_veiculo) : undefined,
-      tipo_veiculo: formData.tipo_veiculo || undefined,
-      modelo_rastreador: formData.modelo_rastreador,
-      configuracao: formData.configuracao
+      category: formData.category,
+      brand: formData.brand,
+      model: formData.model,
+      model_year: formData.model_year || undefined,
+      tracker_model: formData.tracker_model,
+      configuration: formData.configuration
     }
 
     if (editingRule) {
@@ -139,7 +146,7 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
   }
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
-  const isFormValid = formData.marca_veiculo && formData.modelo_veiculo && formData.modelo_rastreador && formData.configuracao
+  const isFormValid = formData.category && formData.brand && formData.model && formData.tracker_model && formData.configuration
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -159,10 +166,27 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="marca_veiculo">Marca do Veículo *</Label>
+              <Label htmlFor="category">Categoria *</Label>
               <Select 
-                value={formData.marca_veiculo} 
-                onValueChange={(value) => setFormData({ ...formData, marca_veiculo: value })}
+                value={formData.category} 
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicleCategories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brand">Marca do Veículo *</Label>
+              <Select 
+                value={formData.brand} 
+                onValueChange={(value) => setFormData({ ...formData, brand: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a marca" />
@@ -174,56 +198,33 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="modelo_veiculo">Modelo do Veículo *</Label>
-              <Input
-                id="modelo_veiculo"
-                value={formData.modelo_veiculo}
-                onChange={(e) => setFormData({ ...formData, modelo_veiculo: e.target.value })}
-                placeholder="Ex: FH540, Sprinter 515"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="ano_veiculo">Ano do Veículo</Label>
-              <Input
-                id="ano_veiculo"
-                type="number"
-                min="1990"
-                max="2030"
-                value={formData.ano_veiculo}
-                onChange={(e) => setFormData({ ...formData, ano_veiculo: e.target.value })}
-                placeholder="Ex: 2023, 2024"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tipo_veiculo">Tipo de Veículo</Label>
-              <Select 
-                value={formData.tipo_veiculo} 
-                onValueChange={(value) => setFormData({ ...formData, tipo_veiculo: value === 'none' ? '' : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {vehicleTypes.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="modelo_rastreador">Modelo do Rastreador *</Label>
+            <Label htmlFor="model">Modelo do Veículo *</Label>
+            <Input
+              id="model"
+              value={formData.model}
+              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+              placeholder="Ex: FH540, Sprinter 515"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="model_year">Ano do Modelo</Label>
+            <Input
+              id="model_year"
+              value={formData.model_year}
+              onChange={(e) => setFormData({ ...formData, model_year: e.target.value })}
+              placeholder="Ex: 2023, 2024"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tracker_model">Modelo do Rastreador *</Label>
             <Select 
-              value={formData.modelo_rastreador} 
-              onValueChange={(value) => setFormData({ ...formData, modelo_rastreador: value })}
+              value={formData.tracker_model} 
+              onValueChange={(value) => setFormData({ ...formData, tracker_model: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o modelo do rastreador" />
@@ -237,10 +238,10 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="configuracao">Configuração *</Label>
+            <Label htmlFor="configuration">Configuração *</Label>
             <Select 
-              value={formData.configuracao} 
-              onValueChange={(value) => setFormData({ ...formData, configuracao: value })}
+              value={formData.configuration} 
+              onValueChange={(value) => setFormData({ ...formData, configuration: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a configuração" />

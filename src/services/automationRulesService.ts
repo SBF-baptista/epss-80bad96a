@@ -3,29 +3,29 @@ import { supabase } from '@/integrations/supabase/client'
 
 export interface AutomationRule {
   id: number
-  marca_veiculo: string
-  modelo_veiculo: string
-  ano_veiculo?: number
-  tipo_veiculo?: string
-  modelo_rastreador: string
-  configuracao: string
+  category: string
+  brand: string
+  model: string
+  model_year?: string
+  tracker_model: string
+  configuration: string
   created_at: string
 }
 
 export interface CreateAutomationRuleData {
-  marca_veiculo: string
-  modelo_veiculo: string
-  ano_veiculo?: number
-  tipo_veiculo?: string
-  modelo_rastreador: string
-  configuracao: string
+  category: string
+  brand: string
+  model: string
+  model_year?: string
+  tracker_model: string
+  configuration: string
 }
 
 export const fetchAutomationRules = async (): Promise<AutomationRule[]> => {
   console.log('Fetching automation rules from Supabase...')
   
   const { data, error } = await supabase
-    .from('regras_automacao')
+    .from('automation_rules_extended')
     .select('*')
     .order('created_at', { ascending: false })
 
@@ -41,7 +41,7 @@ export const createAutomationRule = async (ruleData: CreateAutomationRuleData): 
   console.log('Creating automation rule:', ruleData)
   
   const { data, error } = await supabase
-    .from('regras_automacao')
+    .from('automation_rules_extended')
     .insert(ruleData)
     .select()
     .single()
@@ -58,7 +58,7 @@ export const updateAutomationRule = async (id: number, ruleData: Partial<CreateA
   console.log('Updating automation rule:', id, ruleData)
   
   const { data, error } = await supabase
-    .from('regras_automacao')
+    .from('automation_rules_extended')
     .update(ruleData)
     .eq('id', id)
     .select()
@@ -76,7 +76,7 @@ export const deleteAutomationRule = async (id: number): Promise<void> => {
   console.log('Deleting automation rule:', id)
   
   const { error } = await supabase
-    .from('regras_automacao')
+    .from('automation_rules_extended')
     .delete()
     .eq('id', id)
 
@@ -84,4 +84,43 @@ export const deleteAutomationRule = async (id: number): Promise<void> => {
     console.error('Error deleting automation rule:', error)
     throw error
   }
+}
+
+export const findAutomationRule = async (brand: string, model: string, modelYear?: string): Promise<AutomationRule | null> => {
+  console.log('Finding automation rule for:', { brand, model, modelYear })
+  
+  // First try to find exact match with year
+  if (modelYear) {
+    const { data, error } = await supabase
+      .from('automation_rules_extended')
+      .select('*')
+      .eq('brand', brand.toUpperCase())
+      .eq('model', model.toUpperCase())
+      .eq('model_year', modelYear)
+      .limit(1)
+
+    if (error) {
+      console.error('Error finding automation rule:', error)
+      return null
+    }
+
+    if (data && data.length > 0) {
+      return data[0]
+    }
+  }
+
+  // If no exact match, try without year
+  const { data, error } = await supabase
+    .from('automation_rules_extended')
+    .select('*')
+    .eq('brand', brand.toUpperCase())
+    .eq('model', model.toUpperCase())
+    .limit(1)
+
+  if (error) {
+    console.error('Error finding automation rule:', error)
+    return null
+  }
+
+  return data && data.length > 0 ? data[0] : null
 }

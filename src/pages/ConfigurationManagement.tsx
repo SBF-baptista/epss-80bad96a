@@ -32,8 +32,8 @@ import AutomationRuleModal from '@/components/AutomationRuleModal'
 
 const ConfigurationManagement = () => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all')
-  const [vehicleBrandFilter, setVehicleBrandFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [brandFilter, setBrandFilter] = useState<string>('all')
   const [configurationFilter, setConfigurationFilter] = useState<string>('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null)
@@ -71,20 +71,20 @@ const ConfigurationManagement = () => {
 
   // Filter rules based on search and filters
   const filteredRules = rules.filter(rule => {
-    const matchesSearch = rule.modelo_veiculo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rule.marca_veiculo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rule.modelo_rastreador.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesVehicleType = vehicleTypeFilter === 'all' || rule.tipo_veiculo === vehicleTypeFilter
-    const matchesBrand = vehicleBrandFilter === 'all' || rule.marca_veiculo === vehicleBrandFilter
-    const matchesConfiguration = configurationFilter === 'all' || rule.configuracao === configurationFilter
+    const matchesSearch = rule.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         rule.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         rule.tracker_model.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = categoryFilter === 'all' || rule.category === categoryFilter
+    const matchesBrand = brandFilter === 'all' || rule.brand === brandFilter
+    const matchesConfiguration = configurationFilter === 'all' || rule.configuration === configurationFilter
     
-    return matchesSearch && matchesVehicleType && matchesBrand && matchesConfiguration
+    return matchesSearch && matchesCategory && matchesBrand && matchesConfiguration
   })
 
   // Get unique values for filters
-  const vehicleTypes = [...new Set(rules.map(rule => rule.tipo_veiculo).filter(Boolean))]
-  const vehicleBrands = [...new Set(rules.map(rule => rule.marca_veiculo).filter(Boolean))]
-  const configurations = [...new Set(rules.map(rule => rule.configuracao))]
+  const categories = [...new Set(rules.map(rule => rule.category).filter(Boolean))]
+  const brands = [...new Set(rules.map(rule => rule.brand).filter(Boolean))]
+  const configurations = [...new Set(rules.map(rule => rule.configuration))]
 
   const handleEdit = (rule: AutomationRule) => {
     setEditingRule(rule)
@@ -151,20 +151,18 @@ const ConfigurationManagement = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Marcas de Veículos</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Categorias</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{vehicleBrands.length}</div>
+            <div className="text-2xl font-bold text-green-600">{categories.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Modelos de Veículos</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Marcas de Veículos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {new Set(rules.map(rule => rule.modelo_veiculo)).size}
-            </div>
+            <div className="text-2xl font-bold text-purple-600">{brands.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -196,25 +194,25 @@ const ConfigurationManagement = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={vehicleBrandFilter} onValueChange={setVehicleBrandFilter}>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas categorias</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={brandFilter} onValueChange={setBrandFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Marca do Veículo" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as marcas</SelectItem>
-                {vehicleBrands.map(brand => (
+                {brands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={vehicleTypeFilter} onValueChange={setVehicleTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Tipo de Veículo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                {vehicleTypes.map(type => (
-                  <SelectItem key={type} value={type!}>{type}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -233,8 +231,8 @@ const ConfigurationManagement = () => {
               variant="outline" 
               onClick={() => {
                 setSearchTerm('')
-                setVehicleTypeFilter('all')
-                setVehicleBrandFilter('all')
+                setCategoryFilter('all')
+                setBrandFilter('all')
                 setConfigurationFilter('all')
               }}
               className="col-span-2"
@@ -263,10 +261,10 @@ const ConfigurationManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Categoria</TableHead>
                   <TableHead>Marca</TableHead>
                   <TableHead>Modelo do Veículo</TableHead>
                   <TableHead>Ano</TableHead>
-                  <TableHead>Tipo</TableHead>
                   <TableHead>Modelo do Rastreador</TableHead>
                   <TableHead>Configuração</TableHead>
                   <TableHead>Data de Criação</TableHead>
@@ -277,26 +275,24 @@ const ConfigurationManagement = () => {
                 {filteredRules.map((rule) => (
                   <TableRow key={rule.id}>
                     <TableCell>
-                      <Badge variant="outline">{rule.marca_veiculo}</Badge>
+                      <Badge variant="outline">{rule.category}</Badge>
                     </TableCell>
-                    <TableCell className="font-medium">{rule.modelo_veiculo}</TableCell>
                     <TableCell>
-                      {rule.ano_veiculo ? (
-                        <span className="text-sm text-gray-600">{rule.ano_veiculo}</span>
+                      <Badge variant="outline">{rule.brand}</Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{rule.model}</TableCell>
+                    <TableCell>
+                      {rule.model_year ? (
+                        <span className="text-sm text-gray-600">{rule.model_year}</span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
+                    <TableCell>{rule.tracker_model}</TableCell>
                     <TableCell>
-                      {rule.tipo_veiculo ? (
-                        <Badge variant="secondary">{rule.tipo_veiculo}</Badge>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{rule.modelo_rastreador}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{rule.configuracao}</Badge>
+                      <Badge variant="outline" className="max-w-[200px] truncate">
+                        {rule.configuration}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       {new Date(rule.created_at).toLocaleDateString('pt-BR')}

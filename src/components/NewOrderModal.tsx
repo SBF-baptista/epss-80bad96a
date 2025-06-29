@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,14 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, X } from "lucide-react";
-import { createOrder } from "@/services/orderService";
+import { Plus, X, Sparkles } from "lucide-react";
+import { createOrder, applyAutomationRules } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Vehicle {
   brand: string;
   model: string;
   quantity: number;
+  year?: string;
 }
 
 export interface Tracker {
@@ -44,11 +45,17 @@ const configurationTypes = [
   "HCV FORD",
   "LCV FIAT",
   "LCV RENAULT",
-  "LCV PEUGEOT"
+  "LCV PEUGEOT",
+  "FMS250",
+  "J1939 + FMS250",
+  "HCV - Truck3 + FMS250",
+  "OBD - BMW / LCV - BMW18",
+  "LCV group - CITROEN13 / OBD - CITROEN",
+  "J1939"
 ];
 
-const vehicleBrands = ["Mercedes-Benz", "Volvo", "Scania", "DAF", "Iveco", "Ford", "Fiat", "Renault", "Peugeot"];
-const trackerModels = ["Ruptella Smart5", "Ruptella ECO4", "Queclink GV75", "Teltonika FMB920", "Positron PX300"];
+const vehicleBrands = ["VOLKSWAGEN", "CATERPILLAR", "XCMG", "FORD", "BMW", "CITROEN", "HYUNDAI", "Mercedes-Benz", "Volvo", "Scania", "DAF", "Iveco", "Fiat", "Renault", "Peugeot"];
+const trackerModels = ["SMART5", "Ruptella Smart5", "Ruptella ECO4", "Queclink GV75", "Teltonika FMB920", "Positron PX300"];
 
 const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) => {
   const [orderNumber, setOrderNumber] = useState("");
@@ -58,10 +65,12 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
   const [priority, setPriority] = useState<"high" | "medium" | "low" | undefined>(undefined);
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApplyingRules, setIsApplyingRules] = useState(false);
 
   // Vehicle form state
   const [vehicleBrand, setVehicleBrand] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
+  const [vehicleYear, setVehicleYear] = useState("");
   const [vehicleQuantity, setVehicleQuantity] = useState(1);
 
   // Tracker form state
@@ -79,6 +88,7 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
     setEstimatedDelivery("");
     setVehicleBrand("");
     setVehicleModel("");
+    setVehicleYear("");
     setVehicleQuantity(1);
     setTrackerModel("");
     setTrackerQuantity(1);
@@ -92,9 +102,16 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
 
   const addVehicle = () => {
     if (vehicleBrand && vehicleModel && vehicleQuantity > 0) {
-      setVehicles([...vehicles, { brand: vehicleBrand, model: vehicleModel, quantity: vehicleQuantity }]);
+      const newVehicle: Vehicle = { 
+        brand: vehicleBrand, 
+        model: vehicleModel, 
+        quantity: vehicleQuantity,
+        year: vehicleYear || undefined
+      };
+      setVehicles([...vehicles, newVehicle]);
       setVehicleBrand("");
       setVehicleModel("");
+      setVehicleYear("");
       setVehicleQuantity(1);
     }
   };
@@ -113,6 +130,52 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
 
   const removeTracker = (index: number) => {
     setTrackers(trackers.filter((_, i) => i !== index));
+  };
+
+  const applySuggestions = async () => {
+    if (vehicles.length === 0) {
+      toast({
+        title: "Adicione veículos primeiro",
+        description: "É necessário adicionar pelo menos um veículo para aplicar sugestões automáticas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsApplyingRules(true);
+    
+    try {
+      const suggestions = await applyAutomationRules(vehicles);
+      
+      if (suggestions.trackers.length > 0) {
+        setTrackers(suggestions.trackers);
+        toast({
+          title: "Sugestões aplicadas!",
+          description: `${suggestions.trackers.length} rastreador(es) sugerido(s) com base nos veículos.`,
+        });
+      }
+      
+      if (suggestions.configuration) {
+        setConfigurationType(suggestions.configuration);
+      }
+
+      if (suggestions.trackers.length === 0 && !suggestions.configuration) {
+        toast({
+          title: "Nenhuma sugestão encontrada",
+          description: "Não foram encontradas regras de automação para os veículos selecionados.",
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error applying suggestions:', error);
+      toast({
+        title: "Erro ao aplicar sugestões",
+        description: "Ocorreu um erro ao buscar sugestões automáticas.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplyingRules(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -223,7 +286,7 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
               <CardTitle>Veículos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <Label>Marca</Label>
                   <Select value={vehicleBrand} onValueChange={setVehicleBrand}>
@@ -243,6 +306,14 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
                     value={vehicleModel}
                     onChange={(e) => setVehicleModel(e.target.value)}
                     placeholder="Ex: FH540"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ano</Label>
+                  <Input
+                    value={vehicleYear}
+                    onChange={(e) => setVehicleYear(e.target.value)}
+                    placeholder="Ex: 2024"
                   />
                 </div>
                 <div className="space-y-2">
@@ -266,12 +337,24 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
                 <>
                   <Separator />
                   <div className="space-y-2">
-                    <h4 className="font-medium">Veículos Adicionados:</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Veículos Adicionados:</h4>
+                      <Button 
+                        onClick={applySuggestions}
+                        disabled={isApplyingRules}
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        {isApplyingRules ? "Aplicando..." : "Aplicar Sugestões"}
+                      </Button>
+                    </div>
                     <div className="space-y-2">
                       {vehicles.map((vehicle, index) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <span className="font-medium">
-                            {vehicle.brand} {vehicle.model} - {vehicle.quantity}x
+                            {vehicle.brand} {vehicle.model} {vehicle.year && `(${vehicle.year})`} - {vehicle.quantity}x
                           </span>
                           <Button
                             variant="outline"

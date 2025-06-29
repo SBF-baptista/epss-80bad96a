@@ -1,5 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client'
 import { Database } from '@/integrations/supabase/types'
+import { findAutomationRule } from './automationRulesService'
 
 type OrderRow = Database['public']['Tables']['pedidos']['Row']
 type VehicleRow = Database['public']['Tables']['veiculos']['Row']
@@ -12,6 +14,7 @@ export interface Order {
     brand: string
     model: string
     quantity: number
+    year?: string
   }>
   trackers: Array<{
     model: string
@@ -55,7 +58,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       vehicles: pedido.veiculos?.map((veiculo: VehicleRow) => ({
         brand: veiculo.marca,
         model: veiculo.modelo,
-        quantity: veiculo.quantidade
+        quantity: veiculo.quantidade,
+        year: veiculo.tipo // Using tipo field to store year temporarily
       })) || [],
       trackers: pedido.rastreadores?.map((rastreador: TrackerRow) => ({
         model: rastreador.modelo,
@@ -64,7 +68,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       configurationType: pedido.configuracao,
       status: pedido.status,
       createdAt: pedido.data || pedido.created_at,
-      priority: 'medium' as const // Explicitly cast to literal type
+      priority: 'medium' as const
     }))
 
     console.log('Transformed orders:', transformedOrders)
@@ -75,56 +79,35 @@ export const fetchOrders = async (): Promise<Order[]> => {
   }
 }
 
-export const applyAutomationRules = async (vehicles: Array<{ brand: string, model: string, quantity: number }>) => {
+export const applyAutomationRules = async (vehicles: Array<{ brand: string, model: string, quantity: number, year?: string }>) => {
   console.log('Applying automation rules for vehicles:', vehicles)
   
   const suggestedTrackers: Array<{ model: string, quantity: number }> = []
   let suggestedConfiguration = ''
 
   for (const vehicle of vehicles) {
-    // Try to find a rule that matches brand and model
-    let { data: rules, error } = await supabase
-      .from('regras_automacao')
-      .select('*')
-      .eq('marca_veiculo', vehicle.brand.toUpperCase())
-      .eq('modelo_veiculo', vehicle.model)
-      .limit(1)
+    const rule = await findAutomationRule(vehicle.brand, vehicle.model, vehicle.year)
 
-    // If no exact match found, try with just the model
-    if (error || !rules || rules.length === 0) {
-      const result = await supabase
-        .from('regras_automacao')
-        .select('*')
-        .eq('modelo_veiculo', vehicle.model)
-        .limit(1)
+    if (rule) {
+      console.log('Found automation rule:', rule)
       
-      rules = result.data
-      error = result.error
-    }
-
-    if (error) {
-      console.error('Error fetching automation rules:', error)
-      continue
-    }
-
-    if (rules && rules.length > 0) {
-      const rule = rules[0]
-      
-      // Add suggested tracker (assuming 1 tracker per vehicle as default)
-      const existingTracker = suggestedTrackers.find(t => t.model === rule.modelo_rastreador)
+      // Add suggested tracker
+      const existingTracker = suggestedTrackers.find(t => t.model === rule.tracker_model)
       if (existingTracker) {
         existingTracker.quantity += vehicle.quantity
       } else {
         suggestedTrackers.push({
-          model: rule.modelo_rastreador,
+          model: rule.tracker_model,
           quantity: vehicle.quantity
         })
       }
 
       // Set configuration (use the first rule's configuration)
       if (!suggestedConfiguration) {
-        suggestedConfiguration = rule.configuracao
+        suggestedConfiguration = rule.configuration
       }
+    } else {
+      console.log('No automation rule found for vehicle:', vehicle)
     }
   }
 
@@ -136,7 +119,7 @@ export const applyAutomationRules = async (vehicles: Array<{ brand: string, mode
 
 export const createOrder = async (orderData: {
   numero_pedido: string
-  vehicles: Array<{ brand: string, model: string, quantity: number }>
+  vehicles: Array<{ brand: string, model: string, quantity: number, year?: string }>
   trackers: Array<{ model: string, quantity: number }>
   configurationType: string
 }): Promise<Order> => {
@@ -172,7 +155,8 @@ export const createOrder = async (orderData: {
       pedido_id: pedido.id,
       marca: vehicle.brand,
       modelo: vehicle.model,
-      quantidade: vehicle.quantity
+      quantidade: vehicle.quantity,
+      tipo: vehicle.year || null // Store year in tipo field temporarily
     }))
 
     const { error: vehicleError } = await supabase
@@ -203,7 +187,6 @@ export const createOrder = async (orderData: {
     }
   }
 
-  // Return the created order
   return {
     id: pedido.id,
     number: pedido.numero_pedido,
