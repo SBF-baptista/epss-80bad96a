@@ -10,7 +10,6 @@ import TrackerDistribution from "@/components/dashboard/TrackerDistribution";
 import ConfigurationTypes from "@/components/dashboard/ConfigurationTypes";
 import StandbyAnalysis from "@/components/dashboard/StandbyAnalysis";
 import DashboardFilters from "@/components/dashboard/DashboardFilters";
-import Navigation from "@/components/Navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const Dashboard = () => {
@@ -45,7 +44,7 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="p-6 bg-gray-50 min-h-full">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
@@ -66,11 +65,10 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="p-6 bg-gray-50 min-h-full">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Analítico</h1>
-          <Navigation />
+          <h2 className="text-2xl font-bold text-gray-900">Dashboard Analítico</h2>
         </div>
 
         <DashboardFilters 

@@ -2,10 +2,10 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
+import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Kanban from "./pages/Kanban";
 import Homologation from "./pages/Homologation";
@@ -46,34 +46,41 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
+            {/* Redirect root to homologation since Index was removed */}
+            <Route path="/" element={<Navigate to="/homologation" replace />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <Dashboard />
+                <Layout>
+                  <Dashboard />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/kanban" element={
               <ProtectedRoute>
-                <Kanban />
+                <Layout>
+                  <Kanban />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/homologation" element={
               <ProtectedRoute>
-                <Homologation />
+                <Layout>
+                  <Homologation />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/orders" element={
               <ProtectedRoute>
-                <Orders />
+                <Layout>
+                  <Orders />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/config" element={
               <ProtectedRoute>
-                <ConfigurationManagement />
+                <Layout>
+                  <ConfigurationManagement />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
-import Navigation from "@/components/Navigation";
 import { fetchOrders } from "@/services/orderService";
 
 const Kanban = () => {
@@ -37,7 +36,7 @@ const Kanban = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="p-6 bg-gray-50 min-h-full">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
@@ -54,11 +53,10 @@ const Kanban = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="p-6 bg-gray-50 min-h-full">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Kanban - Gestão de Pedidos</h1>
-          <Navigation />
+          <h2 className="text-2xl font-bold text-gray-900">Kanban - Gestão de Pedidos</h2>
         </div>
 
         <FilterBar 
