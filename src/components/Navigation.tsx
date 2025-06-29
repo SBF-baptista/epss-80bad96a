@@ -7,7 +7,8 @@ const Navigation = () => {
   const location = useLocation();
 
   const navItems = [
-    { to: "/", label: "Dashboard", icon: BarChart3 },
+    { to: "/", label: "Início", icon: BarChart3 },
+    { to: "/dashboard", label: "Dashboard", icon: BarChart3 },
     { to: "/kanban", label: "Kanban", icon: Kanban },
     { to: "/homologation", label: "Homologação", icon: CheckSquare },
     { to: "/orders", label: "Pedidos", icon: Settings },
@@ -15,7 +16,7 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="flex gap-2">
+    <nav className="flex gap-2 flex-wrap">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.to;
