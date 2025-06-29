@@ -65,7 +65,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       configurationType: pedido.configuracao,
       status: pedido.status,
       createdAt: pedido.data || pedido.created_at,
-      priority: 'medium' // Default priority since it's not in the database
+      priority: 'medium' as const // Explicitly cast to literal type
     }))
 
     console.log('Transformed orders:', transformedOrders)
