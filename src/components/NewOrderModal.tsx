@@ -8,55 +8,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Plus, X, Sparkles } from "lucide-react";
 import { createOrder, applyAutomationRules } from "@/services/orderService";
 import { fetchAutomationRules } from "@/services/automationRulesService";
 import { useToast } from "@/hooks/use-toast";
-
-export interface Vehicle {
-  brand: string;
-  model: string;
-  quantity: number;
-  year?: string;
-}
-
-export interface Tracker {
-  model: string;
-  quantity: number;
-}
+import { Vehicle, Tracker } from "@/types/order";
+import OrderBasicInfo from "./OrderBasicInfo";
+import VehicleSection from "./VehicleSection";
+import TrackerSection from "./TrackerSection";
 
 interface NewOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOrderCreated: () => void;
 }
-
-const configurationTypes = [
-  "HCV MERCEDES",
-  "HCV VOLVO",
-  "HCV SCANIA",
-  "HCV DAF",
-  "HCV IVECO",
-  "HCV FORD",
-  "LCV FIAT",
-  "LCV RENAULT",
-  "LCV PEUGEOT",
-  "FMS250",
-  "J1939 + FMS250",
-  "HCV - Truck3 + FMS250",
-  "OBD - BMW / LCV - BMW18",
-  "LCV group - CITROEN13 / OBD - CITROEN",
-  "J1939"
-];
-
-const vehicleBrands = ["VOLKSWAGEN", "CATERPILLAR", "XCMG", "FORD", "BMW", "CITROEN", "HYUNDAI", "Mercedes-Benz", "Volvo", "Scania", "DAF", "Iveco", "Fiat", "Renault", "Peugeot"];
-const trackerModels = ["SMART5", "Ruptella Smart5", "Ruptella ECO4", "Queclink GV75", "Teltonika FMB920", "Positron PX300"];
 
 const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) => {
   const [orderNumber, setOrderNumber] = useState("");
@@ -145,38 +109,6 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
   const handleClose = () => {
     resetForm();
     onClose();
-  };
-
-  const addVehicle = () => {
-    if (vehicleBrand && vehicleModel && vehicleQuantity > 0) {
-      const newVehicle: Vehicle = { 
-        brand: vehicleBrand, 
-        model: vehicleModel, 
-        quantity: vehicleQuantity,
-        year: vehicleYear || undefined
-      };
-      setVehicles([...vehicles, newVehicle]);
-      setVehicleBrand("");
-      setVehicleModel("");
-      setVehicleYear("");
-      setVehicleQuantity(1);
-    }
-  };
-
-  const removeVehicle = (index: number) => {
-    setVehicles(vehicles.filter((_, i) => i !== index));
-  };
-
-  const addTracker = () => {
-    if (trackerModel && trackerQuantity > 0) {
-      setTrackers([...trackers, { model: trackerModel, quantity: trackerQuantity }]);
-      setTrackerModel("");
-      setTrackerQuantity(1);
-    }
-  };
-
-  const removeTracker = (index: number) => {
-    setTrackers(trackers.filter((_, i) => i !== index));
   };
 
   const applySuggestions = async () => {
@@ -270,232 +202,42 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Informações Básicas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Pedido</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="orderNumber">Número do Pedido*</Label>
-                  <Input
-                    id="orderNumber"
-                    value={orderNumber}
-                    onChange={(e) => setOrderNumber(e.target.value)}
-                    placeholder="Ex: 007"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Prioridade</Label>
-                  <Select value={priority || ""} onValueChange={(value) => setPriority(value as "high" | "medium" | "low")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a prioridade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high">Alta</SelectItem>
-                      <SelectItem value="medium">Média</SelectItem>
-                      <SelectItem value="low">Baixa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="estimatedDelivery">Previsão de Entrega</Label>
-                <Input
-                  id="estimatedDelivery"
-                  type="date"
-                  value={estimatedDelivery}
-                  onChange={(e) => setEstimatedDelivery(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <OrderBasicInfo
+            orderNumber={orderNumber}
+            setOrderNumber={setOrderNumber}
+            priority={priority}
+            setPriority={setPriority}
+            estimatedDelivery={estimatedDelivery}
+            setEstimatedDelivery={setEstimatedDelivery}
+          />
 
-          {/* Veículos */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Veículos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <Label>Marca</Label>
-                  <Select value={vehicleBrand} onValueChange={setVehicleBrand}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Marca" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vehicleBrands.map(brand => (
-                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Modelo</Label>
-                  <Select value={vehicleModel} onValueChange={setVehicleModel}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Modelo" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 overflow-y-auto">
-                      {availableModels.map(model => (
-                        <SelectItem key={model} value={model}>{model}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Ano</Label>
-                  <Input
-                    value={vehicleYear}
-                    onChange={(e) => setVehicleYear(e.target.value)}
-                    placeholder="Ex: 2024"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={vehicleQuantity}
-                    onChange={(e) => setVehicleQuantity(Number(e.target.value))}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={addVehicle} className="w-full">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar
-                  </Button>
-                </div>
-              </div>
+          <VehicleSection
+            vehicles={vehicles}
+            setVehicles={setVehicles}
+            availableModels={availableModels}
+            vehicleBrand={vehicleBrand}
+            setVehicleBrand={setVehicleBrand}
+            vehicleModel={vehicleModel}
+            setVehicleModel={setVehicleModel}
+            vehicleYear={vehicleYear}
+            setVehicleYear={setVehicleYear}
+            vehicleQuantity={vehicleQuantity}
+            setVehicleQuantity={setVehicleQuantity}
+            isApplyingRules={isApplyingRules}
+            onApplySuggestions={applySuggestions}
+          />
 
-              {vehicles.length > 0 && (
-                <>
-                  <Separator />
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Veículos Adicionados:</h4>
-                      <Button 
-                        onClick={applySuggestions}
-                        disabled={isApplyingRules}
-                        variant="outline"
-                        size="sm"
-                        className="ml-auto"
-                      >
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        {isApplyingRules ? "Aplicando..." : "Aplicar Sugestões"}
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {vehicles.map((vehicle, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <span className="font-medium">
-                            {vehicle.brand} {vehicle.model} {vehicle.year && `(${vehicle.year})`} - {vehicle.quantity}x
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeVehicle(index)}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <TrackerSection
+            trackers={trackers}
+            setTrackers={setTrackers}
+            configurationType={configurationType}
+            setConfigurationType={setConfigurationType}
+            trackerModel={trackerModel}
+            setTrackerModel={setTrackerModel}
+            trackerQuantity={trackerQuantity}
+            setTrackerQuantity={setTrackerQuantity}
+          />
 
-          {/* Rastreadores */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Rastreadores e Configuração</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label>Modelo do Rastreador</Label>
-                  <Select value={trackerModel} onValueChange={setTrackerModel}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Modelo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {trackerModels.map(model => (
-                        <SelectItem key={model} value={model}>{model}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={trackerQuantity}
-                    onChange={(e) => setTrackerQuantity(Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="configurationType">Tipo de Configuração*</Label>
-                  <Select value={configurationType} onValueChange={setConfigurationType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a configuração" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {configurationTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={addTracker} className="w-full">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar
-                  </Button>
-                </div>
-              </div>
-
-              {trackers.length > 0 && (
-                <>
-                  <Separator />
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Rastreadores Adicionados:</h4>
-                    <div className="space-y-2">
-                      {trackers.map((tracker, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <span className="font-medium">
-                            {tracker.model} - {tracker.quantity}x
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeTracker(index)}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {configurationType && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="secondary">Configuração Selecionada</Badge>
-                    <span className="text-sm font-medium">{configurationType}</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Botões de Ação */}
           <div className="flex justify-end space-x-3">
             <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancelar
