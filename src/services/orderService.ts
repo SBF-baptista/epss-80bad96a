@@ -25,6 +25,7 @@ export interface Order {
   priority?: "high" | "medium" | "low"
   createdAt: string
   estimatedDelivery?: string
+  isAutomatic?: boolean
 }
 
 export const fetchOrders = async (): Promise<Order[]> => {
@@ -68,7 +69,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       configurationType: pedido.configuracao,
       status: pedido.status,
       createdAt: pedido.data || pedido.created_at,
-      priority: 'medium' as const
+      priority: 'medium' as const,
+      isAutomatic: pedido.numero_pedido.startsWith('AUTO-')
     }))
 
     console.log('Transformed orders:', transformedOrders)
@@ -76,6 +78,43 @@ export const fetchOrders = async (): Promise<Order[]> => {
   } catch (error) {
     console.error('Error in fetchOrders:', error)
     throw error
+  }
+}
+
+export const generateOrderNumber = async (): Promise<string> => {
+  console.log('Generating new order number...')
+  
+  try {
+    // Get the count of existing orders (excluding automatic ones)
+    const { data: orders, error } = await supabase
+      .from('pedidos')
+      .select('numero_pedido')
+      .not('numero_pedido', 'like', 'AUTO-%')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.error('Error fetching orders for number generation:', error)
+      return 'ORD-001'
+    }
+
+    if (!orders || orders.length === 0) {
+      return 'ORD-001'
+    }
+
+    // Extract the number from the last order
+    const lastOrder = orders[0].numero_pedido
+    const match = lastOrder.match(/ORD-(\d+)/) || lastOrder.match(/(\d+)/)
+    
+    if (match) {
+      const nextNumber = parseInt(match[1]) + 1
+      return `ORD-${nextNumber.toString().padStart(3, '0')}`
+    }
+
+    return 'ORD-001'
+  } catch (error) {
+    console.error('Error generating order number:', error)
+    return `ORD-${Date.now().toString().slice(-3)}`
   }
 }
 
@@ -118,7 +157,7 @@ export const applyAutomationRules = async (vehicles: Array<{ brand: string, mode
 }
 
 export const createOrder = async (orderData: {
-  numero_pedido: string
+  numero_pedido?: string
   vehicles: Array<{ brand: string, model: string, quantity: number, year?: string }>
   trackers: Array<{ model: string, quantity: number }>
   configurationType: string
@@ -131,12 +170,15 @@ export const createOrder = async (orderData: {
     throw new Error('User not authenticated')
   }
 
+  // Generate order number if not provided
+  const orderNumber = orderData.numero_pedido || await generateOrderNumber()
+
   // Create the order
   const { data: pedido, error: pedidoError } = await supabase
     .from('pedidos')
     .insert({
       usuario_id: user.user.id,
-      numero_pedido: orderData.numero_pedido,
+      numero_pedido: orderNumber,
       configuracao: orderData.configurationType,
       status: 'novos',
       data: new Date().toISOString()
@@ -195,7 +237,8 @@ export const createOrder = async (orderData: {
     configurationType: pedido.configuracao,
     status: pedido.status,
     createdAt: pedido.data,
-    priority: 'medium'
+    priority: 'medium',
+    isAutomatic: pedido.numero_pedido.startsWith('AUTO-')
   }
 }
 

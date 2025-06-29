@@ -11,6 +11,13 @@ export interface VehicleVerificationResponse {
     type: string | null;
     created_at: string;
   };
+  automatic_order?: {
+    order_number: string;
+    tracker_model: string;
+    configuration: string;
+  } | {
+    error: string;
+  };
 }
 
 export interface VehicleNotFoundResponse {
@@ -21,11 +28,16 @@ export interface VehicleNotFoundResponse {
 export const verifyVehicle = async (
   brand: string, 
   model: string, 
-  apiKey: string
+  apiKey: string,
+  createOrder = false
 ): Promise<VehicleVerificationResponse | VehicleNotFoundResponse> => {
   const url = new URL(`${SUPABASE_URL}/functions/v1/verify-vehicle`);
   url.searchParams.set('brand', brand);
   url.searchParams.set('model', model);
+  
+  if (createOrder) {
+    url.searchParams.set('create_order', 'true');
+  }
 
   const response = await fetch(url.toString(), {
     method: 'GET',

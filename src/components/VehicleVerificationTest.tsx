@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { verifyVehicle } from "@/services/vehicleVerificationService";
 
 const VehicleVerificationTest = () => {
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [createOrder, setCreateOrder] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ const VehicleVerificationTest = () => {
     setResult(null);
 
     try {
-      const response = await verifyVehicle(brand, model, apiKey);
+      const response = await verifyVehicle(brand, model, apiKey, createOrder);
       setResult(response);
     } catch (err: any) {
       setError(err.message || 'Failed to verify vehicle');
@@ -73,6 +75,15 @@ const VehicleVerificationTest = () => {
           />
         </div>
 
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="create-order"
+            checked={createOrder}
+            onCheckedChange={setCreateOrder}
+          />
+          <Label htmlFor="create-order">Automatically create order if vehicle found</Label>
+        </div>
+
         <Button onClick={handleTest} disabled={loading} className="w-full">
           {loading ? 'Testing...' : 'Test Vehicle Verification'}
         </Button>
@@ -86,18 +97,39 @@ const VehicleVerificationTest = () => {
         {result && (
           <div className="space-y-3">
             {'success' in result ? (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2 mb-3">
-                  <Badge variant="default" className="bg-green-600">Vehicle Found</Badge>
+              <div className="space-y-3">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Badge variant="default" className="bg-green-600">Vehicle Found</Badge>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>ID:</strong> {result.vehicle.id}</p>
+                    <p><strong>Brand:</strong> {result.vehicle.brand}</p>
+                    <p><strong>Model:</strong> {result.vehicle.model}</p>
+                    <p><strong>Quantity:</strong> {result.vehicle.quantity}</p>
+                    <p><strong>Type:</strong> {result.vehicle.type || 'N/A'}</p>
+                    <p><strong>Created:</strong> {new Date(result.vehicle.created_at).toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <p><strong>ID:</strong> {result.vehicle.id}</p>
-                  <p><strong>Brand:</strong> {result.vehicle.brand}</p>
-                  <p><strong>Model:</strong> {result.vehicle.model}</p>
-                  <p><strong>Quantity:</strong> {result.vehicle.quantity}</p>
-                  <p><strong>Type:</strong> {result.vehicle.type || 'N/A'}</p>
-                  <p><strong>Created:</strong> {new Date(result.vehicle.created_at).toLocaleString()}</p>
-                </div>
+                
+                {result.automatic_order && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Badge variant="default" className="bg-blue-600">
+                        {result.automatic_order.error ? 'Order Creation Failed' : 'Automatic Order Created'}
+                      </Badge>
+                    </div>
+                    {result.automatic_order.error ? (
+                      <p className="text-sm text-blue-700">{result.automatic_order.error}</p>
+                    ) : (
+                      <div className="space-y-2 text-sm">
+                        <p><strong>Order Number:</strong> {result.automatic_order.order_number}</p>
+                        <p><strong>Tracker Model:</strong> {result.automatic_order.tracker_model}</p>
+                        <p><strong>Configuration:</strong> {result.automatic_order.configuration}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
@@ -115,9 +147,10 @@ const VehicleVerificationTest = () => {
           <div className="space-y-1 text-sm text-gray-600">
             <p><strong>URL:</strong> https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/verify-vehicle</p>
             <p><strong>Method:</strong> GET</p>
-            <p><strong>Query Parameters:</strong> brand, model</p>
+            <p><strong>Query Parameters:</strong> brand, model, create_order (optional)</p>
             <p><strong>Headers:</strong> x-api-key</p>
             <p><strong>Response:</strong> 200 (found) or 404 (not found)</p>
+            <p><strong>New Feature:</strong> Set create_order=true to automatically create an order when vehicle is found</p>
           </div>
         </div>
       </CardContent>
