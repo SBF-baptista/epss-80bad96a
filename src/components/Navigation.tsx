@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Kanban, List, Plus } from "lucide-react";
+import { BarChart3, Kanban, List, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import NewOrderModal from "./NewOrderModal";
 
@@ -27,6 +27,12 @@ const Navigation = () => {
       label: "Dashboard",
       icon: BarChart3,
       description: "Análises e relatórios"
+    },
+    {
+      href: "/configuracoes",
+      label: "Configurações",
+      icon: Settings,
+      description: "Gestão de regras de automação"
     }
   ];
 
