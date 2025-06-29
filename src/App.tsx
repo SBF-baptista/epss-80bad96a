@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,7 @@ import Auth from "./pages/Auth";
 import Kanban from "./pages/Kanban";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
+import ConfigurationManagement from "./pages/ConfigurationManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -54,6 +54,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/configuracoes" 
+              element={
+                <ProtectedRoute>
+                  <ConfigurationManagement />
                 </ProtectedRoute>
               } 
             />

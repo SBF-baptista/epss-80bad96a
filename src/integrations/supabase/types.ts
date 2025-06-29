@@ -79,6 +79,36 @@ export type Database = {
           },
         ]
       }
+      regras_automacao: {
+        Row: {
+          configuracao: string
+          created_at: string | null
+          id: number
+          modelo_rastreador: string
+          modelo_veiculo: string
+          quantidade_default: number | null
+          tipo_veiculo: string | null
+        }
+        Insert: {
+          configuracao: string
+          created_at?: string | null
+          id?: number
+          modelo_rastreador: string
+          modelo_veiculo: string
+          quantidade_default?: number | null
+          tipo_veiculo?: string | null
+        }
+        Update: {
+          configuracao?: string
+          created_at?: string | null
+          id?: number
+          modelo_rastreador?: string
+          modelo_veiculo?: string
+          quantidade_default?: number | null
+          tipo_veiculo?: string | null
+        }
+        Relationships: []
+      }
       usuarios: {
         Row: {
           created_at: string

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client'
 import { Database } from '@/integrations/supabase/types'
 
@@ -73,6 +72,51 @@ export const fetchOrders = async (): Promise<Order[]> => {
   } catch (error) {
     console.error('Error in fetchOrders:', error)
     throw error
+  }
+}
+
+export const applyAutomationRules = async (vehicles: Array<{ brand: string, model: string, quantity: number }>) => {
+  console.log('Applying automation rules for vehicles:', vehicles)
+  
+  const suggestedTrackers: Array<{ model: string, quantity: number }> = []
+  let suggestedConfiguration = ''
+
+  for (const vehicle of vehicles) {
+    const { data: rules, error } = await supabase
+      .from('regras_automacao')
+      .select('*')
+      .eq('modelo_veiculo', vehicle.model)
+      .limit(1)
+
+    if (error) {
+      console.error('Error fetching automation rules:', error)
+      continue
+    }
+
+    if (rules && rules.length > 0) {
+      const rule = rules[0]
+      
+      // Add suggested tracker
+      const existingTracker = suggestedTrackers.find(t => t.model === rule.modelo_rastreador)
+      if (existingTracker) {
+        existingTracker.quantity += rule.quantidade_default * vehicle.quantity
+      } else {
+        suggestedTrackers.push({
+          model: rule.modelo_rastreador,
+          quantity: rule.quantidade_default * vehicle.quantity
+        })
+      }
+
+      // Set configuration (use the first rule's configuration)
+      if (!suggestedConfiguration) {
+        suggestedConfiguration = rule.configuracao
+      }
+    }
+  }
+
+  return {
+    trackers: suggestedTrackers,
+    configuration: suggestedConfiguration
   }
 }
 
