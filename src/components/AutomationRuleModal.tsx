@@ -167,13 +167,13 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
               <Label htmlFor="tipo_veiculo">Tipo de Veículo</Label>
               <Select 
                 value={formData.tipo_veiculo} 
-                onValueChange={(value) => setFormData({ ...formData, tipo_veiculo: value })}
+                onValueChange={(value) => setFormData({ ...formData, tipo_veiculo: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {vehicleTypes.map(type => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}

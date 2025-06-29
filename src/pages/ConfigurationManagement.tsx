@@ -32,8 +32,8 @@ import AutomationRuleModal from '@/components/AutomationRuleModal'
 
 const ConfigurationManagement = () => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('')
-  const [configurationFilter, setConfigurationFilter] = useState<string>('')
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all')
+  const [configurationFilter, setConfigurationFilter] = useState<string>('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null)
   const [deleteRuleId, setDeleteRuleId] = useState<number | null>(null)
@@ -72,8 +72,8 @@ const ConfigurationManagement = () => {
   const filteredRules = rules.filter(rule => {
     const matchesSearch = rule.modelo_veiculo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rule.modelo_rastreador.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesVehicleType = !vehicleTypeFilter || rule.tipo_veiculo === vehicleTypeFilter
-    const matchesConfiguration = !configurationFilter || rule.configuracao === configurationFilter
+    const matchesVehicleType = vehicleTypeFilter === 'all' || rule.tipo_veiculo === vehicleTypeFilter
+    const matchesConfiguration = configurationFilter === 'all' || rule.configuracao === configurationFilter
     
     return matchesSearch && matchesVehicleType && matchesConfiguration
   })
@@ -210,8 +210,8 @@ const ConfigurationManagement = () => {
               variant="outline" 
               onClick={() => {
                 setSearchTerm('')
-                setVehicleTypeFilter('')
-                setConfigurationFilter('')
+                setVehicleTypeFilter('all')
+                setConfigurationFilter('all')
               }}
             >
               Limpar Filtros
