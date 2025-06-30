@@ -18,6 +18,7 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoPlayingRef = useRef<boolean>(false);
   const mountedRef = useRef<boolean>(true);
+  const readerControlsRef = useRef<any>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -104,36 +105,29 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
       if (videoRef.current && !videoPlayingRef.current) {
         videoRef.current.srcObject = mediaStream;
         
-        // Set up video event listeners
         const video = videoRef.current;
         
-        const handleLoadedMetadata = async () => {
+        const handleCanPlay = async () => {
           if (!mountedRef.current || !scanningRef.current || videoPlayingRef.current) return;
           
-          console.log('Video metadata loaded, attempting to play...');
+          console.log('Video can play - attempting to start playback...');
           try {
-            if (video && video.readyState >= 2) {
-              await video.play();
-              videoPlayingRef.current = true;
-              console.log('Video is now playing, starting scan loop...');
-              
-              // Start scanning after a short delay to ensure video is stable
-              setTimeout(() => {
-                if (scanningRef.current && mountedRef.current) {
-                  startScanLoop();
-                }
-              }, 500);
-            }
+            await video.play();
+            videoPlayingRef.current = true;
+            console.log('Video is now playing, starting scan loop...');
+            
+            // Start scanning with the ZXing library's built-in method
+            setTimeout(() => {
+              if (scanningRef.current && mountedRef.current) {
+                startZXingScan();
+              }
+            }, 500);
           } catch (playError) {
             console.error('Error playing video:', playError);
             if (mountedRef.current) {
               onError?.('Erro ao reproduzir o vídeo da câmera.');
             }
           }
-        };
-
-        const handleCanPlay = () => {
-          console.log('Video can play - ready state:', video.readyState);
         };
 
         const handleError = (error: Event) => {
@@ -143,19 +137,14 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
           }
         };
 
-        video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
         video.addEventListener('canplay', handleCanPlay, { once: true });
         video.addEventListener('error', handleError);
         
-        // Cleanup listeners when component unmounts
-        const cleanup = () => {
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        // Store cleanup function
+        (video as any)._cleanup = () => {
           video.removeEventListener('canplay', handleCanPlay);
           video.removeEventListener('error', handleError);
         };
-        
-        // Store cleanup function
-        (video as any)._cleanup = cleanup;
       }
       
     } catch (error) {
@@ -180,73 +169,62 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
     }
   };
 
-  const startScanLoop = useCallback(() => {
+  const startZXingScan = useCallback(() => {
     if (!scanningRef.current || !reader || !videoRef.current || !mountedRef.current) {
-      console.log('Cannot start scan loop - conditions not met');
+      console.log('Cannot start ZXing scan - conditions not met');
       return;
     }
 
-    console.log('Starting optimized scan loop...');
+    console.log('Starting ZXing continuous scan...');
     
-    const performScan = async () => {
-      if (!scanningRef.current || !videoRef.current || !mountedRef.current) return;
-
-      const video = videoRef.current;
-      
-      // Check if video is ready and playing
-      if (video.readyState < 2 || video.paused || video.ended) {
-        return;
-      }
-
-      try {
-        // Use decodeOnceFromVideoDevice with proper error handling
-        const result = await reader.decodeOnceFromVideoDevice(undefined, video);
-        
+    try {
+      // Use ZXing's built-in continuous decode method
+      const controls = reader.decodeFromVideoDevice(undefined, videoRef.current, (result, error) => {
         if (result && scanningRef.current && mountedRef.current) {
           const scannedText = result.getText();
           console.log('Barcode detected successfully:', scannedText);
-          
-          // Brief pause after successful scan
-          setTimeout(() => {
-            if (mountedRef.current) {
-              onScan(scannedText);
-            }
-          }, 100);
+          onScan(scannedText);
         }
-      } catch (error: any) {
-        // Only log significant errors, ignore common scanning exceptions
-        if (error.name && 
+        
+        // Only log significant errors
+        if (error && error.name && 
             error.name !== 'NotFoundException' && 
             error.name !== 'ChecksumException' && 
             error.name !== 'FormatException' &&
             error.name !== 'ReaderException') {
           console.warn('Scanning error:', error.name, error.message);
           
-          // Only report critical errors to user
           if (error.name === 'NotSupportedError' || error.name === 'InvalidStateError') {
             if (mountedRef.current) {
               onError?.(`Erro do scanner: ${error.message}`);
             }
           }
         }
+      });
+      
+      readerControlsRef.current = controls;
+      
+    } catch (error) {
+      console.error('Error starting ZXing scan:', error);
+      if (mountedRef.current) {
+        onError?.('Erro ao iniciar o scanner.');
       }
-    };
-
-    // Clear any existing interval
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
     }
-
-    // Start the scanning loop with a reasonable interval
-    scanIntervalRef.current = setInterval(performScan, 250);
-    
-    // Perform immediate scan
-    setTimeout(performScan, 100);
   }, [reader, onScan, onError]);
 
   const stopScanning = useCallback(() => {
     console.log('Stopping scanner...');
     scanningRef.current = false;
+    
+    // Stop ZXing continuous scanning
+    if (readerControlsRef.current) {
+      try {
+        readerControlsRef.current.stop();
+        readerControlsRef.current = null;
+      } catch (error) {
+        console.warn('Error stopping ZXing controls:', error);
+      }
+    }
     
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
