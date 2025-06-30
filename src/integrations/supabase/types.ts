@@ -126,6 +126,9 @@ export type Database = {
           data: string
           id: string
           numero_pedido: string
+          production_completed_at: string | null
+          production_notes: string | null
+          production_started_at: string | null
           status: Database["public"]["Enums"]["status_pedido"]
           usuario_id: string
         }
@@ -135,6 +138,9 @@ export type Database = {
           data?: string
           id?: string
           numero_pedido: string
+          production_completed_at?: string | null
+          production_notes?: string | null
+          production_started_at?: string | null
           status?: Database["public"]["Enums"]["status_pedido"]
           usuario_id: string
         }
@@ -144,6 +150,9 @@ export type Database = {
           data?: string
           id?: string
           numero_pedido?: string
+          production_completed_at?: string | null
+          production_notes?: string | null
+          production_started_at?: string | null
           status?: Database["public"]["Enums"]["status_pedido"]
           usuario_id?: string
         }
@@ -153,6 +162,51 @@ export type Database = {
             columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          imei: string
+          pedido_id: string
+          production_line_code: string
+          scanned_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imei: string
+          pedido_id: string
+          production_line_code: string
+          scanned_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imei?: string
+          pedido_id?: string
+          production_line_code?: string
+          scanned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_items_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
         ]

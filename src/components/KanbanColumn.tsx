@@ -11,6 +11,7 @@ interface KanbanColumnProps {
   onDrop: () => void;
   onOrderClick: (order: Order) => void;
   onDragStart: (order: Order) => void;
+  onScanClick?: (order: Order) => void;
 }
 
 const KanbanColumn = ({
@@ -20,7 +21,8 @@ const KanbanColumn = ({
   onDragOver,
   onDrop,
   onOrderClick,
-  onDragStart
+  onDragStart,
+  onScanClick
 }: KanbanColumnProps) => {
   return (
     <div className="min-w-80">
@@ -41,6 +43,7 @@ const KanbanColumn = ({
               order={order}
               onClick={() => onOrderClick(order)}
               onDragStart={() => onDragStart(order)}
+              onScanClick={onScanClick ? () => onScanClick(order) : undefined}
             />
           ))}
           {orders.length === 0 && (

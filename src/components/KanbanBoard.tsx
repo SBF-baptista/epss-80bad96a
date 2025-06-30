@@ -2,6 +2,7 @@
 import { useState } from "react";
 import KanbanColumn from "./KanbanColumn";
 import OrderModal from "./OrderModal";
+import ProductionScannerModal from "./ProductionScannerModal";
 import { Order, updateOrderStatus } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +23,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
   const { toast } = useToast();
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [scannerOrder, setScannerOrder] = useState<Order | null>(null);
 
   const handleDragStart = (order: Order) => {
     setDraggedOrder(order);
@@ -52,6 +54,10 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
     setDraggedOrder(null);
   };
 
+  const handleScanClick = (order: Order) => {
+    setScannerOrder(order);
+  };
+
   const getOrdersByStatus = (status: string) => {
     return orders.filter(order => order.status === status);
   };
@@ -69,6 +75,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
             onDrop={() => handleDrop(column.id)}
             onOrderClick={setSelectedOrder}
             onDragStart={handleDragStart}
+            onScanClick={column.id === "producao" ? handleScanClick : undefined}
           />
         ))}
       </div>
@@ -78,6 +85,15 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
           order={selectedOrder}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
+        />
+      )}
+
+      {scannerOrder && (
+        <ProductionScannerModal
+          order={scannerOrder}
+          isOpen={!!scannerOrder}
+          onClose={() => setScannerOrder(null)}
+          onUpdate={onOrderUpdate}
         />
       )}
     </>

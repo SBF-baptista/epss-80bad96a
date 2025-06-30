@@ -2,14 +2,16 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/services/orderService";
+import { Scan } from "lucide-react";
 
 interface OrderCardProps {
   order: Order;
   onClick: () => void;
   onDragStart: () => void;
+  onScanClick?: () => void;
 }
 
-const OrderCard = ({ order, onClick, onDragStart }: OrderCardProps) => {
+const OrderCard = ({ order, onClick, onDragStart, onScanClick }: OrderCardProps) => {
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case "high":
@@ -37,9 +39,15 @@ const OrderCard = ({ order, onClick, onDragStart }: OrderCardProps) => {
   };
 
   const isStandby = order.status === "standby";
+  const isInProduction = order.status === "producao";
 
   const totalVehicles = order.vehicles.reduce((sum, vehicle) => sum + vehicle.quantity, 0);
   const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
+
+  const handleScanClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onScanClick?.();
+  };
 
   return (
     <Card
@@ -56,11 +64,22 @@ const OrderCard = ({ order, onClick, onDragStart }: OrderCardProps) => {
             <h4 className="font-semibold text-gray-900">
               Pedido de instalação {order.number}
             </h4>
-            {order.priority && (
-              <Badge className={`text-xs ${getPriorityColor(order.priority)}`}>
-                {getPriorityLabel(order.priority)}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {order.priority && (
+                <Badge className={`text-xs ${getPriorityColor(order.priority)}`}>
+                  {getPriorityLabel(order.priority)}
+                </Badge>
+              )}
+              {isInProduction && onScanClick && (
+                <button
+                  onClick={handleScanClick}
+                  className="p-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                  title="Abrir Scanner de Produção"
+                >
+                  <Scan className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="space-y-2 text-sm">
@@ -97,6 +116,12 @@ const OrderCard = ({ order, onClick, onDragStart }: OrderCardProps) => {
           {isStandby && (
             <div className="mt-3 p-2 bg-red-100 border border-red-200 rounded-md">
               <p className="text-xs text-red-800 font-medium">⚠️ Em Stand-by</p>
+            </div>
+          )}
+
+          {isInProduction && (
+            <div className="mt-3 p-2 bg-blue-100 border border-blue-200 rounded-md">
+              <p className="text-xs text-blue-800 font-medium">🔧 Em Produção</p>
             </div>
           )}
         </div>
