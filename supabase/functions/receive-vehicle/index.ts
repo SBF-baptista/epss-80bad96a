@@ -10,6 +10,7 @@ const corsHeaders = {
 
 // Function to generate automatic order number
 async function generateAutoOrderNumber(supabase: any): Promise<string> {
+  console.log('Generating automatic order number...')
   const { data: orders, error } = await supabase
     .from('pedidos')
     .select('numero_pedido')
@@ -23,6 +24,7 @@ async function generateAutoOrderNumber(supabase: any): Promise<string> {
   }
 
   if (!orders || orders.length === 0) {
+    console.log('No existing auto orders found, starting with AUTO-001')
     return 'AUTO-001'
   }
 
@@ -31,9 +33,12 @@ async function generateAutoOrderNumber(supabase: any): Promise<string> {
   
   if (match) {
     const nextNumber = parseInt(match[1]) + 1
-    return `AUTO-${nextNumber.toString().padStart(3, '0')}`
+    const newOrderNumber = `AUTO-${nextNumber.toString().padStart(3, '0')}`
+    console.log(`Generated new order number: ${newOrderNumber}`)
+    return newOrderNumber
   }
 
+  console.log('Could not parse last order number, defaulting to AUTO-001')
   return 'AUTO-001'
 }
 
@@ -213,15 +218,19 @@ async function checkVehicleExists(supabase: any, brand: string, model: string) {
     throw error
   }
 
-  return vehicles && vehicles.length > 0 ? vehicles[0] : null
+  const exists = vehicles && vehicles.length > 0
+  console.log(`Vehicle exists check result: ${exists}`)
+  return exists ? vehicles[0] : null
 }
 
 serve(async (req) => {
   const timestamp = new Date().toISOString()
-  console.log(`[${timestamp}] Received ${req.method} request to receive-vehicle`)
+  console.log(`[${timestamp}] NEW REQUEST: ${req.method} ${req.url}`)
+  console.log(`[${timestamp}] Headers:`, Object.fromEntries(req.headers.entries()))
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log(`[${timestamp}] CORS preflight request`)
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -238,14 +247,19 @@ serve(async (req) => {
   }
 
   try {
+    console.log(`[${timestamp}] Initializing Supabase client...`)
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    console.log(`[${timestamp}] Supabase client initialized`)
 
     // API key authentication
     const apiKey = req.headers.get('x-api-key')
     const expectedApiKey = Deno.env.get('VEHICLE_API_KEY')
+    
+    console.log(`[${timestamp}] API Key present: ${!!apiKey}`)
+    console.log(`[${timestamp}] Expected API Key present: ${!!expectedApiKey}`)
     
     if (!apiKey || apiKey !== expectedApiKey) {
       console.log(`[${timestamp}] Unauthorized access attempt - invalid or missing API key`)
@@ -261,7 +275,10 @@ serve(async (req) => {
     // Parse request body
     let requestBody
     try {
-      requestBody = await req.json()
+      const bodyText = await req.text()
+      console.log(`[${timestamp}] Raw request body:`, bodyText)
+      requestBody = JSON.parse(bodyText)
+      console.log(`[${timestamp}] Parsed request body:`, requestBody)
     } catch (error) {
       console.log(`[${timestamp}] Invalid JSON in request body:`, error)
       return new Response(
@@ -327,6 +344,7 @@ serve(async (req) => {
     console.log(`[${timestamp}] Processing vehicle data:`, { vehicle, brand, year, usage_type, quantity })
 
     // Store incoming vehicle data
+    console.log(`[${timestamp}] Storing incoming vehicle data...`)
     const { data: incomingVehicle, error: insertError } = await supabase
       .from('incoming_vehicles')
       .insert({
@@ -434,7 +452,7 @@ serve(async (req) => {
       ...(homologationInfo && { homologation: homologationInfo })
     }
 
-    console.log(`[${timestamp}] Successfully processed vehicle data:`, response)
+    console.log(`[${timestamp}] SUCCESS - Sending response:`, response)
 
     return new Response(
       JSON.stringify(response),
@@ -445,7 +463,8 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error(`[${timestamp}] Unexpected error:`, error)
+    console.error(`[${timestamp}] UNEXPECTED ERROR:`, error)
+    console.error(`[${timestamp}] Error stack:`, error.stack)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { 
