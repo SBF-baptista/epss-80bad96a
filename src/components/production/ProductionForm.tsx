@@ -22,6 +22,7 @@ interface ProductionFormProps {
   onKeyPress: (e: React.KeyboardEvent) => void;
   onStartProduction: () => void;
   onCompleteProduction: () => void;
+  onRegisterForceCleanup: (cleanupFn: () => void) => void;
 }
 
 const ProductionForm = ({
@@ -41,6 +42,7 @@ const ProductionForm = ({
   onKeyPress,
   onStartProduction,
   onCompleteProduction,
+  onRegisterForceCleanup,
 }: ProductionFormProps) => {
   const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
   const scannedCount = productionItems.length;
@@ -75,6 +77,7 @@ const ProductionForm = ({
         onScanError={onScanError}
         onScanItem={onScanItem}
         onKeyPress={onKeyPress}
+        onRegisterForceCleanup={onRegisterForceCleanup}
       />
     </div>
   );

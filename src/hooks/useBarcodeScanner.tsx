@@ -18,6 +18,7 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
     mountedRef,
     startVideoStream,
     cleanup,
+    forceCleanup,
     handleRetryPermission,
   } = useVideoStream({ isActive, onError });
 
@@ -58,17 +59,27 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
       
       initializeScanner();
     } else if (!isActive) {
+      console.log('Scanner not active - stopping all scanning operations...');
       stopScanning();
       stopZXingScanning();
     }
 
     return () => {
       if (!isActive) {
+        console.log('Scanner cleanup - stopping scanning operations...');
         stopScanning();
         stopZXingScanning();
       }
     };
   }, [isActive, isScanning, startVideoStream, startScanning, stopScanning, startZXingScanning, stopZXingScanning, videoPlayingRef, mountedRef]);
+
+  // Force cleanup when component unmounts or isActive changes to false
+  useEffect(() => {
+    if (!isActive) {
+      console.log('Scanner deactivated - running force cleanup...');
+      forceCleanup();
+    }
+  }, [isActive, forceCleanup]);
 
   useEffect(() => {
     return cleanup;
@@ -79,5 +90,6 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
     hasPermission,
     isScanning,
     handleRetryPermission,
+    forceCleanup,
   };
 };

@@ -9,6 +9,7 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
   const [productionLineCode, setProductionLineCode] = useState("");
   const [scannerActive, setScannerActive] = useState(false);
   const [scannerError, setScannerError] = useState<string>("");
+  const [forceCleanupFn, setForceCleanupFn] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     if (order && isOpen) {
@@ -19,12 +20,33 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
     }
   }, [order, isOpen]);
 
-  // Clean up scanner when modal closes
+  // Enhanced cleanup when modal closes
   useEffect(() => {
     if (!isOpen) {
+      console.log('Production scanner modal closing - running enhanced cleanup...');
       setScannerActive(false);
+      
+      // Run force cleanup if available
+      if (forceCleanupFn) {
+        try {
+          forceCleanupFn();
+        } catch (error) {
+          console.warn('Error in force cleanup:', error);
+        }
+      }
+      
+      // Additional cleanup with delay to ensure everything is stopped
+      setTimeout(() => {
+        if (forceCleanupFn) {
+          try {
+            forceCleanupFn();
+          } catch (error) {
+            console.warn('Error in delayed force cleanup:', error);
+          }
+        }
+      }, 100);
     }
-  }, [isOpen]);
+  }, [isOpen, forceCleanupFn]);
 
   const handleScanResult = (result: string) => {
     console.log('Scan result received:', result);
@@ -69,6 +91,11 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
     return false;
   };
 
+  const registerForceCleanup = (cleanupFn: () => void) => {
+    console.log('Registering force cleanup function...');
+    setForceCleanupFn(() => cleanupFn);
+  };
+
   return {
     imei,
     productionLineCode,
@@ -81,5 +108,6 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
     handleScanError,
     clearForm,
     handleKeyPress,
+    registerForceCleanup,
   };
 };

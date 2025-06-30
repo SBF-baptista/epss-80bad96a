@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Scan, Plus, Keyboard, AlertCircle } from "lucide-react";
 import BarcodeScanner from "../BarcodeScanner";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 
 interface ProductionScannerTabsProps {
   imei: string;
@@ -20,6 +21,7 @@ interface ProductionScannerTabsProps {
   onScanError: (error: string) => void;
   onScanItem: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
+  onRegisterForceCleanup: (cleanupFn: () => void) => void;
 }
 
 const ProductionScannerTabs = ({
@@ -35,8 +37,23 @@ const ProductionScannerTabs = ({
   onScanError,
   onScanItem,
   onKeyPress,
+  onRegisterForceCleanup,
 }: ProductionScannerTabsProps) => {
   const [activeTab, setActiveTab] = useState("scanner");
+
+  // Get force cleanup function from scanner hook
+  const { forceCleanup } = useBarcodeScanner({
+    onScan: onScanResult,
+    onError: onScanError,
+    isActive: scannerActive,
+  });
+
+  // Register the force cleanup function
+  useEffect(() => {
+    if (forceCleanup) {
+      onRegisterForceCleanup(forceCleanup);
+    }
+  }, [forceCleanup, onRegisterForceCleanup]);
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

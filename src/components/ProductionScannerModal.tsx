@@ -34,6 +34,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     handleScanError,
     clearForm,
     handleKeyPress,
+    registerForceCleanup,
   } = useProductionScannerModal(order, isOpen);
 
   const {
@@ -73,12 +74,23 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     }
   };
 
+  // Enhanced close handler with force cleanup
+  const handleClose = () => {
+    console.log('Modal close requested - ensuring cleanup...');
+    setScannerActive(false);
+    
+    // Small delay to ensure scanner is deactivated before closing
+    setTimeout(() => {
+      onClose();
+    }, 50);
+  };
+
   if (!order) return null;
 
   const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -108,6 +120,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
             onKeyPress={onKeyPress}
             onStartProduction={onStartProduction}
             onCompleteProduction={onCompleteProduction}
+            onRegisterForceCleanup={registerForceCleanup}
           />
 
           <Separator />

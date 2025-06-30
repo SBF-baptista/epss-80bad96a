@@ -12,6 +12,7 @@ export const useVideoStream = ({ isActive, onError }: UseVideoStreamProps) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const videoPlayingRef = useRef<boolean>(false);
   const mountedRef = useRef<boolean>(true);
+  const cleanupFunctionsRef = useRef<(() => void)[]>([]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -21,17 +22,32 @@ export const useVideoStream = ({ isActive, onError }: UseVideoStreamProps) => {
   }, []);
 
   const stopVideoStream = useCallback(() => {
+    console.log('Stopping video stream...');
+    
+    // Stop video element
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+        videoRef.current.srcObject = null;
+        videoRef.current.load();
+      } catch (error) {
+        console.warn('Error stopping video element:', error);
+      }
+    }
+    
+    // Stop media stream tracks
     if (stream) {
-      console.log('Stopping video stream...');
       stream.getTracks().forEach(track => {
         try {
           track.stop();
+          console.log('Track stopped:', track.kind);
         } catch (error) {
           console.warn('Error stopping track:', error);
         }
       });
       setStream(null);
     }
+    
     videoPlayingRef.current = false;
   }, [stream]);
 
@@ -70,7 +86,7 @@ export const useVideoStream = ({ isActive, onError }: UseVideoStreamProps) => {
         const handleCanPlay = async () => {
           if (!mountedRef.current || videoPlayingRef.current) return;
           
-          console.log('Video can play - attempting to start playback...');
+          console.log('Video can play - attempting to start playbook...');
           try {
             await video.play();
             videoPlayingRef.current = true;
@@ -93,10 +109,12 @@ export const useVideoStream = ({ isActive, onError }: UseVideoStreamProps) => {
         video.addEventListener('canplay', handleCanPlay, { once: true });
         video.addEventListener('error', handleError);
         
-        (video as any)._cleanup = () => {
+        // Store cleanup functions
+        const cleanup = () => {
           video.removeEventListener('canplay', handleCanPlay);
           video.removeEventListener('error', handleError);
         };
+        cleanupFunctionsRef.current.push(cleanup);
       }
       
       return true;
@@ -121,14 +139,31 @@ export const useVideoStream = ({ isActive, onError }: UseVideoStreamProps) => {
     }
   }, [onError]);
 
+  const forceCleanup = useCallback(() => {
+    console.log('Force cleanup called - cleaning all video resources...');
+    
+    // Run all stored cleanup functions
+    cleanupFunctionsRef.current.forEach(cleanup => {
+      try {
+        cleanup();
+      } catch (error) {
+        console.warn('Error in cleanup function:', error);
+      }
+    });
+    cleanupFunctionsRef.current = [];
+    
+    // Force stop video stream
+    stopVideoStream();
+    
+    // Reset states
+    setHasPermission(null);
+    videoPlayingRef.current = false;
+  }, [stopVideoStream]);
+
   const cleanup = useCallback(() => {
     console.log('Cleaning up video stream resources...');
-    if (videoRef.current && (videoRef.current as any)._cleanup) {
-      (videoRef.current as any)._cleanup();
-      delete (videoRef.current as any)._cleanup;
-    }
-    stopVideoStream();
-  }, [stopVideoStream]);
+    forceCleanup();
+  }, [forceCleanup]);
 
   const handleRetryPermission = useCallback(() => {
     console.log('Retrying camera permission...');
@@ -137,6 +172,14 @@ export const useVideoStream = ({ isActive, onError }: UseVideoStreamProps) => {
       setTimeout(startVideoStream, 100);
     }
   }, [isActive, startVideoStream]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      console.log('useVideoStream unmounting - running cleanup...');
+      forceCleanup();
+    };
+  }, [forceCleanup]);
 
   return {
     videoRef,
@@ -147,6 +190,7 @@ export const useVideoStream = ({ isActive, onError }: UseVideoStreamProps) => {
     startVideoStream,
     stopVideoStream,
     cleanup,
+    forceCleanup,
     handleRetryPermission,
   };
 };
