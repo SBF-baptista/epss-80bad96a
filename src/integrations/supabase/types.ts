@@ -119,6 +119,48 @@ export type Database = {
           },
         ]
       }
+      incoming_vehicles: {
+        Row: {
+          brand: string
+          created_at: string
+          created_homologation_id: string | null
+          created_order_id: string | null
+          id: string
+          processed: boolean
+          processing_notes: string | null
+          received_at: string
+          usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
+          vehicle: string
+          year: number | null
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          created_homologation_id?: string | null
+          created_order_id?: string | null
+          id?: string
+          processed?: boolean
+          processing_notes?: string | null
+          received_at?: string
+          usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
+          vehicle: string
+          year?: number | null
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          created_homologation_id?: string | null
+          created_order_id?: string | null
+          id?: string
+          processed?: boolean
+          processing_notes?: string | null
+          received_at?: string
+          usage_type?: Database["public"]["Enums"]["vehicle_usage_type"]
+          vehicle?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           configuracao: string
@@ -313,6 +355,7 @@ export type Database = {
         | "em_testes_finais"
         | "homologado"
       status_pedido: "novos" | "producao" | "aguardando" | "enviado" | "standby"
+      vehicle_usage_type: "particular" | "comercial" | "frota"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -435,6 +478,7 @@ export const Constants = {
         "homologado",
       ],
       status_pedido: ["novos", "producao", "aguardando", "enviado", "standby"],
+      vehicle_usage_type: ["particular", "comercial", "frota"],
     },
   },
 } as const
