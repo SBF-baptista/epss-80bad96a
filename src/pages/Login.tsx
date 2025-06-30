@@ -36,7 +36,7 @@ const Login = () => {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold text-gray-800">
-              Setup Flow Kanban
+              EPSS
             </CardTitle>
             <CardDescription className="text-gray-600">
               Sistema de Gerenciamento de Pedidos
