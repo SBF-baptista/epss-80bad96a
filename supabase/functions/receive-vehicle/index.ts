@@ -116,7 +116,7 @@ async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber
         pedido_id: pedido.id,
         marca: vehicleData.brand,
         modelo: vehicleData.vehicle,
-        quantidade: 1,
+        quantidade: vehicleData.quantity || 1,
         tipo: vehicleData.year ? vehicleData.year.toString() : null
       })
 
@@ -130,7 +130,7 @@ async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber
       .insert({
         pedido_id: pedido.id,
         modelo: automationRule.tracker_model,
-        quantidade: 1
+        quantidade: vehicleData.quantity || 1
       })
 
     if (trackerError) {
@@ -138,13 +138,14 @@ async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber
       throw trackerError
     }
 
-    console.log(`Successfully created automatic order ${orderNumber} for ${vehicleData.brand} ${vehicleData.vehicle}`)
+    console.log(`Successfully created automatic order ${orderNumber} for ${vehicleData.brand} ${vehicleData.vehicle} (quantity: ${vehicleData.quantity || 1})`)
     
     return {
       order_id: pedido.id,
       order_number: orderNumber,
       tracker_model: automationRule.tracker_model,
-      configuration: automationRule.configuration
+      configuration: automationRule.configuration,
+      quantity: vehicleData.quantity || 1
     }
 
   } catch (error) {
@@ -276,7 +277,7 @@ serve(async (req) => {
     }
 
     // Validate required fields
-    const { vehicle, brand, year, usage_type } = requestBody
+    const { vehicle, brand, year, usage_type, quantity } = requestBody
     
     if (!vehicle || !brand || !usage_type) {
       console.log(`[${timestamp}] Missing required fields:`, { vehicle, brand, usage_type })
@@ -308,7 +309,22 @@ serve(async (req) => {
       )
     }
 
-    console.log(`[${timestamp}] Processing vehicle data:`, { vehicle, brand, year, usage_type })
+    // Validate quantity if provided
+    if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 1)) {
+      console.log(`[${timestamp}] Invalid quantity:`, quantity)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid quantity', 
+          message: 'quantity must be a positive integer' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    console.log(`[${timestamp}] Processing vehicle data:`, { vehicle, brand, year, usage_type, quantity })
 
     // Store incoming vehicle data
     const { data: incomingVehicle, error: insertError } = await supabase
@@ -318,6 +334,7 @@ serve(async (req) => {
         brand: brand.trim(),
         year: year || null,
         usage_type,
+        quantity: quantity || 1,
         received_at: timestamp
       })
       .select()
@@ -348,8 +365,8 @@ serve(async (req) => {
       
       try {
         const orderNumber = await generateAutoOrderNumber(supabase)
-        orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year }, orderNumber)
-        processingNotes = `Vehicle found. Created automatic order: ${orderNumber}`
+        orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber)
+        processingNotes = `Vehicle found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
         
         // Update incoming vehicle record with order info
         await supabase
@@ -379,8 +396,8 @@ serve(async (req) => {
       try {
         homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year })
         processingNotes = homologationInfo.created 
-          ? `Vehicle not found. Created new homologation card.`
-          : `Vehicle not found. Homologation card already exists.`
+          ? `Vehicle not found. Created new homologation card. (quantity: ${quantity || 1})`
+          : `Vehicle not found. Homologation card already exists. (quantity: ${quantity || 1})`
         
         // Update incoming vehicle record with homologation info
         await supabase
@@ -412,6 +429,7 @@ serve(async (req) => {
       message: 'Vehicle data received and processed successfully',
       incoming_vehicle_id: incomingVehicle.id,
       processing_notes: processingNotes,
+      quantity: quantity || 1,
       ...(orderInfo && { automatic_order: orderInfo }),
       ...(homologationInfo && { homologation: homologationInfo })
     }

@@ -128,6 +128,7 @@ export type Database = {
           id: string
           processed: boolean
           processing_notes: string | null
+          quantity: number | null
           received_at: string
           usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle: string
@@ -141,6 +142,7 @@ export type Database = {
           id?: string
           processed?: boolean
           processing_notes?: string | null
+          quantity?: number | null
           received_at?: string
           usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle: string
@@ -154,6 +156,7 @@ export type Database = {
           id?: string
           processed?: boolean
           processing_notes?: string | null
+          quantity?: number | null
           received_at?: string
           usage_type?: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle?: string
