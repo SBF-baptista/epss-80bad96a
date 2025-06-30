@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/library';
 
@@ -15,14 +14,14 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
   const [isScanning, setIsScanning] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const scanningRef = useRef<boolean>(false);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
     setReader(codeReader);
 
     return () => {
-      codeReader.reset();
-      stopVideoStream();
+      cleanup();
     };
   }, []);
 
@@ -39,6 +38,14 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
       }
     };
   }, [isActive, reader]);
+
+  const cleanup = () => {
+    stopScanning();
+    if (reader) {
+      reader.reset();
+    }
+    stopVideoStream();
+  };
 
   const stopVideoStream = () => {
     if (stream) {
@@ -71,29 +78,13 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-      }
-      
-      const scanLoop = () => {
-        if (!scanningRef.current || !videoRef.current) return;
         
-        reader.decodeFromVideoDevice(null, videoRef.current, (result, error) => {
-          if (!scanningRef.current) return;
-          
-          if (result) {
-            console.log('Barcode detected:', result.getText());
-            onScan(result.getText());
-          }
-          
-          if (error && error.name !== 'NotFoundException') {
-            console.warn('Scanner error (non-critical):', error.name, error.message);
-            if (error.name !== 'ChecksumException' && error.name !== 'FormatException') {
-              onError?.(error.message);
-            }
-          }
-        });
-      };
-      
-      setTimeout(scanLoop, 100);
+        // Wait for video to be ready before starting decode attempts
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded, starting scan loop...');
+          startScanLoop();
+        };
+      }
       
     } catch (error) {
       console.error('Camera access error:', error);
@@ -115,9 +106,49 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
     }
   };
 
+  const startScanLoop = () => {
+    if (!scanningRef.current || !reader || !videoRef.current) return;
+
+    console.log('Starting continuous scan loop...');
+    
+    const performScan = async () => {
+      if (!scanningRef.current || !videoRef.current) return;
+
+      try {
+        const result = await reader.decodeOnceFromVideoDevice(null, videoRef.current);
+        if (result && scanningRef.current) {
+          console.log('Barcode detected:', result.getText());
+          onScan(result.getText());
+          // Don't stop scanning after successful read - keep scanning for more codes
+        }
+      } catch (error: any) {
+        // Only log actual errors, not normal "not found" cases
+        if (error.name && 
+            error.name !== 'NotFoundException' && 
+            error.name !== 'ChecksumException' && 
+            error.name !== 'FormatException') {
+          console.warn('Scanner error:', error.name, error.message);
+          onError?.(error.message);
+        }
+        // For common "not found" errors, we just continue scanning silently
+      }
+    };
+
+    // Start the scanning loop with intervals
+    scanIntervalRef.current = setInterval(performScan, 100);
+    
+    // Also perform an immediate scan
+    performScan();
+  };
+
   const stopScanning = () => {
     console.log('Stopping scanner...');
     scanningRef.current = false;
+    
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
     
     if (reader) {
       reader.reset();
