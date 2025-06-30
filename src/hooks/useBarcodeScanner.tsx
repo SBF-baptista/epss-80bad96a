@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/library';
 
@@ -80,9 +81,18 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
         videoRef.current.srcObject = mediaStream;
         
         // Wait for video to be ready before starting decode attempts
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded, starting scan loop...');
-          startScanLoop();
+        videoRef.current.onloadedmetadata = async () => {
+          console.log('Video metadata loaded, attempting to play...');
+          try {
+            if (videoRef.current) {
+              await videoRef.current.play();
+              console.log('Video is now playing, starting scan loop...');
+              startScanLoop();
+            }
+          } catch (playError) {
+            console.error('Error playing video:', playError);
+            onError?.('Erro ao reproduzir o vídeo da câmera.');
+          }
         };
       }
       
