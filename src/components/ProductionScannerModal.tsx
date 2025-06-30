@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scan, Plus, CheckCircle, Keyboard } from "lucide-react";
+import { Scan, Plus, CheckCircle, Keyboard, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { addProductionItem, getProductionItems, updateProductionStatus, ProductionItem } from "@/services/productionService";
@@ -36,12 +36,24 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
   const [isLoading, setIsLoading] = useState(false);
   const [scannerActive, setScannerActive] = useState(false);
   const [activeTab, setActiveTab] = useState("scanner");
+  const [scannerError, setScannerError] = useState<string>("");
 
   useEffect(() => {
     if (order && isOpen) {
       loadProductionItems();
+      // Reset form when modal opens
+      setImei("");
+      setProductionLineCode("");
+      setScannerError("");
     }
   }, [order, isOpen]);
+
+  // Clean up scanner when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setScannerActive(false);
+    }
+  }, [isOpen]);
 
   const loadProductionItems = async () => {
     if (!order) return;
@@ -52,29 +64,40 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
       setProductionItems(items);
     } catch (error) {
       console.error('Error loading production items:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar itens de produção",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleScanResult = (result: string) => {
+    console.log('Scan result received:', result);
+    setScannerError("");
+    
     // Auto-fill IMEI field with scanned result
-    setImei(result);
-    setScannerActive(false);
+    setImei(result.trim());
     
     toast({
-      title: "Código escaneado",
+      title: "Código escaneado com sucesso",
       description: `IMEI: ${result}`,
     });
     
-    // Focus on production line code field
-    const lineCodeInput = document.getElementById('lineCode');
-    if (lineCodeInput) {
-      lineCodeInput.focus();
-    }
+    // Focus on production line code field after a short delay
+    setTimeout(() => {
+      const lineCodeInput = document.getElementById('lineCode');
+      if (lineCodeInput) {
+        lineCodeInput.focus();
+      }
+    }, 100);
   };
 
   const handleScanError = (error: string) => {
+    console.error('Scanner error:', error);
+    setScannerError(error);
     toast({
       title: "Erro no scanner",
       description: error,
@@ -97,8 +120,8 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
       await addProductionItem(order.id, imei.trim(), productionLineCode.trim());
       
       toast({
-        title: "Item escaneado",
-        description: `IMEI ${imei} adicionado à produção`
+        title: "Item adicionado com sucesso",
+        description: `IMEI ${imei} adicionado à produção na linha ${productionLineCode}`
       });
 
       // Clear form
@@ -111,7 +134,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
       console.error('Error scanning item:', error);
       toast({
         title: "Erro",
-        description: "Erro ao escanear item",
+        description: "Erro ao adicionar item à produção",
         variant: "destructive"
       });
     } finally {
@@ -160,11 +183,18 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isScanning && imei.trim() && productionLineCode.trim()) {
+      handleScanItem();
+    }
+  };
+
   if (!order) return null;
 
   const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
   const scannedCount = productionItems.length;
   const isProductionComplete = scannedCount >= totalTrackers;
+  const progressPercentage = Math.round((scannedCount / totalTrackers) * 100);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -181,10 +211,10 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
 
         <div className="space-y-6">
           {/* Production Status */}
-          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div>
-              <h3 className="font-semibold">Status da Produção</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-blue-900">Status da Produção</h3>
+              <p className="text-sm text-blue-700">
                 {scannedCount} de {totalTrackers} rastreadores escaneados
               </p>
             </div>
@@ -204,13 +234,13 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Progresso</span>
-              <span>{Math.round((scannedCount / totalTrackers) * 100)}%</span>
+              <span className="font-medium">Progresso da Produção</span>
+              <span className="font-bold text-blue-600">{progressPercentage}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(scannedCount / totalTrackers) * 100}%` }}
+                className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${progressPercentage}%` }}
               />
             </div>
           </div>
@@ -231,13 +261,19 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
             </TabsList>
 
             <TabsContent value="scanner" className="space-y-4">
-              <h3 className="font-semibold">Escanear Código de Barras</h3>
               <BarcodeScanner
                 onScan={handleScanResult}
                 onError={handleScanError}
                 isActive={scannerActive}
                 onToggle={() => setScannerActive(!scannerActive)}
               />
+              
+              {scannerError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-700">{scannerError}</p>
+                </div>
+              )}
               
               {/* Input fields for scanned data */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -247,8 +283,8 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
                     id="scanned-imei"
                     value={imei}
                     onChange={(e) => setImei(e.target.value)}
-                    placeholder="Resultado do scanner"
-                    readOnly={scannerActive}
+                    placeholder="Resultado do scanner aparecerá aqui"
+                    onKeyPress={handleKeyPress}
                   />
                 </div>
                 <div className="space-y-2">
@@ -258,7 +294,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
                     value={productionLineCode}
                     onChange={(e) => setProductionLineCode(e.target.value)}
                     placeholder="Ex: L001, L002"
-                    onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
+                    onKeyPress={handleKeyPress}
                   />
                 </div>
                 <div className="flex items-end">
@@ -268,14 +304,14 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    {isScanning ? "Adicionando..." : "Adicionar"}
+                    {isScanning ? "Adicionando..." : "Adicionar Item"}
                   </Button>
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="manual" className="space-y-4">
-              <h3 className="font-semibold">Entrada Manual</h3>
+              <h3 className="font-semibold">Entrada Manual de Dados</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="manual-imei">IMEI</Label>
@@ -283,8 +319,8 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
                     id="manual-imei"
                     value={imei}
                     onChange={(e) => setImei(e.target.value)}
-                    placeholder="Digite o IMEI"
-                    onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
+                    placeholder="Digite o IMEI manualmente"
+                    onKeyPress={handleKeyPress}
                   />
                 </div>
                 <div className="space-y-2">
@@ -294,7 +330,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
                     value={productionLineCode}
                     onChange={(e) => setProductionLineCode(e.target.value)}
                     placeholder="Ex: L001, L002"
-                    onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
+                    onKeyPress={handleKeyPress}
                   />
                 </div>
                 <div className="flex items-end">
@@ -304,7 +340,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    {isScanning ? "Adicionando..." : "Adicionar"}
+                    {isScanning ? "Adicionando..." : "Adicionar Item"}
                   </Button>
                 </div>
               </div>
@@ -315,19 +351,28 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
 
           {/* Scanned Items List */}
           <div className="space-y-4">
-            <h3 className="font-semibold">Itens Escaneados ({productionItems.length})</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Itens Processados</h3>
+              <Badge variant="outline" className="font-mono">
+                {productionItems.length} / {totalTrackers}
+              </Badge>
+            </div>
+            
             {isLoading ? (
-              <div className="text-center py-4">Carregando...</div>
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-sm text-gray-600 mt-2">Carregando itens...</p>
+              </div>
             ) : productionItems.length > 0 ? (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg">
                 {productionItems.map((item, index) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="font-mono">
+                      <Badge variant="secondary" className="font-mono text-xs">
                         #{index + 1}
                       </Badge>
                       <div>
-                        <p className="font-medium">{item.imei}</p>
+                        <p className="font-medium font-mono">{item.imei}</p>
                         <p className="text-sm text-gray-600">Linha: {item.production_line_code}</p>
                       </div>
                     </div>
@@ -338,9 +383,9 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
                 <Scan className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum item escaneado ainda</p>
+                <p className="font-medium">Nenhum item processado ainda</p>
                 <p className="text-sm">Use o scanner ou entrada manual para começar</p>
               </div>
             )}
