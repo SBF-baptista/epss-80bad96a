@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,12 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Scan } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { useProductionItems } from "@/hooks/useProductionItems";
-import ProductionStatus from "./production/ProductionStatus";
-import ProductionProgressBar from "./production/ProductionProgressBar";
-import ProductionScannerTabs from "./production/ProductionScannerTabs";
+import { useProductionScannerModal } from "@/hooks/useProductionScannerModal";
+import ProductionForm from "./production/ProductionForm";
 import ProductionItemsList from "./production/ProductionItemsList";
 
 interface ProductionScannerModalProps {
@@ -25,11 +22,19 @@ interface ProductionScannerModalProps {
 }
 
 const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: ProductionScannerModalProps) => {
-  const { toast } = useToast();
-  const [imei, setImei] = useState("");
-  const [productionLineCode, setProductionLineCode] = useState("");
-  const [scannerActive, setScannerActive] = useState(false);
-  const [scannerError, setScannerError] = useState<string>("");
+  const {
+    imei,
+    productionLineCode,
+    scannerActive,
+    scannerError,
+    setImei,
+    setProductionLineCode,
+    setScannerActive,
+    handleScanResult,
+    handleScanError,
+    clearForm,
+    handleKeyPress,
+  } = useProductionScannerModal(order, isOpen);
 
   const {
     productionItems,
@@ -40,59 +45,10 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     handleCompleteProduction,
   } = useProductionItems(order, isOpen);
 
-  useEffect(() => {
-    if (order && isOpen) {
-      // Reset form when modal opens
-      setImei("");
-      setProductionLineCode("");
-      setScannerError("");
-    }
-  }, [order, isOpen]);
-
-  // Clean up scanner when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setScannerActive(false);
-    }
-  }, [isOpen]);
-
-  const handleScanResult = (result: string) => {
-    console.log('Scan result received:', result);
-    setScannerError("");
-    
-    // Auto-fill IMEI field with scanned result
-    setImei(result.trim());
-    
-    toast({
-      title: "Código escaneado com sucesso",
-      description: `IMEI: ${result}`,
-    });
-    
-    // Focus on production line code field after a short delay
-    setTimeout(() => {
-      const lineCodeInput = document.getElementById('lineCode');
-      if (lineCodeInput) {
-        lineCodeInput.focus();
-      }
-    }, 100);
-  };
-
-  const handleScanError = (error: string) => {
-    console.error('Scanner error:', error);
-    setScannerError(error);
-    toast({
-      title: "Erro no scanner",
-      description: error,
-      variant: "destructive"
-    });
-  };
-
   const onScanItemClick = async () => {
     const success = await handleScanItem(imei, productionLineCode);
     if (success) {
-      // Clear form
-      setImei("");
-      setProductionLineCode("");
+      clearForm();
     }
   };
 
@@ -111,8 +67,8 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isScanning && imei.trim() && productionLineCode.trim()) {
+  const onKeyPress = (e: React.KeyboardEvent) => {
+    if (handleKeyPress(e) && !isScanning) {
       onScanItemClick();
     }
   };
@@ -120,8 +76,6 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
   if (!order) return null;
 
   const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
-  const scannedCount = productionItems.length;
-  const isProductionComplete = scannedCount >= totalTrackers;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -137,35 +91,23 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
         </DialogHeader>
 
         <div className="space-y-6">
-          <ProductionStatus
-            orderNumber={order.number}
-            scannedCount={scannedCount}
-            totalTrackers={totalTrackers}
-            isProductionComplete={isProductionComplete}
-            onStartProduction={onStartProduction}
-            onCompleteProduction={onCompleteProduction}
-          />
-
-          <ProductionProgressBar
-            scannedCount={scannedCount}
-            totalTrackers={totalTrackers}
-          />
-
-          <Separator />
-
-          <ProductionScannerTabs
+          <ProductionForm
+            order={order}
+            productionItems={productionItems}
+            isScanning={isScanning}
             imei={imei}
             productionLineCode={productionLineCode}
             scannerActive={scannerActive}
             scannerError={scannerError}
-            isScanning={isScanning}
             onImeiChange={setImei}
             onProductionLineCodeChange={setProductionLineCode}
             onScannerToggle={() => setScannerActive(!scannerActive)}
             onScanResult={handleScanResult}
             onScanError={handleScanError}
             onScanItem={onScanItemClick}
-            onKeyPress={handleKeyPress}
+            onKeyPress={onKeyPress}
+            onStartProduction={onStartProduction}
+            onCompleteProduction={onCompleteProduction}
           />
 
           <Separator />
