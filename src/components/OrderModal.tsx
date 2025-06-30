@@ -22,7 +22,7 @@ const OrderModal = ({ order, isOpen, onClose }: OrderModalProps) => {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "novos":
-        return "Novos Pedidos";
+        return "Pedidos";
       case "producao":
         return "Em Produção";
       case "aguardando":

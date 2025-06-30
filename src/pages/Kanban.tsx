@@ -56,7 +56,7 @@ const Kanban = () => {
     <div className="p-6 bg-gray-50 min-h-full">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Kanban - Gestão de Pedidos</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Setup Flow Kanban - Gestão de Pedidos</h2>
         </div>
 
         <FilterBar 

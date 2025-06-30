@@ -38,8 +38,8 @@ const OrdersByPeriod = ({ orders, dateRange }: OrdersByPeriodProps) => {
           <p className="font-medium mb-2">{data.fullDate}</p>
           <div className="space-y-1 text-sm">
             <p>Total: <span className="font-bold">{data.total}</span></p>
-            {data.novos > 0 && <p>Novos: <span className="font-bold text-blue-600">{data.novos}</span></p>}
-            {data.producao > 0 && <p>Produção: <span className="font-bold text-yellow-600">{data.producao}</span></p>}
+            {data.novos > 0 && <p>Pedidos: <span className="font-bold text-blue-600">{data.novos}</span></p>}
+            {data.producao > 0 && <p>Em Produção: <span className="font-bold text-yellow-600">{data.producao}</span></p>}
             {data.aguardando > 0 && <p>Aguardando: <span className="font-bold text-orange-600">{data.aguardando}</span></p>}
             {data.enviado > 0 && <p>Enviado: <span className="font-bold text-green-600">{data.enviado}</span></p>}
             {data.standby > 0 && <p>Stand-by: <span className="font-bold text-red-600">{data.standby}</span></p>}
