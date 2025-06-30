@@ -12,11 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Scan, Plus, CheckCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Scan, Plus, CheckCircle, Keyboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { addProductionItem, getProductionItems, updateProductionStatus, ProductionItem } from "@/services/productionService";
 import { useEffect } from "react";
+import BarcodeScanner from "./BarcodeScanner";
 
 interface ProductionScannerModalProps {
   order: Order | null;
@@ -32,6 +34,8 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
   const [isScanning, setIsScanning] = useState(false);
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [scannerActive, setScannerActive] = useState(false);
+  const [activeTab, setActiveTab] = useState("scanner");
 
   useEffect(() => {
     if (order && isOpen) {
@@ -51,6 +55,31 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleScanResult = (result: string) => {
+    // Auto-fill IMEI field with scanned result
+    setImei(result);
+    setScannerActive(false);
+    
+    toast({
+      title: "Código escaneado",
+      description: `IMEI: ${result}`,
+    });
+    
+    // Focus on production line code field
+    const lineCodeInput = document.getElementById('lineCode');
+    if (lineCodeInput) {
+      lineCodeInput.focus();
+    }
+  };
+
+  const handleScanError = (error: string) => {
+    toast({
+      title: "Erro no scanner",
+      description: error,
+      variant: "destructive"
+    });
   };
 
   const handleScanItem = async () => {
@@ -188,42 +217,99 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
 
           <Separator />
 
-          {/* Scanner Form */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">Escanear Novo Item</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="imei">IMEI</Label>
-                <Input
-                  id="imei"
-                  value={imei}
-                  onChange={(e) => setImei(e.target.value)}
-                  placeholder="Digite ou escaneie o IMEI"
-                  onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
-                />
+          {/* Scanner/Manual Input Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="scanner" className="flex items-center gap-2">
+                <Scan className="h-4 w-4" />
+                Scanner
+              </TabsTrigger>
+              <TabsTrigger value="manual" className="flex items-center gap-2">
+                <Keyboard className="h-4 w-4" />
+                Manual
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="scanner" className="space-y-4">
+              <h3 className="font-semibold">Escanear Código de Barras</h3>
+              <BarcodeScanner
+                onScan={handleScanResult}
+                onError={handleScanError}
+                isActive={scannerActive}
+                onToggle={() => setScannerActive(!scannerActive)}
+              />
+              
+              {/* Input fields for scanned data */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="scanned-imei">IMEI Escaneado</Label>
+                  <Input
+                    id="scanned-imei"
+                    value={imei}
+                    onChange={(e) => setImei(e.target.value)}
+                    placeholder="Resultado do scanner"
+                    readOnly={scannerActive}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lineCode">Código da Linha</Label>
+                  <Input
+                    id="lineCode"
+                    value={productionLineCode}
+                    onChange={(e) => setProductionLineCode(e.target.value)}
+                    placeholder="Ex: L001, L002"
+                    onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={handleScanItem} 
+                    disabled={isScanning || !imei.trim() || !productionLineCode.trim()}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {isScanning ? "Adicionando..." : "Adicionar"}
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lineCode">Código da Linha</Label>
-                <Input
-                  id="lineCode"
-                  value={productionLineCode}
-                  onChange={(e) => setProductionLineCode(e.target.value)}
-                  placeholder="Ex: L001, L002"
-                  onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
-                />
+            </TabsContent>
+
+            <TabsContent value="manual" className="space-y-4">
+              <h3 className="font-semibold">Entrada Manual</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="manual-imei">IMEI</Label>
+                  <Input
+                    id="manual-imei"
+                    value={imei}
+                    onChange={(e) => setImei(e.target.value)}
+                    placeholder="Digite o IMEI"
+                    onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-lineCode">Código da Linha</Label>
+                  <Input
+                    id="manual-lineCode"
+                    value={productionLineCode}
+                    onChange={(e) => setProductionLineCode(e.target.value)}
+                    placeholder="Ex: L001, L002"
+                    onKeyPress={(e) => e.key === 'Enter' && handleScanItem()}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={handleScanItem} 
+                    disabled={isScanning || !imei.trim() || !productionLineCode.trim()}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {isScanning ? "Adicionando..." : "Adicionar"}
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-end">
-                <Button 
-                  onClick={handleScanItem} 
-                  disabled={isScanning || !imei.trim() || !productionLineCode.trim()}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {isScanning ? "Escaneando..." : "Adicionar"}
-                </Button>
-              </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
 
           <Separator />
 
@@ -255,7 +341,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
               <div className="text-center py-8 text-gray-500">
                 <Scan className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhum item escaneado ainda</p>
-                <p className="text-sm">Use o formulário acima para começar</p>
+                <p className="text-sm">Use o scanner ou entrada manual para começar</p>
               </div>
             )}
           </div>
