@@ -11,11 +11,10 @@ interface KanbanBoardProps {
 }
 
 const columns = [
-  { id: "novos", title: "Novos Pedidos", color: "bg-blue-100 border-blue-200" },
-  { id: "producao", title: "Em Produção", color: "bg-yellow-100 border-yellow-200" },
-  { id: "aguardando", title: "Aguardando Envio", color: "bg-orange-100 border-orange-200" },
-  { id: "enviado", title: "Enviado", color: "bg-green-100 border-green-200" },
-  { id: "standby", title: "Em Stand-by", color: "bg-red-100 border-red-200" }
+  { id: "especificacao", title: "Especificação", color: "bg-blue-100 border-blue-200" },
+  { id: "producao", title: "Produção", color: "bg-yellow-100 border-yellow-200" },
+  { id: "suporte", title: "Suporte", color: "bg-orange-100 border-orange-200" },
+  { id: "suporte_especializado", title: "Suporte Especializado", color: "bg-green-100 border-green-200" }
 ];
 
 const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
@@ -58,7 +57,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 overflow-x-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-x-auto">
         {columns.map(column => (
           <KanbanColumn
             key={column.id}

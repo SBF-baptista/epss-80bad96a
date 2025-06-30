@@ -21,7 +21,7 @@ export interface Order {
     quantity: number
   }>
   configurationType: string
-  status: "novos" | "producao" | "aguardando" | "enviado" | "standby"
+  status: "especificacao" | "producao" | "suporte" | "suporte_especializado"
   priority?: "high" | "medium" | "low"
   createdAt: string
   estimatedDelivery?: string
@@ -180,7 +180,7 @@ export const createOrder = async (orderData: {
       usuario_id: user.user.id,
       numero_pedido: orderNumber,
       configuracao: orderData.configurationType,
-      status: 'novos',
+      status: 'especificacao', // Changed default status to match EPSS flow
       data: new Date().toISOString()
     })
     .select()
