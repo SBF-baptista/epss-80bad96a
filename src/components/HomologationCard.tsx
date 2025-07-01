@@ -1,16 +1,18 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Image, Link, Package } from "lucide-react";
 import { HomologationCard } from "@/services/homologationService";
+import ConfigurationSelector from "./ConfigurationSelector";
 
 interface HomologationCardProps {
   card: HomologationCard;
   onClick: () => void;
   onDragStart: () => void;
+  onUpdate: () => void;
 }
 
-const HomologationCardComponent = ({ card, onClick, onDragStart }: HomologationCardProps) => {
+const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: HomologationCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "homologar":
@@ -44,6 +46,8 @@ const HomologationCardComponent = ({ card, onClick, onDragStart }: HomologationC
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
+
+  const isConfigurationEditable = card.status === 'homologar' || card.status === 'em_homologacao';
 
   return (
     <Card
@@ -88,6 +92,20 @@ const HomologationCardComponent = ({ card, onClick, onDragStart }: HomologationC
               <span className="text-gray-600">Criado em:</span>
               <span className="font-medium text-gray-900">{formatDate(card.created_at)}</span>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Configuration Selector */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <ConfigurationSelector
+              cardId={card.id}
+              currentConfiguration={card.configuration}
+              brand={card.brand}
+              model={card.model}
+              isEditable={isConfigurationEditable}
+              onUpdate={onUpdate}
+            />
           </div>
 
           {/* Workflow status indicators */}

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface HomologationCard {
@@ -13,6 +12,7 @@ export interface HomologationCard {
   notes: string | null;
   incoming_vehicle_id: string | null;
   created_order_id: string | null;
+  configuration: string | null;
 }
 
 export interface HomologationPhoto {
@@ -113,6 +113,62 @@ export const createHomologationCard = async (
   }
 
   return data;
+};
+
+export const updateHomologationConfiguration = async (
+  cardId: string,
+  configuration: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('homologation_cards')
+    .update({ configuration })
+    .eq('id', cardId);
+
+  if (error) {
+    console.error('Error updating homologation configuration:', error);
+    throw error;
+  }
+};
+
+export const fetchAutomationConfigurations = async (): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('automation_rules_extended')
+    .select('configuration')
+    .order('configuration');
+
+  if (error) {
+    console.error('Error fetching automation configurations:', error);
+    throw error;
+  }
+
+  // Remove duplicates and filter out null values
+  const configurations = [...new Set(data?.map(item => item.configuration).filter(Boolean))];
+  return configurations;
+};
+
+export const createAutomationRule = async (
+  brand: string,
+  model: string,
+  configuration: string,
+  trackerModel: string,
+  category: string = 'Homologação',
+  modelYear?: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('automation_rules_extended')
+    .insert({
+      brand,
+      model,
+      configuration,
+      tracker_model: trackerModel,
+      category,
+      model_year: modelYear
+    });
+
+  if (error) {
+    console.error('Error creating automation rule:', error);
+    throw error;
+  }
 };
 
 export const updateHomologationNotes = async (

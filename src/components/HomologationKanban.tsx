@@ -68,6 +68,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
             onDrop={() => handleDrop(column.id)}
             onCardClick={setSelectedCard}
             onDragStart={handleDragStart}
+            onUpdate={onUpdate}
           />
         ))}
       </div>

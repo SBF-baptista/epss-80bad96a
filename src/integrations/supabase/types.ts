@@ -45,6 +45,7 @@ export type Database = {
       homologation_cards: {
         Row: {
           brand: string
+          configuration: string | null
           created_at: string
           created_order_id: string | null
           id: string
@@ -58,6 +59,7 @@ export type Database = {
         }
         Insert: {
           brand: string
+          configuration?: string | null
           created_at?: string
           created_order_id?: string | null
           id?: string
@@ -71,6 +73,7 @@ export type Database = {
         }
         Update: {
           brand?: string
+          configuration?: string | null
           created_at?: string
           created_order_id?: string | null
           id?: string
