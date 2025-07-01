@@ -11,6 +11,7 @@ interface HomologationColumnProps {
   onDrop: () => void;
   onCardClick: (card: HomologationCard) => void;
   onDragStart: (card: HomologationCard) => void;
+  onUpdate: () => void;
 }
 
 const HomologationColumn = ({
@@ -20,7 +21,8 @@ const HomologationColumn = ({
   onDragOver,
   onDrop,
   onCardClick,
-  onDragStart
+  onDragStart,
+  onUpdate
 }: HomologationColumnProps) => {
   return (
     <div className="min-w-80">
@@ -41,6 +43,7 @@ const HomologationColumn = ({
               card={card}
               onClick={() => onCardClick(card)}
               onDragStart={() => onDragStart(card)}
+              onUpdate={onUpdate}
             />
           ))}
           {cards.length === 0 && (
