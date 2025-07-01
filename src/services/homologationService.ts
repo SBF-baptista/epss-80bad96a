@@ -11,6 +11,8 @@ export interface HomologationCard {
   created_at: string;
   updated_at: string;
   notes: string | null;
+  incoming_vehicle_id: string | null;
+  created_order_id: string | null;
 }
 
 export interface HomologationPhoto {
@@ -24,6 +26,26 @@ export interface HomologationPhoto {
   created_at: string;
 }
 
+export interface WorkflowChainItem {
+  incoming_vehicle_id: string | null;
+  vehicle: string | null;
+  brand: string | null;
+  year: number | null;
+  quantity: number | null;
+  usage_type: string | null;
+  received_at: string | null;
+  incoming_processed: boolean | null;
+  homologation_id: string | null;
+  homologation_status: string | null;
+  homologation_created_at: string | null;
+  homologation_updated_at: string | null;
+  order_id: string | null;
+  order_number: string | null;
+  order_status: string | null;
+  order_created_at: string | null;
+  processing_notes: string | null;
+}
+
 export const fetchHomologationCards = async (): Promise<HomologationCard[]> => {
   const { data, error } = await supabase
     .from('homologation_cards')
@@ -32,6 +54,20 @@ export const fetchHomologationCards = async (): Promise<HomologationCard[]> => {
 
   if (error) {
     console.error('Error fetching homologation cards:', error);
+    throw error;
+  }
+
+  return data || [];
+};
+
+export const fetchWorkflowChain = async (): Promise<WorkflowChainItem[]> => {
+  const { data, error } = await supabase
+    .from('workflow_chain')
+    .select('*')
+    .order('received_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching workflow chain:', error);
     throw error;
   }
 

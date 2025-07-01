@@ -3,11 +3,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, Link, TrendingUp } from "lucide-react";
 import HomologationKanban from "@/components/HomologationKanban";
 import Navigation from "@/components/Navigation";
-import { fetchHomologationCards, createHomologationCard } from "@/services/homologationService";
+import { fetchHomologationCards, createHomologationCard, fetchWorkflowChain } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Homologation = () => {
   const { toast } = useToast();
@@ -19,6 +20,11 @@ const Homologation = () => {
   const { data: cards = [], isLoading, refetch } = useQuery({
     queryKey: ['homologation-cards'],
     queryFn: fetchHomologationCards,
+  });
+
+  const { data: workflowData = [] } = useQuery({
+    queryKey: ['workflow-chain'],
+    queryFn: fetchWorkflowChain,
   });
 
   const handleCreateCard = async () => {
@@ -64,6 +70,12 @@ const Homologation = () => {
     }
   };
 
+  // Calculate workflow metrics
+  const linkedCards = cards.filter(card => card.incoming_vehicle_id).length;
+  const cardsWithOrders = cards.filter(card => card.created_order_id).length;
+  const homologatedCards = cards.filter(card => card.status === 'homologado').length;
+  const totalPendingVehicles = workflowData.filter(item => item.incoming_processed === false).length;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -88,6 +100,61 @@ const Homologation = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Homologação de Veículos</h1>
           <Navigation />
+        </div>
+
+        {/* Workflow Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Cards Vinculados</CardTitle>
+              <Link className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{linkedCards}</div>
+              <p className="text-xs text-muted-foreground">
+                de {cards.length} cards totais
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pedidos Criados</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{cardsWithOrders}</div>
+              <p className="text-xs text-muted-foreground">
+                automaticamente via homologação
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Homologados</CardTitle>
+              <div className="h-4 w-4 bg-green-500 rounded-full" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{homologatedCards}</div>
+              <p className="text-xs text-muted-foreground">
+                aprovados para produção
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Veículos Pendentes</CardTitle>
+              <div className="h-4 w-4 bg-yellow-500 rounded-full" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">{totalPendingVehicles}</div>
+              <p className="text-xs text-muted-foreground">
+                aguardando processamento
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border">

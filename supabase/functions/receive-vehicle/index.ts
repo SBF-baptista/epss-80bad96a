@@ -160,7 +160,7 @@ async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber
 }
 
 // Function to create homologation card
-async function createHomologationCard(supabase: any, vehicleData: any) {
+async function createHomologationCard(supabase: any, vehicleData: any, incomingVehicleId: string) {
   console.log(`Creating homologation card for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
   
   try {
@@ -173,6 +173,18 @@ async function createHomologationCard(supabase: any, vehicleData: any) {
 
     if (existingCard && existingCard.length > 0) {
       console.log(`Homologation card already exists for ${vehicleData.brand} ${vehicleData.vehicle}`)
+      
+      // Link existing card to incoming vehicle if not already linked
+      const { error: updateError } = await supabase
+        .from('homologation_cards')
+        .update({ incoming_vehicle_id: incomingVehicleId })
+        .eq('id', existingCard[0].id)
+        .is('incoming_vehicle_id', null)
+
+      if (updateError) {
+        console.error('Error linking existing homologation card:', updateError)
+      }
+
       return { homologation_id: existingCard[0].id, created: false }
     }
 
@@ -183,6 +195,7 @@ async function createHomologationCard(supabase: any, vehicleData: any) {
         model: vehicleData.vehicle,
         year: vehicleData.year || null,
         status: 'homologar',
+        incoming_vehicle_id: incomingVehicleId,
         notes: `Automatically created from vehicle data received on ${new Date().toISOString()}`
       })
       .select()
@@ -412,10 +425,10 @@ serve(async (req) => {
       console.log(`[${timestamp}] Vehicle not found, creating homologation card`)
       
       try {
-        homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year })
+        homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year }, incomingVehicle.id)
         processingNotes = homologationInfo.created 
-          ? `Vehicle not found. Created new homologation card. (quantity: ${quantity || 1})`
-          : `Vehicle not found. Homologation card already exists. (quantity: ${quantity || 1})`
+          ? `Vehicle not found. Created new homologation card linked to incoming vehicle. (quantity: ${quantity || 1})`
+          : `Vehicle not found. Linked to existing homologation card. (quantity: ${quantity || 1})`
         
         // Update incoming vehicle record with homologation info
         await supabase
@@ -448,6 +461,7 @@ serve(async (req) => {
       incoming_vehicle_id: incomingVehicle.id,
       processing_notes: processingNotes,
       quantity: quantity || 1,
+      workflow_status: existingVehicle ? 'order_created' : 'homologation_pending',
       ...(orderInfo && { automatic_order: orderInfo }),
       ...(homologationInfo && { homologation: homologationInfo })
     }

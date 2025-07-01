@@ -46,7 +46,9 @@ export type Database = {
         Row: {
           brand: string
           created_at: string
+          created_order_id: string | null
           id: string
+          incoming_vehicle_id: string | null
           model: string
           notes: string | null
           requested_by: string | null
@@ -57,7 +59,9 @@ export type Database = {
         Insert: {
           brand: string
           created_at?: string
+          created_order_id?: string | null
           id?: string
+          incoming_vehicle_id?: string | null
           model: string
           notes?: string | null
           requested_by?: string | null
@@ -68,7 +72,9 @@ export type Database = {
         Update: {
           brand?: string
           created_at?: string
+          created_order_id?: string | null
           id?: string
+          incoming_vehicle_id?: string | null
           model?: string
           notes?: string | null
           requested_by?: string | null
@@ -76,7 +82,36 @@ export type Database = {
           updated_at?: string
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homologation_cards_created_order_id_fkey"
+            columns: ["created_order_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homologation_cards_created_order_id_fkey"
+            columns: ["created_order_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "homologation_cards_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homologation_cards_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["incoming_vehicle_id"]
+          },
+        ]
       }
       homologation_photos: {
         Row: {
@@ -116,6 +151,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "homologation_cards"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homologation_photos_homologation_card_id_fkey"
+            columns: ["homologation_card_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["homologation_id"]
           },
         ]
       }
@@ -254,6 +296,13 @@ export type Database = {
             referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "production_items_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["order_id"]
+          },
         ]
       }
       rastreadores: {
@@ -285,6 +334,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pedidos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rastreadores_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["order_id"]
           },
         ]
       }
@@ -342,11 +398,41 @@ export type Database = {
             referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "veiculos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["order_id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      workflow_chain: {
+        Row: {
+          brand: string | null
+          homologation_created_at: string | null
+          homologation_id: string | null
+          homologation_status:
+            | Database["public"]["Enums"]["homologation_status"]
+            | null
+          homologation_updated_at: string | null
+          incoming_processed: boolean | null
+          incoming_vehicle_id: string | null
+          order_created_at: string | null
+          order_id: string | null
+          order_number: string | null
+          order_status: Database["public"]["Enums"]["status_pedido"] | null
+          processing_notes: string | null
+          quantity: number | null
+          received_at: string | null
+          usage_type: Database["public"]["Enums"]["vehicle_usage_type"] | null
+          vehicle: string | null
+          year: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

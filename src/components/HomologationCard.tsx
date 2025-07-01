@@ -1,7 +1,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Image } from "lucide-react";
+import { Image, Link, Package } from "lucide-react";
 import { HomologationCard } from "@/services/homologationService";
 
 interface HomologationCardProps {
@@ -88,6 +88,22 @@ const HomologationCardComponent = ({ card, onClick, onDragStart }: HomologationC
               <span className="text-gray-600">Criado em:</span>
               <span className="font-medium text-gray-900">{formatDate(card.created_at)}</span>
             </div>
+          </div>
+
+          {/* Workflow status indicators */}
+          <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+            {card.incoming_vehicle_id && (
+              <div className="flex items-center gap-1 text-xs text-blue-600">
+                <Link className="h-3 w-3" />
+                <span>Vinculado</span>
+              </div>
+            )}
+            {card.created_order_id && (
+              <div className="flex items-center gap-1 text-xs text-green-600">
+                <Package className="h-3 w-3" />
+                <span>Pedido criado</span>
+              </div>
+            )}
           </div>
 
           {card.notes && (
