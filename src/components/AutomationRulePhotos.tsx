@@ -117,8 +117,8 @@ const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhoto
     <div className="space-y-4">
       <Label>Fotos da Regra</Label>
       
-      {/* Upload area - only show in editing mode with ruleId */}
-      {isEditing && ruleId && (
+      {/* Upload area - show when creating new rule or editing existing one */}
+      {isEditing && (
         <div
           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
             dragActive 
@@ -131,26 +131,34 @@ const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhoto
           onDrop={handleDrop}
         >
           <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground mb-2">
-            Arraste fotos aqui ou clique para selecionar
-          </p>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleFileInput}
-            className="hidden"
-            id="photo-upload"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => document.getElementById('photo-upload')?.click()}
-            disabled={uploadMutation.isPending}
-          >
-            {uploadMutation.isPending ? 'Enviando...' : 'Selecionar Fotos'}
-          </Button>
+          {ruleId ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-2">
+                Arraste fotos aqui ou clique para selecionar
+              </p>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileInput}
+                className="hidden"
+                id="photo-upload"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById('photo-upload')?.click()}
+                disabled={uploadMutation.isPending}
+              >
+                {uploadMutation.isPending ? 'Enviando...' : 'Selecionar Fotos'}
+              </Button>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              As fotos poderão ser adicionadas após criar a regra
+            </p>
+          )}
         </div>
       )}
 
