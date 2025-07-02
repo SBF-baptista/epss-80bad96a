@@ -9,6 +9,7 @@ export interface AutomationRule {
   model_year?: string
   tracker_model: string
   configuration: string
+  notes?: string
   created_at: string
 }
 
@@ -19,6 +20,7 @@ export interface CreateAutomationRuleData {
   model_year?: string
   tracker_model: string
   configuration: string
+  notes?: string
 }
 
 export const fetchAutomationRules = async (): Promise<AutomationRule[]> => {

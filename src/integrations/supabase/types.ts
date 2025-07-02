@@ -18,6 +18,7 @@ export type Database = {
           id: number
           model: string
           model_year: string | null
+          notes: string | null
           tracker_model: string
         }
         Insert: {
@@ -28,6 +29,7 @@ export type Database = {
           id?: number
           model: string
           model_year?: string | null
+          notes?: string | null
           tracker_model: string
         }
         Update: {
@@ -38,6 +40,7 @@ export type Database = {
           id?: number
           model?: string
           model_year?: string | null
+          notes?: string | null
           tracker_model?: string
         }
         Relationships: []

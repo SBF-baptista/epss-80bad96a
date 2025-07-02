@@ -267,6 +267,7 @@ const ConfigurationManagement = () => {
                   <TableHead>Ano</TableHead>
                   <TableHead>Modelo do Rastreador</TableHead>
                   <TableHead>Configuração</TableHead>
+                  <TableHead>Nota (Local de Instalação)</TableHead>
                   <TableHead>Data de Criação</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -293,6 +294,15 @@ const ConfigurationManagement = () => {
                       <Badge variant="outline" className="max-w-[200px] truncate">
                         {rule.configuration}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {rule.notes ? (
+                        <span className="text-sm text-gray-600 max-w-[150px] truncate block">
+                          {rule.notes}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {new Date(rule.created_at).toLocaleDateString('pt-BR')}

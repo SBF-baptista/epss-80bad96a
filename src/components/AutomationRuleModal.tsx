@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useMutation } from '@tanstack/react-query'
 import { createAutomationRule, updateAutomationRule, AutomationRule } from '@/services/automationRulesService'
@@ -51,7 +52,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
     model: '',
     model_year: '',
     tracker_model: '',
-    configuration: ''
+    configuration: '',
+    notes: ''
   })
 
   const { toast } = useToast()
@@ -65,7 +67,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
         model: editingRule.model,
         model_year: editingRule.model_year || '',
         tracker_model: editingRule.tracker_model,
-        configuration: editingRule.configuration
+        configuration: editingRule.configuration,
+        notes: editingRule.notes || ''
       })
     } else {
       setFormData({
@@ -74,7 +77,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
         model: '',
         model_year: '',
         tracker_model: '',
-        configuration: ''
+        configuration: '',
+        notes: ''
       })
     }
   }, [editingRule, isOpen])
@@ -135,7 +139,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
       model: formData.model,
       model_year: formData.model_year || undefined,
       tracker_model: formData.tracker_model,
-      configuration: formData.configuration
+      configuration: formData.configuration,
+      notes: formData.notes || undefined
     }
 
     if (editingRule) {
@@ -252,6 +257,17 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Nota (Local de Instalação)</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Ex: Painel principal, Central do veículo, Compartimento motor..."
+              className="min-h-[80px]"
+            />
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
