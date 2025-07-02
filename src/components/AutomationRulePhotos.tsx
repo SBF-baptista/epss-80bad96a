@@ -18,6 +18,7 @@ interface AutomationRulePhotosProps {
 }
 
 const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhotosProps) => {
+  console.log('AutomationRulePhotos render:', { ruleId, isEditing })
   const [dragActive, setDragActive] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
