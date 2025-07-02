@@ -130,3 +130,105 @@ export const findAutomationRule = async (brand: string, model: string, modelYear
 
   return data && data.length > 0 ? data[0] : null
 }
+
+// Photo management functions
+export interface AutomationRulePhoto {
+  id: string
+  automation_rule_id: number
+  file_name: string
+  file_path: string
+  file_size?: number
+  content_type?: string
+  uploaded_by?: string
+  created_at: string
+}
+
+export const fetchAutomationRulePhotos = async (ruleId: number): Promise<AutomationRulePhoto[]> => {
+  console.log('Fetching photos for automation rule:', ruleId)
+  
+  const { data, error } = await supabase
+    .from('automation_rule_photos')
+    .select('*')
+    .eq('automation_rule_id', ruleId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching automation rule photos:', error)
+    throw error
+  }
+
+  return data || []
+}
+
+export const uploadAutomationRulePhoto = async (
+  ruleId: number,
+  file: File
+): Promise<AutomationRulePhoto> => {
+  console.log('Uploading photo for automation rule:', ruleId)
+  
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${ruleId}_${Date.now()}.${fileExt}`
+  const filePath = `${ruleId}/${fileName}`
+
+  // Upload file to storage
+  const { error: uploadError } = await supabase.storage
+    .from('automation-rule-photos')
+    .upload(filePath, file)
+
+  if (uploadError) {
+    console.error('Error uploading file:', uploadError)
+    throw uploadError
+  }
+
+  // Create database record
+  const { data, error } = await supabase
+    .from('automation_rule_photos')
+    .insert({
+      automation_rule_id: ruleId,
+      file_name: file.name,
+      file_path: filePath,
+      file_size: file.size,
+      content_type: file.type,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating photo record:', error)
+    throw error
+  }
+
+  return data
+}
+
+export const deleteAutomationRulePhoto = async (photoId: string, filePath: string): Promise<void> => {
+  console.log('Deleting automation rule photo:', photoId)
+  
+  // Delete from storage
+  const { error: storageError } = await supabase.storage
+    .from('automation-rule-photos')
+    .remove([filePath])
+
+  if (storageError) {
+    console.error('Error deleting file from storage:', storageError)
+  }
+
+  // Delete from database
+  const { error } = await supabase
+    .from('automation_rule_photos')
+    .delete()
+    .eq('id', photoId)
+
+  if (error) {
+    console.error('Error deleting photo record:', error)
+    throw error
+  }
+}
+
+export const getAutomationRulePhotoUrl = (filePath: string): string => {
+  const { data } = supabase.storage
+    .from('automation-rule-photos')
+    .getPublicUrl(filePath)
+  
+  return data.publicUrl
+}

@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useMutation } from '@tanstack/react-query'
 import { createAutomationRule, updateAutomationRule, AutomationRule } from '@/services/automationRulesService'
+import AutomationRulePhotos from './AutomationRulePhotos'
 
 interface AutomationRuleModalProps {
   isOpen: boolean
@@ -269,6 +270,12 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
               className="min-h-[80px]"
             />
           </div>
+
+          {/* Photos section */}
+          <AutomationRulePhotos 
+            ruleId={editingRule?.id} 
+            isEditing={true}
+          />
 
           <div className="flex justify-end space-x-3 pt-4">
             <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
