@@ -64,11 +64,15 @@ export const updateAutomationRule = async (id: number, ruleData: Partial<CreateA
     .update(ruleData)
     .eq('id', id)
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('Error updating automation rule:', error)
     throw error
+  }
+
+  if (!data) {
+    throw new Error(`Automation rule with id ${id} not found`)
   }
 
   return data
