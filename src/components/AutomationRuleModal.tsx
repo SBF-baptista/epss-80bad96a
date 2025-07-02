@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -156,8 +157,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {editingRule ? 'Editar Regra de Automação' : 'Nova Regra de Automação'}
           </DialogTitle>
@@ -169,125 +170,127 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ScrollArea className="flex-1 pr-6">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoria *</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleCategories.map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="brand">Marca do Veículo *</Label>
+                <Select 
+                  value={formData.brand} 
+                  onValueChange={(value) => setFormData({ ...formData, brand: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a marca" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleBrands.map(brand => (
+                      <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria *</Label>
+              <Label htmlFor="model">Modelo do Veículo *</Label>
+              <Input
+                id="model"
+                value={formData.model}
+                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                placeholder="Ex: FH540, Sprinter 515"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="model_year">Ano do Modelo</Label>
+              <Input
+                id="model_year"
+                value={formData.model_year}
+                onChange={(e) => setFormData({ ...formData, model_year: e.target.value })}
+                placeholder="Ex: 2023, 2024"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tracker_model">Modelo do Rastreador *</Label>
               <Select 
-                value={formData.category} 
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                value={formData.tracker_model} 
+                onValueChange={(value) => setFormData({ ...formData, tracker_model: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
+                  <SelectValue placeholder="Selecione o modelo do rastreador" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicleCategories.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  {trackerModels.map(model => (
+                    <SelectItem key={model} value={model}>{model}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="brand">Marca do Veículo *</Label>
+              <Label htmlFor="configuration">Configuração *</Label>
               <Select 
-                value={formData.brand} 
-                onValueChange={(value) => setFormData({ ...formData, brand: value })}
+                value={formData.configuration} 
+                onValueChange={(value) => setFormData({ ...formData, configuration: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a marca" />
+                  <SelectValue placeholder="Selecione a configuração" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicleBrands.map(brand => (
-                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                  {configurationTypes.map(config => (
+                    <SelectItem key={config} value={config}>{config}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="model">Modelo do Veículo *</Label>
-            <Input
-              id="model"
-              value={formData.model}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              placeholder="Ex: FH540, Sprinter 515"
+            <div className="space-y-2">
+              <Label htmlFor="notes">Nota (Local de Instalação)</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Ex: Painel principal, Central do veículo, Compartimento motor..."
+                className="min-h-[80px]"
+              />
+            </div>
+
+            {/* Photos section */}
+            <AutomationRulePhotos 
+              ruleId={editingRule?.id} 
+              isEditing={true}
             />
           </div>
+        </ScrollArea>
 
-          <div className="space-y-2">
-            <Label htmlFor="model_year">Ano do Modelo</Label>
-            <Input
-              id="model_year"
-              value={formData.model_year}
-              onChange={(e) => setFormData({ ...formData, model_year: e.target.value })}
-              placeholder="Ex: 2023, 2024"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tracker_model">Modelo do Rastreador *</Label>
-            <Select 
-              value={formData.tracker_model} 
-              onValueChange={(value) => setFormData({ ...formData, tracker_model: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o modelo do rastreador" />
-              </SelectTrigger>
-              <SelectContent>
-                {trackerModels.map(model => (
-                  <SelectItem key={model} value={model}>{model}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="configuration">Configuração *</Label>
-            <Select 
-              value={formData.configuration} 
-              onValueChange={(value) => setFormData({ ...formData, configuration: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a configuração" />
-              </SelectTrigger>
-              <SelectContent>
-                {configurationTypes.map(config => (
-                  <SelectItem key={config} value={config}>{config}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Nota (Local de Instalação)</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Ex: Painel principal, Central do veículo, Compartimento motor..."
-              className="min-h-[80px]"
-            />
-          </div>
-
-          {/* Photos section */}
-          <AutomationRulePhotos 
-            ruleId={editingRule?.id} 
-            isEditing={true}
-          />
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit} disabled={!isFormValid || isSubmitting}>
-              {isSubmitting 
-                ? (editingRule ? 'Atualizando...' : 'Criando...') 
-                : (editingRule ? 'Atualizar Regra' : 'Criar Regra')
-              }
-            </Button>
-          </div>
+        <div className="flex justify-end space-x-3 pt-4 border-t flex-shrink-0 mt-4">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={!isFormValid || isSubmitting}>
+            {isSubmitting 
+              ? (editingRule ? 'Atualizando...' : 'Criando...') 
+              : (editingRule ? 'Atualizar Regra' : 'Criar Regra')
+            }
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
