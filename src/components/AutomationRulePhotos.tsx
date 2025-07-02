@@ -118,7 +118,7 @@ const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhoto
     <div className="space-y-4">
       <Label>Fotos da Regra</Label>
       
-      {/* Upload area - show when creating new rule or editing existing one */}
+      {/* Upload area - always show during editing */}
       {isEditing && (
         <div
           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
@@ -156,9 +156,14 @@ const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhoto
               </Button>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              As fotos poderão ser adicionadas após criar a regra
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground mb-2">
+                As fotos poderão ser adicionadas após criar a regra
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Crie a regra primeiro, depois edite para adicionar fotos
+              </p>
+            </>
           )}
         </div>
       )}
