@@ -157,8 +157,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 p-6 pb-0">
           <DialogTitle>
             {editingRule ? 'Editar Regra de Automação' : 'Nova Regra de Automação'}
           </DialogTitle>
@@ -170,8 +170,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-6">
-          <div className="space-y-6">
+        <ScrollArea className="flex-1 px-6">
+          <div className="space-y-6 pb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Categoria *</Label>
@@ -269,7 +269,7 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder="Ex: Painel principal, Central do veículo, Compartimento motor..."
-                className="min-h-[80px]"
+                className="min-h-[80px] resize-none"
               />
             </div>
 
@@ -281,7 +281,7 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
           </div>
         </ScrollArea>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t flex-shrink-0 mt-4">
+        <div className="flex justify-end space-x-3 p-6 pt-4 border-t flex-shrink-0 bg-background">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </Button>
