@@ -128,8 +128,8 @@ const ConfigurationManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestão de Configurações</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Gestão de Configurações</h1>
+          <p className="text-muted-foreground mt-2">
             Defina regras de automação para associar modelos de veículos com rastreadores e configurações
           </p>
         </div>
