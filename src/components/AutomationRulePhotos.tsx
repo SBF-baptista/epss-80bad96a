@@ -118,52 +118,54 @@ const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhoto
     <div className="space-y-4">
       <Label>Fotos da Regra</Label>
       
-      {/* Upload area - always show during editing */}
+      {/* Upload area - show message during creation */}
       {isEditing && (
-        <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-            dragActive 
-              ? 'border-primary bg-primary/5' 
-              : 'border-border hover:border-primary/50'
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+        <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+          ruleId ? 'border-border hover:border-primary/50' : 'border-amber-200 bg-amber-50'
+        }`}>
           {ruleId ? (
             <>
-              <p className="text-sm text-muted-foreground mb-2">
-                Arraste fotos aqui ou clique para selecionar
-              </p>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleFileInput}
-                className="hidden"
-                id="photo-upload"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => document.getElementById('photo-upload')?.click()}
-                disabled={uploadMutation.isPending}
+              <div
+                className={`transition-colors ${
+                  dragActive 
+                    ? 'border-primary bg-primary/5' 
+                    : ''
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
               >
-                {uploadMutation.isPending ? 'Enviando...' : 'Selecionar Fotos'}
-              </Button>
+                <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  Arraste fotos aqui ou clique para selecionar
+                </p>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileInput}
+                  className="hidden"
+                  id="photo-upload"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('photo-upload')?.click()}
+                  disabled={uploadMutation.isPending}
+                >
+                  {uploadMutation.isPending ? 'Enviando...' : 'Selecionar Fotos'}
+                </Button>
+              </div>
             </>
           ) : (
-            <>
-              <p className="text-sm text-muted-foreground mb-2">
-                As fotos poderão ser adicionadas após criar a regra
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+              <p className="text-sm text-amber-700 font-medium">
+                As fotos serão adicionadas após salvar a regra
               </p>
-              <p className="text-xs text-muted-foreground">
-                Crie a regra primeiro, depois edite para adicionar fotos
-              </p>
-            </>
+            </div>
           )}
         </div>
       )}
