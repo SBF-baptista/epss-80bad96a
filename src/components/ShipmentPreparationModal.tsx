@@ -198,14 +198,14 @@ const ShipmentPreparationModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {isReadOnly ? "Informações de Envio" : "Preparar Envio"} - Pedido {order.number}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto space-y-6 p-1">
           {/* Recipient Selection */}
           <Card>
             <CardHeader>
