@@ -61,6 +61,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
   };
 
   const handleShipmentClick = (order: Order) => {
+    console.log('Shipment button clicked for order:', order);
     setShipmentOrder(order);
   };
 
