@@ -2,16 +2,17 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/services/orderService";
-import { Scan } from "lucide-react";
+import { Scan, Truck } from "lucide-react";
 
 interface OrderCardProps {
   order: Order;
   onClick: () => void;
   onDragStart: () => void;
   onScanClick?: () => void;
+  onShipmentClick?: () => void;
 }
 
-const OrderCard = ({ order, onClick, onDragStart, onScanClick }: OrderCardProps) => {
+const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }: OrderCardProps) => {
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case "high":
@@ -40,6 +41,8 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick }: OrderCardProps)
 
   const isStandby = order.status === "standby";
   const isInProduction = order.status === "producao";
+  const isAwaitingShipment = order.status === "aguardando";
+  const isShipped = order.status === "enviado";
 
   const totalVehicles = order.vehicles.reduce((sum, vehicle) => sum + vehicle.quantity, 0);
   const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
@@ -47,6 +50,11 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick }: OrderCardProps)
   const handleScanClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onScanClick?.();
+  };
+
+  const handleShipmentClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onShipmentClick?.();
   };
 
   return (
@@ -77,6 +85,15 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick }: OrderCardProps)
                   title="Abrir Scanner de Produção"
                 >
                   <Scan className="h-4 w-4" />
+                </button>
+              )}
+              {(isAwaitingShipment || isShipped) && onShipmentClick && (
+                <button
+                  onClick={handleShipmentClick}
+                  className="p-1 rounded-md bg-orange-100 text-orange-600 hover:bg-orange-200 transition-colors"
+                  title="Preparar Envio"
+                >
+                  <Truck className="h-4 w-4" />
                 </button>
               )}
             </div>

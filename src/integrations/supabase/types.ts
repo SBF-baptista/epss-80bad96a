@@ -263,6 +263,15 @@ export type Database = {
           production_completed_at: string | null
           production_notes: string | null
           production_started_at: string | null
+          shipment_address_city: string | null
+          shipment_address_complement: string | null
+          shipment_address_neighborhood: string | null
+          shipment_address_number: string | null
+          shipment_address_postal_code: string | null
+          shipment_address_state: string | null
+          shipment_address_street: string | null
+          shipment_prepared_at: string | null
+          shipment_recipient_id: string | null
           status: Database["public"]["Enums"]["status_pedido"]
           usuario_id: string
         }
@@ -275,6 +284,15 @@ export type Database = {
           production_completed_at?: string | null
           production_notes?: string | null
           production_started_at?: string | null
+          shipment_address_city?: string | null
+          shipment_address_complement?: string | null
+          shipment_address_neighborhood?: string | null
+          shipment_address_number?: string | null
+          shipment_address_postal_code?: string | null
+          shipment_address_state?: string | null
+          shipment_address_street?: string | null
+          shipment_prepared_at?: string | null
+          shipment_recipient_id?: string | null
           status?: Database["public"]["Enums"]["status_pedido"]
           usuario_id: string
         }
@@ -287,10 +305,26 @@ export type Database = {
           production_completed_at?: string | null
           production_notes?: string | null
           production_started_at?: string | null
+          shipment_address_city?: string | null
+          shipment_address_complement?: string | null
+          shipment_address_neighborhood?: string | null
+          shipment_address_number?: string | null
+          shipment_address_postal_code?: string | null
+          shipment_address_state?: string | null
+          shipment_address_street?: string | null
+          shipment_prepared_at?: string | null
+          shipment_recipient_id?: string | null
           status?: Database["public"]["Enums"]["status_pedido"]
           usuario_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pedidos_shipment_recipient_id_fkey"
+            columns: ["shipment_recipient_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_recipients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pedidos_usuario_id_fkey"
             columns: ["usuario_id"]
@@ -390,6 +424,45 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
         ]
+      }
+      shipment_recipients: {
+        Row: {
+          city: string
+          complement: string | null
+          created_at: string
+          id: string
+          name: string
+          neighborhood: string
+          number: string
+          postal_code: string
+          state: string
+          street: string
+        }
+        Insert: {
+          city: string
+          complement?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          neighborhood: string
+          number: string
+          postal_code: string
+          state: string
+          street: string
+        }
+        Update: {
+          city?: string
+          complement?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          neighborhood?: string
+          number?: string
+          postal_code?: string
+          state?: string
+          street?: string
+        }
+        Relationships: []
       }
       usuarios: {
         Row: {

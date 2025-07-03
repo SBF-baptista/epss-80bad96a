@@ -3,6 +3,7 @@ import { useState } from "react";
 import KanbanColumn from "./KanbanColumn";
 import OrderModal from "./OrderModal";
 import ProductionScannerModal from "./ProductionScannerModal";
+import ShipmentPreparationModal from "./ShipmentPreparationModal";
 import { Order, updateOrderStatus } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,6 +25,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [scannerOrder, setScannerOrder] = useState<Order | null>(null);
+  const [shipmentOrder, setShipmentOrder] = useState<Order | null>(null);
 
   const handleDragStart = (order: Order) => {
     setDraggedOrder(order);
@@ -58,6 +60,10 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
     setScannerOrder(order);
   };
 
+  const handleShipmentClick = (order: Order) => {
+    setShipmentOrder(order);
+  };
+
   const getOrdersByStatus = (status: string) => {
     return orders.filter(order => order.status === status);
   };
@@ -76,6 +82,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
             onOrderClick={setSelectedOrder}
             onDragStart={handleDragStart}
             onScanClick={column.id === "producao" ? handleScanClick : undefined}
+            onShipmentClick={column.id === "aguardando" || column.id === "enviado" ? handleShipmentClick : undefined}
           />
         ))}
       </div>
@@ -93,6 +100,15 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
           order={scannerOrder}
           isOpen={!!scannerOrder}
           onClose={() => setScannerOrder(null)}
+          onUpdate={onOrderUpdate}
+        />
+      )}
+
+      {shipmentOrder && (
+        <ShipmentPreparationModal
+          order={shipmentOrder}
+          isOpen={!!shipmentOrder}
+          onClose={() => setShipmentOrder(null)}
           onUpdate={onOrderUpdate}
         />
       )}

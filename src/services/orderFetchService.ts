@@ -49,7 +49,16 @@ export const fetchOrders = async (): Promise<Order[]> => {
       status: pedido.status,
       createdAt: pedido.data || pedido.created_at,
       priority: 'medium' as const,
-      isAutomatic: pedido.numero_pedido.startsWith('AUTO-')
+      isAutomatic: pedido.numero_pedido.startsWith('AUTO-'),
+      shipment_recipient_id: pedido.shipment_recipient_id,
+      shipment_address_street: pedido.shipment_address_street,
+      shipment_address_number: pedido.shipment_address_number,
+      shipment_address_neighborhood: pedido.shipment_address_neighborhood,
+      shipment_address_city: pedido.shipment_address_city,
+      shipment_address_state: pedido.shipment_address_state,
+      shipment_address_postal_code: pedido.shipment_address_postal_code,
+      shipment_address_complement: pedido.shipment_address_complement,
+      shipment_prepared_at: pedido.shipment_prepared_at
     }))
 
     console.log('Transformed orders:', transformedOrders)
