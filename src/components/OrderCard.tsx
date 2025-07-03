@@ -90,8 +90,8 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               {(isAwaitingShipment || isShipped) && onShipmentClick && (
                 <button
                   onClick={handleShipmentClick}
-                  className="p-1 rounded-md bg-orange-100 text-orange-600 hover:bg-orange-200 transition-colors"
-                  title="Preparar Envio"
+                  className="p-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-sm"
+                  title={isShipped ? "Ver Informações de Envio" : "Preparar Envio"}
                 >
                   <Truck className="h-4 w-4" />
                 </button>
