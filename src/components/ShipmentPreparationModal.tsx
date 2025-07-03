@@ -90,6 +90,9 @@ const ShipmentPreparationModal = ({
 
   const isReadOnly = order.status === "enviado";
 
+  console.log('ShipmentPreparationModal opened with order:', order);
+  console.log('Is read only:', isReadOnly);
+
   // Load existing shipment data if available
   useEffect(() => {
     if (order.shipment_recipient_id) {
