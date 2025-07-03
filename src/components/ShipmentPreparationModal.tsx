@@ -46,6 +46,8 @@ const ShipmentPreparationModal = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  const [selectedUF, setSelectedUF] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedRecipientId, setSelectedRecipientId] = useState<string>("");
   const [isNewRecipient, setIsNewRecipient] = useState(false);
   const [newRecipientName, setNewRecipientName] = useState("");
@@ -59,6 +61,23 @@ const ShipmentPreparationModal = ({
     postal_code: "",
     complement: "",
   });
+
+  // Brazilian states
+  const brazilianStates = [
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+    "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+    "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+  ];
+
+  // Cities by state (simplified list - you can expand this)
+  const citiesByState: Record<string, string[]> = {
+    "SP": ["São Paulo", "Campinas", "Santos", "Ribeirão Preto", "Sorocaba"],
+    "RJ": ["Rio de Janeiro", "Niterói", "Duque de Caxias", "Nova Iguaçu", "São Gonçalo"],
+    "MG": ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"],
+    "RS": ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"],
+    "PR": ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"],
+    // Add more states and cities as needed
+  };
 
   const { data: recipients = [] } = useQuery({
     queryKey: ['shipment-recipients'],
@@ -93,10 +112,33 @@ const ShipmentPreparationModal = ({
   console.log('ShipmentPreparationModal opened with order:', order);
   console.log('Is read only:', isReadOnly);
 
+  // Get filtered recipients based on UF and City selection
+  const getFilteredRecipients = () => {
+    if (!selectedUF || !selectedCity) return [];
+    return recipients.filter(r => r.state === selectedUF && r.city === selectedCity);
+  };
+
+  // Get available cities for selected UF
+  const getAvailableCities = () => {
+    if (!selectedUF) return [];
+    return citiesByState[selectedUF] || [];
+  };
+
   // Load existing shipment data if available
   useEffect(() => {
     if (order.shipment_recipient_id) {
       setSelectedRecipientId(order.shipment_recipient_id);
+      const recipient = recipients.find(r => r.id === order.shipment_recipient_id);
+      if (recipient) {
+        setSelectedUF(recipient.state);
+        setSelectedCity(recipient.city);
+      }
+    }
+    if (order.shipment_address_state) {
+      setSelectedUF(order.shipment_address_state);
+    }
+    if (order.shipment_address_city) {
+      setSelectedCity(order.shipment_address_city);
     }
     if (order.shipment_address_street) {
       setAddress({
@@ -109,18 +151,36 @@ const ShipmentPreparationModal = ({
         complement: order.shipment_address_complement || "",
       });
     }
-  }, [order]);
+  }, [order, recipients]);
+
+  // Handle UF change
+  const handleUFChange = (value: string) => {
+    setSelectedUF(value);
+    setSelectedCity("");
+    setSelectedRecipientId("");
+    setIsNewRecipient(false);
+    setAddress(prev => ({ ...prev, state: value, city: "" }));
+  };
+
+  // Handle City change
+  const handleCityChange = (value: string) => {
+    setSelectedCity(value);
+    setSelectedRecipientId("");
+    setIsNewRecipient(false);
+    setAddress(prev => ({ ...prev, city: value }));
+  };
 
   const handleRecipientChange = (value: string) => {
     if (value === "new") {
       setIsNewRecipient(true);
       setSelectedRecipientId("");
+      // Keep the selected UF and City, clear other fields
       setAddress({
         street: "",
         number: "",
         neighborhood: "",
-        city: "",
-        state: "",
+        city: selectedCity,
+        state: selectedUF,
         postal_code: "",
         complement: "",
       });
@@ -193,10 +253,11 @@ const ShipmentPreparationModal = ({
   };
 
   const isFormValid = () => {
+    const hasLocation = selectedUF && selectedCity;
     const hasRecipient = selectedRecipientId || (isNewRecipient && newRecipientName.trim());
     const hasAddress = address.street && address.number && address.neighborhood && 
                      address.city && address.state && address.postal_code;
-    return hasRecipient && hasAddress;
+    return hasLocation && hasRecipient && hasAddress;
   };
 
   return (
@@ -209,32 +270,71 @@ const ShipmentPreparationModal = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6 p-1">
-          {/* Recipient Selection */}
+          {/* Location and Recipient Selection */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Responsável pelo Recebimento</CardTitle>
+              <CardTitle className="text-lg">Localização e Destinatário</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {!isReadOnly ? (
                 <>
+                  {/* UF Selection */}
                   <div className="space-y-2">
-                    <Label>Destinatário</Label>
-                    <Select value={selectedRecipientId || (isNewRecipient ? "new" : "")} onValueChange={handleRecipientChange}>
+                    <Label>UF (Estado)</Label>
+                    <Select value={selectedUF} onValueChange={handleUFChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um destinatário" />
+                        <SelectValue placeholder="Selecione o estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="new">+ Novo Destinatário</SelectItem>
-                        {recipients.map((recipient) => (
-                          <SelectItem key={recipient.id} value={recipient.id}>
-                            {recipient.name}
+                        {brazilianStates.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {isNewRecipient && (
+                  {/* City Selection */}
+                  {selectedUF && (
+                    <div className="space-y-2">
+                      <Label>Cidade</Label>
+                      <Select value={selectedCity} onValueChange={handleCityChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a cidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getAvailableCities().map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Recipient Selection */}
+                  {selectedUF && selectedCity && (
+                    <div className="space-y-2">
+                      <Label>Destinatário</Label>
+                      <Select value={selectedRecipientId || (isNewRecipient ? "new" : "")} onValueChange={handleRecipientChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um destinatário" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">+ Novo Destinatário</SelectItem>
+                          {getFilteredRecipients().map((recipient) => (
+                            <SelectItem key={recipient.id} value={recipient.id}>
+                              {recipient.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {isNewRecipient && selectedUF && selectedCity && (
                     <div className="space-y-2">
                       <Label htmlFor="recipientName">Nome do Destinatário</Label>
                       <Input
@@ -247,10 +347,22 @@ const ShipmentPreparationModal = ({
                   )}
                 </>
               ) : (
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="font-medium">
-                    {recipients.find(r => r.id === order.shipment_recipient_id)?.name || "Destinatário customizado"}
-                  </p>
+                <div className="space-y-3">
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="font-medium">
+                      Estado: {order.shipment_address_state || "N/A"}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="font-medium">
+                      Cidade: {order.shipment_address_city || "N/A"}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="font-medium">
+                      Destinatário: {recipients.find(r => r.id === order.shipment_recipient_id)?.name || "Destinatário customizado"}
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -326,19 +438,21 @@ const ShipmentPreparationModal = ({
                     id="city"
                     value={address.city}
                     onChange={(e) => setAddress(prev => ({ ...prev, city: e.target.value }))}
-                    disabled={isReadOnly || (!isNewRecipient && !!selectedRecipientId)}
-                    placeholder="Digite a cidade"
+                    disabled={true}
+                    placeholder="Cidade será preenchida automaticamente"
+                    className="bg-muted"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="state">Estado</Label>
+                  <Label htmlFor="state">Estado (UF)</Label>
                   <Input
                     id="state"
                     value={address.state}
                     onChange={(e) => setAddress(prev => ({ ...prev, state: e.target.value }))}
-                    disabled={isReadOnly || (!isNewRecipient && !!selectedRecipientId)}
-                    placeholder="Ex: SP"
+                    disabled={true}
+                    placeholder="Estado será preenchido automaticamente"
+                    className="bg-muted"
                     maxLength={2}
                   />
                 </div>
