@@ -12,9 +12,16 @@ import { PhotoUploadArea, PhotoGrid } from './automation-photos'
 interface AutomationRulePhotosProps {
   ruleId?: number
   isEditing?: boolean
+  temporaryPhotos?: File[]
+  onTemporaryPhotosChange?: (photos: File[]) => void
 }
 
-const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhotosProps) => {
+const AutomationRulePhotos = ({ 
+  ruleId, 
+  isEditing = false, 
+  temporaryPhotos = [], 
+  onTemporaryPhotosChange 
+}: AutomationRulePhotosProps) => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -70,14 +77,45 @@ const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhoto
   })
 
   const handleFileSelect = (files: File[]) => {
-    files.forEach(file => {
-      uploadMutation.mutate(file)
-    })
+    if (ruleId) {
+      // If we have a rule ID, upload directly
+      files.forEach(file => {
+        uploadMutation.mutate(file)
+      })
+    } else if (onTemporaryPhotosChange) {
+      // If no rule ID, add to temporary photos
+      onTemporaryPhotosChange([...temporaryPhotos, ...files])
+      toast({
+        title: "Fotos adicionadas",
+        description: `${files.length} foto(s) serão enviadas após salvar a regra.`,
+      })
+    }
   }
 
   const handleDeletePhoto = (photo: AutomationRulePhoto) => {
     deleteMutation.mutate({ photoId: photo.id, filePath: photo.file_path })
   }
+
+  const handleDeleteTemporaryPhoto = (index: number) => {
+    if (onTemporaryPhotosChange) {
+      const newPhotos = temporaryPhotos.filter((_, i) => i !== index)
+      onTemporaryPhotosChange(newPhotos)
+    }
+  }
+
+  // Convert temporary photos to display format
+  const temporaryPhotoItems = temporaryPhotos.map((file, index) => ({
+    id: `temp-${index}`,
+    file_name: file.name,
+    file_path: URL.createObjectURL(file),
+    created_at: new Date().toISOString(),
+    automation_rule_id: 0,
+    file_size: file.size,
+    content_type: file.type
+  }))
+
+  // Combine server photos with temporary photos for display
+  const allPhotos = [...photos, ...temporaryPhotoItems]
 
   return (
     <div className="space-y-4">
@@ -92,9 +130,16 @@ const AutomationRulePhotos = ({ ruleId, isEditing = false }: AutomationRulePhoto
       )}
 
       <PhotoGrid
-        photos={photos}
+        photos={allPhotos}
         isEditing={isEditing}
-        onDeletePhoto={handleDeletePhoto}
+        onDeletePhoto={(photo) => {
+          if (photo.id.startsWith('temp-')) {
+            const index = parseInt(photo.id.replace('temp-', ''))
+            handleDeleteTemporaryPhoto(index)
+          } else {
+            handleDeletePhoto(photo as AutomationRulePhoto)
+          }
+        }}
         isDeletingPhoto={deleteMutation.isPending}
       />
     </div>

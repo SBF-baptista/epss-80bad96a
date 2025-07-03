@@ -57,6 +57,7 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
     configuration: '',
     notes: ''
   })
+  const [temporaryPhotos, setTemporaryPhotos] = useState<File[]>([])
 
   const { toast } = useToast()
 
@@ -72,6 +73,7 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
         configuration: editingRule.configuration,
         notes: editingRule.notes || ''
       })
+      setTemporaryPhotos([])
     } else {
       setFormData({
         category: '',
@@ -82,13 +84,27 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
         configuration: '',
         notes: ''
       })
+      setTemporaryPhotos([])
     }
   }, [editingRule, isOpen])
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: createAutomationRule,
+    mutationFn: async (data: any) => {
+      const rule = await createAutomationRule(data)
+      
+      // Upload temporary photos if any exist
+      if (temporaryPhotos.length > 0) {
+        const { uploadAutomationRulePhoto } = await import('@/services/automationRulesService')
+        await Promise.all(
+          temporaryPhotos.map(photo => uploadAutomationRulePhoto(rule.id, photo))
+        )
+      }
+      
+      return rule
+    },
     onSuccess: () => {
+      setTemporaryPhotos([])
       toast({
         title: "Regra criada",
         description: "A regra de automação foi criada com sucesso.",
@@ -277,6 +293,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
             <AutomationRulePhotos 
               ruleId={editingRule?.id} 
               isEditing={true}
+              temporaryPhotos={!editingRule ? temporaryPhotos : undefined}
+              onTemporaryPhotosChange={!editingRule ? setTemporaryPhotos : undefined}
             />
           </div>
         </ScrollArea>
