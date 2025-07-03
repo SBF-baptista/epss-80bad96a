@@ -6,6 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useStates, useCities } from "@/hooks/useIBGEData";
+import { Loader2 } from "lucide-react";
 
 interface LocationSelectorProps {
   selectedUF: string;
@@ -15,20 +17,6 @@ interface LocationSelectorProps {
   disabled?: boolean;
 }
 
-const brazilianStates = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
-  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
-  "RS", "RO", "RR", "SC", "SP", "SE", "TO"
-];
-
-const citiesByState: Record<string, string[]> = {
-  "SP": ["São Paulo", "Campinas", "Santos", "Ribeirão Preto", "Sorocaba"],
-  "RJ": ["Rio de Janeiro", "Niterói", "Duque de Caxias", "Nova Iguaçu", "São Gonçalo"],
-  "MG": ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"],
-  "RS": ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"],
-  "PR": ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"],
-};
-
 const LocationSelector = ({
   selectedUF,
   selectedCity,
@@ -36,9 +24,13 @@ const LocationSelector = ({
   onCityChange,
   disabled = false,
 }: LocationSelectorProps) => {
-  const getAvailableCities = () => {
-    if (!selectedUF) return [];
-    return citiesByState[selectedUF] || [];
+  const { states, loading: statesLoading, error: statesError } = useStates();
+  const { cities, loading: citiesLoading, error: citiesError } = useCities(selectedUF);
+
+  // Handle state change and reset city selection
+  const handleUFChange = (value: string) => {
+    onUFChange(value);
+    onCityChange(''); // Reset city when state changes
   };
 
   return (
@@ -46,16 +38,22 @@ const LocationSelector = ({
       {/* UF Selection */}
       <div className="space-y-2">
         <Label>UF (Estado)</Label>
-        <Select value={selectedUF} onValueChange={onUFChange} disabled={disabled}>
+        <Select value={selectedUF} onValueChange={handleUFChange} disabled={disabled || statesLoading}>
           <SelectTrigger>
-            <SelectValue placeholder="Selecione o estado" />
+            <SelectValue placeholder={statesLoading ? "Carregando estados..." : "Selecione o estado"} />
           </SelectTrigger>
           <SelectContent>
-            {brazilianStates.map((state) => (
-              <SelectItem key={state} value={state}>
-                {state}
+            {statesError ? (
+              <SelectItem value="" disabled>
+                Erro ao carregar estados
               </SelectItem>
-            ))}
+            ) : (
+              states.map((state) => (
+                <SelectItem key={state.sigla} value={state.sigla}>
+                  {state.sigla} - {state.nome}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -64,16 +62,31 @@ const LocationSelector = ({
       {selectedUF && (
         <div className="space-y-2">
           <Label>Cidade</Label>
-          <Select value={selectedCity} onValueChange={onCityChange} disabled={disabled}>
+          <Select value={selectedCity} onValueChange={onCityChange} disabled={disabled || citiesLoading}>
             <SelectTrigger>
-              <SelectValue placeholder="Selecione a cidade" />
+              <SelectValue 
+                placeholder={
+                  citiesLoading 
+                    ? "Carregando cidades..." 
+                    : citiesError 
+                    ? "Erro ao carregar cidades" 
+                    : "Selecione a cidade"
+                } 
+              />
+              {citiesLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             </SelectTrigger>
             <SelectContent>
-              {getAvailableCities().map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
+              {citiesError ? (
+                <SelectItem value="" disabled>
+                  Erro ao carregar cidades
                 </SelectItem>
-              ))}
+              ) : (
+                cities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
