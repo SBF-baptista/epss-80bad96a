@@ -6,9 +6,11 @@ import { createHomologationCard } from './homologation-services.ts'
 export async function processVehicleGroups(
   supabase: any, 
   requestBody: VehicleGroup[], 
-  timestamp: string
+  timestamp: string,
+  requestId: string
 ): Promise<{ processedGroups: GroupResult[], totalVehiclesProcessed: number }> {
-  console.log(`[${timestamp}] Processing ${requestBody.length} vehicle groups...`)
+  console.log(`[${timestamp}][${requestId}] ===== PROCESSING START =====`)
+  console.log(`[${timestamp}][${requestId}] Processing ${requestBody.length} vehicle groups...`)
 
   const processedGroups: GroupResult[] = []
   let totalVehiclesProcessed = 0
@@ -16,7 +18,8 @@ export async function processVehicleGroups(
   // Process each vehicle group
   for (let groupIndex = 0; groupIndex < requestBody.length; groupIndex++) {
     const group = requestBody[groupIndex]
-    console.log(`[${timestamp}] Processing group ${groupIndex + 1}/${requestBody.length}: ${group.company_name} - ${group.usage_type}`)
+    console.log(`[${timestamp}][${requestId}] ===== GROUP ${groupIndex + 1}/${requestBody.length} START =====`)
+    console.log(`[${timestamp}][${requestId}] Group details: ${group.company_name} - ${group.usage_type} (${group.vehicles.length} vehicles)`)
     
     const groupResult: GroupResult = {
       group_index: groupIndex,
@@ -36,10 +39,12 @@ export async function processVehicleGroups(
       const vehicleData = group.vehicles[vehicleIndex]
       const { vehicle, brand, year, quantity } = vehicleData
       
-      console.log(`[${timestamp}] Processing vehicle ${vehicleIndex + 1}/${group.vehicles.length} in group ${groupIndex + 1}: ${brand} ${vehicle}`)
+      console.log(`[${timestamp}][${requestId}] --- Processing vehicle ${vehicleIndex + 1}/${group.vehicles.length} in group ${groupIndex + 1} ---`)
+      console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
       try {
         // Store incoming vehicle data
+        console.log(`[${timestamp}][${requestId}] Storing incoming vehicle data...`)
         const { data: incomingVehicle, error: insertError } = await supabase
           .from('incoming_vehicles')
           .insert({
@@ -54,7 +59,7 @@ export async function processVehicleGroups(
           .single()
 
         if (insertError) {
-          console.error(`[${timestamp}] Error storing incoming vehicle:`, insertError)
+          console.error(`[${timestamp}][${requestId}] ERROR - Failed to store incoming vehicle:`, insertError)
           groupResult.vehicles_processed.push({
             vehicle: `${brand} ${vehicle}`,
             status: 'error',
@@ -66,9 +71,10 @@ export async function processVehicleGroups(
           continue
         }
 
-        console.log(`[${timestamp}] Stored incoming vehicle with ID:`, incomingVehicle.id)
+        console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
         // Check if vehicle exists
+        console.log(`[${timestamp}][${requestId}] Checking if vehicle exists in database...`)
         const existingVehicle = await checkVehicleExists(supabase, brand, vehicle)
         
         let processingNotes = ''
@@ -79,10 +85,11 @@ export async function processVehicleGroups(
         }
 
         if (existingVehicle) {
-          console.log(`[${timestamp}] Vehicle exists, creating automatic order`)
+          console.log(`[${timestamp}][${requestId}] Vehicle exists in database, creating automatic order...`)
           
           try {
             const orderNumber = await generateAutoOrderNumber(supabase)
+            console.log(`[${timestamp}][${requestId}] Generated order number: ${orderNumber}`)
             const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber)
             processingNotes = `Vehicle found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
             
@@ -100,9 +107,10 @@ export async function processVehicleGroups(
             vehicleResult.order_number = orderNumber
             vehicleResult.order_id = orderInfo?.order_id
             groupResult.processing_summary.orders_created++
+            console.log(`[${timestamp}][${requestId}] Successfully created order ${orderNumber}`)
               
           } catch (orderError: any) {
-            console.error(`[${timestamp}] Error creating automatic order:`, orderError)
+            console.error(`[${timestamp}][${requestId}] ERROR - Failed to create automatic order:`, orderError)
             processingNotes = `Vehicle found but failed to create automatic order: ${orderError.message}`
             
             await supabase
@@ -118,7 +126,7 @@ export async function processVehicleGroups(
             groupResult.processing_summary.errors++
           }
         } else {
-          console.log(`[${timestamp}] Vehicle not found, creating homologation card`)
+          console.log(`[${timestamp}][${requestId}] Vehicle not found in database, creating homologation card...`)
           
           try {
             const homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year }, incomingVehicle.id)
@@ -142,9 +150,10 @@ export async function processVehicleGroups(
             if (homologationInfo.created) {
               groupResult.processing_summary.homologations_created++
             }
+            console.log(`[${timestamp}][${requestId}] Successfully processed homologation (created: ${homologationInfo.created})`)
               
           } catch (homologationError: any) {
-            console.error(`[${timestamp}] Error creating homologation card:`, homologationError)
+            console.error(`[${timestamp}][${requestId}] ERROR - Failed to create homologation card:`, homologationError)
             processingNotes = `Vehicle not found and failed to create homologation card: ${homologationError.message}`
             
             await supabase
@@ -164,9 +173,10 @@ export async function processVehicleGroups(
         vehicleResult.processing_notes = processingNotes
         groupResult.vehicles_processed.push(vehicleResult)
         totalVehiclesProcessed++
+        console.log(`[${timestamp}][${requestId}] Vehicle processed successfully: ${vehicleResult.status}`)
 
       } catch (error: any) {
-        console.error(`[${timestamp}] Unexpected error processing vehicle:`, error)
+        console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR processing vehicle:`, error)
         groupResult.vehicles_processed.push({
           vehicle: `${brand} ${vehicle}`,
           status: 'error',
@@ -179,8 +189,15 @@ export async function processVehicleGroups(
     }
 
     processedGroups.push(groupResult)
-    console.log(`[${timestamp}] Completed processing group ${groupIndex + 1}: ${groupResult.processing_summary.orders_created} orders, ${groupResult.processing_summary.homologations_created} homologations, ${groupResult.processing_summary.errors} errors`)
+    console.log(`[${timestamp}][${requestId}] ===== GROUP ${groupIndex + 1} COMPLETED =====`)
+    console.log(`[${timestamp}][${requestId}] Group ${groupIndex + 1} summary: ${groupResult.processing_summary.orders_created} orders, ${groupResult.processing_summary.homologations_created} homologations, ${groupResult.processing_summary.errors} errors`)
   }
+
+  console.log(`[${timestamp}][${requestId}] ===== PROCESSING COMPLETED =====`)
+  console.log(`[${timestamp}][${requestId}] Total vehicles processed: ${totalVehiclesProcessed}`)
+  console.log(`[${timestamp}][${requestId}] Total orders created: ${processedGroups.reduce((sum, group) => sum + group.processing_summary.orders_created, 0)}`)
+  console.log(`[${timestamp}][${requestId}] Total homologations created: ${processedGroups.reduce((sum, group) => sum + group.processing_summary.homologations_created, 0)}`)
+  console.log(`[${timestamp}][${requestId}] Total errors: ${processedGroups.reduce((sum, group) => sum + group.processing_summary.errors, 0)}`)
 
   return { processedGroups, totalVehiclesProcessed }
 }
