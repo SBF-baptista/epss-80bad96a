@@ -306,15 +306,13 @@ serve(async (req) => {
       )
     }
 
-    // Validate required fields
-    const { vehicle, brand, year, usage_type, quantity } = requestBody
-    
-    if (!vehicle || !brand || !usage_type) {
-      console.log(`[${timestamp}] Missing required fields:`, { vehicle, brand, usage_type })
+    // Validate if request body is an array of vehicle groups
+    if (!Array.isArray(requestBody)) {
+      console.log(`[${timestamp}] Request body must be an array of vehicle groups`)
       return new Response(
         JSON.stringify({ 
-          error: 'Missing required fields', 
-          message: 'vehicle, brand, and usage_type are required' 
+          error: 'Invalid request format', 
+          message: 'Request body must be an array of vehicle groups' 
         }),
         { 
           status: 400, 
@@ -323,14 +321,12 @@ serve(async (req) => {
       )
     }
 
-    // Validate usage_type enum
-    const validUsageTypes = ['particular', 'comercial', 'frota']
-    if (!validUsageTypes.includes(usage_type)) {
-      console.log(`[${timestamp}] Invalid usage_type:`, usage_type)
+    if (requestBody.length === 0) {
+      console.log(`[${timestamp}] Empty vehicle groups array`)
       return new Response(
         JSON.stringify({ 
-          error: 'Invalid usage_type', 
-          message: 'usage_type must be one of: particular, comercial, frota' 
+          error: 'Empty request', 
+          message: 'At least one vehicle group is required' 
         }),
         { 
           status: 400, 
@@ -339,131 +335,258 @@ serve(async (req) => {
       )
     }
 
-    // Validate quantity if provided
-    if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 1)) {
-      console.log(`[${timestamp}] Invalid quantity:`, quantity)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid quantity', 
-          message: 'quantity must be a positive integer' 
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    console.log(`[${timestamp}] Processing vehicle data:`, { vehicle, brand, year, usage_type, quantity })
-
-    // Store incoming vehicle data
-    console.log(`[${timestamp}] Storing incoming vehicle data...`)
-    const { data: incomingVehicle, error: insertError } = await supabase
-      .from('incoming_vehicles')
-      .insert({
-        vehicle: vehicle.trim(),
-        brand: brand.trim(),
-        year: year || null,
-        usage_type,
-        quantity: quantity || 1,
-        received_at: timestamp
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error(`[${timestamp}] Error storing incoming vehicle:`, insertError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to store vehicle data' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    console.log(`[${timestamp}] Stored incoming vehicle with ID:`, incomingVehicle.id)
-
-    // Check if vehicle exists
-    const existingVehicle = await checkVehicleExists(supabase, brand, vehicle)
-    
-    let orderInfo = null
-    let homologationInfo = null
-    let processingNotes = ''
-
-    if (existingVehicle) {
-      console.log(`[${timestamp}] Vehicle exists, creating automatic order`)
+    // Validate each vehicle group
+    for (let i = 0; i < requestBody.length; i++) {
+      const group = requestBody[i]
       
-      try {
-        const orderNumber = await generateAutoOrderNumber(supabase)
-        orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber)
-        processingNotes = `Vehicle found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
-        
-        // Update incoming vehicle record with order info
-        await supabase
-          .from('incoming_vehicles')
-          .update({
-            processed: true,
-            created_order_id: orderInfo?.order_id,
-            processing_notes: processingNotes
-          })
-          .eq('id', incomingVehicle.id)
-          
-      } catch (orderError) {
-        console.error(`[${timestamp}] Error creating automatic order:`, orderError)
-        processingNotes = `Vehicle found but failed to create automatic order: ${orderError.message}`
-        
-        await supabase
-          .from('incoming_vehicles')
-          .update({
-            processed: true,
-            processing_notes: processingNotes
-          })
-          .eq('id', incomingVehicle.id)
+      if (!group.company_name || !group.usage_type || !Array.isArray(group.vehicles)) {
+        console.log(`[${timestamp}] Invalid group structure at index ${i}:`, group)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid group structure', 
+            message: `Group at index ${i} must have company_name, usage_type, and vehicles array` 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
       }
-    } else {
-      console.log(`[${timestamp}] Vehicle not found, creating homologation card`)
-      
-      try {
-        homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year }, incomingVehicle.id)
-        processingNotes = homologationInfo.created 
-          ? `Vehicle not found. Created new homologation card linked to incoming vehicle. (quantity: ${quantity || 1})`
-          : `Vehicle not found. Linked to existing homologation card. (quantity: ${quantity || 1})`
+
+      if (group.vehicles.length === 0) {
+        console.log(`[${timestamp}] Empty vehicles array in group ${i}`)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Empty vehicles array', 
+            message: `Group at index ${i} must have at least one vehicle` 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+
+      // Validate each vehicle in the group
+      for (let j = 0; j < group.vehicles.length; j++) {
+        const vehicle = group.vehicles[j]
         
-        // Update incoming vehicle record with homologation info
-        await supabase
-          .from('incoming_vehicles')
-          .update({
-            processed: true,
-            created_homologation_id: homologationInfo.homologation_id,
-            processing_notes: processingNotes
-          })
-          .eq('id', incomingVehicle.id)
-          
-      } catch (homologationError) {
-        console.error(`[${timestamp}] Error creating homologation card:`, homologationError)
-        processingNotes = `Vehicle not found and failed to create homologation card: ${homologationError.message}`
-        
-        await supabase
-          .from('incoming_vehicles')
-          .update({
-            processed: true,
-            processing_notes: processingNotes
-          })
-          .eq('id', incomingVehicle.id)
+        if (!vehicle.vehicle || !vehicle.brand) {
+          console.log(`[${timestamp}] Invalid vehicle structure in group ${i}, vehicle ${j}:`, vehicle)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid vehicle structure', 
+              message: `Vehicle at group ${i}, position ${j} must have vehicle and brand fields` 
+            }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        if (vehicle.quantity !== undefined && (typeof vehicle.quantity !== 'number' || vehicle.quantity < 1)) {
+          console.log(`[${timestamp}] Invalid quantity in group ${i}, vehicle ${j}:`, vehicle.quantity)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid quantity', 
+              message: `Vehicle at group ${i}, position ${j} has invalid quantity. Must be a positive integer` 
+            }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
       }
     }
 
-    // Prepare response
+    console.log(`[${timestamp}] Processing ${requestBody.length} vehicle groups...`)
+
+    const processedGroups = []
+    let totalVehiclesProcessed = 0
+
+    // Process each vehicle group
+    for (let groupIndex = 0; groupIndex < requestBody.length; groupIndex++) {
+      const group = requestBody[groupIndex]
+      console.log(`[${timestamp}] Processing group ${groupIndex + 1}/${requestBody.length}: ${group.company_name} - ${group.usage_type}`)
+      
+      const groupResult = {
+        group_index: groupIndex,
+        company_name: group.company_name,
+        usage_type: group.usage_type,
+        vehicles_processed: [],
+        total_vehicles: group.vehicles.length,
+        processing_summary: {
+          orders_created: 0,
+          homologations_created: 0,
+          errors: 0
+        }
+      }
+
+      // Process each vehicle in the group
+      for (let vehicleIndex = 0; vehicleIndex < group.vehicles.length; vehicleIndex++) {
+        const vehicleData = group.vehicles[vehicleIndex]
+        const { vehicle, brand, year, quantity } = vehicleData
+        
+        console.log(`[${timestamp}] Processing vehicle ${vehicleIndex + 1}/${group.vehicles.length} in group ${groupIndex + 1}: ${brand} ${vehicle}`)
+        
+        try {
+          // Store incoming vehicle data
+          const { data: incomingVehicle, error: insertError } = await supabase
+            .from('incoming_vehicles')
+            .insert({
+              vehicle: vehicle.trim(),
+              brand: brand.trim(),
+              year: year || null,
+              usage_type: group.usage_type,
+              quantity: quantity || 1,
+              received_at: timestamp
+            })
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error(`[${timestamp}] Error storing incoming vehicle:`, insertError)
+            groupResult.vehicles_processed.push({
+              vehicle: `${brand} ${vehicle}`,
+              status: 'error',
+              error: 'Failed to store vehicle data',
+              quantity: quantity || 1
+            })
+            groupResult.processing_summary.errors++
+            continue
+          }
+
+          console.log(`[${timestamp}] Stored incoming vehicle with ID:`, incomingVehicle.id)
+
+          // Check if vehicle exists
+          const existingVehicle = await checkVehicleExists(supabase, brand, vehicle)
+          
+          let orderInfo = null
+          let homologationInfo = null
+          let processingNotes = ''
+          let vehicleResult = {
+            vehicle: `${brand} ${vehicle}`,
+            quantity: quantity || 1,
+            incoming_vehicle_id: incomingVehicle.id
+          }
+
+          if (existingVehicle) {
+            console.log(`[${timestamp}] Vehicle exists, creating automatic order`)
+            
+            try {
+              const orderNumber = await generateAutoOrderNumber(supabase)
+              orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber)
+              processingNotes = `Vehicle found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
+              
+              // Update incoming vehicle record with order info
+              await supabase
+                .from('incoming_vehicles')
+                .update({
+                  processed: true,
+                  created_order_id: orderInfo?.order_id,
+                  processing_notes: processingNotes
+                })
+                .eq('id', incomingVehicle.id)
+
+              vehicleResult.status = 'order_created'
+              vehicleResult.order_number = orderNumber
+              vehicleResult.order_id = orderInfo?.order_id
+              groupResult.processing_summary.orders_created++
+                
+            } catch (orderError) {
+              console.error(`[${timestamp}] Error creating automatic order:`, orderError)
+              processingNotes = `Vehicle found but failed to create automatic order: ${orderError.message}`
+              
+              await supabase
+                .from('incoming_vehicles')
+                .update({
+                  processed: true,
+                  processing_notes: processingNotes
+                })
+                .eq('id', incomingVehicle.id)
+
+              vehicleResult.status = 'error'
+              vehicleResult.error = orderError.message
+              groupResult.processing_summary.errors++
+            }
+          } else {
+            console.log(`[${timestamp}] Vehicle not found, creating homologation card`)
+            
+            try {
+              homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year }, incomingVehicle.id)
+              processingNotes = homologationInfo.created 
+                ? `Vehicle not found. Created new homologation card linked to incoming vehicle. (quantity: ${quantity || 1})`
+                : `Vehicle not found. Linked to existing homologation card. (quantity: ${quantity || 1})`
+              
+              // Update incoming vehicle record with homologation info
+              await supabase
+                .from('incoming_vehicles')
+                .update({
+                  processed: true,
+                  created_homologation_id: homologationInfo.homologation_id,
+                  processing_notes: processingNotes
+                })
+                .eq('id', incomingVehicle.id)
+
+              vehicleResult.status = 'homologation_pending'
+              vehicleResult.homologation_id = homologationInfo.homologation_id
+              vehicleResult.homologation_created = homologationInfo.created
+              if (homologationInfo.created) {
+                groupResult.processing_summary.homologations_created++
+              }
+                
+            } catch (homologationError) {
+              console.error(`[${timestamp}] Error creating homologation card:`, homologationError)
+              processingNotes = `Vehicle not found and failed to create homologation card: ${homologationError.message}`
+              
+              await supabase
+                .from('incoming_vehicles')
+                .update({
+                  processed: true,
+                  processing_notes: processingNotes
+                })
+                .eq('id', incomingVehicle.id)
+
+              vehicleResult.status = 'error'
+              vehicleResult.error = homologationError.message
+              groupResult.processing_summary.errors++
+            }
+          }
+
+          vehicleResult.processing_notes = processingNotes
+          groupResult.vehicles_processed.push(vehicleResult)
+          totalVehiclesProcessed++
+
+        } catch (error) {
+          console.error(`[${timestamp}] Unexpected error processing vehicle:`, error)
+          groupResult.vehicles_processed.push({
+            vehicle: `${brand} ${vehicle}`,
+            status: 'error',
+            error: error.message,
+            quantity: quantity || 1
+          })
+          groupResult.processing_summary.errors++
+        }
+      }
+
+      processedGroups.push(groupResult)
+      console.log(`[${timestamp}] Completed processing group ${groupIndex + 1}: ${groupResult.processing_summary.orders_created} orders, ${groupResult.processing_summary.homologations_created} homologations, ${groupResult.processing_summary.errors} errors`)
+    }
+
+    // Prepare final response
     const response = {
       success: true,
-      message: 'Vehicle data received and processed successfully',
-      incoming_vehicle_id: incomingVehicle.id,
-      processing_notes: processingNotes,
-      quantity: quantity || 1,
-      workflow_status: existingVehicle ? 'order_created' : 'homologation_pending',
-      ...(orderInfo && { automatic_order: orderInfo }),
-      ...(homologationInfo && { homologation: homologationInfo })
+      message: `Successfully processed ${requestBody.length} vehicle groups with ${totalVehiclesProcessed} total vehicles`,
+      total_groups: requestBody.length,
+      total_vehicles: totalVehiclesProcessed,
+      processing_summary: {
+        total_orders_created: processedGroups.reduce((sum, group) => sum + group.processing_summary.orders_created, 0),
+        total_homologations_created: processedGroups.reduce((sum, group) => sum + group.processing_summary.homologations_created, 0),
+        total_errors: processedGroups.reduce((sum, group) => sum + group.processing_summary.errors, 0)
+      },
+      processed_groups: processedGroups
     }
 
     console.log(`[${timestamp}] SUCCESS - Sending response:`, response)
