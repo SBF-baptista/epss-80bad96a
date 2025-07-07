@@ -569,7 +569,14 @@ export type Database = {
         | "em_testes_finais"
         | "homologado"
       status_pedido: "novos" | "producao" | "aguardando" | "enviado" | "standby"
-      vehicle_usage_type: "particular" | "comercial" | "frota"
+      vehicle_usage_type:
+        | "particular"
+        | "comercial"
+        | "frota"
+        | "telemetria_gps"
+        | "telemetria_can"
+        | "copiloto_2_cameras"
+        | "copiloto_4_cameras"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -704,7 +711,15 @@ export const Constants = {
         "homologado",
       ],
       status_pedido: ["novos", "producao", "aguardando", "enviado", "standby"],
-      vehicle_usage_type: ["particular", "comercial", "frota"],
+      vehicle_usage_type: [
+        "particular",
+        "comercial",
+        "frota",
+        "telemetria_gps",
+        "telemetria_can",
+        "copiloto_2_cameras",
+        "copiloto_4_cameras",
+      ],
     },
   },
 } as const

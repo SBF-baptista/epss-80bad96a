@@ -45,13 +45,21 @@ export async function processVehicleGroups(
       try {
         // Store incoming vehicle data
         console.log(`[${timestamp}][${requestId}] Storing incoming vehicle data...`)
+        
+        // Normalize usage_type to database enum format
+        let normalizedUsageType = group.usage_type.toLowerCase()
+        if (normalizedUsageType === 'telemetria gps') normalizedUsageType = 'telemetria_gps'
+        if (normalizedUsageType === 'telemetria can') normalizedUsageType = 'telemetria_can'
+        if (normalizedUsageType === 'copiloto 2 cameras') normalizedUsageType = 'copiloto_2_cameras'
+        if (normalizedUsageType === 'copiloto 4 cameras') normalizedUsageType = 'copiloto_4_cameras'
+        
         const { data: incomingVehicle, error: insertError } = await supabase
           .from('incoming_vehicles')
           .insert({
             vehicle: vehicle.trim(),
             brand: brand.trim(),
             year: year || null,
-            usage_type: group.usage_type,
+            usage_type: normalizedUsageType,
             quantity: quantity || 1,
             received_at: timestamp
           })

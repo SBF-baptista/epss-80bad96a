@@ -67,6 +67,39 @@ export function validateRequestBody(requestBody: any, timestamp: string, request
       )
     }
 
+    // Validate usage_type with new accepted values
+    const validUsageTypes = [
+      'particular', 
+      'comercial', 
+      'frota', 
+      'telemetria_gps', 
+      'telemetria_can', 
+      'copiloto_2_cameras', 
+      'copiloto_4_cameras',
+      'TELEMETRIA GPS',
+      'TELEMETRIA CAN', 
+      'COPILOTO 2 CAMERAS', 
+      'COPILOTO 4 CAMERAS'
+    ]
+    
+    if (!validUsageTypes.includes(group.usage_type)) {
+      console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid usage_type at index ${i}:`, group.usage_type)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid usage_type', 
+          message: `Group at index ${i} has invalid usage_type. Valid values are: ${validUsageTypes.join(', ')}`,
+          request_id: requestId,
+          group_index: i,
+          provided_usage_type: group.usage_type,
+          valid_usage_types: validUsageTypes
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     if (group.vehicles.length === 0) {
       console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Empty vehicles array in group ${i}`)
       return new Response(

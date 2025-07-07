@@ -47,7 +47,7 @@ x-api-key: [SUA_API_KEY]
 [
   {
     "company_name": "Nome da Empresa",
-    "usage_type": "particular", // ou "comercial" ou "frota"
+    "usage_type": "particular", // Valores aceitos: "particular", "comercial", "frota", "TELEMETRIA GPS", "TELEMETRIA CAN", "COPILOTO 2 CAMERAS", "COPILOTO 4 CAMERAS"
     "vehicles": [
       {
         "vehicle": "Nome do Modelo",
@@ -59,6 +59,15 @@ x-api-key: [SUA_API_KEY]
   }
 ]
 ```
+
+### Valores Aceitos para usage_type:
+- `"particular"` - Uso particular
+- `"comercial"` - Uso comercial
+- `"frota"` - Frota
+- `"TELEMETRIA GPS"` - Telemetria GPS
+- `"TELEMETRIA CAN"` - Telemetria CAN
+- `"COPILOTO 2 CAMERAS"` - Copiloto com 2 câmeras
+- `"COPILOTO 4 CAMERAS"` - Copiloto com 4 câmeras
 
 ## Exemplo de Requisição Completa
 ```bash
