@@ -50,8 +50,8 @@ x-api-key: [SUA_API_KEY]
     "usage_type": "particular", // Valores aceitos: "particular", "comercial", "frota", "TELEMETRIA GPS", "TELEMETRIA CAN", "COPILOTO 2 CAMERAS", "COPILOTO 4 CAMERAS"
     "vehicles": [
       {
-        "vehicle": "Nome do Modelo",
-        "brand": "Marca",
+        "vehicle": "Nome do Modelo",  // IMPORTANTE: Este é o MODELO do veículo (ex: "HRV", "Civic", "Corolla")
+        "brand": "Marca",             // IMPORTANTE: Esta é a MARCA do veículo (ex: "Honda", "Toyota", "Ford")
         "year": 2024, // opcional
         "quantity": 1 // opcional, padrão é 1
       }
@@ -149,8 +149,14 @@ curl -X POST https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehic
    - Certifique-se de que está enviando um array de objetos
 
 4. **"Invalid request format"**
-   - O corpo deve ser um array de grupos de veículos
-   - Cada grupo deve ter `company_name`, `usage_type` e `vehicles`
+    - O corpo deve ser um array de grupos de veículos
+    - Cada grupo deve ter `company_name`, `usage_type` e `vehicles`
+
+5. **Campos `vehicle` e `brand` trocados**
+    - **ATENÇÃO**: `"vehicle"` deve ser o **MODELO** (ex: "Corolla", "HRV", "Civic")
+    - **ATENÇÃO**: `"brand"` deve ser a **MARCA** (ex: "Toyota", "Honda", "Ford")
+    - Formato correto: `{"vehicle": "Corolla", "brand": "Toyota"}`
+    - Formato incorreto: `{"vehicle": "Toyota", "brand": "Corolla"}`
 
 ### Passos de Verificação
 

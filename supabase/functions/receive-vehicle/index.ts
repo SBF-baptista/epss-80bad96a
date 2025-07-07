@@ -77,18 +77,18 @@ serve(async (req) => {
 
   try {
     console.log(`[${timestamp}][${requestId}] Initializing Supabase client...`)
-    // Initialize Supabase client
+    // Initialize Supabase client with service role key for system operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       console.error(`[${timestamp}][${requestId}] ERROR - Missing Supabase environment variables`)
       console.error(`[${timestamp}][${requestId}] SUPABASE_URL present: ${!!supabaseUrl}`)
-      console.error(`[${timestamp}][${requestId}] SUPABASE_ANON_KEY present: ${!!supabaseAnonKey}`)
+      console.error(`[${timestamp}][${requestId}] SUPABASE_SERVICE_ROLE_KEY present: ${!!supabaseServiceKey}`)
       throw new Error('Missing Supabase configuration')
     }
     
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     console.log(`[${timestamp}][${requestId}] Supabase client initialized successfully`)
 
     // API key authentication with detailed debug
