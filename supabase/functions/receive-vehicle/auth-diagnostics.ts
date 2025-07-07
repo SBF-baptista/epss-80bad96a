@@ -10,6 +10,12 @@ export function createAuthDiagnosticsEndpoint(req: Request, timestamp: string, r
     const apiKey = req.headers.get('x-api-key')
     const expectedApiKey = Deno.env.get('VEHICLE_API_KEY')
     
+    // Log all headers for debugging
+    console.log(`[${timestamp}][${requestId}] ALL HEADERS:`, JSON.stringify(Object.fromEntries(req.headers.entries()), null, 2))
+    console.log(`[${timestamp}][${requestId}] API KEY PROVIDED:`, !!apiKey, apiKey ? `Length: ${apiKey.length}` : 'None')
+    console.log(`[${timestamp}][${requestId}] EXPECTED KEY CONFIGURED:`, !!expectedApiKey, expectedApiKey ? `Length: ${expectedApiKey.length}` : 'None')
+    console.log(`[${timestamp}][${requestId}] KEYS MATCH:`, apiKey === expectedApiKey)
+    
     // Detailed authentication analysis
     const authAnalysis = {
       timestamp: timestamp,

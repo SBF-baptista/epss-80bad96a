@@ -138,19 +138,30 @@ curl -X POST https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehic
 
 ### Passos de Verificação
 
-1. **Teste de Conectividade**
-   ```bash
-   curl "https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?test=true" \
-     -H "x-api-key: SUA_API_KEY"
-   ```
+**PARA RESOLVER ERRO 401 "Authentication failed":**
 
-2. **Diagnóstico de Autenticação**
+1. **Primeiro, teste o endpoint de diagnóstico de autenticação**
    ```bash
    curl "https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?auth-debug=true" \
-     -H "x-api-key: SUA_API_KEY"
+     -H "x-api-key: SUA_API_KEY_AQUI"
+   ```
+   
+   Este comando irá retornar uma análise detalhada mostrando:
+   - Se o header x-api-key está presente
+   - Se a API key tem o comprimento correto
+   - Se há espaços em branco extras
+   - Comparação entre a key fornecida e a esperada
+
+2. **Teste de Conectividade Básica**
+   ```bash
+   curl "https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?test=true" \
+     -H "x-api-key: SUA_API_KEY_AQUI"
    ```
 
-3. **Teste com Dados Mínimos**
+3. **Verifique os headers exatos sendo enviados**
+   Use o endpoint auth-debug para ver exatamente quais headers estão chegando ao servidor
+
+4. **Teste com dados mínimos após confirmar autenticação**
    ```bash
    curl -X POST "https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle" \
      -H "Content-Type: application/json" \
@@ -171,6 +182,34 @@ curl -X POST https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehic
 ### Erros
 - Falhas são registradas com detalhes específicos
 - Status: `error`
+
+## Diagnóstico Rápido para Erro 401
+
+Se você está recebendo erro **"Authentication failed"**, use o script de diagnóstico:
+
+1. **Baixe o script de diagnóstico**
+   ```bash
+   curl -o diagnose.sh https://raw.githubusercontent.com/supabase/functions/receive-vehicle/diagnose.sh
+   chmod +x diagnose.sh
+   ```
+
+2. **Execute o diagnóstico**
+   ```bash
+   ./diagnose.sh SUA_API_KEY_AQUI
+   ```
+
+3. **Ou execute manualmente o diagnóstico**
+   ```bash
+   curl "https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?auth-debug=true" \
+     -H "x-api-key: SUA_API_KEY" \
+     -H "Content-Type: application/json"
+   ```
+
+O diagnóstico irá mostrar:
+- ✅ Se a API key está sendo enviada corretamente
+- ✅ Se há espaços em branco ou caracteres extras
+- ✅ Se a chave corresponde ao valor esperado
+- ✅ Recomendações específicas para resolver o problema
 
 ## Suporte
 Para problemas técnicos:
