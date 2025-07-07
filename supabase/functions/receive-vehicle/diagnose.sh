@@ -84,7 +84,38 @@ else
 fi
 
 echo ""
-echo "=== TESTE 3: Conectividade Básica ==="
+echo "=== TESTE 3: Diagnóstico de Configuração ==="
+echo "Verificando configuração do servidor..."
+
+CONFIG_RESPONSE=$(curl -s -w "HTTP_CODE:%{http_code}" "$BASE_URL?config-debug=true" \
+    -H "x-api-key: $API_KEY")
+
+CONFIG_HTTP_CODE=$(echo "$CONFIG_RESPONSE" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+CONFIG_BODY=$(echo "$CONFIG_RESPONSE" | sed 's/HTTP_CODE:[0-9]*$//')
+
+echo "📊 Status HTTP: $CONFIG_HTTP_CODE"
+echo "📄 Resposta:"
+echo "$CONFIG_BODY" | jq '.' 2>/dev/null || echo "$CONFIG_BODY"
+
+if [ "$CONFIG_HTTP_CODE" = "200" ]; then
+    echo "✅ Diagnóstico de configuração executado com sucesso!"
+    
+    # Check for configuration issues
+    CONFIG_ISSUES=$(echo "$CONFIG_BODY" | jq -r '.configuration_issues[]?' 2>/dev/null)
+    if [ ! -z "$CONFIG_ISSUES" ]; then
+        echo ""
+        echo "⚠️ PROBLEMAS DE CONFIGURAÇÃO DETECTADOS:"
+        echo "$CONFIG_BODY" | jq -r '.configuration_issues[]?' 2>/dev/null | sed 's/^/   - /'
+        echo ""
+        echo "🔧 RECOMENDAÇÕES:"
+        echo "$CONFIG_BODY" | jq -r '.recommendations[]?' 2>/dev/null | sed 's/^/   - /'
+    fi
+else
+    echo "❌ Falha no diagnóstico de configuração (HTTP $CONFIG_HTTP_CODE)"
+fi
+
+echo ""
+echo "=== TESTE 4: Conectividade Básica ==="
 echo "Testando endpoint básico..."
 
 BASIC_RESPONSE=$(curl -s -w "HTTP_CODE:%{http_code}" "$BASE_URL?test=true" \
@@ -103,6 +134,7 @@ fi
 echo ""
 echo "=== RESUMO DO DIAGNÓSTICO ==="
 echo "Auth Debug: HTTP $HTTP_CODE"
+echo "Config Debug: HTTP $CONFIG_HTTP_CODE"
 echo "Basic Test: HTTP $BASIC_HTTP_CODE"
 if [ ! -z "$REAL_HTTP_CODE" ]; then
     echo "Real Data: HTTP $REAL_HTTP_CODE"

@@ -28,6 +28,12 @@ Para análise detalhada de problemas de autenticação:
 GET/POST https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?auth-debug=true
 ```
 
+### 3. Diagnóstico de Configuração
+Para verificar todas as variáveis de ambiente e configurações:
+```
+GET/POST https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?config-debug=true
+```
+
 ## Formato da Requisição
 
 ### Headers Obrigatórios
@@ -109,7 +115,8 @@ curl -X POST https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehic
     ],
     "test_endpoints": {
       "basic_test": "Add ?test=true to URL for basic connectivity test",
-      "auth_debug": "Add ?auth-debug=true to URL for detailed authentication analysis"
+      "auth_debug": "Add ?auth-debug=true to URL for detailed authentication analysis",
+      "config_debug": "Add ?config-debug=true to URL for server configuration verification"
     }
   }
 }

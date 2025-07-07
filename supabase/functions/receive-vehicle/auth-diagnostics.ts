@@ -10,11 +10,25 @@ export function createAuthDiagnosticsEndpoint(req: Request, timestamp: string, r
     const apiKey = req.headers.get('x-api-key')
     const expectedApiKey = Deno.env.get('VEHICLE_API_KEY')
     
-    // Log all headers for debugging
+    // Enhanced logging for key analysis
     console.log(`[${timestamp}][${requestId}] ALL HEADERS:`, JSON.stringify(Object.fromEntries(req.headers.entries()), null, 2))
     console.log(`[${timestamp}][${requestId}] API KEY PROVIDED:`, !!apiKey, apiKey ? `Length: ${apiKey.length}` : 'None')
     console.log(`[${timestamp}][${requestId}] EXPECTED KEY CONFIGURED:`, !!expectedApiKey, expectedApiKey ? `Length: ${expectedApiKey.length}` : 'None')
     console.log(`[${timestamp}][${requestId}] KEYS MATCH:`, apiKey === expectedApiKey)
+    
+    // Character-by-character comparison for detailed analysis
+    if (apiKey && expectedApiKey) {
+      console.log(`[${timestamp}][${requestId}] DETAILED KEY COMPARISON:`)
+      console.log(`[${timestamp}][${requestId}] Provided key preview: "${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 10)}"`)
+      console.log(`[${timestamp}][${requestId}] Expected key preview: "${expectedApiKey.substring(0, 10)}...${expectedApiKey.substring(expectedApiKey.length - 10)}"`)
+      
+      // Check for common issues
+      const trimmedProvidedKey = apiKey.trim()
+      const trimmedExpectedKey = expectedApiKey.trim()
+      console.log(`[${timestamp}][${requestId}] Keys match after trim:`, trimmedProvidedKey === trimmedExpectedKey)
+      console.log(`[${timestamp}][${requestId}] Provided key has whitespace:`, apiKey !== trimmedProvidedKey)
+      console.log(`[${timestamp}][${requestId}] Expected key has whitespace:`, expectedApiKey !== trimmedExpectedKey)
+    }
     
     // Detailed authentication analysis
     const authAnalysis = {

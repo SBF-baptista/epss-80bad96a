@@ -6,6 +6,7 @@ import { validateRequestBody } from './validation.ts'
 import { processVehicleGroups } from './processing.ts'
 import { createTestEndpoint } from './test-endpoint.ts'
 import { createAuthDiagnosticsEndpoint, createEnhancedAuthError } from './auth-diagnostics.ts'
+import { createConfigDiagnosticsEndpoint } from './config-diagnostics.ts'
 
 serve(async (req) => {
   const timestamp = new Date().toISOString()
@@ -44,6 +45,12 @@ serve(async (req) => {
   const authDiagResponse = createAuthDiagnosticsEndpoint(req, timestamp, requestId)
   if (authDiagResponse) {
     return authDiagResponse
+  }
+
+  // Check for config diagnostics endpoint request
+  const configDiagResponse = createConfigDiagnosticsEndpoint(req, timestamp, requestId)
+  if (configDiagResponse) {
+    return configDiagResponse
   }
 
   // Handle CORS preflight requests
