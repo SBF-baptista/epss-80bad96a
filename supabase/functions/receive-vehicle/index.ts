@@ -5,6 +5,7 @@ import { corsHeaders } from './shared.ts'
 import { validateRequestBody } from './validation.ts'
 import { processVehicleGroups } from './processing.ts'
 import { createTestEndpoint } from './test-endpoint.ts'
+import { createAuthDiagnosticsEndpoint, createEnhancedAuthError } from './auth-diagnostics.ts'
 
 serve(async (req) => {
   const timestamp = new Date().toISOString()
@@ -37,6 +38,12 @@ serve(async (req) => {
   const testResponse = createTestEndpoint(req, timestamp, requestId)
   if (testResponse) {
     return testResponse
+  }
+
+  // Check for auth diagnostics endpoint request
+  const authDiagResponse = createAuthDiagnosticsEndpoint(req, timestamp, requestId)
+  if (authDiagResponse) {
+    return authDiagResponse
   }
 
   // Handle CORS preflight requests
@@ -94,57 +101,24 @@ serve(async (req) => {
     
     console.log(`[${timestamp}][${requestId}] Keys match: ${apiKey === expectedApiKey}`)
     
-    if (!apiKey) {
-      console.log(`[${timestamp}][${requestId}] ERROR - No API key provided in x-api-key header`)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Unauthorized',
-          message: 'Missing API key in x-api-key header',
-          request_id: requestId,
-          debug_info: {
-            headers_received: Object.keys(headers),
-            api_key_header_present: false
+    if (!apiKey || !expectedApiKey || apiKey !== expectedApiKey) {
+      console.log(`[${timestamp}][${requestId}] ERROR - Authentication failed`)
+      if (!expectedApiKey) {
+        console.log(`[${timestamp}][${requestId}] ERROR - No expected API key configured in environment`)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Server configuration error',
+            message: 'API key not configured on server',
+            request_id: requestId
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
-        }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-    
-    if (!expectedApiKey) {
-      console.log(`[${timestamp}][${requestId}] ERROR - No expected API key configured in environment`)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Server configuration error',
-          message: 'API key not configured on server',
-          request_id: requestId
-        }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-    
-    if (apiKey !== expectedApiKey) {
-      console.log(`[${timestamp}][${requestId}] ERROR - Invalid API key provided`)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Unauthorized',
-          message: 'Invalid API key',
-          request_id: requestId,
-          debug_info: {
-            provided_key_length: apiKey.length,
-            expected_key_length: expectedApiKey.length
-          }
-        }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+        )
+      }
+      
+      return createEnhancedAuthError(apiKey, expectedApiKey, requestId)
     }
     
     console.log(`[${timestamp}][${requestId}] Authentication successful`)
