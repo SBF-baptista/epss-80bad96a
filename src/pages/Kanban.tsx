@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
 import NewOrderModal from "@/components/NewOrderModal";
+import AutoOrderTestPanel from "@/components/AutoOrderTestPanel";
 import { fetchOrders } from "@/services/orderService";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, TestTube } from "lucide-react";
 
 const Kanban = () => {
   const [filters, setFilters] = useState({
@@ -15,6 +16,7 @@ const Kanban = () => {
     configurationType: ""
   });
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
   const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ['orders'],
@@ -61,14 +63,28 @@ const Kanban = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">Setup Flow Kanban - Gestão de Pedidos</h2>
-          <Button 
-            onClick={() => setShowNewOrderModal(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Novo Pedido
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowTestPanel(!showTestPanel)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <TestTube className="h-4 w-4" />
+              {showTestPanel ? "Ocultar" : "Testes"}
+            </Button>
+            <Button 
+              onClick={() => setShowNewOrderModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Pedido
+            </Button>
+          </div>
         </div>
+
+        {showTestPanel && (
+          <AutoOrderTestPanel />
+        )}
 
         <FilterBar 
           filters={filters}
