@@ -60,7 +60,7 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
         configuracao: automationRule.configuration,
         status: 'novos',
         data: new Date().toISOString(),
-        usuario_id: null // System-generated order
+        usuario_id: 'de67e1c5-8fb0-4169-8153-bc5e0a1ecdcf' // sergio.filho@segsat.com
       })
       .select()
       .single()
