@@ -36,16 +36,23 @@ export async function generateAutoOrderNumber(supabase: any): Promise<string> {
 
 // Function to create automatic order
 export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string) {
-  console.log(`Creating automatic order for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
+  const timestamp = new Date().toISOString()
+  console.log(`[${timestamp}] Creating automatic order for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
+  console.log(`[${timestamp}] Vehicle data:`, JSON.stringify(vehicleData, null, 2))
+  console.log(`[${timestamp}] Order number: ${orderNumber}`)
   
   try {
+    console.log(`[${timestamp}] Looking for automation rule...`)
     const automationRule = await findAutomationRule(supabase, vehicleData.brand, vehicleData.vehicle, vehicleData.year)
     
     if (!automationRule) {
-      console.log('No automation rule found, skipping automatic order creation')
+      console.log(`[${timestamp}] No automation rule found for ${vehicleData.brand} ${vehicleData.vehicle}, skipping automatic order creation`)
       return null
     }
 
+    console.log(`[${timestamp}] Found automation rule:`, JSON.stringify(automationRule, null, 2))
+
+    console.log(`[${timestamp}] Creating order in pedidos table...`)
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .insert({
@@ -59,12 +66,21 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
       .single()
 
     if (pedidoError) {
-      console.error('Error creating automatic order:', pedidoError)
+      console.error(`[${timestamp}] Error creating automatic order:`, pedidoError)
+      console.error(`[${timestamp}] Error details - code: ${pedidoError.code}, message: ${pedidoError.message}`)
+      if (pedidoError.details) {
+        console.error(`[${timestamp}] Error details: ${pedidoError.details}`)
+      }
+      if (pedidoError.hint) {
+        console.error(`[${timestamp}] Error hint: ${pedidoError.hint}`)
+      }
       throw pedidoError
     }
 
-    console.log('Created automatic order:', pedido)
+    console.log(`[${timestamp}] Successfully created order with ID: ${pedido.id}`)
+    console.log(`[${timestamp}] Order details:`, JSON.stringify(pedido, null, 2))
 
+    console.log(`[${timestamp}] Creating vehicle record...`)
     const { error: vehicleError } = await supabase
       .from('veiculos')
       .insert({
@@ -76,10 +92,13 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
       })
 
     if (vehicleError) {
-      console.error('Error creating vehicle for automatic order:', vehicleError)
+      console.error(`[${timestamp}] Error creating vehicle for automatic order:`, vehicleError)
       throw vehicleError
     }
 
+    console.log(`[${timestamp}] Successfully created vehicle record`)
+
+    console.log(`[${timestamp}] Creating tracker record...`)
     const { error: trackerError } = await supabase
       .from('rastreadores')
       .insert({
@@ -89,11 +108,12 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
       })
 
     if (trackerError) {
-      console.error('Error creating tracker for automatic order:', trackerError)
+      console.error(`[${timestamp}] Error creating tracker for automatic order:`, trackerError)
       throw trackerError
     }
 
-    console.log(`Successfully created automatic order ${orderNumber} for ${vehicleData.brand} ${vehicleData.vehicle} (quantity: ${vehicleData.quantity || 1})`)
+    console.log(`[${timestamp}] Successfully created tracker record`)
+    console.log(`[${timestamp}] ✅ COMPLETE: Successfully created automatic order ${orderNumber} for ${vehicleData.brand} ${vehicleData.vehicle} (quantity: ${vehicleData.quantity || 1})`)
     
     return {
       order_id: pedido.id,
@@ -104,7 +124,8 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
     }
 
   } catch (error) {
-    console.error('Error in createAutomaticOrder:', error)
+    console.error(`[${timestamp}] ❌ ERROR in createAutomaticOrder:`, error)
+    console.error(`[${timestamp}] Error stack:`, error.stack)
     throw error
   }
 }
