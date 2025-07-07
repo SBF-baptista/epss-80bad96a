@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 const AutoOrderTestPanel = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("");
   const [apiTestData, setApiTestData] = useState({
     brand: "TOYOTA",
     vehicle: "COROLLA",
@@ -61,36 +60,24 @@ const AutoOrderTestPanel = () => {
   };
 
   const testAuthConfiguration = async () => {
-    if (!apiKey.trim()) {
-      toast({
-        title: "API Key obrigatória",
-        description: "Por favor, insira a API key antes de testar a autenticação",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await fetch('https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?auth-debug=true', {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('receive-vehicle', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey
-        }
+        body: { 'auth-debug': true }
       });
 
-      const result = await response.json();
-      
       toast({
         title: "Diagnóstico de Autenticação",
-        description: result.authentication_result?.keys_match_exact 
-          ? "✅ API Key válida" 
-          : "❌ API Key inválida - verifique a configuração",
-        variant: result.authentication_result?.keys_match_exact ? "default" : "destructive"
+        description: response.error 
+          ? `❌ Erro de autenticação: ${response.error.message}` 
+          : "✅ Autenticação via JWT funcionando",
+        variant: response.error ? "destructive" : "default"
       });
 
-      console.log('Auth diagnostics:', result);
+      console.log('Auth diagnostics:', response);
     } catch (error) {
       console.error('Auth test error:', error);
       toast({
@@ -137,15 +124,6 @@ const AutoOrderTestPanel = () => {
   };
 
   const testApiVehicleProcessing = async () => {
-    if (!apiKey.trim()) {
-      toast({
-        title: "API Key obrigatória",
-        description: "Por favor, insira a API key antes de testar",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     try {
       const testPayload = [{
@@ -159,26 +137,19 @@ const AutoOrderTestPanel = () => {
         }]
       }];
 
-      const response = await fetch('https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey
-        },
-        body: JSON.stringify(testPayload)
+      const response = await supabase.functions.invoke('receive-vehicle', {
+        body: testPayload
       });
 
-      const result = await response.json();
-      
-      if (response.ok) {
+      if (!response.error) {
         toast({
           title: "Teste API concluído",
-          description: `Veículo processado: ${result.processing_summary?.total_orders_created || 0} pedidos criados, ${result.processing_summary?.total_homologations_created || 0} homologações criadas`
+          description: `Veículo processado: ${response.data?.processing_summary?.total_orders_created || 0} pedidos criados, ${response.data?.processing_summary?.total_homologations_created || 0} homologações criadas`
         });
       } else {
         toast({
           title: "Erro no teste API",
-          description: result.message || "Erro desconhecido",
+          description: response.error.message || "Erro desconhecido",
           variant: "destructive"
         });
       }
@@ -255,16 +226,6 @@ const AutoOrderTestPanel = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2 mb-4">
-            <Label htmlFor="api-key">API Key</Label>
-            <Input
-              id="api-key"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Insira a API key configurada no Supabase"
-            />
-          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="api-brand">Marca</Label>

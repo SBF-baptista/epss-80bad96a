@@ -107,7 +107,7 @@ async function createAutomaticOrder(supabase: any, vehicle: any, orderNumber: st
         configuracao: automationRule.configuration,
         status: 'novos',
         data: new Date().toISOString(),
-        usuario_id: '00000000-0000-0000-0000-000000000000' // System user ID for automatic orders
+        usuario_id: 'de67e1c5-8fb0-4169-8153-bc5e0a1ecdcf' // sergio.filho@segsat.com for system orders
       })
       .select()
       .single()
@@ -181,17 +181,30 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with service role for system operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Simple API key authentication
-    const apiKey = req.headers.get('x-api-key')
-    const expectedApiKey = Deno.env.get('VEHICLE_API_KEY')
+    // Get JWT token from Authorization header
+    const authorization = req.headers.get('Authorization')
+    if (!authorization) {
+      console.log('Missing Authorization header')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Verify JWT token
+    const token = authorization.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     
-    if (!apiKey || apiKey !== expectedApiKey) {
-      console.log('Unauthorized access attempt - invalid or missing API key')
+    if (authError || !user) {
+      console.log('Invalid JWT token:', authError)
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { 
