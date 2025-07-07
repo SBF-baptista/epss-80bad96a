@@ -24,6 +24,118 @@ const AutoOrderTestPanel = () => {
     configuration: "CONFIG_TEST_001"
   });
 
+  const testConnectivity = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?test=true', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: "Conectividade OK",
+          description: "Endpoint está acessível e funcionando"
+        });
+      } else {
+        toast({
+          title: "Teste de conectividade",
+          description: `Status: ${response.status} - ${result.message || 'Teste básico funcionando'}`,
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      console.error('Connectivity test error:', error);
+      toast({
+        title: "Erro de conectividade",
+        description: "Não foi possível conectar ao endpoint",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testAuthConfiguration = async () => {
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key obrigatória",
+        description: "Por favor, insira a API key antes de testar a autenticação",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?auth-debug=true', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        }
+      });
+
+      const result = await response.json();
+      
+      toast({
+        title: "Diagnóstico de Autenticação",
+        description: result.authentication_result?.keys_match_exact 
+          ? "✅ API Key válida" 
+          : "❌ API Key inválida - verifique a configuração",
+        variant: result.authentication_result?.keys_match_exact ? "default" : "destructive"
+      });
+
+      console.log('Auth diagnostics:', result);
+    } catch (error) {
+      console.error('Auth test error:', error);
+      toast({
+        title: "Erro no teste de autenticação",
+        description: "Erro ao verificar configuração",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testServerConfiguration = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle?config-debug=true', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      toast({
+        title: "Configuração do Servidor",
+        description: result.environment_configuration?.vehicle_api_key?.configured 
+          ? "✅ VEHICLE_API_KEY configurada" 
+          : "❌ VEHICLE_API_KEY não configurada",
+        variant: result.environment_configuration?.vehicle_api_key?.configured ? "default" : "destructive"
+      });
+
+      console.log('Server config diagnostics:', result);
+    } catch (error) {
+      console.error('Config test error:', error);
+      toast({
+        title: "Erro no teste de configuração",
+        description: "Erro ao verificar configuração do servidor",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const testApiVehicleProcessing = async () => {
     if (!apiKey.trim()) {
       toast({
@@ -196,13 +308,39 @@ const AutoOrderTestPanel = () => {
               </Select>
             </div>
           </div>
-          <Button 
-            onClick={testApiVehicleProcessing} 
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? "Testando..." : "Testar API de Veículos"}
-          </Button>
+          <div className="grid grid-cols-1 gap-2">
+            <Button 
+              onClick={testConnectivity} 
+              disabled={loading}
+              variant="outline"
+              className="w-full"
+            >
+              {loading ? "Testando..." : "1. Testar Conectividade"}
+            </Button>
+            <Button 
+              onClick={testServerConfiguration} 
+              disabled={loading}
+              variant="outline"
+              className="w-full"
+            >
+              {loading ? "Testando..." : "2. Verificar Configuração do Servidor"}
+            </Button>
+            <Button 
+              onClick={testAuthConfiguration} 
+              disabled={loading}
+              variant="outline"
+              className="w-full"
+            >
+              {loading ? "Testando..." : "3. Testar Autenticação"}
+            </Button>
+            <Button 
+              onClick={testApiVehicleProcessing} 
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? "Testando..." : "4. Testar API de Veículos"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
