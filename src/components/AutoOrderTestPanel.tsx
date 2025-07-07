@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 const AutoOrderTestPanel = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState("");
   const [apiTestData, setApiTestData] = useState({
     brand: "TOYOTA",
     vehicle: "COROLLA",
@@ -24,6 +25,15 @@ const AutoOrderTestPanel = () => {
   });
 
   const testApiVehicleProcessing = async () => {
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key obrigatória",
+        description: "Por favor, insira a API key antes de testar",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const testPayload = [{
@@ -41,7 +51,7 @@ const AutoOrderTestPanel = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': 'test-key-123' // This should be configured in your environment
+          'x-api-key': apiKey
         },
         body: JSON.stringify(testPayload)
       });
@@ -133,6 +143,16 @@ const AutoOrderTestPanel = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2 mb-4">
+            <Label htmlFor="api-key">API Key</Label>
+            <Input
+              id="api-key"
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Insira a API key configurada no Supabase"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="api-brand">Marca</Label>
