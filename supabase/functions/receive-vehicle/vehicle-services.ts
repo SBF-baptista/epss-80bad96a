@@ -1,20 +1,42 @@
-// Function to check if vehicle exists
-export async function checkVehicleExists(supabase: any, brand: string, model: string) {
-  console.log(`Checking if vehicle exists: ${brand} ${model}`)
+// Function to check if automation rule exists for vehicle
+export async function checkAutomationRuleExists(supabase: any, brand: string, model: string, year?: number) {
+  console.log(`Checking if automation rule exists: ${brand} ${model} ${year || 'no year'}`)
   
-  const { data: vehicles, error } = await supabase
-    .from('veiculos')
-    .select('id, marca, modelo, quantidade, tipo, created_at')
-    .ilike('marca', brand.trim())
-    .ilike('modelo', model.trim())
+  // First try to find exact match with year if provided
+  if (year) {
+    const { data: rules, error } = await supabase
+      .from('automation_rules_extended')
+      .select('*')
+      .eq('brand', brand.trim().toUpperCase())
+      .eq('model', model.trim().toUpperCase())
+      .eq('model_year', year.toString())
+      .limit(1)
+
+    if (error) {
+      console.error('Database error checking automation rule with year:', error)
+      throw error
+    }
+
+    if (rules && rules.length > 0) {
+      console.log(`Automation rule exists with year: ${rules[0].id}`)
+      return rules[0]
+    }
+  }
+
+  // Try to find match without year
+  const { data: rules, error } = await supabase
+    .from('automation_rules_extended')
+    .select('*')
+    .eq('brand', brand.trim().toUpperCase())
+    .eq('model', model.trim().toUpperCase())
     .limit(1)
 
   if (error) {
-    console.error('Database error checking vehicle:', error)
+    console.error('Database error checking automation rule:', error)
     throw error
   }
 
-  const exists = vehicles && vehicles.length > 0
-  console.log(`Vehicle exists check result: ${exists}`)
-  return exists ? vehicles[0] : null
+  const exists = rules && rules.length > 0
+  console.log(`Automation rule exists check result: ${exists}`)
+  return exists ? rules[0] : null
 }

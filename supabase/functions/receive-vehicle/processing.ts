@@ -1,5 +1,5 @@
 import { GroupResult, ProcessingResult, VehicleGroup } from './shared.ts'
-import { checkVehicleExists } from './vehicle-services.ts'
+import { checkAutomationRuleExists } from './vehicle-services.ts'
 import { generateAutoOrderNumber, createAutomaticOrder } from './order-services.ts'
 import { createHomologationCard } from './homologation-services.ts'
 
@@ -81,9 +81,9 @@ export async function processVehicleGroups(
 
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
-        // Check if vehicle exists
-        console.log(`[${timestamp}][${requestId}] Checking if vehicle exists in database...`)
-        const existingVehicle = await checkVehicleExists(supabase, brand, vehicle)
+        // Check if automation rule exists for this vehicle
+        console.log(`[${timestamp}][${requestId}] Checking if automation rule exists for vehicle...`)
+        const automationRule = await checkAutomationRuleExists(supabase, brand, vehicle, year)
         
         let processingNotes = ''
         let vehicleResult: ProcessingResult = {
@@ -92,14 +92,14 @@ export async function processVehicleGroups(
           incoming_vehicle_id: incomingVehicle.id
         }
 
-        if (existingVehicle) {
-          console.log(`[${timestamp}][${requestId}] Vehicle exists in database, creating automatic order...`)
+        if (automationRule) {
+          console.log(`[${timestamp}][${requestId}] Automation rule found, creating automatic order...`)
           
           try {
             const orderNumber = await generateAutoOrderNumber(supabase)
             console.log(`[${timestamp}][${requestId}] Generated order number: ${orderNumber}`)
             const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber)
-            processingNotes = `Vehicle found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
+            processingNotes = `Automation rule found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
             
             // Update incoming vehicle record with order info
             await supabase
@@ -119,7 +119,7 @@ export async function processVehicleGroups(
               
           } catch (orderError: any) {
             console.error(`[${timestamp}][${requestId}] ERROR - Failed to create automatic order:`, orderError)
-            processingNotes = `Vehicle found but failed to create automatic order: ${orderError.message}`
+            processingNotes = `Automation rule found but failed to create automatic order: ${orderError.message}`
             
             await supabase
               .from('incoming_vehicles')
@@ -134,13 +134,13 @@ export async function processVehicleGroups(
             groupResult.processing_summary.errors++
           }
         } else {
-          console.log(`[${timestamp}][${requestId}] Vehicle not found in database, creating homologation card...`)
+          console.log(`[${timestamp}][${requestId}] No automation rule found, creating homologation card...`)
           
           try {
             const homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year }, incomingVehicle.id)
             processingNotes = homologationInfo.created 
-              ? `Vehicle not found. Created new homologation card linked to incoming vehicle. (quantity: ${quantity || 1})`
-              : `Vehicle not found. Linked to existing homologation card. (quantity: ${quantity || 1})`
+              ? `No automation rule found. Created new homologation card linked to incoming vehicle. (quantity: ${quantity || 1})`
+              : `No automation rule found. Linked to existing homologation card. (quantity: ${quantity || 1})`
             
             // Update incoming vehicle record with homologation info
             await supabase
@@ -162,7 +162,7 @@ export async function processVehicleGroups(
               
           } catch (homologationError: any) {
             console.error(`[${timestamp}][${requestId}] ERROR - Failed to create homologation card:`, homologationError)
-            processingNotes = `Vehicle not found and failed to create homologation card: ${homologationError.message}`
+            processingNotes = `No automation rule found and failed to create homologation card: ${homologationError.message}`
             
             await supabase
               .from('incoming_vehicles')
