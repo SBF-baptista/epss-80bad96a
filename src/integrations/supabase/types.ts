@@ -278,7 +278,7 @@ export type Database = {
           shipment_prepared_at: string | null
           shipment_recipient_id: string | null
           status: Database["public"]["Enums"]["status_pedido"]
-          usuario_id: string
+          usuario_id: string | null
         }
         Insert: {
           configuracao: string
@@ -299,7 +299,7 @@ export type Database = {
           shipment_prepared_at?: string | null
           shipment_recipient_id?: string | null
           status?: Database["public"]["Enums"]["status_pedido"]
-          usuario_id: string
+          usuario_id?: string | null
         }
         Update: {
           configuracao?: string
@@ -320,7 +320,7 @@ export type Database = {
           shipment_prepared_at?: string | null
           shipment_recipient_id?: string | null
           status?: Database["public"]["Enums"]["status_pedido"]
-          usuario_id?: string
+          usuario_id?: string | null
         }
         Relationships: [
           {

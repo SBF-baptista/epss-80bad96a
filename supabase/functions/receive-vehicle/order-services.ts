@@ -53,7 +53,7 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
         configuracao: automationRule.configuration,
         status: 'novos',
         data: new Date().toISOString(),
-        usuario_id: '00000000-0000-0000-0000-000000000000'
+        usuario_id: null // System-generated order
       })
       .select()
       .single()
