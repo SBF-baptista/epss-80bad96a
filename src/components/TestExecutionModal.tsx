@@ -7,9 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TestTube, Settings, FileText, Car } from "lucide-react";
+import { TestTube, Settings, FileText, Car, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updateTestExecution, HomologationCard } from "@/services/homologationService";
+import { updateTestExecution, HomologationCard, uploadHomologationPhoto, getPhotoUrl } from "@/services/homologationService";
 
 interface TestExecutionModalProps {
   card: HomologationCard;
@@ -23,7 +23,8 @@ const DEFAULT_CHECKLIST = [
   { id: 'rpm', label: 'RPM', completed: false },
   { id: 'odometro', label: 'Odômetro', completed: false },
   { id: 'combustivel_consumido', label: 'Combustível consumido', completed: false },
-  { id: 'nivel_combustivel', label: 'Nível de combustível (Can ou analógica)', completed: false }
+  { id: 'nivel_combustivel', label: 'Nível de combustível (Can ou analógica)', completed: false },
+  { id: 'outros', label: 'Outros', completed: false }
 ];
 
 const CONFIGURATION_OPTIONS = [
@@ -38,6 +39,8 @@ const CONFIGURATION_OPTIONS = [
 const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionModalProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [chassisPhoto, setChassisPhoto] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     chassisInfo: card.chassis_info || '',
     manufactureYear: card.manufacture_year || new Date().getFullYear(),
@@ -54,6 +57,56 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     setChecklist(checklist.map(item => 
       item.id === itemId ? { ...item, completed } : item
     ));
+  };
+
+  const handleChassisPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Arquivo inválido",
+        description: "Por favor, selecione apenas arquivos de imagem",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O arquivo deve ter no máximo 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      const { url } = await uploadHomologationPhoto(card.id, file);
+      setChassisPhoto(url);
+      toast({
+        title: "Foto enviada",
+        description: "A foto do chassi foi enviada com sucesso"
+      });
+    } catch (error) {
+      console.error("Error uploading chassis photo:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar foto do chassi",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset input
+      event.target.value = '';
+    }
+  };
+
+  const removeChassisPhoto = () => {
+    setChassisPhoto(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -223,6 +276,50 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
                   onChange={(e) => setFormData({ ...formData, electricalConnectionType: e.target.value })}
                   placeholder="Ex: OBD-II, fios diretos, etc."
                 />
+              </div>
+
+              {/* Chassis Photo Upload */}
+              <div className="space-y-2">
+                <Label>Foto do Chassi</Label>
+                {chassisPhoto ? (
+                  <div className="relative">
+                    <img 
+                      src={chassisPhoto} 
+                      alt="Foto do chassi" 
+                      className="w-full max-w-md h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={removeChassisPhoto}
+                      className="absolute top-2 right-2"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleChassisPhotoUpload}
+                      disabled={isUploadingPhoto}
+                      className="hidden"
+                      id="chassis-photo-upload"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('chassis-photo-upload')?.click()}
+                      disabled={isUploadingPhoto}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Chassi"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
