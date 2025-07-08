@@ -35,37 +35,35 @@ serve(async (req) => {
   }, {} as Record<string, string>)
   console.log(`[${timestamp}][${requestId}] Filtered Headers:`, filteredHeaders)
 
-  // Check for test endpoint request
-  const testResponse = createTestEndpoint(req, timestamp, requestId)
-  if (testResponse) {
-    return testResponse
-  }
-
-  // Check for auth diagnostics endpoint request
-  const authDiagResponse = createAuthDiagnosticsEndpoint(req, timestamp, requestId)
-  if (authDiagResponse) {
-    return authDiagResponse
-  }
-
-  // Check for config diagnostics endpoint request
-  const configDiagResponse = createConfigDiagnosticsEndpoint(req, timestamp, requestId)
-  if (configDiagResponse) {
-    return configDiagResponse
-  }
-
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests first
   if (req.method === 'OPTIONS') {
     console.log(`[${timestamp}][${requestId}] CORS preflight request handled`)
     return new Response(null, { headers: corsHeaders })
   }
 
-  // Only allow POST requests
+  // Check for diagnostic endpoints (can handle GET requests)
+  const testResponse = createTestEndpoint(req, timestamp, requestId)
+  if (testResponse) {
+    return testResponse
+  }
+
+  const authDiagResponse = createAuthDiagnosticsEndpoint(req, timestamp, requestId)
+  if (authDiagResponse) {
+    return authDiagResponse
+  }
+
+  const configDiagResponse = createConfigDiagnosticsEndpoint(req, timestamp, requestId)
+  if (configDiagResponse) {
+    return configDiagResponse
+  }
+
+  // Only allow POST requests for main functionality
   if (req.method !== 'POST') {
     console.log(`[${timestamp}][${requestId}] ERROR - Method not allowed: ${req.method}`)
     return new Response(
       JSON.stringify({ 
         error: 'Method not allowed',
-        message: `Only POST requests are allowed. Received: ${req.method}`,
+        message: `Only POST requests are allowed for vehicle processing. Received: ${req.method}`,
         request_id: requestId
       }),
       { 
