@@ -5,4 +5,4 @@ project_id = "eeidevcyxpnorbgcskdf"
 verify_jwt = true
 
 [functions.receive-vehicle]
-verify_jwt = true
+verify_jwt = false
