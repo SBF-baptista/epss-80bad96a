@@ -107,7 +107,8 @@ async function createAutomaticOrder(supabase: any, vehicle: any, orderNumber: st
         configuracao: automationRule.configuration,
         status: 'novos',
         data: new Date().toISOString(),
-        usuario_id: 'de67e1c5-8fb0-4169-8153-bc5e0a1ecdcf' // sergio.filho@segsat.com for system orders
+        usuario_id: 'de67e1c5-8fb0-4169-8153-bc5e0a1ecdcf', // sergio.filho@segsat.com for system orders
+        company_name: null // verify-vehicle doesn't have company_name context
       })
       .select()
       .single()

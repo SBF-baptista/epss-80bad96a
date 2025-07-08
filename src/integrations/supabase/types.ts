@@ -216,6 +216,7 @@ export type Database = {
       incoming_vehicles: {
         Row: {
           brand: string
+          company_name: string | null
           created_at: string
           created_homologation_id: string | null
           created_order_id: string | null
@@ -230,6 +231,7 @@ export type Database = {
         }
         Insert: {
           brand: string
+          company_name?: string | null
           created_at?: string
           created_homologation_id?: string | null
           created_order_id?: string | null
@@ -244,6 +246,7 @@ export type Database = {
         }
         Update: {
           brand?: string
+          company_name?: string | null
           created_at?: string
           created_homologation_id?: string | null
           created_order_id?: string | null
@@ -260,6 +263,7 @@ export type Database = {
       }
       pedidos: {
         Row: {
+          company_name: string | null
           configuracao: string
           created_at: string
           data: string
@@ -281,6 +285,7 @@ export type Database = {
           usuario_id: string | null
         }
         Insert: {
+          company_name?: string | null
           configuracao: string
           created_at?: string
           data?: string
@@ -302,6 +307,7 @@ export type Database = {
           usuario_id?: string | null
         }
         Update: {
+          company_name?: string | null
           configuracao?: string
           created_at?: string
           data?: string

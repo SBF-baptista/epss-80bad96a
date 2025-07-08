@@ -35,6 +35,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
     const transformedOrders = pedidos.map((pedido: any) => ({
       id: pedido.id,
       number: pedido.numero_pedido,
+      company_name: pedido.company_name,
       vehicles: pedido.veiculos?.map((veiculo: VehicleRow) => ({
         brand: veiculo.marca,
         model: veiculo.modelo,

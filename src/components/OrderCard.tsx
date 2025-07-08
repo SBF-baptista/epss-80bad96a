@@ -70,7 +70,7 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
         <div className="space-y-3">
           <div className="flex justify-between items-start">
             <h4 className="font-semibold text-gray-900">
-              Pedido de instalação {order.number}
+              {order.company_name ? `${order.company_name} (${order.number})` : `Pedido de instalação ${order.number}`}
             </h4>
             <div className="flex items-center gap-2">
               {order.priority && (

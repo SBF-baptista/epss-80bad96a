@@ -2,6 +2,7 @@
 export interface Order {
   id: string
   number: string
+  company_name?: string
   vehicles: Array<{
     brand: string
     model: string

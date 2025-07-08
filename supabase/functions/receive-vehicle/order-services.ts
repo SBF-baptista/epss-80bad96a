@@ -35,7 +35,7 @@ export async function generateAutoOrderNumber(supabase: any): Promise<string> {
 }
 
 // Function to create automatic order
-export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string) {
+export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string, companyName?: string) {
   const timestamp = new Date().toISOString()
   console.log(`[${timestamp}] Creating automatic order for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
   console.log(`[${timestamp}] Vehicle data:`, JSON.stringify(vehicleData, null, 2))
@@ -60,7 +60,8 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
         configuracao: automationRule.configuration,
         status: 'novos',
         data: new Date().toISOString(),
-        usuario_id: 'de67e1c5-8fb0-4169-8153-bc5e0a1ecdcf' // sergio.filho@segsat.com
+        usuario_id: 'de67e1c5-8fb0-4169-8153-bc5e0a1ecdcf', // sergio.filho@segsat.com
+        company_name: companyName
       })
       .select()
       .single()
