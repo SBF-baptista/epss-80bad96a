@@ -316,18 +316,26 @@ export const updateTestExecution = async (
   manufactureYear: number,
   electricalConnectionType: string,
   technicalObservations: string,
-  testChecklist: any
+  testChecklist: any,
+  testConfiguration?: string
 ): Promise<void> => {
+  const updateData: any = {
+    chassis_info: chassisInfo,
+    manufacture_year: manufactureYear,
+    electrical_connection_type: electricalConnectionType,
+    technical_observations: technicalObservations,
+    test_checklist: testChecklist,
+    status: 'execucao_teste'
+  };
+
+  // Only update configuration if it's provided and different from current
+  if (testConfiguration) {
+    updateData.configuration = testConfiguration;
+  }
+
   const { error } = await supabase
     .from('homologation_cards')
-    .update({ 
-      chassis_info: chassisInfo,
-      manufacture_year: manufactureYear,
-      electrical_connection_type: electricalConnectionType,
-      technical_observations: technicalObservations,
-      test_checklist: testChecklist,
-      status: 'execucao_teste'
-    })
+    .update(updateData)
     .eq('id', cardId);
 
   if (error) {

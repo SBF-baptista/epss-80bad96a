@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TestTube, Camera, FileText, Car } from "lucide-react";
+import { TestTube, Settings, FileText, Car } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updateTestExecution, HomologationCard } from "@/services/homologationService";
 
@@ -25,6 +26,15 @@ const DEFAULT_CHECKLIST = [
   { id: 'nivel_combustivel', label: 'Nível de combustível (Can ou analógica)', completed: false }
 ];
 
+const CONFIGURATION_OPTIONS = [
+  'J1939',
+  'FMS250', 
+  'OBD-II',
+  'Analógica',
+  'CAN Bus Direto',
+  'Outros'
+];
+
 const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionModalProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +42,8 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     chassisInfo: card.chassis_info || '',
     manufactureYear: card.manufacture_year || new Date().getFullYear(),
     electricalConnectionType: card.electrical_connection_type || '',
-    technicalObservations: card.technical_observations || ''
+    technicalObservations: card.technical_observations || '',
+    testConfiguration: card.configuration || ''
   });
   
   const [checklist, setChecklist] = useState(
@@ -56,7 +67,8 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
         formData.manufactureYear,
         formData.electricalConnectionType,
         formData.technicalObservations,
-        checklist
+        checklist,
+        formData.testConfiguration
       );
       
       toast({
@@ -127,6 +139,47 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
                   </Label>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          {/* Configuration Definition */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Settings className="h-5 w-5" />
+                Configuração Testada
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="testConfiguration">Configuração Utilizada no Teste *</Label>
+                <Select
+                  value={formData.testConfiguration}
+                  onValueChange={(value) => setFormData({ ...formData, testConfiguration: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a configuração testada" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONFIGURATION_OPTIONS.map((config) => (
+                      <SelectItem key={config} value={config}>
+                        {config}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {formData.testConfiguration === 'Outros' && (
+                <div className="space-y-2">
+                  <Label htmlFor="customConfiguration">Especificar Configuração</Label>
+                  <Input
+                    id="customConfiguration"
+                    placeholder="Descreva a configuração utilizada"
+                    onChange={(e) => setFormData({ ...formData, testConfiguration: e.target.value })}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
