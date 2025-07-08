@@ -5,7 +5,7 @@ export interface HomologationCard {
   brand: string;
   model: string;
   year: number | null;
-  status: 'homologar' | 'em_homologacao' | 'em_testes_finais' | 'homologado';
+  status: 'homologar' | 'em_homologacao' | 'agendamento_teste' | 'execucao_teste' | 'em_testes_finais' | 'armazenamento_plataforma' | 'homologado';
   requested_by: string | null;
   created_at: string;
   updated_at: string;
@@ -13,6 +13,15 @@ export interface HomologationCard {
   incoming_vehicle_id: string | null;
   created_order_id: string | null;
   configuration: string | null;
+  test_scheduled_date: string | null;
+  test_location: string | null;
+  test_technician: string | null;
+  installation_photos: string[] | null;
+  chassis_info: string | null;
+  manufacture_year: number | null;
+  electrical_connection_type: string | null;
+  technical_observations: string | null;
+  test_checklist: any | null;
 }
 
 export interface HomologationPhoto {
@@ -275,4 +284,72 @@ export const getPhotoUrl = (filePath: string): string => {
     .getPublicUrl(filePath);
   
   return data.publicUrl;
+};
+
+// New functions for enhanced workflow steps
+
+export const scheduleTest = async (
+  cardId: string,
+  testDate: string,
+  location: string,
+  technician: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('homologation_cards')
+    .update({ 
+      test_scheduled_date: testDate,
+      test_location: location,
+      test_technician: technician,
+      status: 'agendamento_teste'
+    })
+    .eq('id', cardId);
+
+  if (error) {
+    console.error('Error scheduling test:', error);
+    throw error;
+  }
+};
+
+export const updateTestExecution = async (
+  cardId: string,
+  chassisInfo: string,
+  manufactureYear: number,
+  electricalConnectionType: string,
+  technicalObservations: string,
+  testChecklist: any
+): Promise<void> => {
+  const { error } = await supabase
+    .from('homologation_cards')
+    .update({ 
+      chassis_info: chassisInfo,
+      manufacture_year: manufactureYear,
+      electrical_connection_type: electricalConnectionType,
+      technical_observations: technicalObservations,
+      test_checklist: testChecklist,
+      status: 'execucao_teste'
+    })
+    .eq('id', cardId);
+
+  if (error) {
+    console.error('Error updating test execution:', error);
+    throw error;
+  }
+};
+
+export const storeInPlatform = async (
+  cardId: string,
+  installationPhotos: string[]
+): Promise<void> => {
+  const { error } = await supabase
+    .from('homologation_cards')
+    .update({ 
+      installation_photos: installationPhotos,
+      status: 'armazenamento_plataforma'
+    })
+    .eq('id', cardId);
+
+  if (error) {
+    console.error('Error storing in platform:', error);
+    throw error;
+  }
 };

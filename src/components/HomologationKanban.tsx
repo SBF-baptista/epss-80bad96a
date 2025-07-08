@@ -13,7 +13,10 @@ interface HomologationKanbanProps {
 const columns = [
   { id: "homologar", title: "A Homologar", color: "bg-red-100 border-red-200" },
   { id: "em_homologacao", title: "Em Homologação", color: "bg-yellow-100 border-yellow-200" },
+  { id: "agendamento_teste", title: "Agendamento de Teste", color: "bg-orange-100 border-orange-200" },
+  { id: "execucao_teste", title: "Execução de Teste", color: "bg-purple-100 border-purple-200" },
   { id: "em_testes_finais", title: "Em Testes Finais", color: "bg-blue-100 border-blue-200" },
+  { id: "armazenamento_plataforma", title: "Armazenamento na Plataforma", color: "bg-teal-100 border-teal-200" },
   { id: "homologado", title: "Homologado", color: "bg-green-100 border-green-200" }
 ];
 
@@ -57,7 +60,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-x-auto">
+      <div className="flex gap-6 overflow-x-auto pb-4 min-h-[600px]">
         {columns.map(column => (
           <HomologationColumn
             key={column.id}

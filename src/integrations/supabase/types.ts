@@ -94,43 +94,70 @@ export type Database = {
       homologation_cards: {
         Row: {
           brand: string
+          chassis_info: string | null
           configuration: string | null
           created_at: string
           created_order_id: string | null
+          electrical_connection_type: string | null
           id: string
           incoming_vehicle_id: string | null
+          installation_photos: string[] | null
+          manufacture_year: number | null
           model: string
           notes: string | null
           requested_by: string | null
           status: Database["public"]["Enums"]["homologation_status"]
+          technical_observations: string | null
+          test_checklist: Json | null
+          test_location: string | null
+          test_scheduled_date: string | null
+          test_technician: string | null
           updated_at: string
           year: number | null
         }
         Insert: {
           brand: string
+          chassis_info?: string | null
           configuration?: string | null
           created_at?: string
           created_order_id?: string | null
+          electrical_connection_type?: string | null
           id?: string
           incoming_vehicle_id?: string | null
+          installation_photos?: string[] | null
+          manufacture_year?: number | null
           model: string
           notes?: string | null
           requested_by?: string | null
           status?: Database["public"]["Enums"]["homologation_status"]
+          technical_observations?: string | null
+          test_checklist?: Json | null
+          test_location?: string | null
+          test_scheduled_date?: string | null
+          test_technician?: string | null
           updated_at?: string
           year?: number | null
         }
         Update: {
           brand?: string
+          chassis_info?: string | null
           configuration?: string | null
           created_at?: string
           created_order_id?: string | null
+          electrical_connection_type?: string | null
           id?: string
           incoming_vehicle_id?: string | null
+          installation_photos?: string[] | null
+          manufacture_year?: number | null
           model?: string
           notes?: string | null
           requested_by?: string | null
           status?: Database["public"]["Enums"]["homologation_status"]
+          technical_observations?: string | null
+          test_checklist?: Json | null
+          test_location?: string | null
+          test_scheduled_date?: string | null
+          test_technician?: string | null
           updated_at?: string
           year?: number | null
         }
@@ -574,6 +601,9 @@ export type Database = {
         | "em_homologacao"
         | "em_testes_finais"
         | "homologado"
+        | "agendamento_teste"
+        | "execucao_teste"
+        | "armazenamento_plataforma"
       status_pedido: "novos" | "producao" | "aguardando" | "enviado" | "standby"
       vehicle_usage_type:
         | "particular"
@@ -715,6 +745,9 @@ export const Constants = {
         "em_homologacao",
         "em_testes_finais",
         "homologado",
+        "agendamento_teste",
+        "execucao_teste",
+        "armazenamento_plataforma",
       ],
       status_pedido: ["novos", "producao", "aguardando", "enviado", "standby"],
       vehicle_usage_type: [

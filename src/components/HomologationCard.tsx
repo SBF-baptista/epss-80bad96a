@@ -19,8 +19,14 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
         return "bg-red-100 text-red-800 border-red-200";
       case "em_homologacao":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "agendamento_teste":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "execucao_teste":
+        return "bg-purple-100 text-purple-800 border-purple-200";
       case "em_testes_finais":
         return "bg-blue-100 text-blue-800 border-blue-200";
+      case "armazenamento_plataforma":
+        return "bg-teal-100 text-teal-800 border-teal-200";
       case "homologado":
         return "bg-green-100 text-green-800 border-green-200";
       default:
@@ -34,8 +40,14 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
         return "A Homologar";
       case "em_homologacao":
         return "Em Homologação";
+      case "agendamento_teste":
+        return "Agendamento";
+      case "execucao_teste":
+        return "Em Teste";
       case "em_testes_finais":
-        return "Em Testes Finais";
+        return "Testes Finais";
+      case "armazenamento_plataforma":
+        return "Armazenamento";
       case "homologado":
         return "Homologado";
       default:
