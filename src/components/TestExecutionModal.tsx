@@ -18,12 +18,11 @@ interface TestExecutionModalProps {
 }
 
 const DEFAULT_CHECKLIST = [
-  { id: 'installation', label: 'Instalação física realizada', completed: false },
-  { id: 'electrical_connection', label: 'Conexão elétrica testada', completed: false },
-  { id: 'gps_signal', label: 'Sinal GPS verificado', completed: false },
-  { id: 'gsm_connection', label: 'Conexão GSM testada', completed: false },
-  { id: 'functionality_test', label: 'Teste de funcionalidades básicas', completed: false },
-  { id: 'vehicle_compatibility', label: 'Compatibilidade com veículo verificada', completed: false }
+  { id: 'velocidade', label: 'Velocidade', completed: false },
+  { id: 'rpm', label: 'RPM', completed: false },
+  { id: 'odometro', label: 'Odômetro', completed: false },
+  { id: 'combustivel_consumido', label: 'Combustível consumido', completed: false },
+  { id: 'nivel_combustivel', label: 'Nível de combustível (Can ou analógica)', completed: false }
 ];
 
 const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionModalProps) => {
