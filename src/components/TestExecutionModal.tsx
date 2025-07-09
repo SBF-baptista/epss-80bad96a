@@ -41,6 +41,9 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [chassisPhoto, setChassisPhoto] = useState<string | null>(null);
+  const [vehiclePhoto, setVehiclePhoto] = useState<string | null>(null);
+  const [canConnectionLocationPhoto, setCanConnectionLocationPhoto] = useState<string | null>(null);
+  const [canConnectionWiresPhoto, setCanConnectionWiresPhoto] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     chassisInfo: card.chassis_info || '',
     manufactureYear: card.manufacture_year || new Date().getFullYear(),
@@ -59,7 +62,10 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     ));
   };
 
-  const handleChassisPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>, 
+    photoType: 'chassis' | 'vehicle' | 'canLocation' | 'canWires'
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -86,16 +92,38 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     setIsUploadingPhoto(true);
     try {
       const { url } = await uploadHomologationPhoto(card.id, file);
-      setChassisPhoto(url);
+      
+      switch (photoType) {
+        case 'chassis':
+          setChassisPhoto(url);
+          break;
+        case 'vehicle':
+          setVehiclePhoto(url);
+          break;
+        case 'canLocation':
+          setCanConnectionLocationPhoto(url);
+          break;
+        case 'canWires':
+          setCanConnectionWiresPhoto(url);
+          break;
+      }
+      
+      const photoLabels = {
+        chassis: 'chassi',
+        vehicle: 'veículo',
+        canLocation: 'local de conexão CAN',
+        canWires: 'fios de conexão CAN'
+      };
+      
       toast({
         title: "Foto enviada",
-        description: "A foto do chassi foi enviada com sucesso"
+        description: `A foto do ${photoLabels[photoType]} foi enviada com sucesso`
       });
     } catch (error) {
-      console.error("Error uploading chassis photo:", error);
+      console.error(`Error uploading ${photoType} photo:`, error);
       toast({
         title: "Erro",
-        description: "Erro ao enviar foto do chassi",
+        description: `Erro ao enviar foto do ${photoType === 'chassis' ? 'chassi' : photoType === 'vehicle' ? 'veículo' : photoType === 'canLocation' ? 'local de conexão CAN' : 'fios de conexão CAN'}`,
         variant: "destructive"
       });
     } finally {
@@ -105,8 +133,21 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     }
   };
 
-  const removeChassisPhoto = () => {
-    setChassisPhoto(null);
+  const removePhoto = (photoType: 'chassis' | 'vehicle' | 'canLocation' | 'canWires') => {
+    switch (photoType) {
+      case 'chassis':
+        setChassisPhoto(null);
+        break;
+      case 'vehicle':
+        setVehiclePhoto(null);
+        break;
+      case 'canLocation':
+        setCanConnectionLocationPhoto(null);
+        break;
+      case 'canWires':
+        setCanConnectionWiresPhoto(null);
+        break;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -278,48 +319,183 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
                 />
               </div>
 
-              {/* Chassis Photo Upload */}
-              <div className="space-y-2">
-                <Label>Foto do Chassi</Label>
-                {chassisPhoto ? (
-                  <div className="relative">
-                    <img 
-                      src={chassisPhoto} 
-                      alt="Foto do chassi" 
-                      className="w-full max-w-md h-48 object-cover rounded-lg border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={removeChassisPhoto}
-                      className="absolute top-2 right-2"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleChassisPhotoUpload}
-                      disabled={isUploadingPhoto}
-                      className="hidden"
-                      id="chassis-photo-upload"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('chassis-photo-upload')?.click()}
-                      disabled={isUploadingPhoto}
-                      className="flex items-center gap-2"
-                    >
-                      <Upload className="h-4 w-4" />
-                      {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Chassi"}
-                    </Button>
-                  </div>
-                )}
+              {/* Photo Uploads */}
+              <div className="space-y-6">
+                {/* Vehicle Photo */}
+                <div className="space-y-2">
+                  <Label>Foto do Veículo</Label>
+                  {vehiclePhoto ? (
+                    <div className="relative">
+                      <img 
+                        src={vehiclePhoto} 
+                        alt="Foto do veículo" 
+                        className="w-full max-w-md h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removePhoto('vehicle')}
+                        className="absolute top-2 right-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handlePhotoUpload(e, 'vehicle')}
+                        disabled={isUploadingPhoto}
+                        className="hidden"
+                        id="vehicle-photo-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('vehicle-photo-upload')?.click()}
+                        disabled={isUploadingPhoto}
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Veículo"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* CAN Connection Location Photo */}
+                <div className="space-y-2">
+                  <Label>Local de Conexão CAN</Label>
+                  {canConnectionLocationPhoto ? (
+                    <div className="relative">
+                      <img 
+                        src={canConnectionLocationPhoto} 
+                        alt="Local de conexão CAN" 
+                        className="w-full max-w-md h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removePhoto('canLocation')}
+                        className="absolute top-2 right-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handlePhotoUpload(e, 'canLocation')}
+                        disabled={isUploadingPhoto}
+                        className="hidden"
+                        id="can-location-photo-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('can-location-photo-upload')?.click()}
+                        disabled={isUploadingPhoto}
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Local CAN"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* CAN Connection Wires Photo */}
+                <div className="space-y-2">
+                  <Label>Fios de Conexão CAN</Label>
+                  {canConnectionWiresPhoto ? (
+                    <div className="relative">
+                      <img 
+                        src={canConnectionWiresPhoto} 
+                        alt="Fios de conexão CAN" 
+                        className="w-full max-w-md h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removePhoto('canWires')}
+                        className="absolute top-2 right-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handlePhotoUpload(e, 'canWires')}
+                        disabled={isUploadingPhoto}
+                        className="hidden"
+                        id="can-wires-photo-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('can-wires-photo-upload')?.click()}
+                        disabled={isUploadingPhoto}
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto dos Fios CAN"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Chassis Photo */}
+                <div className="space-y-2">
+                  <Label>Foto do Chassi</Label>
+                  {chassisPhoto ? (
+                    <div className="relative">
+                      <img 
+                        src={chassisPhoto} 
+                        alt="Foto do chassi" 
+                        className="w-full max-w-md h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removePhoto('chassis')}
+                        className="absolute top-2 right-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handlePhotoUpload(e, 'chassis')}
+                        disabled={isUploadingPhoto}
+                        className="hidden"
+                        id="chassis-photo-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('chassis-photo-upload')?.click()}
+                        disabled={isUploadingPhoto}
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Chassi"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
