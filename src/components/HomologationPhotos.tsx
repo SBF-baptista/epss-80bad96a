@@ -3,13 +3,17 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trash2, Upload, Image } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Trash2, Upload, Image, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   fetchHomologationPhotos,
   uploadHomologationPhoto,
   deleteHomologationPhoto,
   getPhotoUrl,
+  updatePhotoType,
   HomologationPhoto
 } from "@/services/homologationService";
 
@@ -23,6 +27,19 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
   const [photos, setPhotos] = useState<HomologationPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedPhotoType, setSelectedPhotoType] = useState<string>('homologacao');
+  const [editingPhoto, setEditingPhoto] = useState<HomologationPhoto | null>(null);
+  const [editPhotoType, setEditPhotoType] = useState<string>('');
+
+  const photoTypes = [
+    { value: 'veiculo', label: 'Foto do Veículo' },
+    { value: 'chassi', label: 'Foto do Chassi' },
+    { value: 'can_location', label: 'Local de Conexão CAN' },
+    { value: 'can_wires', label: 'Fios de Conexão CAN' },
+    { value: 'instalacao', label: 'Foto da Instalação' },
+    { value: 'homologacao', label: 'Foto da Homologação' },
+    { value: 'outros', label: 'Outros' },
+  ];
 
   const loadPhotos = async () => {
     try {
@@ -79,7 +96,7 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
       // Create a new file with the descriptive name
       const renamedFile = new File([file], newFileName, { type: file.type });
       
-      await uploadHomologationPhoto(cardId, renamedFile);
+      await uploadHomologationPhoto(cardId, renamedFile, selectedPhotoType);
       await loadPhotos();
       onUpdate?.();
       toast({
@@ -126,10 +143,18 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const getPhotoLabel = (fileName: string) => {
-    const lowerFileName = fileName.toLowerCase();
+  const getPhotoLabel = (photo: HomologationPhoto) => {
+    // First, use the photo_type from database if available
+    if (photo.photo_type) {
+      const photoTypeMapping = photoTypes.find(type => type.value === photo.photo_type);
+      if (photoTypeMapping) {
+        return photoTypeMapping.label;
+      }
+    }
+
+    // Fallback to filename detection for legacy photos
+    const lowerFileName = photo.file_name.toLowerCase();
     
-    // Para fotos do TestExecutionModal (com nomes específicos)
     if (lowerFileName.includes('veiculo_') || lowerFileName.includes('vehicle_')) {
       return 'Foto do Veículo';
     } else if (lowerFileName.includes('chassi_') || lowerFileName.includes('chassis_')) {
@@ -138,18 +163,35 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
       return 'Local de Conexão CAN';
     } else if (lowerFileName.includes('can_wires_')) {
       return 'Fios de Conexão CAN';
-    } 
-    // Para fotos gerais do HomologationPhotos
-    else if (lowerFileName.includes('foto_homologacao_')) {
+    } else if (lowerFileName.includes('foto_homologacao_')) {
+      return 'Foto da Homologação';
+    } else if (lowerFileName.includes('whatsapp') || lowerFileName.includes('img_') || lowerFileName.includes('image')) {
+      return 'Foto da Homologação';
+    } else {
       return 'Foto da Homologação';
     }
-    // Para fotos com nomes genéricos (WhatsApp, etc)
-    else if (lowerFileName.includes('whatsapp') || lowerFileName.includes('img_') || lowerFileName.includes('image')) {
-      return 'Foto da Homologação';
-    }
-    // Fallback
-    else {
-      return 'Foto da Homologação';
+  };
+
+  const handleEditPhotoType = async () => {
+    if (!editingPhoto || !editPhotoType) return;
+
+    try {
+      await updatePhotoType(editingPhoto.id, editPhotoType);
+      await loadPhotos();
+      onUpdate?.();
+      setEditingPhoto(null);
+      setEditPhotoType('');
+      toast({
+        title: "Tipo atualizado",
+        description: "O tipo da foto foi atualizado com sucesso"
+      });
+    } catch (error) {
+      console.error("Error updating photo type:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar tipo da foto",
+        variant: "destructive"
+      });
     }
   };
 
@@ -178,6 +220,27 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
         </div>
         
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="photo-type-select" className="text-sm font-medium">
+              Tipo:
+            </Label>
+            <Select
+              value={selectedPhotoType}
+              onValueChange={setSelectedPhotoType}
+            >
+              <SelectTrigger className="w-40" id="photo-type-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {photoTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <Input
             type="file"
             accept="image/*"
@@ -222,7 +285,58 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
                     alt={photo.file_name}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center gap-2">
+                    <Dialog open={editingPhoto?.id === photo.id} onOpenChange={(open) => {
+                      if (!open) {
+                        setEditingPhoto(null);
+                        setEditPhotoType('');
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingPhoto(photo);
+                            setEditPhotoType(photo.photo_type || 'outros');
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 hover:bg-white"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Editar Tipo da Foto</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="edit-photo-type">Tipo da Foto</Label>
+                            <Select value={editPhotoType} onValueChange={setEditPhotoType}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {photoTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setEditingPhoto(null)}>
+                              Cancelar
+                            </Button>
+                            <Button onClick={handleEditPhotoType}>
+                              Salvar
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
                     <Button
                       variant="destructive"
                       size="sm"
@@ -235,7 +349,7 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {getPhotoLabel(photo.file_name)}
+                    {getPhotoLabel(photo)}
                   </p>
                   <p className="text-xs text-gray-500">
                     {formatFileSize(photo.file_size)}

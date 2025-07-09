@@ -118,7 +118,26 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
       // Create a new file with the descriptive name
       const renamedFile = new File([file], newFileName, { type: file.type });
       
-      const { url } = await uploadHomologationPhoto(card.id, renamedFile);
+      // Determine photo type based on the upload type
+      let dbPhotoType;
+      switch (photoType) {
+        case 'chassis':
+          dbPhotoType = 'chassi';
+          break;
+        case 'vehicle':
+          dbPhotoType = 'veiculo';
+          break;
+        case 'canLocation':
+          dbPhotoType = 'can_location';
+          break;
+        case 'canWires':
+          dbPhotoType = 'can_wires';
+          break;
+        default:
+          dbPhotoType = 'outros';
+      }
+      
+      const { url } = await uploadHomologationPhoto(card.id, renamedFile, dbPhotoType);
       
       switch (photoType) {
         case 'chassis':

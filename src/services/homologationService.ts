@@ -33,6 +33,7 @@ export interface HomologationPhoto {
   content_type: string | null;
   uploaded_by: string | null;
   created_at: string;
+  photo_type: string | null;
 }
 
 export interface WorkflowChainItem {
@@ -212,7 +213,8 @@ export const fetchHomologationPhotos = async (cardId: string): Promise<Homologat
 
 export const uploadHomologationPhoto = async (
   cardId: string,
-  file: File
+  file: File,
+  photoType?: string
 ): Promise<{ photo: HomologationPhoto; url: string }> => {
   const fileExt = file.name.split('.').pop();
   const fileName = `${cardId}/${Date.now()}.${fileExt}`;
@@ -236,6 +238,7 @@ export const uploadHomologationPhoto = async (
       file_path: storageData.path,
       file_size: file.size,
       content_type: file.type,
+      photo_type: photoType,
     })
     .select()
     .single();
@@ -254,6 +257,21 @@ export const uploadHomologationPhoto = async (
     photo: photoData,
     url: urlData.publicUrl
   };
+};
+
+export const updatePhotoType = async (
+  photoId: string,
+  photoType: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('homologation_photos')
+    .update({ photo_type: photoType })
+    .eq('id', photoId);
+
+  if (error) {
+    console.error('Error updating photo type:', error);
+    throw error;
+  }
 };
 
 export const deleteHomologationPhoto = async (photoId: string, filePath: string): Promise<void> => {

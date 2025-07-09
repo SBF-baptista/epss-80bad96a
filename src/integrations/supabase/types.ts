@@ -201,6 +201,7 @@ export type Database = {
           file_size: number | null
           homologation_card_id: string
           id: string
+          photo_type: string | null
           uploaded_by: string | null
         }
         Insert: {
@@ -211,6 +212,7 @@ export type Database = {
           file_size?: number | null
           homologation_card_id: string
           id?: string
+          photo_type?: string | null
           uploaded_by?: string | null
         }
         Update: {
@@ -221,6 +223,7 @@ export type Database = {
           file_size?: number | null
           homologation_card_id?: string
           id?: string
+          photo_type?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
