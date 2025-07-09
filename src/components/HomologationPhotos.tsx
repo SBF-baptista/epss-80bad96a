@@ -124,14 +124,15 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
       return 'Foto do Veículo';
     } else if (lowerFileName.includes('chassi') || lowerFileName.includes('chassis')) {
       return 'Foto do Chassi';
-    } else if (lowerFileName.includes('can_location') || lowerFileName.includes('conexao_can')) {
+    } else if (lowerFileName.includes('can_location') || lowerFileName.includes('conexao_can') || lowerFileName.includes('local')) {
       return 'Local de Conexão CAN';
-    } else if (lowerFileName.includes('can_wires') || lowerFileName.includes('fios_can')) {
+    } else if (lowerFileName.includes('can_wires') || lowerFileName.includes('fios_can') || lowerFileName.includes('fios')) {
       return 'Fios de Conexão CAN';
     } else if (lowerFileName.includes('instalacao') || lowerFileName.includes('installation')) {
       return 'Foto da Instalação';
     } else {
-      return fileName;
+      // Para arquivos sem identificação específica, tentar extrair informação contextual
+      return `Foto - ${fileName}`;
     }
   };
 
