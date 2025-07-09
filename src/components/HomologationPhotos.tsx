@@ -70,7 +70,16 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
 
     setIsUploading(true);
     try {
-      await uploadHomologationPhoto(cardId, file);
+      // Create descriptive filename
+      const originalName = file.name;
+      const extension = originalName.substring(originalName.lastIndexOf('.'));
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '');
+      const newFileName = `foto_homologacao_${timestamp}${extension}`;
+      
+      // Create a new file with the descriptive name
+      const renamedFile = new File([file], newFileName, { type: file.type });
+      
+      await uploadHomologationPhoto(cardId, renamedFile);
       await loadPhotos();
       onUpdate?.();
       toast({
@@ -120,19 +129,27 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
   const getPhotoLabel = (fileName: string) => {
     const lowerFileName = fileName.toLowerCase();
     
-    if (lowerFileName.includes('veiculo') || lowerFileName.includes('vehicle')) {
+    // Para fotos do TestExecutionModal (com nomes específicos)
+    if (lowerFileName.includes('veiculo_') || lowerFileName.includes('vehicle_')) {
       return 'Foto do Veículo';
-    } else if (lowerFileName.includes('chassi') || lowerFileName.includes('chassis')) {
+    } else if (lowerFileName.includes('chassi_') || lowerFileName.includes('chassis_')) {
       return 'Foto do Chassi';
-    } else if (lowerFileName.includes('can_location') || lowerFileName.includes('conexao_can') || lowerFileName.includes('local')) {
+    } else if (lowerFileName.includes('can_location_')) {
       return 'Local de Conexão CAN';
-    } else if (lowerFileName.includes('can_wires') || lowerFileName.includes('fios_can') || lowerFileName.includes('fios')) {
+    } else if (lowerFileName.includes('can_wires_')) {
       return 'Fios de Conexão CAN';
-    } else if (lowerFileName.includes('instalacao') || lowerFileName.includes('installation')) {
-      return 'Foto da Instalação';
-    } else {
-      // Para arquivos sem identificação específica, tentar extrair informação contextual
-      return `Foto - ${fileName}`;
+    } 
+    // Para fotos gerais do HomologationPhotos
+    else if (lowerFileName.includes('foto_homologacao_')) {
+      return 'Foto da Homologação';
+    }
+    // Para fotos com nomes genéricos (WhatsApp, etc)
+    else if (lowerFileName.includes('whatsapp') || lowerFileName.includes('img_') || lowerFileName.includes('image')) {
+      return 'Foto da Homologação';
+    }
+    // Fallback
+    else {
+      return 'Foto da Homologação';
     }
   };
 
