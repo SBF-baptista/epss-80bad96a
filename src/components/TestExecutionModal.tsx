@@ -93,7 +93,32 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
 
     setIsUploadingPhoto(true);
     try {
-      const { url } = await uploadHomologationPhoto(card.id, file);
+      // Create descriptive filename based on photo type
+      const originalName = file.name;
+      const extension = originalName.substring(originalName.lastIndexOf('.'));
+      
+      let newFileName;
+      switch (photoType) {
+        case 'chassis':
+          newFileName = `chassi_${card.brand}_${card.model}${extension}`;
+          break;
+        case 'vehicle':
+          newFileName = `veiculo_${card.brand}_${card.model}${extension}`;
+          break;
+        case 'canLocation':
+          newFileName = `can_location_${card.brand}_${card.model}${extension}`;
+          break;
+        case 'canWires':
+          newFileName = `can_wires_${card.brand}_${card.model}${extension}`;
+          break;
+        default:
+          newFileName = originalName;
+      }
+      
+      // Create a new file with the descriptive name
+      const renamedFile = new File([file], newFileName, { type: file.type });
+      
+      const { url } = await uploadHomologationPhoto(card.id, renamedFile);
       
       switch (photoType) {
         case 'chassis':

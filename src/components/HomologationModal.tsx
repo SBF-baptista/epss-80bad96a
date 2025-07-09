@@ -176,7 +176,8 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                 </Button>
               )}
               
-              {(card.status === 'agendamento_teste' || card.status === 'execucao_teste') && (
+              {(card.status === 'agendamento_teste' || card.status === 'execucao_teste') && 
+               !card.test_checklist && (
                 <Button
                   variant="outline"
                   onClick={() => setShowTestExecution(true)}
@@ -199,6 +200,73 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
               )}
             </div>
           </div>
+
+          {/* Test Results Display */}
+          {card.test_checklist && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Resultados do Teste</h3>
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-medium text-green-800 mb-3">Teste Executado com Sucesso</h4>
+                  
+                  {/* Configuration Used */}
+                  {card.configuration && (
+                    <div className="mb-3">
+                      <span className="text-sm font-medium text-gray-700">Configuração Testada: </span>
+                      <span className="text-sm text-gray-900">{card.configuration}</span>
+                    </div>
+                  )}
+                  
+                  {/* Checklist Results */}
+                  <div className="mb-3">
+                    <span className="text-sm font-medium text-gray-700 block mb-2">Itens Testados:</span>
+                    <div className="space-y-1">
+                      {Array.isArray(card.test_checklist) && card.test_checklist.map((item: any, index: number) => (
+                        <div key={index} className="flex items-center text-sm">
+                          <span className={`mr-2 ${item.completed ? 'text-green-600' : 'text-gray-400'}`}>
+                            {item.completed ? '✓' : '○'}
+                          </span>
+                          <span className="text-gray-700">{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Vehicle Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {card.chassis_info && (
+                      <div>
+                        <span className="font-medium text-gray-700">Chassi: </span>
+                        <span className="text-gray-900">{card.chassis_info}</span>
+                      </div>
+                    )}
+                    {card.manufacture_year && (
+                      <div>
+                        <span className="font-medium text-gray-700">Ano de Fabricação: </span>
+                        <span className="text-gray-900">{card.manufacture_year}</span>
+                      </div>
+                    )}
+                    {card.electrical_connection_type && (
+                      <div className="md:col-span-2">
+                        <span className="font-medium text-gray-700">Tipo de Conexão: </span>
+                        <span className="text-gray-900">{card.electrical_connection_type}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Technical Observations */}
+                  {card.technical_observations && (
+                    <div className="mt-3">
+                      <span className="text-sm font-medium text-gray-700 block mb-1">Observações Técnicas:</span>
+                      <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                        {card.technical_observations}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <Separator />
           

@@ -117,6 +117,24 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const getPhotoLabel = (fileName: string) => {
+    const lowerFileName = fileName.toLowerCase();
+    
+    if (lowerFileName.includes('veiculo') || lowerFileName.includes('vehicle')) {
+      return 'Foto do Veículo';
+    } else if (lowerFileName.includes('chassi') || lowerFileName.includes('chassis')) {
+      return 'Foto do Chassi';
+    } else if (lowerFileName.includes('can_location') || lowerFileName.includes('conexao_can')) {
+      return 'Local de Conexão CAN';
+    } else if (lowerFileName.includes('can_wires') || lowerFileName.includes('fios_can')) {
+      return 'Fios de Conexão CAN';
+    } else if (lowerFileName.includes('instalacao') || lowerFileName.includes('installation')) {
+      return 'Foto da Instalação';
+    } else {
+      return fileName;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -199,7 +217,7 @@ const HomologationPhotos = ({ cardId, onUpdate }: HomologationPhotosProps) => {
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {photo.file_name}
+                    {getPhotoLabel(photo.file_name)}
                   </p>
                   <p className="text-xs text-gray-500">
                     {formatFileSize(photo.file_size)}
