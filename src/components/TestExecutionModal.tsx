@@ -212,8 +212,8 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
       );
       
       toast({
-        title: "Teste executado",
-        description: "Dados de execução do teste salvos com sucesso"
+        title: card.test_checklist ? "Execução atualizada" : "Teste executado",
+        description: card.test_checklist ? "Dados de execução do teste atualizados com sucesso" : "Dados de execução do teste salvos com sucesso"
       });
       onUpdate();
       onClose();
@@ -238,7 +238,7 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TestTube className="h-5 w-5" />
-            Execução de Teste
+            {card.test_checklist ? "Editar Execução de Teste" : "Execução de Teste"}
           </DialogTitle>
         </DialogHeader>
 
@@ -579,7 +579,7 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading ? "Salvando..." : "Salvar Execução"}
+              {isLoading ? "Salvando..." : card.test_checklist ? "Atualizar Execução" : "Salvar Execução"}
             </Button>
           </div>
         </form>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, TestTube, Database } from "lucide-react";
+import { Calendar, TestTube, Database, Edit } from "lucide-react";
 import { HomologationCard, updateHomologationNotes } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
 import HomologationPhotos from "./HomologationPhotos";
@@ -204,7 +204,18 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           {/* Test Results Display */}
           {card.test_checklist && (
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Resultados do Teste</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900">Resultados do Teste</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTestExecution(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Editar Execução
+                </Button>
+              </div>
               <div className="space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <h4 className="font-medium text-green-800 mb-3">Teste Executado com Sucesso</h4>
