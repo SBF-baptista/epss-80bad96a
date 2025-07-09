@@ -56,6 +56,8 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     card.test_checklist || DEFAULT_CHECKLIST
   );
 
+  const [outrosText, setOutrosText] = useState('');
+
   const handleChecklistChange = (itemId: string, completed: boolean) => {
     setChecklist(checklist.map(item => 
       item.id === itemId ? { ...item, completed } : item
@@ -220,17 +222,33 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
             </CardHeader>
             <CardContent className="space-y-3">
               {checklist.map((item) => (
-                <div key={item.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={item.id}
-                    checked={item.completed}
-                    onCheckedChange={(checked) => 
-                      handleChecklistChange(item.id, checked as boolean)
-                    }
-                  />
-                  <Label htmlFor={item.id} className="text-sm">
-                    {item.label}
-                  </Label>
+                <div key={item.id} className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={item.id}
+                      checked={item.completed}
+                      onCheckedChange={(checked) => 
+                        handleChecklistChange(item.id, checked as boolean)
+                      }
+                    />
+                    <Label htmlFor={item.id} className="text-sm">
+                      {item.label}
+                    </Label>
+                  </div>
+                  {item.id === 'outros' && item.completed && (
+                    <div className="ml-6 space-y-2">
+                      <Label htmlFor="outrosText" className="text-sm">
+                        Especificar:
+                      </Label>
+                      <Input
+                        id="outrosText"
+                        value={outrosText}
+                        onChange={(e) => setOutrosText(e.target.value)}
+                        placeholder="Descreva o que foi testado..."
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>
