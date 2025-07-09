@@ -199,7 +199,7 @@ export const updateHomologationNotes = async (
 export const fetchHomologationPhotos = async (cardId: string): Promise<HomologationPhoto[]> => {
   const { data, error } = await supabase
     .from('homologation_photos')
-    .select('*')
+    .select('id, homologation_card_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, photo_type')
     .eq('homologation_card_id', cardId)
     .order('created_at', { ascending: false });
 
