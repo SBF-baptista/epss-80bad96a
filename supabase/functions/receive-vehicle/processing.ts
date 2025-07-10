@@ -197,6 +197,52 @@ export async function processVehicleGroups(
       }
     }
 
+    // Process accessories if present in the group
+    if (group.accessories && Array.isArray(group.accessories) && group.accessories.length > 0) {
+      console.log(`[${timestamp}][${requestId}] Processing ${group.accessories.length} accessories for group ${groupIndex + 1}...`)
+      
+      for (let accessoryIndex = 0; accessoryIndex < group.accessories.length; accessoryIndex++) {
+        const accessoryData = group.accessories[accessoryIndex]
+        const { accessory_name, quantity } = accessoryData
+        
+        console.log(`[${timestamp}][${requestId}] --- Processing accessory ${accessoryIndex + 1}/${group.accessories.length} in group ${groupIndex + 1} ---`)
+        console.log(`[${timestamp}][${requestId}] Accessory: ${accessory_name} (quantity: ${quantity || 1})`)
+        
+        try {
+          // Store accessory data
+          console.log(`[${timestamp}][${requestId}] Storing accessory data...`)
+          
+          // Use a deterministic group ID based on company and usage type for linking
+          const groupIdentifier = `${group.company_name}_${group.usage_type}_${groupIndex}`
+          
+          const { data: accessory, error: accessoryError } = await supabase
+            .from('accessories')
+            .insert({
+              incoming_vehicle_group_id: groupIdentifier,
+              company_name: group.company_name,
+              usage_type: group.usage_type,
+              accessory_name: accessory_name.trim(),
+              quantity: quantity || 1,
+              received_at: timestamp
+            })
+            .select()
+            .single()
+
+          if (accessoryError) {
+            console.error(`[${timestamp}][${requestId}] ERROR - Failed to store accessory:`, accessoryError)
+            groupResult.processing_summary.errors++
+            continue
+          }
+
+          console.log(`[${timestamp}][${requestId}] Successfully stored accessory with ID: ${accessory.id}`)
+          
+        } catch (error: any) {
+          console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR processing accessory:`, error)
+          groupResult.processing_summary.errors++
+        }
+      }
+    }
+
     processedGroups.push(groupResult)
     console.log(`[${timestamp}][${requestId}] ===== GROUP ${groupIndex + 1} COMPLETED =====`)
     console.log(`[${timestamp}][${requestId}] Group ${groupIndex + 1} summary: ${groupResult.processing_summary.orders_created} orders, ${groupResult.processing_summary.homologations_created} homologations, ${groupResult.processing_summary.errors} errors`)

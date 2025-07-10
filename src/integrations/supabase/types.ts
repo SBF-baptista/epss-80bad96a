@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      accessories: {
+        Row: {
+          accessory_name: string
+          company_name: string
+          created_at: string
+          id: string
+          incoming_vehicle_group_id: string
+          quantity: number
+          received_at: string
+          usage_type: string
+        }
+        Insert: {
+          accessory_name: string
+          company_name: string
+          created_at?: string
+          id?: string
+          incoming_vehicle_group_id: string
+          quantity?: number
+          received_at?: string
+          usage_type: string
+        }
+        Update: {
+          accessory_name?: string
+          company_name?: string
+          created_at?: string
+          id?: string
+          incoming_vehicle_group_id?: string
+          quantity?: number
+          received_at?: string
+          usage_type?: string
+        }
+        Relationships: []
+      }
       automation_rule_photos: {
         Row: {
           automation_rule_id: number

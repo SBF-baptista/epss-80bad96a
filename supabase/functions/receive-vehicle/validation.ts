@@ -166,6 +166,78 @@ export function validateRequestBody(requestBody: any, timestamp: string, request
         )
       }
     }
+
+    // Validate accessories if present (optional field)
+    if (group.accessories !== undefined) {
+      console.log(`[${timestamp}][${requestId}] Validating accessories in group ${i + 1}:`, {
+        accessories_count: Array.isArray(group.accessories) ? group.accessories.length : 'not_array'
+      })
+      
+      if (!Array.isArray(group.accessories)) {
+        console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid accessories structure in group ${i}:`, group.accessories)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid accessories structure', 
+            message: `Accessories in group ${i} must be an array`,
+            request_id: requestId,
+            group_index: i,
+            accessories_type: typeof group.accessories
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+
+      // Validate each accessory in the group
+      for (let k = 0; k < group.accessories.length; k++) {
+        const accessory = group.accessories[k]
+        console.log(`[${timestamp}][${requestId}] Validating accessory ${k + 1}/${group.accessories.length} in group ${i + 1}:`, {
+          accessory_name: accessory?.accessory_name,
+          quantity: accessory?.quantity
+        })
+        
+        if (!accessory.accessory_name) {
+          console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid accessory structure in group ${i}, accessory ${k}:`, accessory)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid accessory structure', 
+              message: `Accessory at group ${i}, position ${k} must have accessory_name field`,
+              request_id: requestId,
+              group_index: i,
+              accessory_index: k,
+              missing_fields: {
+                accessory_name: !accessory.accessory_name
+              }
+            }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        if (accessory.quantity !== undefined && (typeof accessory.quantity !== 'number' || accessory.quantity < 1)) {
+          console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid quantity in group ${i}, accessory ${k}:`, accessory.quantity)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid accessory quantity', 
+              message: `Accessory at group ${i}, position ${k} has invalid quantity. Must be a positive integer`,
+              request_id: requestId,
+              group_index: i,
+              accessory_index: k,
+              provided_quantity: accessory.quantity,
+              quantity_type: typeof accessory.quantity
+            }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+      }
+    }
   }
 
   console.log(`[${timestamp}][${requestId}] ===== VALIDATION PASSED =====`)

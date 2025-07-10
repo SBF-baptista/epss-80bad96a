@@ -11,10 +11,16 @@ export interface VehicleData {
   quantity?: number
 }
 
+export interface AccessoryData {
+  accessory_name: string
+  quantity?: number
+}
+
 export interface VehicleGroup {
   company_name: string
   usage_type: string
   vehicles: VehicleData[]
+  accessories?: AccessoryData[]
 }
 
 export interface ProcessingResult {
