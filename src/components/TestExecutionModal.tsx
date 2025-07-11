@@ -52,6 +52,8 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     testConfiguration: card.configuration || ''
   });
   
+  const [customConfiguration, setCustomConfiguration] = useState('');
+  
   const [checklist, setChecklist] = useState(
     card.test_checklist || DEFAULT_CHECKLIST
   );
@@ -201,6 +203,11 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     
     setIsLoading(true);
     try {
+      // Use custom configuration text if "Outros" is selected and custom text is provided
+      const finalConfiguration = formData.testConfiguration === 'Outros' && customConfiguration.trim() 
+        ? customConfiguration.trim() 
+        : formData.testConfiguration;
+      
       await updateTestExecution(
         card.id,
         formData.chassisInfo,
@@ -208,7 +215,7 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
         formData.electricalConnectionType,
         formData.technicalObservations,
         checklist,
-        formData.testConfiguration
+        finalConfiguration
       );
       
       toast({
@@ -331,8 +338,9 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
                   <Label htmlFor="customConfiguration">Especificar Configuração</Label>
                   <Input
                     id="customConfiguration"
+                    value={customConfiguration}
                     placeholder="Descreva a configuração utilizada"
-                    onChange={(e) => setFormData({ ...formData, testConfiguration: e.target.value })}
+                    onChange={(e) => setCustomConfiguration(e.target.value)}
                   />
                 </div>
               )}
