@@ -82,6 +82,7 @@ export const createOrder = async (orderData: {
     number: pedido.numero_pedido,
     vehicles: orderData.vehicles,
     trackers: orderData.trackers,
+    accessories: [], // New orders don't have accessories initially
     configurationType: pedido.configuracao,
     status: pedido.status,
     createdAt: pedido.data,

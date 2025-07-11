@@ -13,6 +13,10 @@ export interface Order {
     model: string
     quantity: number
   }>
+  accessories: Array<{
+    name: string
+    quantity: number
+  }>
   configurationType: string
   status: "novos" | "producao" | "aguardando" | "enviado" | "standby"
   priority?: "high" | "medium" | "low"

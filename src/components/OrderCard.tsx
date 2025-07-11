@@ -123,6 +123,20 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
                 ))}
               </div>
             </div>
+
+            {order.accessories && order.accessories.length > 0 && (
+              <div>
+                <span className="text-gray-600 font-medium">Acessórios ({order.accessories.reduce((sum, accessory) => sum + accessory.quantity, 0)}):</span>
+                <div className="mt-1 space-y-1">
+                  {order.accessories.map((accessory, index) => (
+                    <div key={index} className="flex justify-between text-xs">
+                      <span className="text-gray-700">{accessory.name}</span>
+                      <span className="font-medium">{accessory.quantity}x</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="flex justify-between">
               <span className="text-gray-600">Configuração:</span>

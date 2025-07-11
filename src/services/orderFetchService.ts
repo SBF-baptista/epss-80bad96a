@@ -6,6 +6,7 @@ import { Order } from './orderTypes'
 type OrderRow = Database['public']['Tables']['pedidos']['Row']
 type VehicleRow = Database['public']['Tables']['veiculos']['Row']
 type TrackerRow = Database['public']['Tables']['rastreadores']['Row']
+type AccessoryRow = Database['public']['Tables']['accessories']['Row']
 
 export const fetchOrders = async (): Promise<Order[]> => {
   console.log('Fetching orders from Supabase...')
@@ -20,6 +21,14 @@ export const fetchOrders = async (): Promise<Order[]> => {
       `)
       .order('created_at', { ascending: false })
 
+    // Fetch accessories for orders that have incoming vehicles
+    const { data: accessories } = await supabase
+      .from('accessories')
+      .select(`
+        *,
+        incoming_vehicles!inner(created_order_id)
+      `)
+
     if (pedidosError) {
       console.error('Error fetching orders:', pedidosError)
       throw pedidosError
@@ -30,6 +39,23 @@ export const fetchOrders = async (): Promise<Order[]> => {
     if (!pedidos || pedidos.length === 0) {
       console.log('No orders found in database')
       return []
+    }
+
+    // Create a map of order accessories
+    const accessoriesByOrderId = new Map<string, Array<{ name: string; quantity: number }>>()
+    if (accessories) {
+      accessories.forEach((accessory: any) => {
+        const orderId = accessory.incoming_vehicles?.created_order_id
+        if (orderId) {
+          if (!accessoriesByOrderId.has(orderId)) {
+            accessoriesByOrderId.set(orderId, [])
+          }
+          accessoriesByOrderId.get(orderId)!.push({
+            name: accessory.accessory_name,
+            quantity: accessory.quantity
+          })
+        }
+      })
     }
 
     const transformedOrders = pedidos.map((pedido: any) => ({
@@ -46,6 +72,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
         model: rastreador.modelo,
         quantity: rastreador.quantidade
       })) || [],
+      accessories: accessoriesByOrderId.get(pedido.id) || [],
       configurationType: pedido.configuracao,
       status: pedido.status,
       createdAt: pedido.data || pedido.created_at,
