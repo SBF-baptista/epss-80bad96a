@@ -159,46 +159,78 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Handle update user (POST with action 'update')
     if (req.method === 'POST' && action === 'update') {
+      console.log('Processing update request...');
       const { userId, role, resetPassword } = requestData;
       console.log('Update request:', { userId, role, resetPassword });
 
       if (!userId) {
-        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+        console.log('Missing userId in request');
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Missing userId' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!role && !resetPassword) {
+        console.log('No role or resetPassword provided');
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'No role or resetPassword provided' 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
       if (role) {
+        console.log(`Updating role for user ${userId} to ${role}`);
+        
         // Update user role - first delete existing roles, then insert new one
-        const { error: deleteError } = await supabaseAdmin
+        const { data: deleteData, error: deleteError } = await supabaseAdmin
           .from('user_roles')
           .delete()
           .eq('user_id', userId);
 
+        console.log('Delete operation result:', { deleteData, deleteError });
+
         if (deleteError) {
           console.error('Error deleting old roles:', deleteError);
-          return new Response(JSON.stringify({ error: 'Failed to update role' }), {
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: 'Failed to update role',
+            details: deleteError.message 
+          }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
 
         // Insert new role
-        const { error: insertError } = await supabaseAdmin
+        const { data: insertData, error: insertError } = await supabaseAdmin
           .from('user_roles')
           .insert({
             user_id: userId,
             role
           });
 
+        console.log('Insert operation result:', { insertData, insertError });
+
         if (insertError) {
           console.error('Error inserting new role:', insertError);
-          return new Response(JSON.stringify({ error: 'Failed to assign new role' }), {
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: 'Failed to assign new role',
+            details: insertError.message 
+          }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
+
+        console.log('Role updated successfully');
       }
 
       if (resetPassword) {
