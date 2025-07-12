@@ -5,7 +5,8 @@ import {
   Kanban, 
   Settings, 
   CheckSquare,
-  ShoppingCart
+  ShoppingCart,
+  LogOut
 } from "lucide-react";
 import {
   Sidebar,
@@ -18,37 +19,45 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 const navigationItems = [
   { 
     to: "/homologation", 
     label: "Homologação", 
     icon: CheckSquare,
-    description: "Processo de homologação de veículos"
+    description: "Processo de homologação de veículos",
+    roles: ["admin", "installer"]
   },
   { 
     to: "/dashboard", 
     label: "Dash esteira de pedidos", 
     icon: BarChart3,
-    description: "Análises e relatórios"
+    description: "Análises e relatórios",
+    roles: ["admin"]
   },
   { 
     to: "/kanban", 
     label: "Kanban", 
     icon: Kanban,
-    description: "Gestão de pedidos"
+    description: "Gestão de pedidos",
+    roles: ["admin"]
   },
   { 
     to: "/orders", 
     label: "Pedidos", 
     icon: ShoppingCart,
-    description: "Gerenciar pedidos"
+    description: "Gerenciar pedidos",
+    roles: ["admin"]
   },
   { 
     to: "/config", 
     label: "Configurações", 
     icon: Settings,
-    description: "Configurações do sistema"
+    description: "Configurações do sistema",
+    roles: ["admin"]
   },
 ];
 
@@ -56,8 +65,32 @@ export function AppNavigation() {
   const { state } = useSidebar();
   const location = useLocation();
   const isCollapsed = state === "collapsed";
+  const { user, signOut } = useAuth();
+  const { role, loading } = useUserRole();
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Filter navigation items based on user role
+  const filteredNavigationItems = navigationItems.filter(item => {
+    if (!role) return false;
+    return item.roles.includes(role);
+  });
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  if (loading) {
+    return (
+      <Sidebar collapsible="icon" className="border-r">
+        <SidebarContent className="safe-area-inset">
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -68,7 +101,7 @@ export function AppNavigation() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => {
+              {filteredNavigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <SidebarMenuItem key={item.to}>
@@ -86,6 +119,34 @@ export function AppNavigation() {
                   </SidebarMenuItem>
                 );
               })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* User info and logout */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            {!isCollapsed && (
+              <div className="px-2 py-2 text-xs text-gray-600 border-t">
+                <div className="mb-2">
+                  <div className="font-medium truncate">{user?.email}</div>
+                  <div className="text-gray-500 capitalize">
+                    {role === 'admin' ? 'Administrador' : role === 'installer' ? 'Instalador' : role}
+                  </div>
+                </div>
+              </div>
+            )}
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={handleSignOut}
+                  tooltip={isCollapsed ? "Sair" : undefined}
+                  className="touch-manipulation tap-target text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4 flex-shrink-0" />
+                  <span className="font-medium text-sm">Sair</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

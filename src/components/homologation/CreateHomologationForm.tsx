@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { createHomologationCard } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface CreateHomologationFormProps {
   onUpdate: () => void;
@@ -13,17 +14,20 @@ interface CreateHomologationFormProps {
 
 const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const { toast } = useToast();
+  const { isInstaller } = useUserRole();
   const [isCreating, setIsCreating] = useState(false);
   const [newBrand, setNewBrand] = useState("");
   const [newModel, setNewModel] = useState("");
   const [newYear, setNewYear] = useState("");
-  const [nextStep, setNextStep] = useState<"queue" | "execute" | "">("");
+  const [nextStep, setNextStep] = useState<"queue" | "execute" | "">(isInstaller() ? "execute" : "");
 
   const handleCreateCard = async () => {
-    if (!newBrand.trim() || !newModel.trim() || !nextStep) {
+    if (!newBrand.trim() || !newModel.trim() || (!isInstaller() && !nextStep)) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, preencha marca, modelo e como deseja prosseguir",
+        description: isInstaller() 
+          ? "Por favor, preencha marca e modelo" 
+          : "Por favor, preencha marca, modelo e como deseja prosseguir",
         variant: "destructive"
       });
       return;
@@ -41,12 +45,12 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
 
     setIsCreating(true);
     try {
-      const executeNow = nextStep === "execute";
+      const executeNow = isInstaller() || nextStep === "execute";
       await createHomologationCard(newBrand.trim(), newModel.trim(), year, undefined, executeNow);
       setNewBrand("");
       setNewModel("");
       setNewYear("");
-      setNextStep("");
+      setNextStep(isInstaller() ? "execute" : "");
       onUpdate();
       const statusMessage = executeNow ? " e movido para execução de testes" : " e adicionado à fila";
       toast({
@@ -108,29 +112,39 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
         </div>
         </div>
         
-        <div>
-          <Label className="block text-sm font-medium text-gray-700 mb-3">
-            Como deseja prosseguir? *
-          </Label>
-          <RadioGroup 
-            value={nextStep} 
-            onValueChange={(value: "queue" | "execute") => setNextStep(value)}
-            className="space-y-2"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="queue" id="queue" />
-              <Label htmlFor="queue" className="text-sm cursor-pointer">
-                Adicionar à fila (fluxo padrão)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="execute" id="execute" />
-              <Label htmlFor="execute" className="text-sm cursor-pointer">
-                Executar testes agora (urgente)
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
+        {!isInstaller() && (
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-3">
+              Como deseja prosseguir? *
+            </Label>
+            <RadioGroup 
+              value={nextStep} 
+              onValueChange={(value: "queue" | "execute") => setNextStep(value)}
+              className="space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="queue" id="queue" />
+                <Label htmlFor="queue" className="text-sm cursor-pointer">
+                  Adicionar à fila (fluxo padrão)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="execute" id="execute" />
+                <Label htmlFor="execute" className="text-sm cursor-pointer">
+                  Executar testes agora (urgente)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
+        
+        {isInstaller() && (
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800 font-medium">
+              Como instalador, este card será automaticamente direcionado para execução de testes.
+            </p>
+          </div>
+        )}
         
         <div className="flex justify-end">
           <Button

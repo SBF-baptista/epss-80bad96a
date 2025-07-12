@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Kanban from "./pages/Kanban";
@@ -14,6 +16,7 @@ import ConfigurationManagement from "./pages/ConfigurationManagement";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import SmartRedirect from "@/components/SmartRedirect";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,41 +49,55 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Auth />} />
-            {/* Redirect root to homologation since Index was removed */}
-            <Route path="/" element={<Navigate to="/homologation" replace />} />
+            {/* Smart redirect based on user role */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <SmartRedirect />
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="/kanban" element={
               <ProtectedRoute>
-                <Layout>
-                  <Kanban />
-                </Layout>
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <Layout>
+                    <Kanban />
+                  </Layout>
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="/homologation" element={
               <ProtectedRoute>
-                <Layout>
-                  <Homologation />
-                </Layout>
+                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                  <Layout>
+                    <Homologation />
+                  </Layout>
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="/orders" element={
               <ProtectedRoute>
-                <Layout>
-                  <Orders />
-                </Layout>
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <Layout>
+                    <Orders />
+                  </Layout>
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="/config" element={
               <ProtectedRoute>
-                <Layout>
-                  <ConfigurationManagement />
-                </Layout>
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <Layout>
+                    <ConfigurationManagement />
+                  </Layout>
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
