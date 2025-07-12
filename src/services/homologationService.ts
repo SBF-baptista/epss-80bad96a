@@ -103,15 +103,18 @@ export const createHomologationCard = async (
   brand: string,
   model: string,
   year?: number,
-  notes?: string
+  notes?: string,
+  executeNow?: boolean
 ): Promise<HomologationCard> => {
+  const status = executeNow ? 'execucao_teste' : 'homologar';
+  
   const { data, error } = await supabase
     .from('homologation_cards')
     .insert({
       brand,
       model,
       year,
-      status: 'homologar',
+      status,
       notes
     })
     .select()

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { createHomologationCard } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
@@ -15,12 +17,13 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const [newBrand, setNewBrand] = useState("");
   const [newModel, setNewModel] = useState("");
   const [newYear, setNewYear] = useState("");
+  const [nextStep, setNextStep] = useState<"queue" | "execute" | "">("");
 
   const handleCreateCard = async () => {
-    if (!newBrand.trim() || !newModel.trim()) {
+    if (!newBrand.trim() || !newModel.trim() || !nextStep) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, preencha marca e modelo",
+        description: "Por favor, preencha marca, modelo e como deseja prosseguir",
         variant: "destructive"
       });
       return;
@@ -38,14 +41,17 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
 
     setIsCreating(true);
     try {
-      await createHomologationCard(newBrand.trim(), newModel.trim(), year);
+      const executeNow = nextStep === "execute";
+      await createHomologationCard(newBrand.trim(), newModel.trim(), year, undefined, executeNow);
       setNewBrand("");
       setNewModel("");
       setNewYear("");
+      setNextStep("");
       onUpdate();
+      const statusMessage = executeNow ? " e movido para execução de testes" : " e adicionado à fila";
       toast({
         title: "Card criado",
-        description: `Card de homologação criado para ${newBrand} ${newModel}${year ? ` (${year})` : ""}`
+        description: `Card de homologação criado para ${newBrand} ${newModel}${year ? ` (${year})` : ""}${statusMessage}`
       });
     } catch (error) {
       console.error("Error creating homologation card:", error);
@@ -62,7 +68,8 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   return (
     <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm border">
       <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Criar Nova Homologação</h2>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4 md:items-end">
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Marca *
@@ -99,11 +106,37 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             className="text-sm"
           />
         </div>
+        </div>
+        
         <div>
+          <Label className="block text-sm font-medium text-gray-700 mb-3">
+            Como deseja prosseguir? *
+          </Label>
+          <RadioGroup 
+            value={nextStep} 
+            onValueChange={(value: "queue" | "execute") => setNextStep(value)}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="queue" id="queue" />
+              <Label htmlFor="queue" className="text-sm cursor-pointer">
+                Adicionar à fila (fluxo padrão)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="execute" id="execute" />
+              <Label htmlFor="execute" className="text-sm cursor-pointer">
+                Executar testes agora (urgente)
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+        
+        <div className="flex justify-end">
           <Button
             onClick={handleCreateCard}
             disabled={isCreating}
-            className="flex items-center gap-2 w-full text-sm"
+            className="flex items-center gap-2 text-sm"
             size="sm"
           >
             <Plus className="h-4 w-4" />
