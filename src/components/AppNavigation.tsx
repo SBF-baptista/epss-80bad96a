@@ -61,9 +61,9 @@ export function AppNavigation() {
 
   return (
     <Sidebar collapsible="icon" className="border-r">
-      <SidebarContent>
+      <SidebarContent className="safe-area-inset">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm font-semibold text-gray-700">
+          <SidebarGroupLabel className="text-sm font-semibold text-gray-700 px-2">
             {!isCollapsed && "Menu"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -76,10 +76,11 @@ export function AppNavigation() {
                       asChild 
                       isActive={isActive(item.to)}
                       tooltip={isCollapsed ? item.label : undefined}
+                      className="touch-manipulation tap-target"
                     >
-                      <NavLink to={item.to} className="flex items-center gap-3">
-                        <Icon className="h-4 w-4" />
-                        <span className="font-medium">{item.label}</span>
+                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="font-medium text-sm truncate">{item.label}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

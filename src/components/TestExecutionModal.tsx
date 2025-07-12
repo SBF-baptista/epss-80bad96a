@@ -241,15 +241,17 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto mx-2 md:mx-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <TestTube className="h-5 w-5" />
-            {card.test_checklist ? "Editar Execução de Teste" : "Execução de Teste"}
+          <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
+            <TestTube className="h-4 w-4 md:h-5 md:w-5" />
+            <span className="truncate">
+              {card.test_checklist ? "Editar Execução de Teste" : "Execução de Teste"}
+            </span>
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="font-medium text-gray-900">{card.brand} {card.model}</p>
             {card.year && <p className="text-sm text-gray-600">Ano: {card.year}</p>}
@@ -263,15 +265,17 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
           {/* Test Checklist */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5" />
-                Checklist de Testes
-                <span className="ml-auto text-sm font-normal">
+              <CardTitle className="flex flex-col md:flex-row md:items-center gap-2 text-base md:text-lg">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 md:h-5 md:w-5" />
+                  Checklist de Testes
+                </div>
+                <span className="text-xs md:text-sm font-normal text-gray-600">
                   {completedItems}/{checklist.length} ({completionPercentage}%)
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 md:space-y-3">
               {checklist.map((item) => (
                 <div key={item.id} className="space-y-2">
                   <div className="flex items-center space-x-2">
@@ -308,12 +312,12 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
           {/* Configuration Definition */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Settings className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Settings className="h-4 w-4 md:h-5 md:w-5" />
                 Configuração Testada
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 md:space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="testConfiguration">Configuração Utilizada no Teste *</Label>
                 <Select
@@ -350,24 +354,25 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
           {/* Vehicle Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Car className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Car className="h-4 w-4 md:h-5 md:w-5" />
                 Informações do Veículo
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-3 md:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="chassisInfo">Informações do Chassi</Label>
+                  <Label htmlFor="chassisInfo" className="text-sm">Informações do Chassi</Label>
                   <Input
                     id="chassisInfo"
                     value={formData.chassisInfo}
                     onChange={(e) => setFormData({ ...formData, chassisInfo: e.target.value })}
                     placeholder="Número do chassi, tipo, etc."
+                    className="text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="manufactureYear">Ano de Fabricação</Label>
+                  <Label htmlFor="manufactureYear" className="text-sm">Ano de Fabricação</Label>
                   <Input
                     id="manufactureYear"
                     type="number"
@@ -375,17 +380,19 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
                     onChange={(e) => setFormData({ ...formData, manufactureYear: parseInt(e.target.value) })}
                     min="1900"
                     max={new Date().getFullYear() + 1}
+                    className="text-sm"
                   />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="electricalConnectionType">Tipo de Conexão Elétrica</Label>
+                <Label htmlFor="electricalConnectionType" className="text-sm">Tipo de Conexão Elétrica</Label>
                 <Input
                   id="electricalConnectionType"
                   value={formData.electricalConnectionType}
                   onChange={(e) => setFormData({ ...formData, electricalConnectionType: e.target.value })}
                   placeholder="Ex: OBD-II, fios diretos, etc."
+                  className="text-sm"
                 />
               </div>
 
@@ -572,21 +579,22 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
 
           {/* Technical Observations */}
           <div className="space-y-2">
-            <Label htmlFor="technicalObservations">Observações Técnicas</Label>
+            <Label htmlFor="technicalObservations" className="text-sm">Observações Técnicas</Label>
             <Textarea
               id="technicalObservations"
               value={formData.technicalObservations}
               onChange={(e) => setFormData({ ...formData, technicalObservations: e.target.value })}
               placeholder="Descreva detalhes da instalação, problemas encontrados, soluções aplicadas, etc."
-              rows={4}
+              rows={3}
+              className="text-sm"
             />
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          <div className="flex flex-col md:flex-row gap-2 md:gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose} className="w-full md:flex-1 order-2 md:order-1">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading} className="flex-1">
+            <Button type="submit" disabled={isLoading} className="w-full md:flex-1 order-1 md:order-2">
               {isLoading ? "Salvando..." : card.test_checklist ? "Atualizar Execução" : "Salvar Execução"}
             </Button>
           </div>

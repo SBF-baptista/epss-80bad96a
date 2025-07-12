@@ -99,48 +99,50 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto mx-2 md:mx-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            Homologação: {card.brand} {card.model} {card.year && `(${card.year})`}
-            <Badge className={`text-xs ${getStatusColor(card.status)}`}>
+          <DialogTitle className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 text-left">
+            <span className="text-sm md:text-base">
+              Homologação: {card.brand} {card.model} {card.year && `(${card.year})`}
+            </span>
+            <Badge className={`text-xs ${getStatusColor(card.status)} self-start md:self-center`}>
               {getStatusLabel(card.status)}
             </Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Informações do Veículo</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
+              <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Informações do Veículo</h3>
+              <div className="space-y-2 md:space-y-3 text-sm">
+                <div className="flex justify-between gap-2">
                   <span className="text-gray-600">Marca:</span>
-                  <span className="font-medium">{card.brand}</span>
+                  <span className="font-medium text-right">{card.brand}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-gray-600">Modelo:</span>
-                  <span className="font-medium">{card.model}</span>
+                  <span className="font-medium text-right">{card.model}</span>
                 </div>
                 {card.year && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-gray-600">Ano:</span>
-                    <span className="font-medium">{card.year}</span>
+                    <span className="font-medium text-right">{card.year}</span>
                   </div>
                 )}
               </div>
             </div>
 
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Datas</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
+              <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Datas</h3>
+              <div className="space-y-2 md:space-y-3 text-sm">
+                <div className="flex justify-between gap-2">
                   <span className="text-gray-600">Criado em:</span>
-                  <span className="font-medium">{formatDate(card.created_at)}</span>
+                  <span className="font-medium text-right">{formatDate(card.created_at)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Atualizado em:</span>
-                  <span className="font-medium">{formatDate(card.updated_at)}</span>
+                <div className="flex justify-between gap-2">
+                  <span className="text-gray-600">Atualizado:</span>
+                  <span className="font-medium text-right">{formatDate(card.updated_at)}</span>
                 </div>
               </div>
             </div>
@@ -163,13 +165,14 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
 
           {/* Workflow Action Buttons */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Ações do Fluxo de Trabalho</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Ações do Fluxo de Trabalho</h3>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
               {(card.status === 'em_homologacao' || card.status === 'agendamento_teste') && (
                 <Button
                   variant="outline"
                   onClick={() => setShowTestScheduling(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full justify-start text-sm"
+                  size="sm"
                 >
                   <Calendar className="h-4 w-4" />
                   {card.test_scheduled_date ? 'Reagendar Teste' : 'Agendar Teste'}
@@ -181,7 +184,8 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                 <Button
                   variant="outline"
                   onClick={() => setShowTestExecution(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full justify-start text-sm"
+                  size="sm"
                 >
                   <TestTube className="h-4 w-4" />
                   Executar Teste
@@ -192,7 +196,8 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                 <Button
                   variant="outline"
                   disabled
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full justify-start text-sm"
+                  size="sm"
                 >
                   <Database className="h-4 w-4" />
                   Armazenar na Plataforma
@@ -286,13 +291,14 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
             onUpdate={onUpdate}
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={onClose}>
+          <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={onClose} className="w-full md:w-auto">
               Fechar
             </Button>
             <Button 
               onClick={handleUpdateNotes}
               disabled={isUpdating || notes === card.notes}
+              className="w-full md:w-auto"
             >
               {isUpdating ? "Salvando..." : "Salvar Notas"}
             </Button>

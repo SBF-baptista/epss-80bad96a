@@ -18,55 +18,55 @@ const HomologationMetrics = ({ cards, workflowData }: HomologationMetricsProps) 
   const totalPendingVehicles = workflowData.filter(item => item.incoming_processed === false).length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Cards Vinculados</CardTitle>
-          <Link className="h-4 w-4 text-blue-600" />
+          <CardTitle className="text-xs md:text-sm font-medium">Cards Vinculados</CardTitle>
+          <Link className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{linkedCards}</div>
+          <div className="text-lg md:text-2xl font-bold text-blue-600">{linkedCards}</div>
           <p className="text-xs text-muted-foreground">
-            de {cards.length} cards totais
+            de {cards.length} totais
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pedidos Criados</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-600" />
+          <CardTitle className="text-xs md:text-sm font-medium">Pedidos Criados</CardTitle>
+          <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{cardsWithOrders}</div>
+          <div className="text-lg md:text-2xl font-bold text-green-600">{cardsWithOrders}</div>
           <p className="text-xs text-muted-foreground">
-            automaticamente via homologação
+            auto. criados
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Homologados</CardTitle>
-          <div className="h-4 w-4 bg-green-500 rounded-full" />
+          <CardTitle className="text-xs md:text-sm font-medium">Homologados</CardTitle>
+          <div className="h-3 w-3 md:h-4 md:w-4 bg-green-500 rounded-full" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{homologatedCards}</div>
+          <div className="text-lg md:text-2xl font-bold text-green-600">{homologatedCards}</div>
           <p className="text-xs text-muted-foreground">
-            aprovados para produção
+            aprovados
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Veículos Pendentes</CardTitle>
-          <div className="h-4 w-4 bg-yellow-500 rounded-full" />
+          <CardTitle className="text-xs md:text-sm font-medium">Pendentes</CardTitle>
+          <div className="h-3 w-3 md:h-4 md:w-4 bg-yellow-500 rounded-full" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-yellow-600">{totalPendingVehicles}</div>
+          <div className="text-lg md:text-2xl font-bold text-yellow-600">{totalPendingVehicles}</div>
           <p className="text-xs text-muted-foreground">
-            aguardando processamento
+            aguardando
           </p>
         </CardContent>
       </Card>

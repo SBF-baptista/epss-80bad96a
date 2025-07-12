@@ -63,46 +63,46 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+      className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] touch-manipulation"
       draggable
       onDragStart={onDragStart}
       onClick={onClick}
     >
-      <CardContent className="p-4">
-        <div className="space-y-3">
-          <div className="flex justify-between items-start">
-            <h4 className="font-semibold text-gray-900">
-              {card.brand} {card.model}
+      <CardContent className="p-3 md:p-4">
+        <div className="space-y-2 md:space-y-3">
+          <div className="flex justify-between items-start gap-2">
+            <h4 className="font-semibold text-gray-900 text-sm md:text-base leading-tight flex-1 min-w-0">
+              <span className="block truncate">{card.brand} {card.model}</span>
               {card.year && (
-                <span className="text-sm text-gray-600 ml-2">({card.year})</span>
+                <span className="text-xs md:text-sm text-gray-600">({card.year})</span>
               )}
             </h4>
-            <Badge className={`text-xs ${getStatusColor(card.status)}`}>
+            <Badge className={`text-xs ${getStatusColor(card.status)} flex-shrink-0`}>
               {getStatusLabel(card.status)}
             </Badge>
           </div>
           
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Marca:</span>
-              <span className="font-medium text-gray-900">{card.brand}</span>
+          <div className="space-y-1 md:space-y-2 text-xs md:text-sm">
+            <div className="flex justify-between gap-2">
+              <span className="text-gray-600 flex-shrink-0">Marca:</span>
+              <span className="font-medium text-gray-900 truncate">{card.brand}</span>
             </div>
             
-            <div className="flex justify-between">
-              <span className="text-gray-600">Modelo:</span>
-              <span className="font-medium text-gray-900">{card.model}</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-gray-600 flex-shrink-0">Modelo:</span>
+              <span className="font-medium text-gray-900 truncate">{card.model}</span>
             </div>
 
             {card.year && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Ano:</span>
+              <div className="flex justify-between gap-2">
+                <span className="text-gray-600 flex-shrink-0">Ano:</span>
                 <span className="font-medium text-gray-900">{card.year}</span>
               </div>
             )}
             
-            <div className="flex justify-between">
-              <span className="text-gray-600">Criado em:</span>
-              <span className="font-medium text-gray-900">{formatDate(card.created_at)}</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-gray-600 flex-shrink-0">Criado:</span>
+              <span className="font-medium text-gray-900 text-right">{formatDate(card.created_at)}</span>
             </div>
           </div>
 
@@ -137,15 +137,16 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           </div>
 
           {card.notes && (
-            <div className="mt-3 p-2 bg-gray-50 border border-gray-200 rounded-md">
-              <p className="text-xs text-gray-700">{card.notes}</p>
+            <div className="mt-2 md:mt-3 p-2 bg-gray-50 border border-gray-200 rounded-md">
+              <p className="text-xs text-gray-700 line-clamp-2">{card.notes}</p>
             </div>
           )}
 
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Image className="h-3 w-3" />
-              <span>Clique para ver fotos</span>
+              <Image className="h-3 w-3 flex-shrink-0" />
+              <span className="hidden md:inline">Clique para ver fotos</span>
+              <span className="md:hidden">Toque para detalhes</span>
             </div>
           </div>
         </div>

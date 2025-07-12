@@ -25,18 +25,18 @@ const HomologationColumn = ({
   onUpdate
 }: HomologationColumnProps) => {
   return (
-    <div className="min-w-80">
-      <div className="mb-4">
-        <h3 className="font-semibold text-gray-900 text-lg">{title}</h3>
-        <p className="text-sm text-gray-600">{cards.length} itens</p>
+    <div className="min-w-[280px] md:min-w-80 flex-shrink-0">
+      <div className="mb-3 md:mb-4">
+        <h3 className="font-semibold text-gray-900 text-sm md:text-lg leading-tight">{title}</h3>
+        <p className="text-xs md:text-sm text-gray-600">{cards.length} itens</p>
       </div>
       
       <Card 
-        className={`min-h-96 p-4 border-2 border-dashed ${color} transition-colors`}
+        className={`min-h-64 md:min-h-96 p-2 md:p-4 border-2 border-dashed ${color} transition-colors`}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           {cards.map(card => (
             <HomologationCardComponent
               key={card.id}
@@ -47,8 +47,8 @@ const HomologationColumn = ({
             />
           ))}
           {cards.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>Nenhum item nesta etapa</p>
+            <div className="text-center py-6 md:py-8 text-gray-500">
+              <p className="text-sm">Nenhum item nesta etapa</p>
             </div>
           )}
         </div>

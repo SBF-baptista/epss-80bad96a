@@ -60,9 +60,9 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Criar Nova Homologação</h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm border">
+      <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Criar Nova Homologação</h2>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4 md:items-end">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Marca *
@@ -71,6 +71,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             value={newBrand}
             onChange={(e) => setNewBrand(e.target.value)}
             placeholder="Ex: Toyota"
+            className="text-sm"
           />
         </div>
         <div>
@@ -81,6 +82,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             value={newModel}
             onChange={(e) => setNewModel(e.target.value)}
             placeholder="Ex: Corolla"
+            className="text-sm"
           />
         </div>
         <div>
@@ -94,13 +96,15 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             placeholder="Ex: 2024"
             min="1900"
             max={new Date().getFullYear() + 1}
+            className="text-sm"
           />
         </div>
         <div>
           <Button
             onClick={handleCreateCard}
             disabled={isCreating}
-            className="flex items-center gap-2 w-full"
+            className="flex items-center gap-2 w-full text-sm"
+            size="sm"
           >
             <Plus className="h-4 w-4" />
             {isCreating ? "Criando..." : "Criar Card"}

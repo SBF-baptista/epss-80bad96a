@@ -8,9 +8,9 @@ interface HomologationKanbanSectionProps {
 
 const HomologationKanbanSection = ({ cards, onUpdate }: HomologationKanbanSectionProps) => {
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">
+    <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm border">
+      <div className="flex justify-between items-center mb-3 md:mb-6">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900">
           Kanban de Homologação ({cards.length} itens)
         </h2>
       </div>
