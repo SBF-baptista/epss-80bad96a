@@ -21,9 +21,26 @@ const SmartRedirect = () => {
     return <Navigate to="/homologation" replace />
   } else if (role === 'admin') {
     return <Navigate to="/homologation" replace />
+  } else if (role === null) {
+    // User is authenticated but has no role assigned
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-600 text-lg font-medium mb-4">
+            Acesso Negado
+          </div>
+          <p className="text-gray-600 mb-4">
+            Seu usuário não possui permissões para acessar o sistema.
+          </p>
+          <p className="text-gray-500 text-sm">
+            Entre em contato com o administrador para obter acesso.
+          </p>
+        </div>
+      </div>
+    )
   }
 
-  // Default redirect if no role found
+  // Fallback (should not reach here)
   return <Navigate to="/auth" replace />
 }
 
