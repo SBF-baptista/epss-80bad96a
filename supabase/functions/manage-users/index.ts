@@ -54,26 +54,30 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     // For GET requests (list users), we'll also verify auth
+    let authenticatedUser = null;
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      
+      if (!authError && user) {
+        authenticatedUser = user;
+        console.log('User authenticated:', user.email);
+      } else {
+        console.log('Auth error:', authError);
+      }
+    }
+
+    // Only require auth for non-GET requests
+    if (req.method !== 'GET' && !authenticatedUser) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Authentication required' 
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // For now, skip admin check to debug
-    console.log('Skipping auth check for debug...');
 
     // Parse request
     let requestData: any = {};
