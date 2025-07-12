@@ -91,24 +91,25 @@ class UserManagementService {
 
   async listUsers(): Promise<UserManagementResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke('manage-users', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+      console.log('Fetching users...');
+      
+      const { data, error } = await supabase.functions.invoke('manage-users');
+
+      console.log('List users response data:', data);
+      console.log('List users response error:', error);
 
       if (error) {
-        throw error
+        console.error('Supabase function error:', error);
+        throw error;
       }
 
-      return data
+      return data;
     } catch (error: any) {
-      console.error('Error listing users:', error)
+      console.error('Error listing users:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch users'
-      }
+      };
     }
   }
 

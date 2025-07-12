@@ -17,26 +17,39 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await userManagementService.listUsers()
+      console.log('Fetching users from page...');
+      const response = await userManagementService.listUsers();
       
-      if (response.success && response.users) {
-        setUsers(response.users)
-      } else {
+      console.log('Page response:', response);
+      
+      if (response && response.users) {
+        console.log('Setting users:', response.users);
+        setUsers(response.users);
+      } else if (response && response.success === false) {
+        console.log('Response error:', response.error);
         toast({
           title: 'Erro',
           description: response.error || 'Falha ao carregar usuários',
           variant: 'destructive'
-        })
+        });
+      } else {
+        console.log('Unexpected response format:', response);
+        toast({
+          title: 'Erro',
+          description: 'Formato de resposta inesperado',
+          variant: 'destructive'
+        });
       }
     } catch (error: any) {
+      console.error('Fetch users error:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro inesperado ao carregar usuários',
         variant: 'destructive'
-      })
+      });
     } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
   }
 
