@@ -65,9 +65,20 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    // Temporarily disable authentication for debugging
-    console.log('=== DEBUGGING MODE: AUTH DISABLED ===');
-    let authenticatedUser = { email: 'debug@test.com' }; // Mock user for debugging
+    // Simple authentication check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Missing or invalid authorization header' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // For now, just check that the token exists - Supabase will validate it
+    console.log('Authorization header present, proceeding...');
 
     // Parse request
     let requestData: any = {};
