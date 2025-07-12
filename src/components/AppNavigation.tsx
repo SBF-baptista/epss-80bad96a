@@ -6,6 +6,7 @@ import {
   Settings, 
   CheckSquare,
   ShoppingCart,
+  Users,
   LogOut
 } from "lucide-react";
 import {
@@ -57,6 +58,13 @@ const navigationItems = [
     label: "Configurações", 
     icon: Settings,
     description: "Configurações do sistema",
+    roles: ["admin"]
+  },
+  { 
+    to: "/users", 
+    label: "Usuários", 
+    icon: Users,
+    description: "Gerenciar usuários e permissões",
     roles: ["admin"]
   },
 ];

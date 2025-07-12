@@ -13,6 +13,7 @@ import Kanban from "./pages/Kanban";
 import Homologation from "./pages/Homologation";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
+import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -97,6 +98,13 @@ function App() {
                   <Layout>
                     <ConfigurationManagement />
                   </Layout>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/users" element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <UserManagement />
                 </RoleProtectedRoute>
               </ProtectedRoute>
             } />
