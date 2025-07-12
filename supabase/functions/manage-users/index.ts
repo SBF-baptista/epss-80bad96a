@@ -94,12 +94,33 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (roleError) {
-      console.log('Role check error:', roleError);
+      console.error('Role check error:', roleError);
+      return new Response(JSON.stringify({ 
+        error: 'Role check failed',
+        details: roleError.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
     
     if (!roleData) {
-      console.log('No admin role found for user');
-      return new Response(JSON.stringify({ error: 'Insufficient permissions' }), {
+      console.log('No admin role found for user:', user.id);
+      console.log('Available roles check...');
+      
+      // Let's check what roles this user has for debugging
+      const { data: allRoles, error: allRolesError } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      console.log('User roles:', allRoles);
+      console.log('Roles error:', allRolesError);
+      
+      return new Response(JSON.stringify({ 
+        error: 'Insufficient permissions - Admin role required',
+        userRoles: allRoles
+      }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
