@@ -67,25 +67,36 @@ class UserManagementService {
 
   async updateUser(updateData: UpdateUserData): Promise<UserManagementResponse> {
     try {
+      console.log('Sending update user request:', updateData);
+      
+      const requestBody = {
+        action: 'update',
+        userId: updateData.userId,
+        role: updateData.role,
+        resetPassword: updateData.resetPassword
+      };
+
+      console.log('Update request body:', JSON.stringify(requestBody));
+
       const { data, error } = await supabase.functions.invoke('manage-users', {
-        body: { ...updateData, action: 'update' },
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+        body: requestBody
+      });
+
+      console.log('Update response data:', data);
+      console.log('Update response error:', error);
 
       if (error) {
-        throw error
+        console.error('Supabase function error:', error);
+        throw error;
       }
 
-      return data
+      return data;
     } catch (error: any) {
-      console.error('Error updating user:', error)
+      console.error('Error updating user:', error);
       return {
         success: false,
         error: error.message || 'Failed to update user'
-      }
+      };
     }
   }
 

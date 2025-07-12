@@ -176,6 +176,97 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Handle update user (POST with action 'update')
+    if (req.method === 'POST' && action === 'update') {
+      // Verify auth for update operations
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'No authorization header' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Invalid token' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { userId, role, resetPassword } = requestData;
+      console.log('Update request:', { userId, role, resetPassword });
+
+      if (role) {
+        // Update user role - first delete existing roles, then insert new one
+        const { error: deleteError } = await supabaseAdmin
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId);
+
+        if (deleteError) {
+          console.error('Error deleting old roles:', deleteError);
+          return new Response(JSON.stringify({ error: 'Failed to update role' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Insert new role
+        const { error: insertError } = await supabaseAdmin
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role
+          });
+
+        if (insertError) {
+          console.error('Error inserting new role:', insertError);
+          return new Response(JSON.stringify({ error: 'Failed to assign new role' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      if (resetPassword) {
+        // Generate temporary password
+        const tempPassword = Math.random().toString(36).slice(-12);
+        
+        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          { password: tempPassword }
+        );
+
+        if (passwordError) {
+          return new Response(JSON.stringify({ error: 'Failed to reset password' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          temporaryPassword: tempPassword,
+          message: 'Password reset successfully'
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: 'User updated successfully'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Handle list users (GET or default)
     console.log('Listing users...');
     const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
