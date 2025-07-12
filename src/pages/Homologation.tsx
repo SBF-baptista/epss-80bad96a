@@ -25,8 +25,8 @@ const Homologation = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto space-y-3 md:space-y-6">
+    <div className="container-mobile min-h-screen bg-gray-50">
+      <div className="w-full max-w-7xl mx-auto space-y-3 md:space-y-6 px-0">
         <HomologationHeader />
         
         <HomologationMetrics 

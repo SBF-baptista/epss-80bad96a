@@ -60,20 +60,22 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
 
   return (
     <>
-      <div className="flex gap-3 md:gap-6 overflow-x-auto pb-4 min-h-[400px] md:min-h-[600px] -mx-3 md:mx-0 px-3 md:px-0">
-        {columns.map(column => (
-          <HomologationColumn
-            key={column.id}
-            title={column.title}
-            cards={getCardsByStatus(column.id)}
-            color={column.color}
-            onDragOver={handleDragOver}
-            onDrop={() => handleDrop(column.id)}
-            onCardClick={setSelectedCard}
-            onDragStart={handleDragStart}
-            onUpdate={onUpdate}
-          />
-        ))}
+      <div className="w-full overflow-x-auto no-scrollbar">
+        <div className="flex gap-2 md:gap-6 pb-4 min-h-[400px] md:min-h-[600px] min-w-max">
+          {columns.map(column => (
+            <HomologationColumn
+              key={column.id}
+              title={column.title}
+              cards={getCardsByStatus(column.id)}
+              color={column.color}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(column.id)}
+              onCardClick={setSelectedCard}
+              onDragStart={handleDragStart}
+              onUpdate={onUpdate}
+            />
+          ))}
+        </div>
       </div>
 
       {selectedCard && (

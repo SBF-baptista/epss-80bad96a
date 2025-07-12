@@ -82,21 +82,21 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
             </Badge>
           </div>
           
-          <div className="space-y-1 md:space-y-2 text-xs md:text-sm">
-            <div className="flex justify-between gap-2">
-              <span className="text-gray-600 flex-shrink-0">Marca:</span>
-              <span className="font-medium text-gray-900 truncate">{card.brand}</span>
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between gap-1 items-center">
+              <span className="text-gray-600 flex-shrink-0 text-xs">Marca:</span>
+              <span className="font-medium text-gray-900 truncate text-xs">{card.brand}</span>
             </div>
             
-            <div className="flex justify-between gap-2">
-              <span className="text-gray-600 flex-shrink-0">Modelo:</span>
-              <span className="font-medium text-gray-900 truncate">{card.model}</span>
+            <div className="flex justify-between gap-1 items-center">
+              <span className="text-gray-600 flex-shrink-0 text-xs">Modelo:</span>
+              <span className="font-medium text-gray-900 truncate text-xs">{card.model}</span>
             </div>
 
             {card.year && (
-              <div className="flex justify-between gap-2">
-                <span className="text-gray-600 flex-shrink-0">Ano:</span>
-                <span className="font-medium text-gray-900">{card.year}</span>
+              <div className="flex justify-between gap-1 items-center">
+                <span className="text-gray-600 flex-shrink-0 text-xs">Ano:</span>
+                <span className="font-medium text-gray-900 text-xs">{card.year}</span>
               </div>
             )}
             

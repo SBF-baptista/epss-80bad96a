@@ -25,10 +25,10 @@ const HomologationColumn = ({
   onUpdate
 }: HomologationColumnProps) => {
   return (
-    <div className="min-w-[280px] md:min-w-80 flex-shrink-0">
-      <div className="mb-3 md:mb-4">
-        <h3 className="font-semibold text-gray-900 text-sm md:text-lg leading-tight">{title}</h3>
-        <p className="text-xs md:text-sm text-gray-600">{cards.length} itens</p>
+    <div className="min-w-[260px] md:min-w-80 flex-shrink-0 w-[260px] md:w-auto">
+      <div className="mb-2 md:mb-4 px-1">
+        <h3 className="font-semibold text-gray-900 text-xs md:text-lg leading-tight truncate">{title}</h3>
+        <p className="text-xs text-gray-600">{cards.length} {cards.length === 1 ? 'item' : 'itens'}</p>
       </div>
       
       <Card 
