@@ -19,11 +19,23 @@ interface UpdateUserRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log(`========= NEW REQUEST =========`);
   console.log(`Request method: ${req.method}`);
   console.log(`Request URL: ${req.url}`);
   
+  // Log all headers for debugging
+  console.log('All headers:');
+  for (const [key, value] of req.headers.entries()) {
+    if (key.toLowerCase() === 'authorization') {
+      console.log(`  ${key}: Bearer ${value.substring(7, 20)}...`);
+    } else {
+      console.log(`  ${key}: ${value}`);
+    }
+  }
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Returning CORS preflight response');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -56,20 +68,35 @@ const handler = async (req: Request): Promise<Response> => {
     // For GET requests (list users), we'll also verify auth
     let authenticatedUser = null;
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      console.log('Token length:', token.length);
+      console.log('Token starts with:', token.substring(0, 20));
       
-      if (!authError && user) {
-        authenticatedUser = user;
-        console.log('User authenticated:', user.email);
-      } else {
-        console.log('Auth error:', authError);
+      try {
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+        console.log('Auth API call result - User:', !!user, 'Error:', !!authError);
+        
+        if (authError) {
+          console.log('Auth error details:', authError);
+        }
+        
+        if (!authError && user) {
+          authenticatedUser = user;
+          console.log('User authenticated successfully:', user.email);
+        }
+      } catch (authException) {
+        console.log('Auth exception:', authException);
       }
+    } else {
+      console.log('No authorization header found');
     }
 
     // Only require auth for non-GET requests
     if (req.method !== 'GET' && !authenticatedUser) {
+      console.log('Authentication failed for non-GET request');
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Authentication required' 
@@ -78,6 +105,8 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log('Authentication check passed, user:', authenticatedUser?.email || 'none');
 
     // Parse request
     let requestData: any = {};
