@@ -33,7 +33,7 @@ class UserManagementService {
   async createUser(userData: CreateUserData): Promise<UserManagementResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('manage-users', {
-        body: userData,
+        body: { ...userData, action: 'create' },
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -56,8 +56,8 @@ class UserManagementService {
 
   async updateUser(updateData: UpdateUserData): Promise<UserManagementResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke('manage-users?action=update', {
-        body: updateData,
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { ...updateData, action: 'update' },
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -80,7 +80,7 @@ class UserManagementService {
 
   async listUsers(): Promise<UserManagementResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke('manage-users?action=list', {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

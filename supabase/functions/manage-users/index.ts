@@ -108,18 +108,16 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Admin role verified');
 
     const method = req.method;
-    const url = new URL(req.url);
-    const action = url.searchParams.get('action') || (method === 'GET' ? 'list' : 'create');
+    let action = 'list'; // default action
+    let requestBody = null;
 
-    console.log(`Action: ${action}`);
-
-    if (method === 'POST' && action === 'create') {
+    if (method === 'POST') {
       const bodyText = await req.text();
       console.log('Request body:', bodyText);
       
-      let requestData;
       try {
-        requestData = JSON.parse(bodyText);
+        requestBody = JSON.parse(bodyText);
+        action = requestBody.action || 'create';
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
         return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
@@ -127,8 +125,22 @@ const handler = async (req: Request): Promise<Response> => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+    } else if (method === 'GET') {
+      const url = new URL(req.url);
+      action = url.searchParams.get('action') || 'list';
+    }
+
+    console.log(`Action: ${action}`);
+
+    if (method === 'POST' && action === 'create') {
+      if (!requestBody) {
+        return new Response(JSON.stringify({ error: 'Request body required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
       
-      const { email, password, role }: CreateUserRequest = requestData;
+      const { email, password, role }: CreateUserRequest = requestBody;
       
       console.log(`Creating user: ${email} with role: ${role}`);
 
@@ -190,7 +202,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (method === 'POST' && action === 'update') {
-      const { userId, role, resetPassword }: UpdateUserRequest = await req.json();
+      if (!requestBody) {
+        return new Response(JSON.stringify({ error: 'Request body required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      const { userId, role, resetPassword }: UpdateUserRequest = requestBody;
 
       if (role) {
         // Update user role
