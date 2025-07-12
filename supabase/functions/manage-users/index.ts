@@ -65,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    // For GET requests (list users), we'll also verify auth
+    // Authentication check for all requests
     let authenticatedUser = null;
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
@@ -73,7 +73,6 @@ const handler = async (req: Request): Promise<Response> => {
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       console.log('Token length:', token.length);
-      console.log('Token starts with:', token.substring(0, 20));
       
       try {
         const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
@@ -90,13 +89,11 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (authException) {
         console.log('Auth exception:', authException);
       }
-    } else {
-      console.log('No authorization header found');
     }
 
-    // Only require auth for non-GET requests
-    if (req.method !== 'GET' && !authenticatedUser) {
-      console.log('Authentication failed for non-GET request');
+    // For all requests, require authentication
+    if (!authenticatedUser) {
+      console.log('Authentication required but not provided');
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Authentication required' 
@@ -106,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log('Authentication check passed, user:', authenticatedUser?.email || 'none');
+    console.log('Authentication successful for user:', authenticatedUser.email);
 
     // Parse request
     let requestData: any = {};
