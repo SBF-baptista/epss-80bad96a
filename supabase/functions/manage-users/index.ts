@@ -134,29 +134,42 @@ const handler = async (req: Request): Promise<Response> => {
     let requestBody = null;
 
     if (method === 'POST') {
-      const bodyText = await req.text();
-      console.log('Request body text:', bodyText);
-      console.log('Request body length:', bodyText.length);
-      
-      if (!bodyText || bodyText.trim() === '') {
-        return new Response(JSON.stringify({ error: 'Empty request body' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
       try {
+        const contentType = req.headers.get('content-type');
+        console.log('Content-Type header:', contentType);
+        
+        // Check if request has body
+        const hasBody = req.body !== null;
+        console.log('Request has body:', hasBody);
+        
+        if (!hasBody) {
+          return new Response(JSON.stringify({ error: 'No request body provided' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Clone the request to read the body multiple times if needed
+        const bodyText = await req.text();
+        console.log('Request body text:', bodyText);
+        console.log('Request body length:', bodyText.length);
+        
+        if (!bodyText || bodyText.trim() === '') {
+          return new Response(JSON.stringify({ error: 'Empty request body' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
         requestBody = JSON.parse(bodyText);
         action = requestBody.action || 'create';
         console.log('Parsed request body:', JSON.stringify(requestBody));
         console.log('Action extracted:', action);
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
-        console.error('Failed to parse body text:', bodyText);
         return new Response(JSON.stringify({ 
           error: 'Invalid JSON in request body',
-          details: parseError.message,
-          receivedBody: bodyText
+          details: parseError.message
         }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
