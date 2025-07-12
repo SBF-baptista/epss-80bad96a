@@ -32,25 +32,36 @@ export interface UserManagementResponse {
 class UserManagementService {
   async createUser(userData: CreateUserData): Promise<UserManagementResponse> {
     try {
+      console.log('Sending create user request:', userData);
+      
+      const requestBody = {
+        action: 'create',
+        email: userData.email,
+        password: userData.password,
+        role: userData.role
+      };
+
+      console.log('Request body:', JSON.stringify(requestBody));
+
       const { data, error } = await supabase.functions.invoke('manage-users', {
-        body: { ...userData, action: 'create' },
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+        body: requestBody
+      });
+
+      console.log('Response data:', data);
+      console.log('Response error:', error);
 
       if (error) {
-        throw error
+        console.error('Supabase function error:', error);
+        throw error;
       }
 
-      return data
+      return data;
     } catch (error: any) {
-      console.error('Error creating user:', error)
+      console.error('Error creating user:', error);
       return {
         success: false,
         error: error.message || 'Failed to create user'
-      }
+      };
     }
   }
 

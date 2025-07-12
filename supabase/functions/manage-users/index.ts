@@ -21,7 +21,6 @@ interface UpdateUserRequest {
 const handler = async (req: Request): Promise<Response> => {
   console.log(`Request method: ${req.method}`);
   console.log(`Request URL: ${req.url}`);
-  console.log(`Request headers:`, Object.fromEntries(req.headers.entries()));
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -33,14 +32,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    console.log('Supabase URL:', supabaseUrl ? 'Present' : 'Missing');
-    console.log('Service Key:', supabaseServiceKey ? 'Present (length: ' + supabaseServiceKey?.length + ')' : 'Missing');
-    
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing environment variables');
       return new Response(JSON.stringify({ 
-        error: 'Server configuration error',
-        details: `Missing: ${!supabaseUrl ? 'SUPABASE_URL ' : ''}${!supabaseServiceKey ? 'SUPABASE_SERVICE_ROLE_KEY' : ''}`
+        error: 'Server configuration error'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -59,12 +54,9 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    console.log('Supabase admin client created');
-
     // Verify the requesting user is an admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.log('No authorization header');
       return new Response(JSON.stringify({ error: 'No authorization header' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -72,19 +64,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('Token extracted, length:', token.length);
-    
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
-      console.log('Auth error:', authError);
       return new Response(JSON.stringify({ error: 'Invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-
-    console.log('User authenticated:', user.email);
 
     // Check if user has admin role
     const { data: roleData, error: roleError } = await supabaseAdmin
@@ -94,104 +81,60 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('role', 'admin')
       .maybeSingle();
 
-    if (roleError) {
-      console.error('Role check error:', roleError);
+    if (roleError || !roleData) {
       return new Response(JSON.stringify({ 
-        error: 'Role check failed',
-        details: roleError.message 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    if (!roleData) {
-      console.log('No admin role found for user:', user.id);
-      console.log('Available roles check...');
-      
-      // Let's check what roles this user has for debugging
-      const { data: allRoles, error: allRolesError } = await supabaseAdmin
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
-      
-      console.log('User roles:', allRoles);
-      console.log('Roles error:', allRolesError);
-      
-      return new Response(JSON.stringify({ 
-        error: 'Insufficient permissions - Admin role required',
-        userRoles: allRoles
+        error: 'Insufficient permissions - Admin role required'
       }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('Admin role verified');
+    // Parse request
+    let requestData: any = {};
+    let action = 'list';
 
-    const method = req.method;
-    let action = 'list'; // default action
-    let requestBody = null;
-
-    if (method === 'POST') {
+    if (req.method === 'POST') {
       try {
-        const contentType = req.headers.get('content-type');
-        console.log('Content-Type header:', contentType);
+        // Try to get the request body
+        const rawBody = await req.text();
+        console.log('Raw request body:', rawBody);
         
-        // Check if request has body
-        const hasBody = req.body !== null;
-        console.log('Request has body:', hasBody);
-        
-        if (!hasBody) {
-          return new Response(JSON.stringify({ error: 'No request body provided' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        // Clone the request to read the body multiple times if needed
-        const bodyText = await req.text();
-        console.log('Request body text:', bodyText);
-        console.log('Request body length:', bodyText.length);
-        
-        if (!bodyText || bodyText.trim() === '') {
+        if (rawBody) {
+          requestData = JSON.parse(rawBody);
+          action = requestData.action || 'create';
+          console.log('Parsed action:', action);
+          console.log('Request data:', requestData);
+        } else {
+          console.log('Empty request body');
           return new Response(JSON.stringify({ error: 'Empty request body' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        
-        requestBody = JSON.parse(bodyText);
-        action = requestBody.action || 'create';
-        console.log('Parsed request body:', JSON.stringify(requestBody));
-        console.log('Action extracted:', action);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
+      } catch (error) {
+        console.error('Error parsing request body:', error);
         return new Response(JSON.stringify({ 
-          error: 'Invalid JSON in request body',
-          details: parseError.message
+          error: 'Invalid request format',
+          details: error.message 
         }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-    } else if (method === 'GET') {
-      const url = new URL(req.url);
-      action = url.searchParams.get('action') || 'list';
     }
 
-    console.log(`Action: ${action}`);
-
-    if (method === 'POST' && action === 'create') {
-      if (!requestBody) {
-        return new Response(JSON.stringify({ error: 'Request body required' }), {
+    // Handle different actions
+    if (req.method === 'POST' && action === 'create') {
+      const { email, password, role } = requestData;
+      
+      if (!email || !password || !role) {
+        return new Response(JSON.stringify({ error: 'Missing required fields: email, password, role' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
-      const { email, password, role }: CreateUserRequest = requestBody;
-      
+
       console.log(`Creating user: ${email} with role: ${role}`);
 
       // Create user
@@ -208,8 +151,6 @@ const handler = async (req: Request): Promise<Response> => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-
-      console.log('User created successfully:', newUser.user?.id);
 
       // Create user profile in usuarios table
       const { error: profileError } = await supabaseAdmin
@@ -239,8 +180,6 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      console.log('User created and role assigned successfully');
-
       return new Response(JSON.stringify({ 
         success: true, 
         user: newUser.user,
@@ -251,110 +190,36 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    if (method === 'POST' && action === 'update') {
-      if (!requestBody) {
-        return new Response(JSON.stringify({ error: 'Request body required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      const { userId, role, resetPassword }: UpdateUserRequest = requestBody;
-
-      if (role) {
-        // Update user role
-        const { error: roleUpdateError } = await supabaseAdmin
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId);
-
-        if (!roleUpdateError) {
-          await supabaseAdmin
-            .from('user_roles')
-            .insert({
-              user_id: userId,
-              role
-            });
-        }
-      }
-
-      if (resetPassword) {
-        // Generate temporary password
-        const tempPassword = Math.random().toString(36).slice(-12);
-        
-        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
-          userId,
-          { password: tempPassword }
-        );
-
-        if (passwordError) {
-          return new Response(JSON.stringify({ error: 'Failed to reset password' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        return new Response(JSON.stringify({ 
-          success: true, 
-          temporaryPassword: tempPassword,
-          message: 'Password reset successfully'
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      return new Response(JSON.stringify({ 
-        success: true,
-        message: 'User updated successfully'
-      }), {
-        status: 200,
+    // Default: list users
+    const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (usersError) {
+      return new Response(JSON.stringify({ error: 'Failed to fetch users' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    if (method === 'GET' && action === 'list') {
-      // Get all users with their roles
-      const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (usersError) {
-        return new Response(JSON.stringify({ error: 'Failed to fetch users' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+    // Get roles for all users
+    const { data: roles } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id, role');
 
-      // Get roles for all users
-      const { data: roles, error: rolesError } = await supabaseAdmin
-        .from('user_roles')
-        .select('user_id, role');
+    const usersWithRoles = users.users.map(user => ({
+      id: user.id,
+      email: user.email,
+      created_at: user.created_at,
+      last_sign_in_at: user.last_sign_in_at,
+      roles: roles?.filter(r => r.user_id === user.id).map(r => r.role) || []
+    }));
 
-      if (rolesError) {
-        console.error('Error fetching roles:', rolesError);
-      }
-
-      const usersWithRoles = users.users.map(user => ({
-        id: user.id,
-        email: user.email,
-        created_at: user.created_at,
-        last_sign_in_at: user.last_sign_in_at,
-        roles: roles?.filter(r => r.user_id === user.id).map(r => r.role) || []
-      }));
-
-      return new Response(JSON.stringify({ users: usersWithRoles }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
+    return new Response(JSON.stringify({ users: usersWithRoles }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Error in manage-users function:', error);
-    console.error('Error stack:', error.stack);
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
       details: error.message 
