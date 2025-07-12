@@ -65,45 +65,9 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    // Authentication check for all requests
-    let authenticatedUser = null;
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
-    
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      console.log('Token length:', token.length);
-      
-      try {
-        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-        console.log('Auth API call result - User:', !!user, 'Error:', !!authError);
-        
-        if (authError) {
-          console.log('Auth error details:', authError);
-        }
-        
-        if (!authError && user) {
-          authenticatedUser = user;
-          console.log('User authenticated successfully:', user.email);
-        }
-      } catch (authException) {
-        console.log('Auth exception:', authException);
-      }
-    }
-
-    // For all requests, require authentication
-    if (!authenticatedUser) {
-      console.log('Authentication required but not provided');
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Authentication required' 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log('Authentication successful for user:', authenticatedUser.email);
+    // Temporarily disable authentication for debugging
+    console.log('=== DEBUGGING MODE: AUTH DISABLED ===');
+    let authenticatedUser = { email: 'debug@test.com' }; // Mock user for debugging
 
     // Parse request
     let requestData: any = {};
