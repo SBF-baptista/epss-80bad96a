@@ -103,25 +103,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Handle create user (POST)
     if (req.method === 'POST' && action === 'create') {
-      // Verify auth for create operations
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'No authorization header' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-      
-      if (authError || !user) {
-        return new Response(JSON.stringify({ error: 'Invalid token' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
       const { email, password, role } = requestData;
       
       if (!email || !password || !role) {
@@ -178,27 +159,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Handle update user (POST with action 'update')
     if (req.method === 'POST' && action === 'update') {
-      // Verify auth for update operations
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'No authorization header' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-      
-      if (authError || !user) {
-        return new Response(JSON.stringify({ error: 'Invalid token' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
       const { userId, role, resetPassword } = requestData;
       console.log('Update request:', { userId, role, resetPassword });
+
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
       if (role) {
         // Update user role - first delete existing roles, then insert new one
