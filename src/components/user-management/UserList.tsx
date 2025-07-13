@@ -78,6 +78,8 @@ export const UserList = ({ users, onUserUpdated }: UserListProps) => {
         return 'destructive'
       case 'installer':
         return 'secondary'
+      case 'order_manager':
+        return 'default'
       default:
         return 'outline'
     }
@@ -89,6 +91,8 @@ export const UserList = ({ users, onUserUpdated }: UserListProps) => {
         return 'Administrador'
       case 'installer':
         return 'Instalador'
+      case 'order_manager':
+        return 'Gestor de Pedidos'
       default:
         return role
     }

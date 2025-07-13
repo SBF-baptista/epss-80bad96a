@@ -29,7 +29,7 @@ interface CreateUserModalProps {
 export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalProps) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'admin' | 'installer'>('installer')
+  const [role, setRole] = useState<'admin' | 'installer' | 'order_manager'>('installer')
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -138,13 +138,14 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
 
           <div className="space-y-2">
             <Label htmlFor="role">Função</Label>
-            <Select value={role} onValueChange={(value: 'admin' | 'installer') => setRole(value)}>
+            <Select value={role} onValueChange={(value: 'admin' | 'installer' | 'order_manager') => setRole(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma função" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
                 <SelectItem value="installer">Instalador</SelectItem>
+                <SelectItem value="order_manager">Gestor de Pedidos</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client'
 
-export type UserRole = 'admin' | 'installer'
+export type UserRole = 'admin' | 'installer' | 'order_manager'
 
 export const assignUserRole = async (userId: string, role: UserRole) => {
   const { data, error } = await supabase

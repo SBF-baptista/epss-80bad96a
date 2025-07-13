@@ -27,8 +27,9 @@ interface EditUserModalProps {
 }
 
 export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditUserModalProps) => {
-  const [role, setRole] = useState<'admin' | 'installer'>(
-    user.roles.includes('admin') ? 'admin' : 'installer'
+  const [role, setRole] = useState<'admin' | 'installer' | 'order_manager'>(
+    user.roles.includes('admin') ? 'admin' : 
+    user.roles.includes('order_manager') ? 'order_manager' : 'installer'
   )
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -83,13 +84,14 @@ export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditU
 
           <div className="space-y-2">
             <Label htmlFor="role">Função</Label>
-            <Select value={role} onValueChange={(value: 'admin' | 'installer') => setRole(value)}>
+            <Select value={role} onValueChange={(value: 'admin' | 'installer' | 'order_manager') => setRole(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma função" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
                 <SelectItem value="installer">Instalador</SelectItem>
+                <SelectItem value="order_manager">Gestor de Pedidos</SelectItem>
               </SelectContent>
             </Select>
           </div>

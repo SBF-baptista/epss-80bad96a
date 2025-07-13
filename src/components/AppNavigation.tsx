@@ -44,7 +44,7 @@ const navigationItems = [
     label: "Kanban", 
     icon: Kanban,
     description: "Gestão de pedidos",
-    roles: ["admin"]
+    roles: ["admin", "order_manager"]
   },
   { 
     to: "/orders", 
@@ -139,7 +139,9 @@ export function AppNavigation() {
                 <div className="mb-2">
                   <div className="font-medium truncate">{user?.email}</div>
                   <div className="text-gray-500 capitalize">
-                    {role === 'admin' ? 'Administrador' : role === 'installer' ? 'Instalador' : role}
+                    {role === 'admin' ? 'Administrador' : 
+                     role === 'installer' ? 'Instalador' : 
+                     role === 'order_manager' ? 'Gestor de Pedidos' : role}
                   </div>
                 </div>
               </div>

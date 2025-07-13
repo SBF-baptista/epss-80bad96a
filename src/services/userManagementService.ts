@@ -11,12 +11,12 @@ export interface User {
 export interface CreateUserData {
   email: string
   password: string
-  role: 'admin' | 'installer'
+  role: 'admin' | 'installer' | 'order_manager'
 }
 
 export interface UpdateUserData {
   userId: string
-  role?: 'admin' | 'installer'
+  role?: 'admin' | 'installer' | 'order_manager'
   resetPassword?: boolean
 }
 
@@ -131,7 +131,7 @@ class UserManagementService {
     })
   }
 
-  async updateUserRole(userId: string, role: 'admin' | 'installer'): Promise<UserManagementResponse> {
+  async updateUserRole(userId: string, role: 'admin' | 'installer' | 'order_manager'): Promise<UserManagementResponse> {
     return this.updateUser({
       userId,
       role

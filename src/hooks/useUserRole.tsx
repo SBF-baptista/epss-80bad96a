@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from './useAuth'
 import { supabase } from '@/integrations/supabase/client'
 
-export type UserRole = 'admin' | 'installer' | null
+export type UserRole = 'admin' | 'installer' | 'order_manager' | null
 
 export const useUserRole = () => {
   const { user } = useAuth()
@@ -48,12 +48,14 @@ export const useUserRole = () => {
 
   const isAdmin = (): boolean => hasRole('admin')
   const isInstaller = (): boolean => hasRole('installer')
+  const isOrderManager = (): boolean => hasRole('order_manager')
 
   return {
     role,
     loading,
     hasRole,
     isAdmin,
-    isInstaller
+    isInstaller,
+    isOrderManager
   }
 }

@@ -67,7 +67,7 @@ function App() {
             } />
             <Route path="/kanban" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin']}>
+                <RoleProtectedRoute allowedRoles={['admin', 'order_manager']}>
                   <Layout>
                     <Kanban />
                   </Layout>

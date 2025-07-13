@@ -21,6 +21,8 @@ const SmartRedirect = () => {
     return <Navigate to="/homologation" replace />
   } else if (role === 'admin') {
     return <Navigate to="/homologation" replace />
+  } else if (role === 'order_manager') {
+    return <Navigate to="/kanban" replace />
   } else if (role === null) {
     // User is authenticated but has no role assigned
     return (
