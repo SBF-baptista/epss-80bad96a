@@ -8,6 +8,7 @@ export const createOrder = async (orderData: {
   numero_pedido?: string
   vehicles: Array<{ brand: string, model: string, quantity: number, year?: string }>
   trackers: Array<{ model: string, quantity: number }>
+  accessories?: Array<{ name: string, quantity: number }>
   configurationType: string
 }): Promise<Order> => {
   console.log('Creating order:', orderData)
@@ -77,12 +78,31 @@ export const createOrder = async (orderData: {
     }
   }
 
+  // Create accessories
+  if (orderData.accessories && orderData.accessories.length > 0) {
+    const accessoryInserts = orderData.accessories.map(accessory => ({
+      pedido_id: pedido.id,
+      accessory_name: accessory.name,
+      quantity: accessory.quantity,
+      received_at: new Date().toISOString()
+    }))
+
+    const { error: accessoryError } = await supabase
+      .from('accessories')
+      .insert(accessoryInserts)
+
+    if (accessoryError) {
+      console.error('Error creating accessories:', accessoryError)
+      throw accessoryError
+    }
+  }
+
   return {
     id: pedido.id,
     number: pedido.numero_pedido,
     vehicles: orderData.vehicles,
     trackers: orderData.trackers,
-    accessories: [], // New orders don't have accessories initially
+    accessories: orderData.accessories || [],
     configurationType: pedido.configuracao,
     status: pedido.status,
     createdAt: pedido.data,

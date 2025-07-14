@@ -15,6 +15,7 @@ import { Vehicle, Tracker } from "@/types/order";
 import OrderBasicInfo from "./OrderBasicInfo";
 import VehicleSection from "./VehicleSection";
 import TrackerSection from "./TrackerSection";
+import AccessorySection from "./AccessorySection";
 
 interface NewOrderModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
   const [orderNumber, setOrderNumber] = useState("");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [trackers, setTrackers] = useState<Tracker[]>([]);
+  const [accessories, setAccessories] = useState<Array<{ name: string, quantity: number }>>([]);
   const [configurationType, setConfigurationType] = useState("");
   const [priority, setPriority] = useState<"high" | "medium" | "low" | undefined>(undefined);
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
@@ -94,6 +96,7 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
     setOrderNumber("");
     setVehicles([]);
     setTrackers([]);
+    setAccessories([]);
     setConfigurationType("");
     setPriority(undefined);
     setEstimatedDelivery("");
@@ -166,6 +169,7 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
           numero_pedido: orderNumber,
           vehicles,
           trackers,
+          accessories: accessories.filter(acc => acc.name.trim() !== ""),
           configurationType
         });
         
@@ -236,6 +240,11 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated }: NewOrderModalProps) 
             setTrackerModel={setTrackerModel}
             trackerQuantity={trackerQuantity}
             setTrackerQuantity={setTrackerQuantity}
+          />
+
+          <AccessorySection
+            accessories={accessories}
+            setAccessories={setAccessories}
           />
 
           <div className="flex justify-end space-x-3">

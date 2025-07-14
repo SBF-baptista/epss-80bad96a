@@ -17,35 +17,53 @@ export type Database = {
       accessories: {
         Row: {
           accessory_name: string
-          company_name: string
+          company_name: string | null
           created_at: string
           id: string
-          incoming_vehicle_group_id: string
+          incoming_vehicle_group_id: string | null
+          pedido_id: string | null
           quantity: number
           received_at: string
-          usage_type: string
+          usage_type: string | null
         }
         Insert: {
           accessory_name: string
-          company_name: string
+          company_name?: string | null
           created_at?: string
           id?: string
-          incoming_vehicle_group_id: string
+          incoming_vehicle_group_id?: string | null
+          pedido_id?: string | null
           quantity?: number
           received_at?: string
-          usage_type: string
+          usage_type?: string | null
         }
         Update: {
           accessory_name?: string
-          company_name?: string
+          company_name?: string | null
           created_at?: string
           id?: string
-          incoming_vehicle_group_id?: string
+          incoming_vehicle_group_id?: string | null
+          pedido_id?: string | null
           quantity?: number
           received_at?: string
-          usage_type?: string
+          usage_type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "accessories_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accessories_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["order_id"]
+          },
+        ]
       }
       automation_rule_photos: {
         Row: {
