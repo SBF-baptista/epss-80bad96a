@@ -85,6 +85,36 @@ export async function processVehicleGroups(
 
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
+        // Process vehicle-specific accessories if they exist
+        if (vehicleData.accessories && Array.isArray(vehicleData.accessories) && vehicleData.accessories.length > 0) {
+          console.log(`[${timestamp}][${requestId}] Processing ${vehicleData.accessories.length} vehicle-specific accessories...`)
+          
+          for (const accessory of vehicleData.accessories) {
+            try {
+              console.log(`[${timestamp}][${requestId}] Storing vehicle accessory: ${accessory.accessory_name} (quantity: ${accessory.quantity || 1})`)
+              
+              const { error: accessoryError } = await supabase
+                .from('accessories')
+                .insert({
+                  vehicle_id: incomingVehicle.id,
+                  company_name: group.company_name,
+                  usage_type: normalizedUsageType,
+                  accessory_name: accessory.accessory_name.trim(),
+                  quantity: accessory.quantity || 1,
+                  received_at: timestamp
+                })
+
+              if (accessoryError) {
+                console.error(`[${timestamp}][${requestId}] ERROR - Failed to store vehicle accessory:`, accessoryError)
+              } else {
+                console.log(`[${timestamp}][${requestId}] Successfully stored vehicle accessory: ${accessory.accessory_name}`)
+              }
+            } catch (error) {
+              console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing vehicle accessory:`, error)
+            }
+          }
+        }
+
         // Check if automation rule exists for this vehicle
         console.log(`[${timestamp}][${requestId}] Checking if automation rule exists for vehicle...`)
         const automationRule = await checkAutomationRuleExists(supabase, brand, vehicle, year)

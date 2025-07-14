@@ -165,6 +165,81 @@ export function validateRequestBody(requestBody: any, timestamp: string, request
           }
         )
       }
+
+      // Validate vehicle-level accessories if present
+      if (vehicle.accessories !== undefined) {
+        console.log(`[${timestamp}][${requestId}] Validating vehicle accessories in group ${i + 1}, vehicle ${j + 1}:`, {
+          accessories_count: Array.isArray(vehicle.accessories) ? vehicle.accessories.length : 'not_array'
+        })
+        
+        if (!Array.isArray(vehicle.accessories)) {
+          console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid vehicle accessories structure in group ${i}, vehicle ${j}:`, vehicle.accessories)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid vehicle accessories structure', 
+              message: `Accessories for vehicle at group ${i}, position ${j} must be an array`,
+              request_id: requestId,
+              group_index: i,
+              vehicle_index: j,
+              accessories_type: typeof vehicle.accessories
+            }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        // Validate each vehicle accessory
+        for (let l = 0; l < vehicle.accessories.length; l++) {
+          const vehicleAccessory = vehicle.accessories[l]
+          console.log(`[${timestamp}][${requestId}] Validating vehicle accessory ${l + 1}/${vehicle.accessories.length} in group ${i + 1}, vehicle ${j + 1}:`, {
+            accessory_name: vehicleAccessory?.accessory_name,
+            quantity: vehicleAccessory?.quantity
+          })
+          
+          if (!vehicleAccessory.accessory_name) {
+            console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid vehicle accessory structure in group ${i}, vehicle ${j}, accessory ${l}:`, vehicleAccessory)
+            return new Response(
+              JSON.stringify({ 
+                error: 'Invalid vehicle accessory structure', 
+                message: `Accessory at group ${i}, vehicle ${j}, position ${l} must have accessory_name field`,
+                request_id: requestId,
+                group_index: i,
+                vehicle_index: j,
+                accessory_index: l,
+                missing_fields: {
+                  accessory_name: !vehicleAccessory.accessory_name
+                }
+              }),
+              { 
+                status: 400, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            )
+          }
+
+          if (vehicleAccessory.quantity !== undefined && (typeof vehicleAccessory.quantity !== 'number' || vehicleAccessory.quantity < 1)) {
+            console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid quantity in group ${i}, vehicle ${j}, accessory ${l}:`, vehicleAccessory.quantity)
+            return new Response(
+              JSON.stringify({ 
+                error: 'Invalid vehicle accessory quantity', 
+                message: `Accessory at group ${i}, vehicle ${j}, position ${l} has invalid quantity. Must be a positive integer`,
+                request_id: requestId,
+                group_index: i,
+                vehicle_index: j,
+                accessory_index: l,
+                provided_quantity: vehicleAccessory.quantity,
+                quantity_type: typeof vehicleAccessory.quantity
+              }),
+              { 
+                status: 400, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            )
+          }
+        }
+      }
     }
 
     // Validate accessories if present (optional field)

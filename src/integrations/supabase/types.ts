@@ -25,6 +25,7 @@ export type Database = {
           quantity: number
           received_at: string
           usage_type: string | null
+          vehicle_id: string | null
         }
         Insert: {
           accessory_name: string
@@ -36,6 +37,7 @@ export type Database = {
           quantity?: number
           received_at?: string
           usage_type?: string | null
+          vehicle_id?: string | null
         }
         Update: {
           accessory_name?: string
@@ -47,6 +49,7 @@ export type Database = {
           quantity?: number
           received_at?: string
           usage_type?: string | null
+          vehicle_id?: string | null
         }
         Relationships: [
           {
@@ -62,6 +65,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "workflow_chain"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "accessories_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accessories_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["incoming_vehicle_id"]
           },
         ]
       }

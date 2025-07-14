@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Plus, X, Sparkles } from "lucide-react";
-import { Vehicle, vehicleBrands } from "@/types/order";
+import { Vehicle, Accessory, vehicleBrands } from "@/types/order";
 
 interface VehicleSectionProps {
   vehicles: Vehicle[];

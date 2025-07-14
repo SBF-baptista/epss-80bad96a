@@ -1,9 +1,15 @@
 
+export interface Accessory {
+  name: string;
+  quantity: number;
+}
+
 export interface Vehicle {
   brand: string;
   model: string;
   quantity: number;
   year?: string;
+  accessories?: Accessory[];
 }
 
 export interface Tracker {
