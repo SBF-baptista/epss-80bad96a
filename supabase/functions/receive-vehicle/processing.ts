@@ -34,6 +34,9 @@ export async function processVehicleGroups(
       }
     }
 
+    // Collect accessories for this group
+    const groupAccessories = group.accessories || []
+
     // Process each vehicle in the group
     for (let vehicleIndex = 0; vehicleIndex < group.vehicles.length; vehicleIndex++) {
       const vehicleData = group.vehicles[vehicleIndex]
@@ -99,7 +102,7 @@ export async function processVehicleGroups(
           try {
             const orderNumber = await generateAutoOrderNumber(supabase)
             console.log(`[${timestamp}][${requestId}] Generated order number: ${orderNumber}`)
-            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name)
+            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name, groupAccessories)
             processingNotes = `Automation rule found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
             
             // Update incoming vehicle record with order info
@@ -197,50 +200,64 @@ export async function processVehicleGroups(
       }
     }
 
-    // Process accessories if present in the group
-    if (group.accessories && Array.isArray(group.accessories) && group.accessories.length > 0) {
-      console.log(`[${timestamp}][${requestId}] Processing ${group.accessories.length} accessories for group ${groupIndex + 1}...`)
+    // Process accessories for homologation cases (when no automatic orders were created)
+    // For automatic orders, accessories are handled within the order creation process
+    const hasOrderCreation = groupResult.vehicles_processed.some(v => v.status === 'order_created')
+    
+    if (!hasOrderCreation && group.accessories && Array.isArray(group.accessories) && group.accessories.length > 0) {
+      console.log(`[${timestamp}][${requestId}] Processing ${group.accessories.length} accessories for homologation tracking in group ${groupIndex + 1}...`)
       
-      for (let accessoryIndex = 0; accessoryIndex < group.accessories.length; accessoryIndex++) {
-        const accessoryData = group.accessories[accessoryIndex]
-        const { accessory_name, quantity } = accessoryData
+      // Find any created homologation IDs to link accessories to
+      const homologationIds = groupResult.vehicles_processed
+        .filter(v => v.homologation_id)
+        .map(v => v.homologation_id)
+      
+      if (homologationIds.length > 0) {
+        // Link accessories to the first homologation card in the group
+        const primaryHomologationId = homologationIds[0]
         
-        console.log(`[${timestamp}][${requestId}] --- Processing accessory ${accessoryIndex + 1}/${group.accessories.length} in group ${groupIndex + 1} ---`)
-        console.log(`[${timestamp}][${requestId}] Accessory: ${accessory_name} (quantity: ${quantity || 1})`)
-        
-        try {
-          // Store accessory data
-          console.log(`[${timestamp}][${requestId}] Storing accessory data...`)
+        for (let accessoryIndex = 0; accessoryIndex < group.accessories.length; accessoryIndex++) {
+          const accessoryData = group.accessories[accessoryIndex]
+          const { accessory_name, quantity } = accessoryData
           
-          // Use a deterministic group ID based on company and usage type for linking
-          const groupIdentifier = `${group.company_name}_${group.usage_type}_${groupIndex}`
+          console.log(`[${timestamp}][${requestId}] --- Processing accessory ${accessoryIndex + 1}/${group.accessories.length} for homologation ${primaryHomologationId} ---`)
+          console.log(`[${timestamp}][${requestId}] Accessory: ${accessory_name} (quantity: ${quantity || 1})`)
           
-          const { data: accessory, error: accessoryError } = await supabase
-            .from('accessories')
-            .insert({
-              incoming_vehicle_group_id: groupIdentifier,
-              company_name: group.company_name,
-              usage_type: group.usage_type,
-              accessory_name: accessory_name.trim(),
-              quantity: quantity || 1,
-              received_at: timestamp
-            })
-            .select()
-            .single()
+          try {
+            // Store accessory data linked to homologation ID as incoming_vehicle_group_id
+            console.log(`[${timestamp}][${requestId}] Storing accessory data linked to homologation...`)
+            
+            const { data: accessory, error: accessoryError } = await supabase
+              .from('accessories')
+              .insert({
+                incoming_vehicle_group_id: primaryHomologationId, // Use homologation ID as group identifier
+                company_name: group.company_name,
+                usage_type: group.usage_type,
+                accessory_name: accessory_name.trim(),
+                quantity: quantity || 1,
+                received_at: timestamp
+              })
+              .select()
+              .single()
 
-          if (accessoryError) {
-            console.error(`[${timestamp}][${requestId}] ERROR - Failed to store accessory:`, accessoryError)
+            if (accessoryError) {
+              console.error(`[${timestamp}][${requestId}] ERROR - Failed to store accessory:`, accessoryError)
+              groupResult.processing_summary.errors++
+              continue
+            }
+
+            console.log(`[${timestamp}][${requestId}] Successfully stored accessory with ID: ${accessory.id}`)
+            
+          } catch (error: any) {
+            console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR processing accessory:`, error)
             groupResult.processing_summary.errors++
-            continue
           }
-
-          console.log(`[${timestamp}][${requestId}] Successfully stored accessory with ID: ${accessory.id}`)
-          
-        } catch (error: any) {
-          console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR processing accessory:`, error)
-          groupResult.processing_summary.errors++
         }
+      } else {
+        console.log(`[${timestamp}][${requestId}] No homologation IDs found, skipping accessory processing for group ${groupIndex + 1}`)
       }
+    } else if (hasOrderCreation) {
+      console.log(`[${timestamp}][${requestId}] Accessories already processed with automatic order creation for group ${groupIndex + 1}`)
     }
 
     processedGroups.push(groupResult)

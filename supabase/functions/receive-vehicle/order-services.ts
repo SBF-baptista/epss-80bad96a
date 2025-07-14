@@ -35,7 +35,7 @@ export async function generateAutoOrderNumber(supabase: any): Promise<string> {
 }
 
 // Function to create automatic order
-export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string, companyName?: string) {
+export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string, companyName?: string, accessories?: Array<{accessory_name: string, quantity: number}>) {
   const timestamp = new Date().toISOString()
   console.log(`[${timestamp}] Creating automatic order for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
   console.log(`[${timestamp}] Vehicle data:`, JSON.stringify(vehicleData, null, 2))
@@ -114,6 +114,30 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
     }
 
     console.log(`[${timestamp}] Successfully created tracker record`)
+
+    // Create accessory records if provided
+    if (accessories && accessories.length > 0) {
+      console.log(`[${timestamp}] Creating ${accessories.length} accessory records for order ${pedido.id}`)
+      
+      const accessoryInserts = accessories.map(accessory => ({
+        pedido_id: pedido.id,
+        accessory_name: accessory.accessory_name,
+        quantity: accessory.quantity,
+        received_at: new Date().toISOString()
+      }))
+
+      const { error: accessoryError } = await supabase
+        .from('accessories')
+        .insert(accessoryInserts)
+
+      if (accessoryError) {
+        console.error(`[${timestamp}] Error creating accessory records:`, accessoryError)
+        throw accessoryError
+      }
+
+      console.log(`[${timestamp}] Successfully created ${accessories.length} accessory records`)
+    }
+    
     console.log(`[${timestamp}] ✅ COMPLETE: Successfully created automatic order ${orderNumber} for ${vehicleData.brand} ${vehicleData.vehicle} (quantity: ${vehicleData.quantity || 1})`)
     
     return {
