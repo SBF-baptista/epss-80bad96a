@@ -21,13 +21,19 @@ export const fetchOrders = async (): Promise<Order[]> => {
       `)
       .order('created_at', { ascending: false })
 
-    // Fetch accessories for orders that have incoming vehicles
-    const { data: accessories } = await supabase
+    // Fetch accessories for orders - both from incoming vehicles and direct order accessories
+    const { data: accessoriesFromVehicles } = await supabase
       .from('accessories')
       .select(`
         *,
         incoming_vehicles!inner(created_order_id)
       `)
+
+    // Fetch accessories directly linked to orders via pedido_id
+    const { data: directAccessories } = await supabase
+      .from('accessories')
+      .select('*')
+      .not('pedido_id', 'is', null)
 
     if (pedidosError) {
       console.error('Error fetching orders:', pedidosError)
@@ -41,11 +47,29 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return []
     }
 
-    // Create a map of order accessories
+    // Create a map of order accessories from both sources
     const accessoriesByOrderId = new Map<string, Array<{ name: string; quantity: number }>>()
-    if (accessories) {
-      accessories.forEach((accessory: any) => {
+    
+    // Add accessories from incoming vehicles
+    if (accessoriesFromVehicles) {
+      accessoriesFromVehicles.forEach((accessory: any) => {
         const orderId = accessory.incoming_vehicles?.created_order_id
+        if (orderId) {
+          if (!accessoriesByOrderId.has(orderId)) {
+            accessoriesByOrderId.set(orderId, [])
+          }
+          accessoriesByOrderId.get(orderId)!.push({
+            name: accessory.accessory_name,
+            quantity: accessory.quantity
+          })
+        }
+      })
+    }
+
+    // Add accessories directly linked to orders
+    if (directAccessories) {
+      directAccessories.forEach((accessory: AccessoryRow) => {
+        const orderId = accessory.pedido_id
         if (orderId) {
           if (!accessoriesByOrderId.has(orderId)) {
             accessoriesByOrderId.set(orderId, [])
