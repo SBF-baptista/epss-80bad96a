@@ -17,7 +17,7 @@ import {
   ShipmentAddress,
 } from "@/services/shipmentService";
 import { useToast } from "@/hooks/use-toast";
-import { LocationSelector, RecipientSelector, AddressForm } from "./shipment";
+import { LocationSelector, AddressForm } from "./shipment";
 
 interface ShipmentPreparationModalProps {
   order: Order;
@@ -257,17 +257,6 @@ const ShipmentPreparationModal = ({
                     disabled={isReadOnly}
                   />
 
-                  {/* Recipient Selector */}
-                  <RecipientSelector
-                    selectedRecipientId={selectedRecipientId}
-                    isNewRecipient={isNewRecipient}
-                    newRecipientName={newRecipientName}
-                    filteredRecipients={getFilteredRecipients()}
-                    onRecipientChange={handleRecipientChange}
-                    onNewRecipientNameChange={setNewRecipientName}
-                    disabled={isReadOnly}
-                    showSelection={!!(selectedUF && selectedCity)}
-                  />
                 </>
               ) : (
                 <div className="space-y-3">
