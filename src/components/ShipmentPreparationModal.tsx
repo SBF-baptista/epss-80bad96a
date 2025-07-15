@@ -17,7 +17,7 @@ import {
   ShipmentAddress,
 } from "@/services/shipmentService";
 import { useToast } from "@/hooks/use-toast";
-import { LocationSelector, AddressForm } from "./shipment";
+import { LocationSelector, AddressForm, RecipientSelector } from "./shipment";
 
 interface ShipmentPreparationModalProps {
   order: Order;
@@ -128,12 +128,18 @@ const ShipmentPreparationModal = ({
     setAddress(prev => ({ ...prev, state: value, city: "" }));
   };
 
-  // Handle City change
+  // Handle City change with auto-selection
   const handleCityChange = (value: string) => {
     setSelectedCity(value);
     setSelectedRecipientId("");
     setIsNewRecipient(false);
     setAddress(prev => ({ ...prev, city: value }));
+    
+    // Auto-select recipient if only one available for this location
+    const filteredRecipients = recipients.filter(r => r.state === selectedUF && r.city === value);
+    if (filteredRecipients.length === 1) {
+      handleRecipientChange(filteredRecipients[0].id);
+    }
   };
 
   const handleRecipientChange = (value: string) => {
@@ -257,6 +263,18 @@ const ShipmentPreparationModal = ({
                     disabled={isReadOnly}
                   />
 
+                  {/* Recipient Selector */}
+                  <RecipientSelector
+                    recipients={recipients}
+                    selectedRecipientId={selectedRecipientId}
+                    onRecipientChange={handleRecipientChange}
+                    isNewRecipient={isNewRecipient}
+                    newRecipientName={newRecipientName}
+                    onNewRecipientNameChange={setNewRecipientName}
+                    selectedUF={selectedUF}
+                    selectedCity={selectedCity}
+                    disabled={isReadOnly}
+                  />
                 </>
               ) : (
                 <div className="space-y-3">
