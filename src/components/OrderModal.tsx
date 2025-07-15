@@ -8,15 +8,36 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Order } from "@/services/orderService";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { Order, deleteOrder } from "@/services/orderService";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface OrderModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
+  onUpdate?: () => void;
 }
 
-const OrderModal = ({ order, isOpen, onClose }: OrderModalProps) => {
+const OrderModal = ({ order, isOpen, onClose, onUpdate }: OrderModalProps) => {
+  const { role } = useUserRole();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
   if (!order) return null;
 
   const getStatusLabel = (status: string) => {
@@ -79,6 +100,30 @@ const OrderModal = ({ order, isOpen, onClose }: OrderModalProps) => {
     }
   };
 
+  const handleDeleteOrder = async () => {
+    if (!order?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteOrder(order.id);
+      toast({
+        title: "Pedido deletado",
+        description: `O pedido ${order.number} foi deletado com sucesso.`,
+      });
+      onUpdate?.();
+      onClose();
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao deletar o pedido. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const totalVehicles = order.vehicles.reduce((sum, vehicle) => sum + vehicle.quantity, 0);
   const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
 
@@ -86,12 +131,50 @@ const OrderModal = ({ order, isOpen, onClose }: OrderModalProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="text-xl">
-            Pedido de instalação {order.number}
-          </DialogTitle>
-          <DialogDescription>
-            Detalhes completos do pedido de configuração
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl">
+                Pedido de instalação {order.number}
+              </DialogTitle>
+              <DialogDescription>
+                Detalhes completos do pedido de configuração
+              </DialogDescription>
+            </div>
+            {role === 'admin' && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza de que deseja deletar o pedido {order.number}? 
+                      Esta ação não pode ser desfeita e removerá permanentemente o pedido e todos os seus dados relacionados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDeleteOrder}
+                      className="bg-red-600 hover:bg-red-700"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Deletando..." : "Deletar pedido"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">

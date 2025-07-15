@@ -51,3 +51,17 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
     throw error
   }
 }
+
+export const deleteOrder = async (orderId: string) => {
+  console.log('Deleting order:', orderId)
+  
+  const { error } = await supabase
+    .from('pedidos')
+    .delete()
+    .eq('id', orderId)
+
+  if (error) {
+    console.error('Error deleting order:', error)
+    throw error
+  }
+}

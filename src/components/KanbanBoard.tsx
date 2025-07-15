@@ -93,6 +93,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
           order={selectedOrder}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          onUpdate={onOrderUpdate}
         />
       )}
 
