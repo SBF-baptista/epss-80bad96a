@@ -29,11 +29,26 @@ const AddressForm = ({
   const isFieldDisabled = (field: keyof ShipmentAddress) => {
     if (isReadOnly) return true;
     if (field === 'city' || field === 'state') return true; // Always read-only from selection
-    return !allowManualEntry;
+    // Allow editing of pre-filled address fields even when allowManualEntry is false
+    return false;
   };
+
+  const hasPrefilledAddress = address.street && address.number && address.neighborhood;
 
   return (
     <div className="space-y-4">
+      {/* Pre-filled address notification */}
+      {hasPrefilledAddress && !allowManualEntry && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+          <p className="text-sm text-green-800 font-medium">
+            📍 Endereço carregado automaticamente do destinatário selecionado
+          </p>
+          <p className="text-xs text-green-600 mt-1">
+            Os campos de endereço foram preenchidos. Você pode editá-los se necessário.
+          </p>
+        </div>
+      )}
+
       {/* Address Paste Option */}
       {!isReadOnly && allowManualEntry && showPasteOption && (
         <>

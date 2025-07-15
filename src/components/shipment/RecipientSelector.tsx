@@ -43,18 +43,69 @@ const RecipientSelector = ({
 
   return (
     <div className="space-y-4">
-      {/* Auto-selected recipient feedback */}
-      {showRecipientSelector && hasMatchingRecipients && !isNewRecipient && !selectedRecipientId && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="flex items-center gap-2 text-blue-800">
-            <User className="h-4 w-4" />
-            <span className="text-sm">
-              {filteredRecipients.length === 1 
-                ? `Destinatário encontrado para ${selectedCity}, ${selectedUF}: ${filteredRecipients[0].name}`
-                : `${filteredRecipients.length} destinatários encontrados para ${selectedCity}, ${selectedUF}`
-              }
-            </span>
-          </div>
+      {/* Smart recipient feedback with enhanced messaging */}
+      {showRecipientSelector && (
+        <div className="space-y-3">
+          {hasMatchingRecipients && !selectedRecipientId && !isNewRecipient && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center gap-2 text-blue-800">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {filteredRecipients.length === 1 
+                    ? `Destinatário encontrado: ${filteredRecipients[0].name}`
+                    : `${filteredRecipients.length} destinatários encontrados para ${selectedCity}, ${selectedUF}`
+                  }
+                </span>
+              </div>
+              {filteredRecipients.length === 1 && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Endereço será preenchido automaticamente
+                </p>
+              )}
+            </div>
+          )}
+
+          {selectedRecipientId && !isNewRecipient && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-center gap-2 text-green-800">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Destinatário: {filteredRecipients.find(r => r.id === selectedRecipientId)?.name}
+                </span>
+              </div>
+              <p className="text-xs text-green-600 mt-1">
+                Endereço carregado automaticamente
+              </p>
+            </div>
+          )}
+
+          {isNewRecipient && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <div className="flex items-center gap-2 text-amber-800">
+                <Plus className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Criando novo destinatário para {selectedCity}, {selectedUF}
+                </span>
+              </div>
+              <p className="text-xs text-amber-600 mt-1">
+                Preencha o nome e endereço completo
+              </p>
+            </div>
+          )}
+
+          {!hasMatchingRecipients && !isNewRecipient && (
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+              <div className="flex items-center gap-2 text-gray-700">
+                <Plus className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Nenhum destinatário encontrado para {selectedCity}, {selectedUF}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Será necessário criar um novo destinatário
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -77,7 +128,12 @@ const RecipientSelector = ({
                     <SelectItem key={recipient.id} value={recipient.id}>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        <span>{recipient.name}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{recipient.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {recipient.street}, {recipient.number} - {recipient.neighborhood}
+                          </span>
+                        </div>
                       </div>
                     </SelectItem>
                   ))}

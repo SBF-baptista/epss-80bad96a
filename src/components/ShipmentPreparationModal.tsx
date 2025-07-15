@@ -128,17 +128,59 @@ const ShipmentPreparationModal = ({
     setAddress(prev => ({ ...prev, state: value, city: "" }));
   };
 
-  // Handle City change with auto-selection
+  // Handle City change with auto-selection and smart pre-filling
   const handleCityChange = (value: string) => {
     setSelectedCity(value);
-    setSelectedRecipientId("");
-    setIsNewRecipient(false);
     setAddress(prev => ({ ...prev, city: value }));
     
-    // Auto-select recipient if only one available for this location
+    // Auto-select recipient based on location
     const filteredRecipients = recipients.filter(r => r.state === selectedUF && r.city === value);
+    
     if (filteredRecipients.length === 1) {
-      handleRecipientChange(filteredRecipients[0].id);
+      // Auto-select the only recipient and pre-fill address
+      const recipient = filteredRecipients[0];
+      setSelectedRecipientId(recipient.id);
+      setIsNewRecipient(false);
+      setAddress({
+        street: recipient.street,
+        number: recipient.number,
+        neighborhood: recipient.neighborhood,
+        city: recipient.city,
+        state: recipient.state,
+        postal_code: recipient.postal_code,
+        complement: recipient.complement || "",
+      });
+      
+      toast({
+        title: "Destinatário selecionado automaticamente",
+        description: `${recipient.name} foi selecionado e o endereço foi preenchido automaticamente.`,
+      });
+    } else if (filteredRecipients.length > 1) {
+      // Multiple recipients - clear selection but keep location
+      setSelectedRecipientId("");
+      setIsNewRecipient(false);
+      setAddress(prev => ({
+        street: "",
+        number: "",
+        neighborhood: "",
+        city: value,
+        state: selectedUF,
+        postal_code: "",
+        complement: "",
+      }));
+    } else {
+      // No recipients found - prepare for new recipient creation
+      setSelectedRecipientId("");
+      setIsNewRecipient(false);
+      setAddress(prev => ({
+        street: "",
+        number: "",
+        neighborhood: "",
+        city: value,
+        state: selectedUF,
+        postal_code: "",
+        complement: "",
+      }));
     }
   };
 
@@ -156,6 +198,10 @@ const ShipmentPreparationModal = ({
         postal_code: "",
         complement: "",
       });
+      toast({
+        title: "Novo destinatário",
+        description: "Preencha as informações do novo destinatário.",
+      });
     } else {
       setIsNewRecipient(false);
       setSelectedRecipientId(value);
@@ -170,6 +216,10 @@ const ShipmentPreparationModal = ({
           state: recipient.state,
           postal_code: recipient.postal_code,
           complement: recipient.complement || "",
+        });
+        toast({
+          title: "Destinatário selecionado",
+          description: `Endereço de ${recipient.name} carregado automaticamente.`,
         });
       }
     }
