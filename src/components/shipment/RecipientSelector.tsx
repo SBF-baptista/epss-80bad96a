@@ -40,7 +40,7 @@ const RecipientSelector = ({
       <div className="space-y-2">
         <Label>Destinatário</Label>
         <Select 
-          value={selectedRecipientId || (isNewRecipient ? "new" : "")} 
+          value={selectedRecipientId || (isNewRecipient ? "new" : undefined)} 
           onValueChange={onRecipientChange}
           disabled={disabled}
         >
