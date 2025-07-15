@@ -79,148 +79,75 @@ async function generateAutoOrderNumberFallback(supabase: any, maxRetries: number
   return 'AUTO-001'
 }
 
-// Function to create automatic order with retry logic
+// Function to create automatic order using atomic database function
 export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string, companyName?: string, accessories?: Array<{accessory_name: string, quantity: number}>) {
   const timestamp = new Date().toISOString()
   console.log(`[${timestamp}] Creating automatic order for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
   console.log(`[${timestamp}] Vehicle data:`, JSON.stringify(vehicleData, null, 2))
-  console.log(`[${timestamp}] Order number: ${orderNumber}`)
   
-  const maxRetries = 3
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`[${timestamp}] Attempt ${attempt}/${maxRetries} - Looking for automation rule...`)
-      const automationRule = await findAutomationRule(supabase, vehicleData.brand, vehicleData.vehicle, vehicleData.year)
+  try {
+    console.log(`[${timestamp}] Using atomic database function to create order...`)
+    
+    // Use the atomic database function to create the order
+    const { data: result, error } = await supabase
+      .rpc('create_automatic_order_atomic', {
+        p_vehicle_brand: vehicleData.brand,
+        p_vehicle_model: vehicleData.vehicle,
+        p_vehicle_year: vehicleData.year || null,
+        p_quantity: vehicleData.quantity || 1,
+        p_company_name: companyName || null
+      })
+
+    if (error) {
+      console.error(`[${timestamp}] Error calling atomic order creation function:`, error)
+      throw error
+    }
+
+    if (!result || result.length === 0) {
+      console.error(`[${timestamp}] No result returned from atomic order creation function`)
+      throw new Error('No result returned from order creation')
+    }
+
+    const orderResult = result[0]
+    console.log(`[${timestamp}] Successfully created order atomically:`, JSON.stringify(orderResult, null, 2))
+
+    // Create accessory records if provided
+    if (accessories && accessories.length > 0) {
+      console.log(`[${timestamp}] Creating ${accessories.length} accessory records for order ${orderResult.order_id}`)
       
-      if (!automationRule) {
-        console.log(`[${timestamp}] No automation rule found for ${vehicleData.brand} ${vehicleData.vehicle}, skipping automatic order creation`)
-        return null
-      }
+      const accessoryInserts = accessories.map(accessory => ({
+        pedido_id: orderResult.order_id,
+        accessory_name: accessory.accessory_name,
+        quantity: accessory.quantity,
+        received_at: new Date().toISOString()
+      }))
 
-      console.log(`[${timestamp}] Found automation rule:`, JSON.stringify(automationRule, null, 2))
+      const { error: accessoryError } = await supabase
+        .from('accessories')
+        .insert(accessoryInserts)
 
-      console.log(`[${timestamp}] Attempt ${attempt} - Creating order in pedidos table...`)
-      const { data: pedido, error: pedidoError } = await supabase
-        .from('pedidos')
-        .insert({
-          numero_pedido: orderNumber,
-          configuracao: automationRule.configuration,
-          status: 'novos',
-          data: new Date().toISOString(),
-          usuario_id: 'de67e1c5-8fb0-4169-8153-bc5e0a1ecdcf', // sergio.filho@segsat.com
-          company_name: companyName
-        })
-        .select()
-        .single()
-
-      if (pedidoError) {
-        console.error(`[${timestamp}] Attempt ${attempt} - Error creating automatic order:`, pedidoError)
-        console.error(`[${timestamp}] Error details - code: ${pedidoError.code}, message: ${pedidoError.message}`)
-        
-        // If it's a duplicate key error and not the last attempt, regenerate order number and retry
-        if (pedidoError.code === '23505' && pedidoError.message?.includes('pedidos_numero_pedido_key') && attempt < maxRetries) {
-          console.log(`[${timestamp}] Duplicate order number detected on attempt ${attempt}, regenerating...`)
-          orderNumber = await generateAutoOrderNumber(supabase)
-          console.log(`[${timestamp}] New order number for retry: ${orderNumber}`)
-          
-          // Wait before retry (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100))
-          continue
-        }
-        
-        if (pedidoError.details) {
-          console.error(`[${timestamp}] Error details: ${pedidoError.details}`)
-        }
-        if (pedidoError.hint) {
-          console.error(`[${timestamp}] Error hint: ${pedidoError.hint}`)
-        }
-        
-        if (attempt === maxRetries) {
-          throw pedidoError
-        }
-        continue
-      }
-
-      console.log(`[${timestamp}] Successfully created order with ID: ${pedido.id}`)
-      console.log(`[${timestamp}] Order details:`, JSON.stringify(pedido, null, 2))
-
-      console.log(`[${timestamp}] Creating vehicle record...`)
-      const { error: vehicleError } = await supabase
-        .from('veiculos')
-        .insert({
-          pedido_id: pedido.id,
-          marca: vehicleData.brand,
-          modelo: vehicleData.vehicle,
-          quantidade: vehicleData.quantity || 1,
-          tipo: vehicleData.year ? vehicleData.year.toString() : null
-        })
-
-      if (vehicleError) {
-        console.error(`[${timestamp}] Error creating vehicle for automatic order:`, vehicleError)
-        throw vehicleError
-      }
-
-      console.log(`[${timestamp}] Successfully created vehicle record`)
-
-      console.log(`[${timestamp}] Creating tracker record...`)
-      const { error: trackerError } = await supabase
-        .from('rastreadores')
-        .insert({
-          pedido_id: pedido.id,
-          modelo: automationRule.tracker_model,
-          quantidade: vehicleData.quantity || 1
-        })
-
-      if (trackerError) {
-        console.error(`[${timestamp}] Error creating tracker for automatic order:`, trackerError)
-        throw trackerError
-      }
-
-      console.log(`[${timestamp}] Successfully created tracker record`)
-
-      // Create accessory records if provided
-      if (accessories && accessories.length > 0) {
-        console.log(`[${timestamp}] Creating ${accessories.length} accessory records for order ${pedido.id}`)
-        
-        const accessoryInserts = accessories.map(accessory => ({
-          pedido_id: pedido.id,
-          accessory_name: accessory.accessory_name,
-          quantity: accessory.quantity,
-          received_at: new Date().toISOString()
-        }))
-
-        const { error: accessoryError } = await supabase
-          .from('accessories')
-          .insert(accessoryInserts)
-
-        if (accessoryError) {
-          console.error(`[${timestamp}] Error creating accessory records:`, accessoryError)
-          throw accessoryError
-        }
-
+      if (accessoryError) {
+        console.error(`[${timestamp}] Error creating accessory records:`, accessoryError)
+        // Don't throw here, as the main order was created successfully
+        console.log(`[${timestamp}] Continuing despite accessory error...`)
+      } else {
         console.log(`[${timestamp}] Successfully created ${accessories.length} accessory records`)
       }
-      
-      console.log(`[${timestamp}] ✅ COMPLETE: Successfully created automatic order ${orderNumber} for ${vehicleData.brand} ${vehicleData.vehicle} (quantity: ${vehicleData.quantity || 1})`)
-      
-      return {
-        order_id: pedido.id,
-        order_number: orderNumber,
-        tracker_model: automationRule.tracker_model,
-        configuration: automationRule.configuration,
-        quantity: vehicleData.quantity || 1
-      }
-
-    } catch (error) {
-      console.error(`[${timestamp}] ❌ ERROR in createAutomaticOrder attempt ${attempt}:`, error)
-      console.error(`[${timestamp}] Error stack:`, error.stack)
-      
-      if (attempt === maxRetries) {
-        throw error
-      }
-      
-      // Wait before retry (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100))
     }
+    
+    console.log(`[${timestamp}] ✅ COMPLETE: Successfully created automatic order ${orderResult.order_number} for ${vehicleData.brand} ${vehicleData.vehicle} (quantity: ${vehicleData.quantity || 1})`)
+    
+    return {
+      order_id: orderResult.order_id,
+      order_number: orderResult.order_number,
+      tracker_model: orderResult.tracker_model,
+      configuration: orderResult.configuration,
+      quantity: vehicleData.quantity || 1
+    }
+
+  } catch (error) {
+    console.error(`[${timestamp}] ❌ ERROR in createAutomaticOrder:`, error)
+    console.error(`[${timestamp}] Error stack:`, error.stack)
+    throw error
   }
 }

@@ -685,6 +685,22 @@ export type Database = {
       }
     }
     Functions: {
+      create_automatic_order_atomic: {
+        Args: {
+          p_vehicle_brand: string
+          p_vehicle_model: string
+          p_vehicle_year?: number
+          p_quantity?: number
+          p_company_name?: string
+          p_user_id?: string
+        }
+        Returns: {
+          order_id: string
+          order_number: string
+          configuration: string
+          tracker_model: string
+        }[]
+      }
       generate_auto_order_number: {
         Args: Record<PropertyKey, never>
         Returns: string
