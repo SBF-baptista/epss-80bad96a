@@ -47,13 +47,6 @@ const navigationItems = [
     roles: ["admin", "order_manager"]
   },
   { 
-    to: "/orders", 
-    label: "Pedidos", 
-    icon: ShoppingCart,
-    description: "Gerenciar pedidos",
-    roles: ["admin"]
-  },
-  { 
     to: "/config", 
     label: "Configurações", 
     icon: Settings,
