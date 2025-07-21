@@ -8,6 +8,7 @@ import {
   HomologationHeader,
   HomologationKanbanSection
 } from "@/components/homologation";
+import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 
 const Homologation = () => {
   const { data: cards = [], isLoading, refetch } = useQuery({
@@ -25,23 +26,25 @@ const Homologation = () => {
   }
 
   return (
-    <div className="container-mobile min-h-screen bg-gray-50">
-      <div className="w-full max-w-7xl mx-auto space-y-3 md:space-y-6 px-0">
-        <HomologationHeader />
-        
-        <HomologationMetrics 
-          cards={cards} 
-          workflowData={workflowData} 
-        />
-        
-        <CreateHomologationForm onUpdate={refetch} />
-        
-        <HomologationKanbanSection 
-          cards={cards} 
-          onUpdate={refetch} 
-        />
+    <HomologationErrorBoundary>
+      <div className="container-mobile min-h-screen bg-gray-50">
+        <div className="w-full max-w-7xl mx-auto space-y-3 md:space-y-6 px-0">
+          <HomologationHeader />
+          
+          <HomologationMetrics 
+            cards={cards} 
+            workflowData={workflowData} 
+          />
+          
+          <CreateHomologationForm onUpdate={refetch} />
+          
+          <HomologationKanbanSection 
+            cards={cards} 
+            onUpdate={refetch} 
+          />
+        </div>
       </div>
-    </div>
+    </HomologationErrorBoundary>
   );
 };
 

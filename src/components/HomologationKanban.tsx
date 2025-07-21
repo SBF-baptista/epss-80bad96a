@@ -2,8 +2,9 @@
 import { useState } from "react";
 import HomologationColumn from "./HomologationColumn";
 import HomologationModal from "./HomologationModal";
+import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
 import { HomologationCard, updateHomologationStatus } from "@/services/homologationService";
-import { useToast } from "@/hooks/use-toast";
+import { useHomologationToast } from "@/hooks/useHomologationToast";
 
 interface HomologationKanbanProps {
   cards: HomologationCard[];
@@ -21,12 +22,21 @@ const columns = [
 ];
 
 const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
-  const { toast } = useToast();
+  const { showSuccess, showError } = useHomologationToast();
   const [draggedCard, setDraggedCard] = useState<HomologationCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const handleDragStart = (card: HomologationCard) => {
-    setDraggedCard(card);
+    try {
+      setDraggedCard(card);
+    } catch (error) {
+      showError(error as Error, {
+        action: 'drag_start',
+        component: 'HomologationKanban',
+        cardId: card.id
+      });
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -34,32 +44,99 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   };
 
   const handleDrop = async (columnId: string) => {
-    if (draggedCard && draggedCard.status !== columnId) {
-      try {
-        await updateHomologationStatus(draggedCard.id, columnId as HomologationCard['status']);
-        onUpdate();
-        toast({
-          title: "Status atualizado",
-          description: `${draggedCard.brand} ${draggedCard.model} movido para ${columns.find(c => c.id === columnId)?.title}`
-        });
-      } catch (error) {
-        console.error("Error updating homologation status:", error);
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar status da homologação",
-          variant: "destructive"
-        });
-      }
+    if (!draggedCard || draggedCard.status === columnId) {
+      setDraggedCard(null);
+      return;
     }
-    setDraggedCard(null);
+
+    const cardId = draggedCard.id;
+    const previousStatus = draggedCard.status;
+    const targetColumn = columns.find(c => c.id === columnId);
+    
+    setIsUpdating(cardId);
+    
+    try {
+      console.log(`Attempting to move card ${cardId} from ${previousStatus} to ${columnId}`);
+      
+      await updateHomologationStatus(cardId, columnId as HomologationCard['status']);
+      
+      console.log(`Successfully moved card ${cardId} to ${columnId}`);
+      
+      showSuccess(
+        "Status atualizado",
+        `${draggedCard.brand} ${draggedCard.model} movido para ${targetColumn?.title}`
+      );
+      
+      onUpdate();
+    } catch (error) {
+      console.error("Error updating homologation status:", error);
+      
+      showError(error as Error, {
+        action: 'update_status',
+        component: 'HomologationKanban',
+        cardId: cardId,
+        additionalContext: {
+          previousStatus,
+          targetStatus: columnId,
+          cardBrand: draggedCard.brand,
+          cardModel: draggedCard.model
+        }
+      }, `Erro ao mover ${draggedCard.brand} ${draggedCard.model} para ${targetColumn?.title}`);
+    } finally {
+      setDraggedCard(null);
+      setIsUpdating(null);
+    }
   };
 
   const getCardsByStatus = (status: string) => {
-    return cards.filter(card => card.status === status);
+    try {
+      return cards.filter(card => card.status === status);
+    } catch (error) {
+      showError(error as Error, {
+        action: 'filter_cards',
+        component: 'HomologationKanban',
+        additionalContext: { status }
+      });
+      return [];
+    }
+  };
+
+  const handleCardClick = (card: HomologationCard) => {
+    try {
+      setSelectedCard(card);
+    } catch (error) {
+      showError(error as Error, {
+        action: 'open_modal',
+        component: 'HomologationKanban',
+        cardId: card.id
+      });
+    }
+  };
+
+  const handleModalClose = () => {
+    try {
+      setSelectedCard(null);
+    } catch (error) {
+      showError(error as Error, {
+        action: 'close_modal',
+        component: 'HomologationKanban'
+      });
+    }
+  };
+
+  const handleUpdate = () => {
+    try {
+      onUpdate();
+    } catch (error) {
+      showError(error as Error, {
+        action: 'refresh_data',
+        component: 'HomologationKanban'
+      });
+    }
   };
 
   return (
-    <>
+    <HomologationErrorBoundary>
       <div className="w-full overflow-x-auto no-scrollbar">
         <div className="flex gap-2 md:gap-6 pb-4 min-h-[400px] md:min-h-[600px] min-w-max">
           {columns.map(column => (
@@ -70,9 +147,10 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
               color={column.color}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(column.id)}
-              onCardClick={setSelectedCard}
+              onCardClick={handleCardClick}
               onDragStart={handleDragStart}
-              onUpdate={onUpdate}
+              onUpdate={handleUpdate}
+              isUpdating={isUpdating}
             />
           ))}
         </div>
@@ -82,11 +160,11 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
         <HomologationModal
           card={selectedCard}
           isOpen={!!selectedCard}
-          onClose={() => setSelectedCard(null)}
-          onUpdate={onUpdate}
+          onClose={handleModalClose}
+          onUpdate={handleUpdate}
         />
       )}
-    </>
+    </HomologationErrorBoundary>
   );
 };
 

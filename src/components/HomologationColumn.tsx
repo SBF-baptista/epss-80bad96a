@@ -1,7 +1,7 @@
 
-import { Card } from "@/components/ui/card";
-import HomologationCardComponent from "./HomologationCard";
 import { HomologationCard } from "@/services/homologationService";
+import HomologationCard as HomologationCardComponent from "./HomologationCard";
+import { Loader2 } from "lucide-react";
 
 interface HomologationColumnProps {
   title: string;
@@ -12,47 +12,50 @@ interface HomologationColumnProps {
   onCardClick: (card: HomologationCard) => void;
   onDragStart: (card: HomologationCard) => void;
   onUpdate: () => void;
+  isUpdating?: string | null;
 }
 
-const HomologationColumn = ({
-  title,
-  cards,
-  color,
-  onDragOver,
-  onDrop,
-  onCardClick,
-  onDragStart,
-  onUpdate
+const HomologationColumn = ({ 
+  title, 
+  cards, 
+  color, 
+  onDragOver, 
+  onDrop, 
+  onCardClick, 
+  onDragStart, 
+  onUpdate,
+  isUpdating 
 }: HomologationColumnProps) => {
   return (
-    <div className="min-w-[260px] md:min-w-80 flex-shrink-0 w-[260px] md:w-auto">
-      <div className="mb-2 md:mb-4 px-1">
-        <h3 className="font-semibold text-gray-900 text-xs md:text-lg leading-tight truncate">{title}</h3>
-        <p className="text-xs text-gray-600">{cards.length} {cards.length === 1 ? 'item' : 'itens'}</p>
+    <div 
+      className={`flex-shrink-0 w-72 md:w-80 ${color} border rounded-lg p-3 md:p-4 relative`}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
+      <div className="flex items-center justify-between mb-3 md:mb-4">
+        <h3 className="font-semibold text-gray-800 text-sm md:text-base">{title}</h3>
+        <span className="bg-white text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+          {cards.length}
+        </span>
       </div>
       
-      <Card 
-        className={`min-h-64 md:min-h-96 p-2 md:p-4 border-2 border-dashed ${color} transition-colors`}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-      >
-        <div className="space-y-2 md:space-y-3">
-          {cards.map(card => (
+      <div className="space-y-2 md:space-y-3 min-h-[300px] md:min-h-[400px]">
+        {cards.map((card) => (
+          <div key={card.id} className="relative">
             <HomologationCardComponent
-              key={card.id}
               card={card}
               onClick={() => onCardClick(card)}
               onDragStart={() => onDragStart(card)}
               onUpdate={onUpdate}
             />
-          ))}
-          {cards.length === 0 && (
-            <div className="text-center py-6 md:py-8 text-gray-500">
-              <p className="text-sm">Nenhum item nesta etapa</p>
-            </div>
-          )}
-        </div>
-      </Card>
+            {isUpdating === card.id && (
+              <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

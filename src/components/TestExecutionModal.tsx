@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TestTube, Settings, FileText, Car, Upload, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { updateTestExecution, HomologationCard, uploadHomologationPhoto, getPhotoUrl } from "@/services/homologationService";
+import { TestTube, Settings, FileText, Car, Upload, X, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { updateTestExecution, HomologationCard, uploadHomologationPhoto } from "@/services/homologationService";
+import { useHomologationToast } from "@/hooks/useHomologationToast";
+import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
 
 interface TestExecutionModalProps {
   card: HomologationCard;
@@ -37,9 +40,10 @@ const CONFIGURATION_OPTIONS = [
 ];
 
 const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionModalProps) => {
-  const { toast } = useToast();
+  const { showSuccess, showError, showWarning } = useHomologationToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [chassisPhoto, setChassisPhoto] = useState<string | null>(null);
   const [vehiclePhoto, setVehiclePhoto] = useState<string | null>(null);
   const [canConnectionLocationPhoto, setCanConnectionLocationPhoto] = useState<string | null>(null);
@@ -61,9 +65,18 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
   const [outrosText, setOutrosText] = useState('');
 
   const handleChecklistChange = (itemId: string, completed: boolean) => {
-    setChecklist(checklist.map(item => 
-      item.id === itemId ? { ...item, completed } : item
-    ));
+    try {
+      setChecklist(checklist.map(item => 
+        item.id === itemId ? { ...item, completed } : item
+      ));
+    } catch (error) {
+      showError(error as Error, {
+        action: 'update_checklist',
+        component: 'TestExecutionModal',
+        cardId: card.id,
+        additionalContext: { itemId, completed }
+      });
+    }
   };
 
   const handlePhotoUpload = async (
@@ -73,22 +86,30 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setUploadError(null);
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Arquivo inválido",
-        description: "Por favor, selecione apenas arquivos de imagem",
-        variant: "destructive"
+      const error = 'Arquivo inválido: apenas imagens são permitidas';
+      setUploadError(error);
+      showError(error, {
+        action: 'validate_file_type',
+        component: 'TestExecutionModal',
+        cardId: card.id,
+        additionalContext: { photoType, fileType: file.type }
       });
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 5MB",
-        variant: "destructive"
+      const error = 'Arquivo muito grande: máximo 5MB';
+      setUploadError(error);
+      showError(error, {
+        action: 'validate_file_size',
+        component: 'TestExecutionModal',
+        cardId: card.id,
+        additionalContext: { photoType, fileSize: file.size }
       });
       return;
     }
@@ -139,6 +160,8 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
           dbPhotoType = 'outros';
       }
       
+      console.log(`Uploading ${photoType} photo for card ${card.id}`);
+      
       const { url } = await uploadHomologationPhoto(card.id, renamedFile, dbPhotoType);
       
       switch (photoType) {
@@ -163,17 +186,26 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
         canWires: 'fios de conexão CAN'
       };
       
-      toast({
-        title: "Foto enviada",
-        description: `A foto do ${photoLabels[photoType]} foi enviada com sucesso`
-      });
+      showSuccess(
+        "Foto enviada",
+        `A foto do ${photoLabels[photoType]} foi enviada com sucesso`
+      );
     } catch (error) {
       console.error(`Error uploading ${photoType} photo:`, error);
-      toast({
-        title: "Erro",
-        description: `Erro ao enviar foto do ${photoType === 'chassis' ? 'chassi' : photoType === 'vehicle' ? 'veículo' : photoType === 'canLocation' ? 'local de conexão CAN' : 'fios de conexão CAN'}`,
-        variant: "destructive"
-      });
+      
+      const photoLabels = {
+        chassis: 'chassi',
+        vehicle: 'veículo', 
+        canLocation: 'local de conexão CAN',
+        canWires: 'fios de conexão CAN'
+      };
+      
+      showError(error as Error, {
+        action: 'upload_photo',
+        component: 'TestExecutionModal',
+        cardId: card.id,
+        additionalContext: { photoType, fileName: newFileName }
+      }, `Erro ao enviar foto do ${photoLabels[photoType]}`);
     } finally {
       setIsUploadingPhoto(false);
       // Reset input
@@ -182,27 +214,67 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
   };
 
   const removePhoto = (photoType: 'chassis' | 'vehicle' | 'canLocation' | 'canWires') => {
-    switch (photoType) {
-      case 'chassis':
-        setChassisPhoto(null);
-        break;
-      case 'vehicle':
-        setVehiclePhoto(null);
-        break;
-      case 'canLocation':
-        setCanConnectionLocationPhoto(null);
-        break;
-      case 'canWires':
-        setCanConnectionWiresPhoto(null);
-        break;
+    try {
+      switch (photoType) {
+        case 'chassis':
+          setChassisPhoto(null);
+          break;
+        case 'vehicle':
+          setVehiclePhoto(null);
+          break;
+        case 'canLocation':
+          setCanConnectionLocationPhoto(null);
+          break;
+        case 'canWires':
+          setCanConnectionWiresPhoto(null);
+          break;
+      }
+      setUploadError(null);
+    } catch (error) {
+      showError(error as Error, {
+        action: 'remove_photo',
+        component: 'TestExecutionModal',
+        cardId: card.id,
+        additionalContext: { photoType }
+      });
     }
+  };
+
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!formData.testConfiguration) {
+      errors.push('Configuração testada é obrigatória');
+    }
+    
+    if (formData.testConfiguration === 'Outros' && !customConfiguration.trim()) {
+      errors.push('Especificação da configuração personalizada é obrigatória');
+    }
+    
+    const completedItems = checklist.filter(item => item.completed).length;
+    if (completedItems === 0) {
+      errors.push('Pelo menos um item do checklist deve ser marcado');
+    }
+    
+    return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      showWarning(
+        "Dados incompletos",
+        validationErrors.join('\n')
+      );
+      return;
+    }
+    
     setIsLoading(true);
     try {
+      console.log(`Saving test execution for card ${card.id}`);
+      
       // Use custom configuration text if "Outros" is selected and custom text is provided
       const finalConfiguration = formData.testConfiguration === 'Outros' && customConfiguration.trim() 
         ? customConfiguration.trim() 
@@ -218,19 +290,28 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
         finalConfiguration
       );
       
-      toast({
-        title: card.test_checklist ? "Execução atualizada" : "Teste executado",
-        description: card.test_checklist ? "Dados de execução do teste atualizados com sucesso" : "Dados de execução do teste salvos com sucesso"
-      });
+      console.log(`Successfully saved test execution for card ${card.id}`);
+      
+      showSuccess(
+        card.test_checklist ? "Execução atualizada" : "Teste executado",
+        card.test_checklist ? "Dados de execução do teste atualizados com sucesso" : "Dados de execução do teste salvos com sucesso"
+      );
+      
       onUpdate();
       onClose();
     } catch (error) {
       console.error('Error updating test execution:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar dados do teste",
-        variant: "destructive"
-      });
+      
+      showError(error as Error, {
+        action: 'save_test_execution',
+        component: 'TestExecutionModal',
+        cardId: card.id,
+        additionalContext: {
+          configuration: finalConfiguration,
+          checklistItems: checklist.filter(item => item.completed).length,
+          hasCustomConfig: formData.testConfiguration === 'Outros'
+        }
+      }, "Erro ao salvar dados do teste");
     } finally {
       setIsLoading(false);
     }
@@ -240,367 +321,376 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
   const completionPercentage = Math.round((completedItems / checklist.length) * 100);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto mx-2 md:mx-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
-            <TestTube className="h-4 w-4 md:h-5 md:w-5" />
-            <span className="truncate">
-              {card.test_checklist ? "Editar Execução de Teste" : "Execução de Teste"}
-            </span>
-          </DialogTitle>
-        </DialogHeader>
+    <HomologationErrorBoundary>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto mx-2 md:mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
+              <TestTube className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="truncate">
+                {card.test_checklist ? "Editar Execução de Teste" : "Execução de Teste"}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="font-medium text-gray-900">{card.brand} {card.model}</p>
-            {card.year && <p className="text-sm text-gray-600">Ano: {card.year}</p>}
-            {card.test_scheduled_date && (
-              <p className="text-sm text-gray-600">
-                Agendado para: {new Date(card.test_scheduled_date).toLocaleDateString('pt-BR')}
-              </p>
-            )}
-          </div>
-
-          {/* Test Checklist */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex flex-col md:flex-row md:items-center gap-2 text-base md:text-lg">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 md:h-5 md:w-5" />
-                  Checklist de Testes
-                </div>
-                <span className="text-xs md:text-sm font-normal text-gray-600">
-                  {completedItems}/{checklist.length} ({completionPercentage}%)
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 md:space-y-3">
-              {checklist.map((item) => (
-                <div key={item.id} className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={item.id}
-                      checked={item.completed}
-                      onCheckedChange={(checked) => 
-                        handleChecklistChange(item.id, checked as boolean)
-                      }
-                    />
-                    <Label htmlFor={item.id} className="text-sm">
-                      {item.label}
-                    </Label>
-                  </div>
-                  {item.id === 'outros' && item.completed && (
-                    <div className="ml-6 space-y-2">
-                      <Label htmlFor="outrosText" className="text-sm">
-                        Especificar:
-                      </Label>
-                      <Input
-                        id="outrosText"
-                        value={outrosText}
-                        onChange={(e) => setOutrosText(e.target.value)}
-                        placeholder="Descreva o que foi testado..."
-                        className="text-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Configuration Definition */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                <Settings className="h-4 w-4 md:h-5 md:w-5" />
-                Configuração Testada
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 md:space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="testConfiguration">Configuração Utilizada no Teste *</Label>
-                <Select
-                  value={formData.testConfiguration}
-                  onValueChange={(value) => setFormData({ ...formData, testConfiguration: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a configuração testada" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONFIGURATION_OPTIONS.map((config) => (
-                      <SelectItem key={config} value={config}>
-                        {config}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {formData.testConfiguration === 'Outros' && (
-                <div className="space-y-2">
-                  <Label htmlFor="customConfiguration">Especificar Configuração</Label>
-                  <Input
-                    id="customConfiguration"
-                    value={customConfiguration}
-                    placeholder="Descreva a configuração utilizada"
-                    onChange={(e) => setCustomConfiguration(e.target.value)}
-                  />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="font-medium text-gray-900">{card.brand} {card.model}</p>
+              {card.year && <p className="text-sm text-gray-600">Ano: {card.year}</p>}
+              {card.test_scheduled_date && (
+                <p className="text-sm text-gray-600">
+                  Agendado para: {new Date(card.test_scheduled_date).toLocaleDateString('pt-BR')}
+                </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Vehicle Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                <Car className="h-4 w-4 md:h-5 md:w-5" />
-                Informações do Veículo
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 md:space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            {uploadError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{uploadError}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Test Checklist */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex flex-col md:flex-row md:items-center gap-2 text-base md:text-lg">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 md:h-5 md:w-5" />
+                    Checklist de Testes
+                  </div>
+                  <span className="text-xs md:text-sm font-normal text-gray-600">
+                    {completedItems}/{checklist.length} ({completionPercentage}%)
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 md:space-y-3">
+                {checklist.map((item) => (
+                  <div key={item.id} className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={item.id}
+                        checked={item.completed}
+                        onCheckedChange={(checked) => 
+                          handleChecklistChange(item.id, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={item.id} className="text-sm">
+                        {item.label}
+                      </Label>
+                    </div>
+                    {item.id === 'outros' && item.completed && (
+                      <div className="ml-6 space-y-2">
+                        <Label htmlFor="outrosText" className="text-sm">
+                          Especificar:
+                        </Label>
+                        <Input
+                          id="outrosText"
+                          value={outrosText}
+                          onChange={(e) => setOutrosText(e.target.value)}
+                          placeholder="Descreva o que foi testado..."
+                          className="text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Configuration Definition */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Settings className="h-4 w-4 md:h-5 md:w-5" />
+                  Configuração Testada
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 md:space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="chassisInfo" className="text-sm">Informações do Chassi</Label>
+                  <Label htmlFor="testConfiguration">Configuração Utilizada no Teste *</Label>
+                  <Select
+                    value={formData.testConfiguration}
+                    onValueChange={(value) => setFormData({ ...formData, testConfiguration: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a configuração testada" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONFIGURATION_OPTIONS.map((config) => (
+                        <SelectItem key={config} value={config}>
+                          {config}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {formData.testConfiguration === 'Outros' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="customConfiguration">Especificar Configuração *</Label>
+                    <Input
+                      id="customConfiguration"
+                      value={customConfiguration}
+                      placeholder="Descreva a configuração utilizada"
+                      onChange={(e) => setCustomConfiguration(e.target.value)}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Vehicle Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Car className="h-4 w-4 md:h-5 md:w-5" />
+                  Informações do Veículo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 md:space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="chassisInfo" className="text-sm">Informações do Chassi</Label>
+                    <Input
+                      id="chassisInfo"
+                      value={formData.chassisInfo}
+                      onChange={(e) => setFormData({ ...formData, chassisInfo: e.target.value })}
+                      placeholder="Número do chassi, tipo, etc."
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manufactureYear" className="text-sm">Ano de Fabricação</Label>
+                    <Input
+                      id="manufactureYear"
+                      type="number"
+                      value={formData.manufactureYear}
+                      onChange={(e) => setFormData({ ...formData, manufactureYear: parseInt(e.target.value) })}
+                      min="1900"
+                      max={new Date().getFullYear() + 1}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="electricalConnectionType" className="text-sm">Tipo de Conexão Elétrica</Label>
                   <Input
-                    id="chassisInfo"
-                    value={formData.chassisInfo}
-                    onChange={(e) => setFormData({ ...formData, chassisInfo: e.target.value })}
-                    placeholder="Número do chassi, tipo, etc."
+                    id="electricalConnectionType"
+                    value={formData.electricalConnectionType}
+                    onChange={(e) => setFormData({ ...formData, electricalConnectionType: e.target.value })}
+                    placeholder="Ex: OBD-II, fios diretos, etc."
                     className="text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="manufactureYear" className="text-sm">Ano de Fabricação</Label>
-                  <Input
-                    id="manufactureYear"
-                    type="number"
-                    value={formData.manufactureYear}
-                    onChange={(e) => setFormData({ ...formData, manufactureYear: parseInt(e.target.value) })}
-                    min="1900"
-                    max={new Date().getFullYear() + 1}
-                    className="text-sm"
-                  />
+
+                {/* Photo Uploads */}
+                <div className="space-y-6">
+                  {/* Vehicle Photo */}
+                  <div className="space-y-2">
+                    <Label>Foto do Veículo</Label>
+                    {vehiclePhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={vehiclePhoto} 
+                          alt="Foto do veículo" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('vehicle')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'vehicle')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="vehicle-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('vehicle-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Veículo"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CAN Connection Location Photo */}
+                  <div className="space-y-2">
+                    <Label>Local de Conexão CAN</Label>
+                    {canConnectionLocationPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={canConnectionLocationPhoto} 
+                          alt="Local de conexão CAN" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('canLocation')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'canLocation')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="can-location-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('can-location-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Local CAN"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CAN Connection Wires Photo */}
+                  <div className="space-y-2">
+                    <Label>Fios de Conexão CAN</Label>
+                    {canConnectionWiresPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={canConnectionWiresPhoto} 
+                          alt="Fios de conexão CAN" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('canWires')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'canWires')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="can-wires-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('can-wires-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto dos Fios CAN"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Chassis Photo */}
+                  <div className="space-y-2">
+                    <Label>Foto do Chassi</Label>
+                    {chassisPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={chassisPhoto} 
+                          alt="Foto do chassi" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('chassis')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'chassis')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="chassis-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('chassis-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Chassi"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="electricalConnectionType" className="text-sm">Tipo de Conexão Elétrica</Label>
-                <Input
-                  id="electricalConnectionType"
-                  value={formData.electricalConnectionType}
-                  onChange={(e) => setFormData({ ...formData, electricalConnectionType: e.target.value })}
-                  placeholder="Ex: OBD-II, fios diretos, etc."
-                  className="text-sm"
-                />
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Photo Uploads */}
-              <div className="space-y-6">
-                {/* Vehicle Photo */}
-                <div className="space-y-2">
-                  <Label>Foto do Veículo</Label>
-                  {vehiclePhoto ? (
-                    <div className="relative">
-                      <img 
-                        src={vehiclePhoto} 
-                        alt="Foto do veículo" 
-                        className="w-full max-w-md h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removePhoto('vehicle')}
-                        className="absolute top-2 right-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handlePhotoUpload(e, 'vehicle')}
-                        disabled={isUploadingPhoto}
-                        className="hidden"
-                        id="vehicle-photo-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('vehicle-photo-upload')?.click()}
-                        disabled={isUploadingPhoto}
-                        className="flex items-center gap-2"
-                      >
-                        <Upload className="h-4 w-4" />
-                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Veículo"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+            {/* Technical Observations */}
+            <div className="space-y-2">
+              <Label htmlFor="technicalObservations" className="text-sm">Observações Técnicas</Label>
+              <Textarea
+                id="technicalObservations"
+                value={formData.technicalObservations}
+                onChange={(e) => setFormData({ ...formData, technicalObservations: e.target.value })}
+                placeholder="Descreva detalhes da instalação, problemas encontrados, soluções aplicadas, etc."
+                rows={3}
+                className="text-sm"
+              />
+            </div>
 
-                {/* CAN Connection Location Photo */}
-                <div className="space-y-2">
-                  <Label>Local de Conexão CAN</Label>
-                  {canConnectionLocationPhoto ? (
-                    <div className="relative">
-                      <img 
-                        src={canConnectionLocationPhoto} 
-                        alt="Local de conexão CAN" 
-                        className="w-full max-w-md h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removePhoto('canLocation')}
-                        className="absolute top-2 right-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handlePhotoUpload(e, 'canLocation')}
-                        disabled={isUploadingPhoto}
-                        className="hidden"
-                        id="can-location-photo-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('can-location-photo-upload')?.click()}
-                        disabled={isUploadingPhoto}
-                        className="flex items-center gap-2"
-                      >
-                        <Upload className="h-4 w-4" />
-                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Local CAN"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* CAN Connection Wires Photo */}
-                <div className="space-y-2">
-                  <Label>Fios de Conexão CAN</Label>
-                  {canConnectionWiresPhoto ? (
-                    <div className="relative">
-                      <img 
-                        src={canConnectionWiresPhoto} 
-                        alt="Fios de conexão CAN" 
-                        className="w-full max-w-md h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removePhoto('canWires')}
-                        className="absolute top-2 right-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handlePhotoUpload(e, 'canWires')}
-                        disabled={isUploadingPhoto}
-                        className="hidden"
-                        id="can-wires-photo-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('can-wires-photo-upload')?.click()}
-                        disabled={isUploadingPhoto}
-                        className="flex items-center gap-2"
-                      >
-                        <Upload className="h-4 w-4" />
-                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto dos Fios CAN"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Chassis Photo */}
-                <div className="space-y-2">
-                  <Label>Foto do Chassi</Label>
-                  {chassisPhoto ? (
-                    <div className="relative">
-                      <img 
-                        src={chassisPhoto} 
-                        alt="Foto do chassi" 
-                        className="w-full max-w-md h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removePhoto('chassis')}
-                        className="absolute top-2 right-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handlePhotoUpload(e, 'chassis')}
-                        disabled={isUploadingPhoto}
-                        className="hidden"
-                        id="chassis-photo-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('chassis-photo-upload')?.click()}
-                        disabled={isUploadingPhoto}
-                        className="flex items-center gap-2"
-                      >
-                        <Upload className="h-4 w-4" />
-                        {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Chassi"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Technical Observations */}
-          <div className="space-y-2">
-            <Label htmlFor="technicalObservations" className="text-sm">Observações Técnicas</Label>
-            <Textarea
-              id="technicalObservations"
-              value={formData.technicalObservations}
-              onChange={(e) => setFormData({ ...formData, technicalObservations: e.target.value })}
-              placeholder="Descreva detalhes da instalação, problemas encontrados, soluções aplicadas, etc."
-              rows={3}
-              className="text-sm"
-            />
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-2 md:gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="w-full md:flex-1 order-2 md:order-1">
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading} className="w-full md:flex-1 order-1 md:order-2">
-              {isLoading ? "Salvando..." : card.test_checklist ? "Atualizar Execução" : "Salvar Execução"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <div className="flex flex-col md:flex-row gap-2 md:gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="w-full md:flex-1 order-2 md:order-1">
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading || isUploadingPhoto} className="w-full md:flex-1 order-1 md:order-2">
+                {isLoading ? "Salvando..." : card.test_checklist ? "Atualizar Execução" : "Salvar Execução"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </HomologationErrorBoundary>
   );
 };
 
