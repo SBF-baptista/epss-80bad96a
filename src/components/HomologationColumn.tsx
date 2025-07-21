@@ -1,6 +1,6 @@
 
 import { HomologationCard } from "@/services/homologationService";
-import HomologationCard as HomologationCardComponent from "./HomologationCard";
+import HomologationCardComponent from "./HomologationCard";
 import { Loader2 } from "lucide-react";
 
 interface HomologationColumnProps {

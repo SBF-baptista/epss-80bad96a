@@ -115,31 +115,33 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     }
 
     setIsUploadingPhoto(true);
+    
+    // Create descriptive filename based on photo type
+    const originalName = file.name;
+    const extension = originalName.substring(originalName.lastIndexOf('.'));
+    
+    let newFileName;
+    switch (photoType) {
+      case 'chassis':
+        newFileName = `chassi_${card.brand}_${card.model}${extension}`;
+        break;
+      case 'vehicle':
+        newFileName = `veiculo_${card.brand}_${card.model}${extension}`;
+        break;
+      case 'canLocation':
+        newFileName = `can_location_${card.brand}_${card.model}${extension}`;
+        break;
+      case 'canWires':
+        newFileName = `can_wires_${card.brand}_${card.model}${extension}`;
+        break;
+      default:
+        newFileName = originalName;
+    }
+    
+    // Create a new file with the descriptive name
+    const renamedFile = new File([file], newFileName, { type: file.type });
+    
     try {
-      // Create descriptive filename based on photo type
-      const originalName = file.name;
-      const extension = originalName.substring(originalName.lastIndexOf('.'));
-      
-      let newFileName;
-      switch (photoType) {
-        case 'chassis':
-          newFileName = `chassi_${card.brand}_${card.model}${extension}`;
-          break;
-        case 'vehicle':
-          newFileName = `veiculo_${card.brand}_${card.model}${extension}`;
-          break;
-        case 'canLocation':
-          newFileName = `can_location_${card.brand}_${card.model}${extension}`;
-          break;
-        case 'canWires':
-          newFileName = `can_wires_${card.brand}_${card.model}${extension}`;
-          break;
-        default:
-          newFileName = originalName;
-      }
-      
-      // Create a new file with the descriptive name
-      const renamedFile = new File([file], newFileName, { type: file.type });
       
       // Determine photo type based on the upload type
       let dbPhotoType;
@@ -204,7 +206,7 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
         action: 'upload_photo',
         component: 'TestExecutionModal',
         cardId: card.id,
-        additionalContext: { photoType, fileName: newFileName }
+        additionalContext: { photoType, fileName: renamedFile.name }
       }, `Erro ao enviar foto do ${photoLabels[photoType]}`);
     } finally {
       setIsUploadingPhoto(false);
@@ -272,13 +274,14 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
     }
     
     setIsLoading(true);
+    
+    // Use custom configuration text if "Outros" is selected and custom text is provided
+    const finalConfiguration = formData.testConfiguration === 'Outros' && customConfiguration.trim() 
+      ? customConfiguration.trim() 
+      : formData.testConfiguration;
+    
     try {
       console.log(`Saving test execution for card ${card.id}`);
-      
-      // Use custom configuration text if "Outros" is selected and custom text is provided
-      const finalConfiguration = formData.testConfiguration === 'Outros' && customConfiguration.trim() 
-        ? customConfiguration.trim() 
-        : formData.testConfiguration;
       
       await updateTestExecution(
         card.id,
