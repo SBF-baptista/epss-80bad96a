@@ -60,6 +60,7 @@ export const fetchHomologationCards = async (): Promise<HomologationCard[]> => {
   const { data, error } = await supabase
     .from('homologation_cards')
     .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -68,6 +69,18 @@ export const fetchHomologationCards = async (): Promise<HomologationCard[]> => {
   }
 
   return data || [];
+};
+
+export const softDeleteHomologationCard = async (cardId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('homologation_cards')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', cardId);
+
+  if (error) {
+    console.error('Error deleting homologation card:', error);
+    throw error;
+  }
 };
 
 export const fetchWorkflowChain = async (): Promise<WorkflowChainItem[]> => {

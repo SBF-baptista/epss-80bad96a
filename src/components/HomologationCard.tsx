@@ -1,11 +1,15 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Image, Link, Package } from "lucide-react";
-import { HomologationCard } from "@/services/homologationService";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Image, Link, Package, Trash2 } from "lucide-react";
+import { HomologationCard, softDeleteHomologationCard } from "@/services/homologationService";
 import ConfigurationSelector from "./ConfigurationSelector";
 import { useQuery } from "@tanstack/react-query";
 import { fetchVehicleAccessories, VehicleAccessory } from "@/services/vehicleAccessoryService";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useToast } from "@/hooks/use-toast";
 
 interface HomologationCardProps {
   card: HomologationCard;
@@ -15,12 +19,33 @@ interface HomologationCardProps {
 }
 
 const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: HomologationCardProps) => {
+  const { isAdmin } = useUserRole();
+  const { toast } = useToast();
+  
   // Fetch vehicle accessories if there's a linked incoming vehicle
   const { data: vehicleAccessories = [] } = useQuery({
     queryKey: ['vehicle-accessories', card.incoming_vehicle_id],
     queryFn: () => fetchVehicleAccessories(card.incoming_vehicle_id!),
     enabled: !!card.incoming_vehicle_id,
   });
+
+  const handleDelete = async () => {
+    try {
+      await softDeleteHomologationCard(card.id);
+      toast({
+        title: "Card deletado",
+        description: "O card de homologação foi removido com sucesso.",
+      });
+      onUpdate();
+    } catch (error) {
+      console.error('Error deleting homologation card:', error);
+      toast({
+        title: "Erro ao deletar",
+        description: "Não foi possível deletar o card de homologação.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -86,9 +111,42 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
                 <span className="text-xs md:text-sm text-gray-600">({card.year})</span>
               )}
             </h4>
-            <Badge className={`text-xs ${getStatusColor(card.status)} flex-shrink-0`}>
-              {getStatusLabel(card.status)}
-            </Badge>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Badge className={`text-xs ${getStatusColor(card.status)}`}>
+                {getStatusLabel(card.status)}
+              </Badge>
+              {isAdmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja deletar este card de homologação? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDelete}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Deletar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
           
           <div className="space-y-1 text-xs">

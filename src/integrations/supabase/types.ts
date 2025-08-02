@@ -166,6 +166,7 @@ export type Database = {
           configuration: string | null
           created_at: string
           created_order_id: string | null
+          deleted_at: string | null
           electrical_connection_type: string | null
           id: string
           incoming_vehicle_id: string | null
@@ -189,6 +190,7 @@ export type Database = {
           configuration?: string | null
           created_at?: string
           created_order_id?: string | null
+          deleted_at?: string | null
           electrical_connection_type?: string | null
           id?: string
           incoming_vehicle_id?: string | null
@@ -212,6 +214,7 @@ export type Database = {
           configuration?: string | null
           created_at?: string
           created_order_id?: string | null
+          deleted_at?: string | null
           electrical_connection_type?: string | null
           id?: string
           incoming_vehicle_id?: string | null
