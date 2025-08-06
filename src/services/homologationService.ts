@@ -121,12 +121,16 @@ export const createHomologationCard = async (
 ): Promise<HomologationCard> => {
   const status = executeNow ? 'execucao_teste' : 'homologar';
   
-  // First check if a card with the same brand and model already exists
+  // Normalize the input for consistent comparison
+  const normalizedBrand = brand.trim().toUpperCase();
+  const normalizedModel = model.trim().toUpperCase();
+
+  // First check if a card with the same brand and model already exists (case insensitive)
   const { data: existingCard, error: checkError } = await supabase
     .from('homologation_cards')
     .select('*')
-    .eq('brand', brand)
-    .eq('model', model)
+    .ilike('brand', normalizedBrand)
+    .ilike('model', normalizedModel)
     .is('deleted_at', null)
     .maybeSingle();
 
@@ -142,8 +146,8 @@ export const createHomologationCard = async (
   const { data, error } = await supabase
     .from('homologation_cards')
     .insert({
-      brand,
-      model,
+      brand: normalizedBrand,
+      model: normalizedModel,
       year,
       status,
       notes
