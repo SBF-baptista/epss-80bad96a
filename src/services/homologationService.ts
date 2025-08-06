@@ -119,6 +119,7 @@ export const createHomologationCard = async (
   notes?: string,
   executeNow?: boolean
 ): Promise<HomologationCard> => {
+  console.log('Creating homologation card:', { brand, model, year, notes, executeNow });
   const status = executeNow ? 'execucao_teste' : 'homologar';
   
   // Normalize the input for consistent comparison
@@ -142,6 +143,8 @@ export const createHomologationCard = async (
   }
 
   const { data: existingCard, error: checkError } = await query.maybeSingle();
+  
+  console.log('Duplicate check result:', { existingCard, checkError, normalizedBrand, normalizedModel, year });
 
   if (checkError) {
     console.error('Error checking existing homologation card:', checkError);
@@ -150,6 +153,7 @@ export const createHomologationCard = async (
 
   if (existingCard) {
     const yearText = year ? ` (ano ${year})` : '';
+    console.log('Found existing card:', existingCard);
     throw new Error(`Já existe uma homologação para ${brand} ${model}${yearText}. Você pode editar a homologação existente ou excluí-la antes de criar uma nova.`);
   }
   
