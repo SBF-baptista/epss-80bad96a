@@ -157,6 +157,12 @@ export const createHomologationCard = async (
 
   if (error) {
     console.error('Error creating homologation card:', error);
+    
+    // Check if it's a duplicate key constraint error
+    if (error.code === '23505' && error.message.includes('homologation_cards_brand_model_key')) {
+      throw new Error(`Já existe uma homologação para ${normalizedBrand} ${normalizedModel}. Verifique se não foi criada por outro usuário recentemente.`);
+    }
+    
     throw error;
   }
 
