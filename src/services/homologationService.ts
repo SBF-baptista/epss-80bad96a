@@ -143,6 +143,9 @@ export const createHomologationCard = async (
     throw new Error(`Já existe uma homologação para ${brand} ${model}. Você pode editar a homologação existente ou excluí-la antes de criar uma nova.`);
   }
   
+  // Get the current user ID for the requested_by field
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { data, error } = await supabase
     .from('homologation_cards')
     .insert({
@@ -150,7 +153,8 @@ export const createHomologationCard = async (
       model: normalizedModel,
       year,
       status,
-      notes
+      notes,
+      requested_by: user?.id
     })
     .select()
     .single();
