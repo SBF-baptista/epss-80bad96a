@@ -61,7 +61,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
       console.error("Error creating homologation card:", error);
       toast({
         title: "Erro",
-        description: "Erro ao criar card de homologação",
+        description: error instanceof Error ? error.message : "Erro ao criar card de homologação",
         variant: "destructive"
       });
     } finally {
