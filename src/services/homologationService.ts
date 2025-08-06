@@ -125,14 +125,23 @@ export const createHomologationCard = async (
   const normalizedBrand = brand.trim().toUpperCase();
   const normalizedModel = model.trim().toUpperCase();
 
-  // First check if a card with the same brand and model already exists (case insensitive)
-  const { data: existingCard, error: checkError } = await supabase
+  // Check if a card with the same brand, model and year already exists (case insensitive)
+  let query = supabase
     .from('homologation_cards')
     .select('*')
     .ilike('brand', normalizedBrand)
     .ilike('model', normalizedModel)
-    .is('deleted_at', null)
-    .maybeSingle();
+    .is('deleted_at', null);
+
+  // If year is provided, include it in the duplicate check
+  if (year) {
+    query = query.eq('year', year);
+  } else {
+    // If no year provided, check for existing cards without year
+    query = query.is('year', null);
+  }
+
+  const { data: existingCard, error: checkError } = await query.maybeSingle();
 
   if (checkError) {
     console.error('Error checking existing homologation card:', checkError);
@@ -140,7 +149,8 @@ export const createHomologationCard = async (
   }
 
   if (existingCard) {
-    throw new Error(`Já existe uma homologação para ${brand} ${model}. Você pode editar a homologação existente ou excluí-la antes de criar uma nova.`);
+    const yearText = year ? ` (ano ${year})` : '';
+    throw new Error(`Já existe uma homologação para ${brand} ${model}${yearText}. Você pode editar a homologação existente ou excluí-la antes de criar uma nova.`);
   }
   
   // Get the current user ID for the requested_by field
