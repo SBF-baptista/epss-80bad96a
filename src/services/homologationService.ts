@@ -121,6 +121,24 @@ export const createHomologationCard = async (
 ): Promise<HomologationCard> => {
   const status = executeNow ? 'execucao_teste' : 'homologar';
   
+  // First check if a card with the same brand and model already exists
+  const { data: existingCard, error: checkError } = await supabase
+    .from('homologation_cards')
+    .select('*')
+    .eq('brand', brand)
+    .eq('model', model)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error('Error checking existing homologation card:', checkError);
+    throw checkError;
+  }
+
+  if (existingCard) {
+    throw new Error(`Já existe uma homologação para ${brand} ${model}. Você pode editar a homologação existente ou excluí-la antes de criar uma nova.`);
+  }
+  
   const { data, error } = await supabase
     .from('homologation_cards')
     .insert({
