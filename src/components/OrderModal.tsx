@@ -192,49 +192,84 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate }: OrderModalProps) => {
 
           <Separator />
 
-          {/* Veículos */}
-          <div>
-            <h3 className="font-semibold text-lg mb-4">Veículos ({totalVehicles} unidades)</h3>
-            <div className="space-y-3">
-              {order.vehicles.map((vehicle, index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900">{vehicle.brand} {vehicle.model}</p>
+          {/* Configuração de Items */}
+          <div className="space-y-6">
+            {/* Veículos */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-primary">Veículos ({totalVehicles} unidades)</h3>
+              <div className="space-y-3">
+                {order.vehicles.map((vehicle, index) => (
+                  <div key={index} className="p-4 bg-muted/50 rounded-lg border">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">{vehicle.brand} {vehicle.model}</p>
+                        {vehicle.year && (
+                          <p className="text-sm text-muted-foreground">Ano: {vehicle.year}</p>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="font-semibold">
+                        {vehicle.quantity} {vehicle.quantity === 1 ? 'unidade' : 'unidades'}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="font-semibold">
-                    {vehicle.quantity} {vehicle.quantity === 1 ? 'unidade' : 'unidades'}
-                  </Badge>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <Separator />
-
-          {/* Rastreadores */}
-          <div>
-            <h3 className="font-semibold text-lg mb-4">Rastreadores ({totalTrackers} unidades)</h3>
-            <div className="space-y-3">
-              {order.trackers.map((tracker, index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900">{tracker.model}</p>
+            {/* Rastreadores */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-primary">Rastreadores ({totalTrackers} unidades)</h3>
+              <div className="space-y-3">
+                {order.trackers.map((tracker, index) => (
+                  <div key={index} className="p-4 bg-muted/50 rounded-lg border">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-foreground">{tracker.model}</p>
+                      </div>
+                      <Badge variant="secondary" className="font-semibold">
+                        {tracker.quantity} {tracker.quantity === 1 ? 'unidade' : 'unidades'}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="font-semibold">
-                    {tracker.quantity} {tracker.quantity === 1 ? 'unidade' : 'unidades'}
-                  </Badge>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <Separator />
+            {/* Acessórios */}
+            {order.accessories && order.accessories.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Acessórios ({order.accessories.reduce((sum, acc) => sum + acc.quantity, 0)} unidades)
+                </h3>
+                <div className="space-y-3">
+                  {order.accessories.map((accessory, index) => (
+                    <div key={index} className="p-4 bg-muted/50 rounded-lg border">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-foreground">{accessory.name}</p>
+                        </div>
+                        <Badge variant="secondary" className="font-semibold">
+                          {accessory.quantity} {accessory.quantity === 1 ? 'unidade' : 'unidades'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {/* Configuração */}
-          <div>
-            <h3 className="font-semibold text-lg mb-4">Configuração</h3>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <p className="text-blue-900 font-medium">{order.configurationType}</p>
+            {/* Configuração de Protocolo */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-primary">Configuração de Protocolo</h3>
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <p className="text-primary font-semibold text-lg">{order.configurationType}</p>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Protocolo de comunicação específico para os dispositivos deste pedido
+                </p>
+              </div>
             </div>
           </div>
 
