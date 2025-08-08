@@ -40,6 +40,7 @@ const ShipmentPreparationModal = ({
   const [selectedRecipientId, setSelectedRecipientId] = useState<string>("");
   const [isNewRecipient, setIsNewRecipient] = useState(false);
   const [newRecipientName, setNewRecipientName] = useState("");
+  const [newRecipientPhone, setNewRecipientPhone] = useState("");
   const [addressPasteInput, setAddressPasteInput] = useState("");
   const [address, setAddress] = useState<ShipmentAddress>({
     street: "",
@@ -252,6 +253,7 @@ const ShipmentPreparationModal = ({
       if (isNewRecipient && newRecipientName.trim()) {
         const newRecipient = await createRecipientMutation.mutateAsync({
           name: newRecipientName,
+          phone: newRecipientPhone,
           ...address,
         });
         recipientId = newRecipient.id;
@@ -321,6 +323,8 @@ const ShipmentPreparationModal = ({
                     isNewRecipient={isNewRecipient}
                     newRecipientName={newRecipientName}
                     onNewRecipientNameChange={setNewRecipientName}
+                    newRecipientPhone={newRecipientPhone}
+                    onNewRecipientPhoneChange={setNewRecipientPhone}
                     selectedUF={selectedUF}
                     selectedCity={selectedCity}
                     disabled={isReadOnly}

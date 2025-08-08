@@ -17,6 +17,8 @@ interface RecipientSelectorProps {
   isNewRecipient: boolean;
   newRecipientName: string;
   onNewRecipientNameChange: (value: string) => void;
+  newRecipientPhone: string;
+  onNewRecipientPhoneChange: (value: string) => void;
   selectedUF: string;
   selectedCity: string;
   disabled?: boolean;
@@ -29,6 +31,8 @@ const RecipientSelector = ({
   isNewRecipient,
   newRecipientName,
   onNewRecipientNameChange,
+  newRecipientPhone,
+  onNewRecipientPhoneChange,
   selectedUF,
   selectedCity,
   disabled = false,
@@ -157,16 +161,27 @@ const RecipientSelector = ({
         </div>
       )}
 
-      {/* New Recipient Name Input */}
+      {/* New Recipient Name and Phone Inputs */}
       {isNewRecipient && (
-        <div className="space-y-2">
-          <Label>Nome do Destinatário *</Label>
-          <Input
-            value={newRecipientName}
-            onChange={(e) => onNewRecipientNameChange(e.target.value)}
-            placeholder="Digite o nome do destinatário"
-            disabled={disabled}
-          />
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label>Nome do Destinatário *</Label>
+            <Input
+              value={newRecipientName}
+              onChange={(e) => onNewRecipientNameChange(e.target.value)}
+              placeholder="Digite o nome do destinatário"
+              disabled={disabled}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Telefone/WhatsApp *</Label>
+            <Input
+              value={newRecipientPhone}
+              onChange={(e) => onNewRecipientPhoneChange(e.target.value)}
+              placeholder="Digite o telefone com código do país (ex: +5511999999999)"
+              disabled={disabled}
+            />
+          </div>
         </div>
       )}
 

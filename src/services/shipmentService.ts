@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface ShipmentRecipient {
   id: string;
   name: string;
+  phone?: string;
   street: string;
   number: string;
   neighborhood: string;

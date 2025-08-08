@@ -546,6 +546,7 @@ export type Database = {
           name: string
           neighborhood: string
           number: string
+          phone: string | null
           postal_code: string
           state: string
           street: string
@@ -558,6 +559,7 @@ export type Database = {
           name: string
           neighborhood: string
           number: string
+          phone?: string | null
           postal_code: string
           state: string
           street: string
@@ -570,6 +572,7 @@ export type Database = {
           name?: string
           neighborhood?: string
           number?: string
+          phone?: string | null
           postal_code?: string
           state?: string
           street?: string
