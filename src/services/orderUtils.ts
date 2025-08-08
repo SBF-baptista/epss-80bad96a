@@ -41,6 +41,24 @@ export const generateOrderNumber = async (): Promise<string> => {
 export const updateOrderStatus = async (orderId: string, status: string) => {
   console.log('Updating order status:', orderId, status)
   
+  // Get order details for WhatsApp notification
+  let orderData = null;
+  if (status === 'enviado') {
+    const { data } = await supabase
+      .from('pedidos')
+      .select(`
+        *,
+        shipment_recipients:shipment_recipient_id (
+          name,
+          phone
+        )
+      `)
+      .eq('id', orderId)
+      .single();
+    
+    orderData = data;
+  }
+  
   const { error } = await supabase
     .from('pedidos')
     .update({ status: status as any })
@@ -49,6 +67,28 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
   if (error) {
     console.error('Error updating order status:', error)
     throw error
+  }
+
+  // Send WhatsApp notification when order is moved to "enviado"
+  if (status === 'enviado' && orderData?.shipment_recipients) {
+    try {
+      console.log('Sending WhatsApp notification for order:', orderData.numero_pedido);
+      
+      await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          orderId: orderId,
+          orderNumber: orderData.numero_pedido,
+          recipientPhone: orderData.shipment_recipients.phone,
+          recipientName: orderData.shipment_recipients.name,
+          companyName: orderData.company_name
+        }
+      });
+      
+      console.log('WhatsApp notification sent successfully');
+    } catch (whatsappError) {
+      console.error('Failed to send WhatsApp notification:', whatsappError);
+      // Don't throw error here, as the status update was successful
+    }
   }
 }
 
