@@ -41,6 +41,30 @@ export const generateOrderNumber = async (): Promise<string> => {
 export const updateOrderStatus = async (orderId: string, status: string) => {
   console.log('Updating order status:', orderId, status)
   
+  // Helper to normalize to E.164 where possible (basic heuristics)
+  const normalizeToE164 = (phone?: string | null): string | null => {
+    if (!phone) return null;
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return null;
+    // If already starts with country code (e.g., 55 for BR) and length is plausible
+    if (digits.startsWith('55') && digits.length >= 12 && digits.length <= 13) {
+      return `+${digits}`;
+    }
+    // If user included leading +
+    if (phone.trim().startsWith('+')) {
+      const cleaned = `+${digits}`;
+      return /^\+[1-9]\d{7,14}$/.test(cleaned) ? cleaned : null;
+    }
+    // Heuristic: assume Brazil if 10-11 local digits
+    if (digits.length === 10 || digits.length === 11) {
+      const br = `+55${digits}`;
+      return /^\+[1-9]\d{7,14}$/.test(br) ? br : null;
+    }
+    // Fallback: try prefixing +
+    const generic = `+${digits}`;
+    return /^\+[1-9]\d{7,14}$/.test(generic) ? generic : null;
+  };
+  
   // Get order details for WhatsApp notification
   let orderData = null;
   if (status === 'enviado') {
@@ -72,19 +96,25 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
   // Send WhatsApp notification when order is moved to "enviado"
   if (status === 'enviado' && orderData?.shipment_recipients) {
     try {
+      const normalizedPhone = normalizeToE164(orderData.shipment_recipients.phone);
+      if (!normalizedPhone) {
+        console.warn('Skipping WhatsApp notification: invalid or missing phone number');
+        return;
+      }
+
       console.log('Sending WhatsApp notification for order:', orderData.numero_pedido);
       
       await supabase.functions.invoke('send-whatsapp', {
         body: {
           orderId: orderId,
           orderNumber: orderData.numero_pedido,
-          recipientPhone: orderData.shipment_recipients.phone,
+          recipientPhone: normalizedPhone,
           recipientName: orderData.shipment_recipients.name,
           companyName: orderData.company_name
         }
       });
       
-      console.log('WhatsApp notification sent successfully');
+      console.log('WhatsApp notification sent request submitted');
     } catch (whatsappError) {
       console.error('Failed to send WhatsApp notification:', whatsappError);
       // Don't throw error here, as the status update was successful
