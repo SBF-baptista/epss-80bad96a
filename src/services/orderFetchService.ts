@@ -110,7 +110,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       shipment_address_state: pedido.shipment_address_state,
       shipment_address_postal_code: pedido.shipment_address_postal_code,
       shipment_address_complement: pedido.shipment_address_complement,
-      shipment_prepared_at: pedido.shipment_prepared_at
+      shipment_prepared_at: pedido.shipment_prepared_at,
+      trackingCode: pedido.correios_tracking_code,
     }))
 
     console.log('Transformed orders:', transformedOrders)

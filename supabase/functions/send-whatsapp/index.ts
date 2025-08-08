@@ -7,7 +7,8 @@ const corsHeaders = {
 
 interface WhatsAppMessage {
   orderId: string;
-  orderNumber: string;
+  orderNumber: string; // human-friendly order number
+  trackingCode?: string; // Correios tracking code to map to template variable {{orderNumber}}
   recipientPhone: string;
   recipientName: string;
   companyName?: string;
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { orderId, orderNumber, recipientPhone, recipientName, companyName }: WhatsAppMessage = await req.json();
+    const { orderId, orderNumber, trackingCode, recipientPhone, recipientName, companyName }: WhatsAppMessage = await req.json();
 
     const toPhone = normalizeToE164(recipientPhone);
     if (!toPhone) {
@@ -81,6 +82,7 @@ Deno.serve(async (req) => {
         '2': recipientName,
         '3': companyName || '',
         order_number: orderNumber,
+        orderNumber: trackingCode || orderNumber,
         recipient_name: recipientName,
         company_name: companyName || '',
       } as Record<string, string>;
@@ -91,6 +93,7 @@ Deno.serve(async (req) => {
         `Olá ${recipientName}!\n\n` +
         `Seu pedido foi enviado e está a caminho! 📦\n\n` +
         `${companyName ? `Empresa: ${companyName}\n` : ''}` +
+        `${trackingCode ? `Código de Rastreamento: ${trackingCode}\n` : ''}` +
         `Número do Pedido: ${orderNumber}\n\n` +
         `Em breve você receberá mais informações sobre a entrega.\n\n` +
         `Obrigado por escolher nossos serviços! 🙏`;

@@ -32,4 +32,5 @@ export interface Order {
   shipment_address_postal_code?: string
   shipment_address_complement?: string
   shipment_prepared_at?: string
+  trackingCode?: string
 }

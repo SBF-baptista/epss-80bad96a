@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Order } from "@/services/orderService";
 import {
   fetchShipmentRecipients,
@@ -41,6 +43,7 @@ const ShipmentPreparationModal = ({
   const [isNewRecipient, setIsNewRecipient] = useState(false);
   const [newRecipientName, setNewRecipientName] = useState("");
   const [newRecipientPhone, setNewRecipientPhone] = useState("");
+  const [trackingCode, setTrackingCode] = useState("");
   const [addressPasteInput, setAddressPasteInput] = useState("");
   const [address, setAddress] = useState<ShipmentAddress>({
     street: "",
@@ -118,6 +121,7 @@ const ShipmentPreparationModal = ({
         complement: order.shipment_address_complement || "",
       });
     }
+    setTrackingCode(order.trackingCode || "");
   }, [order, recipients]);
 
   // Handle UF change
@@ -270,6 +274,7 @@ const ShipmentPreparationModal = ({
         shipment_address_postal_code: address.postal_code,
         shipment_address_complement: address.complement || undefined,
         shipment_prepared_at: new Date().toISOString(),
+        correios_tracking_code: trackingCode || undefined,
       });
     } catch (error) {
       toast({
@@ -368,6 +373,32 @@ const ShipmentPreparationModal = ({
                 allowManualEntry={isNewRecipient || !selectedRecipientId}
                 showPasteOption={isNewRecipient || !selectedRecipientId}
               />
+            </CardContent>
+          </Card>
+
+          {/* Tracking Code Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Código de Rastreamento (Correios)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isReadOnly ? (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="font-medium">
+                    {order.trackingCode || "Não informado"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="trackingCode">Código de Rastreamento</Label>
+                  <Input
+                    id="trackingCode"
+                    value={trackingCode}
+                    onChange={(e) => setTrackingCode(e.target.value)}
+                    placeholder="Ex: AA123456789BR"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 

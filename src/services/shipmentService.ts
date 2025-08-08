@@ -65,6 +65,7 @@ export const updateOrderShipment = async (
     shipment_address_postal_code: string;
     shipment_address_complement?: string;
     shipment_prepared_at?: string;
+    correios_tracking_code?: string;
   }
 ) => {
   const { error } = await supabase

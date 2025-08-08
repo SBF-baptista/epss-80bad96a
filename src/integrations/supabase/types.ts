@@ -366,6 +366,7 @@ export type Database = {
         Row: {
           company_name: string | null
           configuracao: string
+          correios_tracking_code: string | null
           created_at: string
           data: string
           id: string
@@ -388,6 +389,7 @@ export type Database = {
         Insert: {
           company_name?: string | null
           configuracao: string
+          correios_tracking_code?: string | null
           created_at?: string
           data?: string
           id?: string
@@ -410,6 +412,7 @@ export type Database = {
         Update: {
           company_name?: string | null
           configuracao?: string
+          correios_tracking_code?: string | null
           created_at?: string
           data?: string
           id?: string

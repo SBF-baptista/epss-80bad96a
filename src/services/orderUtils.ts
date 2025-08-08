@@ -101,6 +101,10 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
         console.warn('Skipping WhatsApp notification: invalid or missing phone number');
         return;
       }
+      if (!orderData.correios_tracking_code) {
+        console.warn('Skipping WhatsApp notification: missing Correios tracking code');
+        return;
+      }
 
       console.log('Sending WhatsApp notification for order:', orderData.numero_pedido);
       
@@ -108,6 +112,7 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
         body: {
           orderId: orderId,
           orderNumber: orderData.numero_pedido,
+          trackingCode: orderData.correios_tracking_code,
           recipientPhone: normalizedPhone,
           recipientName: orderData.shipment_recipients.name,
           companyName: orderData.company_name
