@@ -56,24 +56,24 @@ const OrdersByStatus = ({ orders }: OrdersByStatusProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-          Pedidos por Status
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+          <span className="truncate">Pedidos por Status</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-64">
+      <CardContent className="pt-0">
+        <div className="h-48 sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={statusData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={100}
+                innerRadius={40}
+                outerRadius={80}
                 dataKey="value"
-                label={({ name, percentage }) => `${percentage}%`}
+                label={({ percentage }) => `${percentage}%`}
               >
                 {statusData.map((entry, index) => (
                   <Cell key={index} fill={entry.color} />
@@ -83,7 +83,8 @@ const OrdersByStatus = ({ orders }: OrdersByStatusProps) => {
               <Legend 
                 verticalAlign="bottom" 
                 height={36}
-                formatter={(value) => <span className="text-sm">{value}</span>}
+                formatter={(value) => <span className="text-xs sm:text-sm truncate">{value}</span>}
+                wrapperStyle={{ fontSize: '12px' }}
               />
             </PieChart>
           </ResponsiveContainer>

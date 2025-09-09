@@ -44,24 +44,24 @@ const ConfigurationTypes = ({ orders }: ConfigurationTypesProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-pink-500 rounded-full"></div>
-          Tipos de Configuração
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <div className="h-2 w-2 bg-pink-500 rounded-full flex-shrink-0"></div>
+          <span className="truncate">Tipos de Configuração</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-64">
+      <CardContent className="pt-0">
+        <div className="h-48 sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
+            <BarChart data={chartData} margin={{ left: 5, right: 5, top: 5, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="config" 
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 10 }}
                 interval={0}
                 angle={-45}
                 textAnchor="end"
-                height={80}
+                height={60}
               />
               <YAxis />
               <Tooltip content={<CustomTooltip />} />

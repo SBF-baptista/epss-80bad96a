@@ -65,10 +65,10 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-full">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 bg-gray-50 min-h-full">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Dashboard Analítico</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Dashboard Analítico</h2>
         </div>
 
         <DashboardFilters 
@@ -81,17 +81,17 @@ const Dashboard = () => {
 
         <DashboardKPIs orders={filteredOrders} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <OrdersByStatus orders={filteredOrders} />
           <OrdersByPeriod orders={filteredOrders} dateRange={dateRange} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <VehicleDistribution orders={filteredOrders} />
           <TrackerDistribution orders={filteredOrders} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <ConfigurationTypes orders={filteredOrders} />
           <StandbyAnalysis orders={filteredOrders} />
         </div>

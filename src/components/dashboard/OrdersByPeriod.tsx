@@ -52,27 +52,30 @@ const OrdersByPeriod = ({ orders, dateRange }: OrdersByPeriodProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-          Pedidos por Período
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <div className="h-2 w-2 bg-green-500 rounded-full flex-shrink-0"></div>
+          <span className="truncate">Pedidos por Período</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-64">
+      <CardContent className="pt-0">
+        <div className="h-48 sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis tick={{ fontSize: 10 }} />
               <Tooltip content={<CustomTooltip />} />
               <Line 
                 type="monotone" 
                 dataKey="total" 
                 stroke="#3B82F6" 
                 strokeWidth={2}
-                dot={{ fill: "#3B82F6", strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6 }}
+                dot={{ fill: "#3B82F6", strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5 }}
               />
             </LineChart>
           </ResponsiveContainer>

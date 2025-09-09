@@ -52,23 +52,23 @@ const VehicleDistribution = ({ orders }: VehicleDistributionProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-purple-500 rounded-full"></div>
-          Distribuição por Veículo
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <div className="h-2 w-2 bg-purple-500 rounded-full flex-shrink-0"></div>
+          <span className="truncate">Distribuição por Veículo</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-64">
+      <CardContent className="pt-0">
+        <div className="h-48 sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="horizontal">
+            <BarChart data={chartData} layout="horizontal" margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" />
               <YAxis 
                 dataKey="name" 
                 type="category" 
-                width={120}
-                tick={{ fontSize: 12 }}
+                width={100}
+                tick={{ fontSize: 10 }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="quantity" fill="#8B5CF6" />

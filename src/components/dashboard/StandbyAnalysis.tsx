@@ -31,34 +31,34 @@ const StandbyAnalysis = ({ orders }: StandbyAnalysisProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-red-500 rounded-full"></div>
-          Análise de Stand-by
-          <Badge variant="secondary" className="ml-2">
-            {standbyOrders.length} pedidos
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <div className="h-2 w-2 bg-red-500 rounded-full flex-shrink-0"></div>
+          <span className="truncate">Análise de Stand-by</span>
+          <Badge variant="secondary" className="ml-2 text-xs">
+            {standbyOrders.length}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3 max-h-80 overflow-y-auto">
+      <CardContent className="pt-0">
+        <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto">
           {ordersWithDays.length === 0 ? (
             <div className="text-center py-6 text-gray-500">
-              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p>Nenhum pedido em stand-by</p>
+              <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm">Nenhum pedido em stand-by</p>
             </div>
           ) : (
             ordersWithDays.map(order => (
               <div 
                 key={order.id} 
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-medium text-gray-900 text-sm truncate">
                       Pedido {order.number}
                     </span>
-                    <Badge className={getPriorityColor(order.daysInStandby)}>
+                    <Badge className={`${getPriorityColor(order.daysInStandby)} text-xs flex-shrink-0`}>
                       {getPriorityIcon(order.daysInStandby)}
                       <span className="ml-1">
                         {order.daysInStandby} {order.daysInStandby === 1 ? 'dia' : 'dias'}
@@ -66,30 +66,30 @@ const StandbyAnalysis = ({ orders }: StandbyAnalysisProps) => {
                     </Badge>
                   </div>
                   
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>
+                  <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                    <p className="truncate">
                       <span className="font-medium">Criado:</span>{' '}
-                      {format(new Date(order.createdAt), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      {format(new Date(order.createdAt), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
-                    <p>
-                      <span className="font-medium">Configuração:</span>{' '}
+                    <p className="truncate">
+                      <span className="font-medium">Config:</span>{' '}
                       {order.configurationType}
                     </p>
-                    <div className="flex gap-4">
-                      <span>
-                        <span className="font-medium">Veículos:</span>{' '}
+                    <div className="flex gap-3 text-xs">
+                      <span className="flex-shrink-0">
+                        <span className="font-medium">Veíc:</span>{' '}
                         {order.vehicles.reduce((sum, v) => sum + v.quantity, 0)}
                       </span>
-                      <span>
-                        <span className="font-medium">Rastreadores:</span>{' '}
+                      <span className="flex-shrink-0">
+                        <span className="font-medium">Rast:</span>{' '}
                         {order.trackers.reduce((sum, t) => sum + t.quantity, 0)}
                       </span>
                     </div>
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <div className="text-lg font-bold text-red-600">
+                <div className="text-right flex-shrink-0 ml-2">
+                  <div className="text-base sm:text-lg font-bold text-red-600">
                     {order.daysInStandby}
                   </div>
                   <div className="text-xs text-gray-500">
@@ -103,21 +103,21 @@ const StandbyAnalysis = ({ orders }: StandbyAnalysisProps) => {
         
         {standbyOrders.length > 0 && (
           <div className="mt-4 pt-4 border-t">
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
               <div className="text-center">
-                <div className="font-bold text-red-600">
+                <div className="font-bold text-red-600 text-sm sm:text-base">
                   {ordersWithDays.filter(o => o.daysInStandby >= 7).length}
                 </div>
                 <div className="text-gray-500">+7 dias</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-orange-600">
+                <div className="font-bold text-orange-600 text-sm sm:text-base">
                   {ordersWithDays.filter(o => o.daysInStandby >= 3 && o.daysInStandby < 7).length}
                 </div>
                 <div className="text-gray-500">3-6 dias</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-yellow-600">
+                <div className="font-bold text-yellow-600 text-sm sm:text-base">
                   {ordersWithDays.filter(o => o.daysInStandby < 3).length}
                 </div>
                 <div className="text-gray-500">0-2 dias</div>
