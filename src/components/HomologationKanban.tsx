@@ -138,7 +138,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   return (
     <HomologationErrorBoundary>
       <div className="w-full overflow-x-auto no-scrollbar">
-        <div className="flex gap-2 md:gap-6 pb-4 min-h-[400px] md:min-h-[600px] min-w-max">
+        <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4 min-h-[300px] sm:min-h-[400px] lg:min-h-[600px]" style={{ minWidth: 'max-content' }}>
           {columns.map(column => (
             <HomologationColumn
               key={column.id}

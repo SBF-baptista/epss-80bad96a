@@ -70,10 +70,10 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   };
 
   return (
-    <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm border">
+    <div className="bg-white p-3 md:p-4 lg:p-6 rounded-lg shadow-sm border">
       <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Criar Nova Homologação</h2>
       <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Marca *
@@ -96,7 +96,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             className="text-sm"
           />
         </div>
-        <div>
+        <div className="sm:col-span-2 lg:col-span-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Ano
           </label>
@@ -146,11 +146,11 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
           </div>
         )}
         
-        <div className="flex justify-end">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
           <Button
             onClick={handleCreateCard}
             disabled={isCreating}
-            className="flex items-center gap-2 text-sm"
+            className="flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
             size="sm"
           >
             <Plus className="h-4 w-4" />

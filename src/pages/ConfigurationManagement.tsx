@@ -113,7 +113,7 @@ const ConfigurationManagement = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container-mobile mx-auto py-8 px-3 sm:px-6">
         <Alert variant="destructive">
           <AlertDescription>
             Erro ao carregar as regras de automação. Tente recarregar a página.
@@ -124,68 +124,68 @@ const ConfigurationManagement = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container-mobile mx-auto py-4 sm:py-8 space-y-4 sm:space-y-6 px-3 sm:px-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestão de Configurações</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Gestão de Configurações</h1>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
             Defina regras de automação para associar modelos de veículos com rastreadores e configurações
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 w-full sm:w-auto">
           <Plus className="w-4 h-4" />
           Nova Regra
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Regras</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total de Regras</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{rules.length}</div>
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{rules.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Categorias</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Categorias</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{categories.length}</div>
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{categories.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Marcas de Veículos</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Marcas de Veículos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{brands.length}</div>
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">{brands.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Configurações</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Configurações</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{configurations.length}</div>
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">{configurations.length}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filtros e Busca
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="truncate">Filtros e Busca</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="relative">
+        <CardContent className="space-y-4 pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="relative sm:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Buscar por marca/modelo..."
@@ -235,7 +235,7 @@ const ConfigurationManagement = () => {
                 setBrandFilter('all')
                 setConfigurationFilter('all')
               }}
-              className="col-span-2"
+              className="w-full"
             >
               Limpar Filtros
             </Button>
@@ -245,10 +245,10 @@ const ConfigurationManagement = () => {
 
       {/* Rules Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Regras de Automação ({filteredRules.length})</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm sm:text-base">Regras de Automação ({filteredRules.length})</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -258,77 +258,79 @@ const ConfigurationManagement = () => {
               {rules.length === 0 ? 'Nenhuma regra cadastrada.' : 'Nenhuma regra encontrada com os filtros aplicados.'}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Marca</TableHead>
-                  <TableHead>Modelo do Veículo</TableHead>
-                  <TableHead>Ano</TableHead>
-                  <TableHead>Modelo do Rastreador</TableHead>
-                  <TableHead>Configuração</TableHead>
-                  <TableHead>Nota (Local de Instalação)</TableHead>
-                  <TableHead>Data de Criação</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRules.map((rule) => (
-                  <TableRow key={rule.id}>
-                    <TableCell>
-                      <Badge variant="outline">{rule.category}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{rule.brand}</Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{rule.model}</TableCell>
-                    <TableCell>
-                      {rule.model_year ? (
-                        <span className="text-sm text-gray-600">{rule.model_year}</span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{rule.tracker_model}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="max-w-[200px] truncate">
-                        {rule.configuration}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {rule.notes ? (
-                        <span className="text-sm text-gray-600 max-w-[150px] truncate block">
-                          {rule.notes}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(rule.created_at).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(rule)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(rule.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto -mx-3 sm:mx-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[100px]">Categoria</TableHead>
+                    <TableHead className="min-w-[100px]">Marca</TableHead>
+                    <TableHead className="min-w-[120px]">Modelo do Veículo</TableHead>
+                    <TableHead className="min-w-[70px]">Ano</TableHead>
+                    <TableHead className="min-w-[120px]">Modelo do Rastreador</TableHead>
+                    <TableHead className="min-w-[150px]">Configuração</TableHead>
+                    <TableHead className="min-w-[120px]">Nota (Local de Instalação)</TableHead>
+                    <TableHead className="min-w-[100px]">Data de Criação</TableHead>
+                    <TableHead className="text-right min-w-[100px]">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredRules.map((rule) => (
+                    <TableRow key={rule.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{rule.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{rule.brand}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">{rule.model}</TableCell>
+                      <TableCell>
+                        {rule.model_year ? (
+                          <span className="text-sm text-gray-600">{rule.model_year}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">{rule.tracker_model}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="max-w-[200px] truncate text-xs">
+                          {rule.configuration}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {rule.notes ? (
+                          <span className="text-sm text-gray-600 max-w-[150px] truncate block">
+                            {rule.notes}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(rule.created_at).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(rule)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(rule.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
