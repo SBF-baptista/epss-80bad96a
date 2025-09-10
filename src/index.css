@@ -161,3 +161,39 @@ All colors MUST be HSL.
     box-sizing: border-box;
   }
 }
+
+/* Custom scrollbar for Kanban board */
+.kanban-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.kanban-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.kanban-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+
+/* Smooth scroll behavior */
+.kanban-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Mobile touch optimization */
+@media (max-width: 768px) {
+  .kanban-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+}

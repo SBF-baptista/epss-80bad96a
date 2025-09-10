@@ -57,21 +57,21 @@ const KanbanColumn = ({
   };
 
   return (
-    <div className="min-w-80">
-      <div className="mb-4">
-        <h3 className="font-semibold text-gray-900 text-lg">{title}</h3>
-        <p className="text-sm text-gray-600">
+    <div className="w-full">
+      <div className="mb-3 md:mb-4">
+        <h3 className="font-semibold text-gray-900 text-base md:text-lg truncate">{title}</h3>
+        <p className="text-xs md:text-sm text-gray-600">
           {groupedOrders.length} empresa{groupedOrders.length !== 1 ? 's' : ''} 
           ({orders.length} pedido{orders.length !== 1 ? 's' : ''})
         </p>
       </div>
       
       <Card 
-        className={`min-h-96 p-4 border-2 border-dashed ${color} transition-colors`}
+        className={`min-h-80 md:min-h-96 p-3 md:p-4 border-2 border-dashed ${color} transition-colors`}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           {groupedOrders.map((groupedOrder, index) => (
             <GroupedOrderCard
               key={`${groupedOrder.company_name}-${index}`}
@@ -83,8 +83,8 @@ const KanbanColumn = ({
             />
           ))}
           {orders.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>Nenhum pedido nesta etapa</p>
+            <div className="text-center py-6 md:py-8 text-gray-500">
+              <p className="text-sm md:text-base">Nenhum pedido nesta etapa</p>
             </div>
           )}
         </div>

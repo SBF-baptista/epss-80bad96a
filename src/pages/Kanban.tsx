@@ -42,14 +42,23 @@ const Kanban = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-full">
+      <div className="p-3 md:p-6 bg-gray-50 min-h-full">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
-            <div className="h-24 bg-gray-200 rounded mb-6"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="h-6 md:h-8 bg-gray-200 rounded w-48 md:w-64 mb-4 md:mb-6"></div>
+            <div className="h-16 md:h-24 bg-gray-200 rounded mb-4 md:mb-6"></div>
+            
+            {/* Desktop skeleton */}
+            <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-96 bg-gray-200 rounded"></div>
+                <div key={i} className="h-80 lg:h-96 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            
+            {/* Mobile skeleton */}
+            <div className="md:hidden flex gap-4 overflow-x-auto">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-80 h-80 bg-gray-200 rounded"></div>
               ))}
             </div>
           </div>
@@ -59,22 +68,22 @@ const Kanban = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-full">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Setup Flow Kanban - Gestão de Pedidos</h2>
-          <div className="flex gap-2">
+    <div className="p-3 md:p-6 bg-gray-50 min-h-full">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Setup Flow Kanban - Gestão de Pedidos</h2>
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button 
               onClick={() => setShowTestPanel(!showTestPanel)}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 flex-1 sm:flex-none text-sm"
             >
               <TestTube className="h-4 w-4" />
               {showTestPanel ? "Ocultar" : "Testes"}
             </Button>
             <Button 
               onClick={() => setShowNewOrderModal(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 flex-1 sm:flex-none text-sm"
             >
               <Plus className="h-4 w-4" />
               Novo Pedido

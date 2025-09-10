@@ -71,7 +71,8 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 overflow-x-auto">
+      {/* Desktop and Tablet: Grid layout */}
+      <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
         {columns.map(column => (
           <KanbanColumn
             key={column.id}
@@ -86,6 +87,34 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
             onShipmentClick={column.id === "aguardando" || column.id === "enviado" ? handleShipmentClick : undefined}
           />
         ))}
+      </div>
+
+      {/* Mobile: Horizontal scroll */}
+      <div className="md:hidden">
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory kanban-scroll">
+          {columns.map(column => (
+            <div key={column.id} className="flex-shrink-0 w-80 snap-start">
+              <KanbanColumn
+                title={column.title}
+                orders={getOrdersByStatus(column.id)}
+                color={column.color}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(column.id)}
+                onOrderClick={setSelectedOrder}
+                onDragStart={handleDragStart}
+                onScanClick={column.id === "producao" ? handleScanClick : undefined}
+                onShipmentClick={column.id === "aguardando" || column.id === "enviado" ? handleShipmentClick : undefined}
+              />
+            </div>
+          ))}
+        </div>
+        
+        {/* Mobile scroll indicator */}
+        <div className="flex justify-center mt-2 gap-1">
+          {columns.map((_, index) => (
+            <div key={index} className="w-2 h-2 rounded-full bg-gray-300"></div>
+          ))}
+        </div>
       </div>
 
       {selectedOrder && (
