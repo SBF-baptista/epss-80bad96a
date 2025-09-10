@@ -67,24 +67,30 @@ const KanbanColumn = ({
       </div>
       
       <Card 
-        className={`min-h-80 md:min-h-96 p-3 md:p-4 border-2 border-dashed ${color} transition-colors`}
+        className={`min-h-80 md:min-h-96 p-2 md:p-3 lg:p-4 border-2 border-dashed ${color} transition-colors overflow-hidden`}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <div className="space-y-2 md:space-y-3">
-          {groupedOrders.map((groupedOrder, index) => (
-            <GroupedOrderCard
-              key={`${groupedOrder.company_name}-${index}`}
-              groupedOrder={groupedOrder}
-              onClick={() => handleGroupClick(groupedOrder)}
-              onDragStart={() => handleGroupDragStart(groupedOrder)}
-              onScanClick={onScanClick ? () => handleGroupScanClick(groupedOrder) : undefined}
-              onShipmentClick={onShipmentClick ? () => handleGroupShipmentClick(groupedOrder) : undefined}
-            />
-          ))}
+        <div className="space-y-2 md:space-y-3 h-full">
+          <div className="space-y-2 md:space-y-3 max-h-full overflow-y-auto">
+            {groupedOrders.map((groupedOrder, index) => (
+              <GroupedOrderCard
+                key={`${groupedOrder.company_name}-${index}`}
+                groupedOrder={groupedOrder}
+                onClick={() => handleGroupClick(groupedOrder)}
+                onDragStart={() => handleGroupDragStart(groupedOrder)}
+                onScanClick={onScanClick ? () => handleGroupScanClick(groupedOrder) : undefined}
+                onShipmentClick={onShipmentClick ? () => handleGroupShipmentClick(groupedOrder) : undefined}
+              />
+            ))}
+          </div>
           {orders.length === 0 && (
-            <div className="text-center py-6 md:py-8 text-gray-500">
-              <p className="text-sm md:text-base">Nenhum pedido nesta etapa</p>
+            <div className="flex items-center justify-center h-full py-8 md:py-12 text-gray-400">
+              <div className="text-center">
+                <div className="text-4xl mb-2">📋</div>
+                <p className="text-sm md:text-base font-medium">Nenhum pedido</p>
+                <p className="text-xs md:text-sm">nesta etapa</p>
+              </div>
             </div>
           )}
         </div>
