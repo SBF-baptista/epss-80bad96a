@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import HomologationColumn from "./HomologationColumn";
 import HomologationModal from "./HomologationModal";
 import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
@@ -26,6 +26,12 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const [draggedCard, setDraggedCard] = useState<HomologationCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  
+  // Navegação lateral contínua
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
+  const [activeScrollIndex, setActiveScrollIndex] = useState(0);
 
   const handleDragStart = (card: HomologationCard) => {
     try {
@@ -135,24 +141,134 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     }
   };
 
+  // Navegação lateral contínua - Funções
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const scrollLeft = container.scrollLeft;
+      const columnWidth = 320; // Largura aproximada de cada coluna + gap
+      const activeIndex = Math.round(scrollLeft / columnWidth);
+      setActiveScrollIndex(Math.min(activeIndex, columns.length - 1));
+    }
+  }, []);
+
+  const scrollToColumn = (index: number) => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const columnWidth = 320;
+      container.scrollTo({
+        left: index * columnWidth,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Mouse drag para desktop
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    
+    setIsDragging(true);
+    setDragStart({
+      x: e.pageX - scrollContainerRef.current.offsetLeft,
+      scrollLeft: scrollContainerRef.current.scrollLeft
+    });
+  };
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - dragStart.x) * 2; // Sensibilidade do drag
+    scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
+  }, [isDragging, dragStart]);
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Touch drag para mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!scrollContainerRef.current) return;
+    
+    setIsDragging(true);
+    setDragStart({
+      x: e.touches[0].pageX - scrollContainerRef.current.offsetLeft,
+      scrollLeft: scrollContainerRef.current.scrollLeft
+    });
+  };
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    
+    const x = e.touches[0].pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - dragStart.x) * 2;
+    scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
+  }, [isDragging, dragStart]);
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
     <HomologationErrorBoundary>
-      <div className="w-full overflow-x-auto no-scrollbar">
-        <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4 min-h-[300px] sm:min-h-[400px] lg:min-h-[600px]" style={{ minWidth: 'max-content' }}>
-          {columns.map(column => (
-            <HomologationColumn
-              key={column.id}
+      <div className="w-full relative">
+        {/* Navegação lateral contínua */}
+        <div 
+          ref={scrollContainerRef}
+          className={`w-full overflow-x-auto no-scrollbar select-none ${
+            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          }`}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUpOrLeave}
+          onMouseLeave={handleMouseUpOrLeave}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onScroll={handleScroll}
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4 min-h-[300px] sm:min-h-[400px] lg:min-h-[600px]" style={{ minWidth: 'max-content' }}>
+            {columns.map(column => (
+              <HomologationColumn
+                key={column.id}
+                title={column.title}
+                cards={getCardsByStatus(column.id)}
+                color={column.color}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(column.id)}
+                onCardClick={handleCardClick}
+                onDragStart={handleDragStart}
+                onUpdate={handleUpdate}
+                isUpdating={isUpdating}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Indicadores de navegação */}
+        <div className="flex justify-center mt-4 gap-2">
+          {columns.map((column, index) => (
+            <button
+              key={index}
+              onClick={() => scrollToColumn(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-110 ${
+                index === activeScrollIndex 
+                  ? "bg-primary w-6 shadow-md" 
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              }`}
               title={column.title}
-              cards={getCardsByStatus(column.id)}
-              color={column.color}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(column.id)}
-              onCardClick={handleCardClick}
-              onDragStart={handleDragStart}
-              onUpdate={handleUpdate}
-              isUpdating={isUpdating}
+              aria-label={`Navegar para ${column.title}`}
             />
           ))}
+        </div>
+
+        {/* Dica de navegação */}
+        <div className="text-center mt-2">
+          <p className="text-xs text-muted-foreground">
+            Clique e arraste para navegar lateralmente ou use os indicadores
+          </p>
         </div>
       </div>
 

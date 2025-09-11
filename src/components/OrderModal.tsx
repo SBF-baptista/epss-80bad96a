@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Trash2 } from "lucide-react";
 import { Order, deleteOrder } from "@/services/orderService";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -129,7 +130,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate }: OrderModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -177,7 +178,8 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate }: OrderModalProps) => {
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <ScrollArea className="max-h-[70vh] pr-4">
+          <div className="space-y-6">
           {/* Status e Prioridade */}
           <div className="flex items-center space-x-3">
             <Badge className={getStatusColor(order.status)}>
@@ -197,42 +199,52 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate }: OrderModalProps) => {
             {/* Veículos */}
             <div>
               <h3 className="font-semibold text-lg mb-4 text-primary">Veículos ({totalVehicles} unidades)</h3>
-              <div className="space-y-3">
-                {order.vehicles.map((vehicle, index) => (
-                  <div key={index} className="p-4 bg-muted/50 rounded-lg border">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <p className="font-medium text-foreground">{vehicle.brand} {vehicle.model}</p>
-                        {vehicle.year && (
-                          <p className="text-sm text-muted-foreground">Ano: {vehicle.year}</p>
-                        )}
+              <ScrollArea className="w-full">
+                <div className="flex gap-3 pb-4" style={{ minWidth: 'max-content' }}>
+                  {order.vehicles.map((vehicle, index) => (
+                    <div key={index} className="flex-shrink-0 w-80 p-4 bg-muted/50 rounded-lg border">
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <p className="font-medium text-foreground text-base">{vehicle.brand} {vehicle.model}</p>
+                          {vehicle.year && (
+                            <p className="text-sm text-muted-foreground">Ano: {vehicle.year}</p>
+                          )}
+                        </div>
+                        <div className="flex justify-end">
+                          <Badge variant="secondary" className="font-semibold">
+                            {vehicle.quantity} {vehicle.quantity === 1 ? 'unidade' : 'unidades'}
+                          </Badge>
+                        </div>
                       </div>
-                      <Badge variant="secondary" className="font-semibold">
-                        {vehicle.quantity} {vehicle.quantity === 1 ? 'unidade' : 'unidades'}
-                      </Badge>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
             </div>
 
             {/* Rastreadores */}
             <div>
               <h3 className="font-semibold text-lg mb-4 text-primary">Rastreadores ({totalTrackers} unidades)</h3>
-              <div className="space-y-3">
-                {order.trackers.map((tracker, index) => (
-                  <div key={index} className="p-4 bg-muted/50 rounded-lg border">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium text-foreground">{tracker.model}</p>
+              <ScrollArea className="w-full">
+                <div className="flex gap-3 pb-4" style={{ minWidth: 'max-content' }}>
+                  {order.trackers.map((tracker, index) => (
+                    <div key={index} className="flex-shrink-0 w-80 p-4 bg-muted/50 rounded-lg border">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="font-medium text-foreground text-base">{tracker.model}</p>
+                        </div>
+                        <div className="flex justify-end">
+                          <Badge variant="secondary" className="font-semibold">
+                            {tracker.quantity} {tracker.quantity === 1 ? 'unidade' : 'unidades'}
+                          </Badge>
+                        </div>
                       </div>
-                      <Badge variant="secondary" className="font-semibold">
-                        {tracker.quantity} {tracker.quantity === 1 ? 'unidade' : 'unidades'}
-                      </Badge>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
             </div>
 
             {/* Acessórios */}
@@ -241,20 +253,25 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate }: OrderModalProps) => {
                 <h3 className="font-semibold text-lg mb-4 text-primary">
                   Acessórios ({order.accessories.reduce((sum, acc) => sum + acc.quantity, 0)} unidades)
                 </h3>
-                <div className="space-y-3">
-                  {order.accessories.map((accessory, index) => (
-                    <div key={index} className="p-4 bg-muted/50 rounded-lg border">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-foreground">{accessory.name}</p>
+                <ScrollArea className="w-full">
+                  <div className="flex gap-3 pb-4" style={{ minWidth: 'max-content' }}>
+                    {order.accessories.map((accessory, index) => (
+                      <div key={index} className="flex-shrink-0 w-80 p-4 bg-muted/50 rounded-lg border">
+                        <div className="space-y-3">
+                          <div>
+                            <p className="font-medium text-foreground text-base">{accessory.name}</p>
+                          </div>
+                          <div className="flex justify-end">
+                            <Badge variant="secondary" className="font-semibold">
+                              {accessory.quantity} {accessory.quantity === 1 ? 'unidade' : 'unidades'}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="font-semibold">
-                          {accessory.quantity} {accessory.quantity === 1 ? 'unidade' : 'unidades'}
-                        </Badge>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
               </div>
             )}
 
@@ -305,8 +322,9 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate }: OrderModalProps) => {
                 Este pedido está em stand-by e requer atenção especial.
               </p>
             </div>
-          )}
-        </div>
+            )}
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

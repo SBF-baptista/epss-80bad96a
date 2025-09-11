@@ -197,3 +197,54 @@ All colors MUST be HSL.
     overscroll-behavior-x: contain;
   }
 }
+
+/* Navegação lateral contínua - Homologation Kanban */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll behavior for kanban navigation */
+.kanban-nav-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* Prevent text selection during drag */
+.drag-container {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Smooth cursor transitions */
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grab:active {
+  cursor: grabbing;
+}
+
+/* ScrollArea improvements for horizontal scrolling */
+.scroll-area-horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.scroll-area-horizontal .scroll-bar-horizontal {
+  height: 8px;
+  border-radius: 4px;
+}
+
+/* Performance optimizations */
+.kanban-drag-container {
+  transform: translateZ(0);
+  will-change: transform;
+}
