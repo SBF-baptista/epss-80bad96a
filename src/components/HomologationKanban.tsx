@@ -1,10 +1,12 @@
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import HomologationColumn from "./HomologationColumn";
 import HomologationModal from "./HomologationModal";
 import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
 import { HomologationCard, updateHomologationStatus } from "@/services/homologationService";
 import { useHomologationToast } from "@/hooks/useHomologationToast";
+import { Button } from "@/components/ui/button";
 
 interface HomologationKanbanProps {
   cards: HomologationCard[];
@@ -27,10 +29,8 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   
-  // Navegação lateral contínua
+  // Navegação lateral com botões
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
 
   const handleDragStart = (card: HomologationCard) => {
@@ -141,7 +141,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     }
   };
 
-  // Navegação lateral contínua - Funções
+  // Navegação lateral com botões - Funções
   const handleScroll = useCallback(() => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
@@ -149,15 +149,6 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       const columnWidth = 320; // Largura aproximada de cada coluna + gap
       const activeIndex = Math.round(scrollLeft / columnWidth);
       setActiveScrollIndex(Math.min(activeIndex, columns.length - 1));
-    }
-  }, []);
-
-  // Scroll horizontal com mouse wheel (desktop)
-  const handleWheel = useCallback((e: WheelEvent) => {
-    if (scrollContainerRef.current && Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
-      e.preventDefault();
-      const scrollAmount = e.deltaY * 0.5; // Suaviza o scroll
-      scrollContainerRef.current.scrollLeft += scrollAmount;
     }
   }, []);
 
@@ -169,108 +160,84 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
         left: index * columnWidth,
         behavior: 'smooth'
       });
+      setActiveScrollIndex(index);
     }
   };
 
-  // Adiciona listener para wheel events (desktop)
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: false });
-      return () => container.removeEventListener('wheel', handleWheel);
-    }
-  }, [handleWheel]);
-
-  // Mouse drag para desktop
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!scrollContainerRef.current) return;
-    
-    setIsDragging(true);
-    setDragStart({
-      x: e.pageX - scrollContainerRef.current.offsetLeft,
-      scrollLeft: scrollContainerRef.current.scrollLeft
-    });
-    
-    // Previne seleção de texto durante o drag
-    e.preventDefault();
+  // Navegação com botões
+  const navigateLeft = () => {
+    const newIndex = Math.max(0, activeScrollIndex - 1);
+    scrollToColumn(newIndex);
   };
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || !scrollContainerRef.current) return;
-    
-    e.preventDefault();
-    const x = e.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - dragStart.x) * 1.5; // Sensibilidade do drag
-    scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
-  }, [isDragging, dragStart]);
-
-  const handleMouseUpOrLeave = () => {
-    setIsDragging(false);
+  const navigateRight = () => {
+    const newIndex = Math.min(columns.length - 1, activeScrollIndex + 1);
+    scrollToColumn(newIndex);
   };
 
-  // Touch/swipe para mobile com melhor detecção
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!scrollContainerRef.current) return;
-    
-    setIsDragging(true);
-    const touch = e.touches[0];
-    setDragStart({
-      x: touch.pageX - scrollContainerRef.current.offsetLeft,
-      scrollLeft: scrollContainerRef.current.scrollLeft
-    });
-  };
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging || !scrollContainerRef.current) return;
-    
-    const touch = e.touches[0];
-    const x = touch.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - dragStart.x) * 1.2; // Sensibilidade otimizada para mobile
-    scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
-    
-    // Previne scroll vertical quando fazendo swipe horizontal
-    if (Math.abs(walk) > 10) {
-      e.preventDefault();
-    }
-  }, [isDragging, dragStart]);
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-  };
+  const canNavigateLeft = activeScrollIndex > 0;
+  const canNavigateRight = activeScrollIndex < columns.length - 1;
 
   return (
     <HomologationErrorBoundary>
       <div className="w-full relative">
-        {/* Navegação lateral contínua */}
-        <div 
-          ref={scrollContainerRef}
-          className={`w-full overflow-x-auto overflow-y-hidden no-scrollbar kanban-nav-scroll kanban-drag-container ${
-            isDragging ? 'cursor-grabbing drag-container' : 'cursor-grab'
-          }`}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUpOrLeave}
-          onMouseLeave={handleMouseUpOrLeave}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onScroll={handleScroll}
-        >
-          <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4 min-h-[300px] sm:min-h-[400px] lg:min-h-[600px]" style={{ minWidth: 'max-content' }}>
-            {columns.map(column => (
-              <HomologationColumn
-                key={column.id}
-                title={column.title}
-                cards={getCardsByStatus(column.id)}
-                color={column.color}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(column.id)}
-                onCardClick={handleCardClick}
-                onDragStart={handleDragStart}
-                onUpdate={handleUpdate}
-                isUpdating={isUpdating}
-              />
-            ))}
+        {/* Botões de navegação lateral */}
+        <div className="relative">
+          {/* Botão de navegação esquerda */}
+          <Button
+            variant="outline"
+            size="icon"
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
+              canNavigateLeft 
+                ? 'opacity-100' 
+                : 'opacity-40 cursor-not-allowed'
+            }`}
+            onClick={navigateLeft}
+            disabled={!canNavigateLeft}
+            aria-label="Navegar para a esquerda"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          {/* Botão de navegação direita */}
+          <Button
+            variant="outline"
+            size="icon"
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
+              canNavigateRight 
+                ? 'opacity-100' 
+                : 'opacity-40 cursor-not-allowed'
+            }`}
+            onClick={navigateRight}
+            disabled={!canNavigateRight}
+            aria-label="Navegar para a direita"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          {/* Container do Kanban */}
+          <div 
+            ref={scrollContainerRef}
+            className="w-full overflow-x-auto overflow-y-hidden no-scrollbar"
+            onScroll={handleScroll}
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4 min-h-[300px] sm:min-h-[400px] lg:min-h-[600px]" style={{ minWidth: 'max-content' }}>
+              {columns.map(column => (
+                <HomologationColumn
+                  key={column.id}
+                  title={column.title}
+                  cards={getCardsByStatus(column.id)}
+                  color={column.color}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(column.id)}
+                  onCardClick={handleCardClick}
+                  onDragStart={handleDragStart}
+                  onUpdate={handleUpdate}
+                  isUpdating={isUpdating}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -294,7 +261,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
         {/* Dica de navegação */}
         <div className="text-center mt-2">
           <p className="text-xs text-muted-foreground">
-            Clique e arraste para navegar lateralmente ou use os indicadores
+            Use as setas laterais ou clique nos indicadores para navegar
           </p>
         </div>
       </div>
