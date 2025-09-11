@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import HomologationColumn from "./HomologationColumn";
 import HomologationModal from "./HomologationModal";
 import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
@@ -152,6 +152,15 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     }
   }, []);
 
+  // Scroll horizontal com mouse wheel (desktop)
+  const handleWheel = useCallback((e: WheelEvent) => {
+    if (scrollContainerRef.current && Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+      e.preventDefault();
+      const scrollAmount = e.deltaY * 0.5; // Suaviza o scroll
+      scrollContainerRef.current.scrollLeft += scrollAmount;
+    }
+  }, []);
+
   const scrollToColumn = (index: number) => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
@@ -163,6 +172,15 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     }
   };
 
+  // Adiciona listener para wheel events (desktop)
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      return () => container.removeEventListener('wheel', handleWheel);
+    }
+  }, [handleWheel]);
+
   // Mouse drag para desktop
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollContainerRef.current) return;
@@ -172,6 +190,9 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       x: e.pageX - scrollContainerRef.current.offsetLeft,
       scrollLeft: scrollContainerRef.current.scrollLeft
     });
+    
+    // Previne seleção de texto durante o drag
+    e.preventDefault();
   };
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -179,7 +200,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     
     e.preventDefault();
     const x = e.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - dragStart.x) * 2; // Sensibilidade do drag
+    const walk = (x - dragStart.x) * 1.5; // Sensibilidade do drag
     scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
   }, [isDragging, dragStart]);
 
@@ -187,13 +208,14 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     setIsDragging(false);
   };
 
-  // Touch drag para mobile
+  // Touch/swipe para mobile com melhor detecção
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!scrollContainerRef.current) return;
     
     setIsDragging(true);
+    const touch = e.touches[0];
     setDragStart({
-      x: e.touches[0].pageX - scrollContainerRef.current.offsetLeft,
+      x: touch.pageX - scrollContainerRef.current.offsetLeft,
       scrollLeft: scrollContainerRef.current.scrollLeft
     });
   };
@@ -201,9 +223,15 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isDragging || !scrollContainerRef.current) return;
     
-    const x = e.touches[0].pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - dragStart.x) * 2;
+    const touch = e.touches[0];
+    const x = touch.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - dragStart.x) * 1.2; // Sensibilidade otimizada para mobile
     scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
+    
+    // Previne scroll vertical quando fazendo swipe horizontal
+    if (Math.abs(walk) > 10) {
+      e.preventDefault();
+    }
   }, [isDragging, dragStart]);
 
   const handleTouchEnd = () => {
@@ -216,8 +244,8 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
         {/* Navegação lateral contínua */}
         <div 
           ref={scrollContainerRef}
-          className={`w-full overflow-x-auto no-scrollbar select-none ${
-            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          className={`w-full overflow-x-auto overflow-y-hidden no-scrollbar kanban-nav-scroll kanban-drag-container ${
+            isDragging ? 'cursor-grabbing drag-container' : 'cursor-grab'
           }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -227,7 +255,6 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onScroll={handleScroll}
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4 min-h-[300px] sm:min-h-[400px] lg:min-h-[600px]" style={{ minWidth: 'max-content' }}>
             {columns.map(column => (
