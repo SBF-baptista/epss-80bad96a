@@ -19,6 +19,8 @@ const PhotoLightbox = ({ photos, currentPhotoIndex, isOpen, onClose }: PhotoLigh
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [initialPinchDistance, setInitialPinchDistance] = useState(0);
+  const [initialZoom, setInitialZoom] = useState(1);
 
   const currentPhoto = photos[currentIndex];
 
@@ -56,8 +58,27 @@ const PhotoLightbox = ({ photos, currentPhotoIndex, isOpen, onClose }: PhotoLigh
       }
     };
 
+    const handleWheel = (e: WheelEvent) => {
+      if (!isOpen) return;
+      e.preventDefault();
+      
+      const delta = e.deltaY > 0 ? -1 : 1;
+      const zoomFactor = 1.1;
+      
+      if (delta > 0) {
+        setZoom(prev => Math.min(prev * zoomFactor, 5));
+      } else {
+        setZoom(prev => Math.max(prev / zoomFactor, 0.5));
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+    };
   }, [isOpen, currentIndex]);
 
   const handlePrevious = () => {
@@ -133,6 +154,60 @@ const PhotoLightbox = ({ photos, currentPhotoIndex, isOpen, onClose }: PhotoLigh
 
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) + 
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && zoom > 1) {
+      // Single touch for dragging
+      setIsDragging(true);
+      setDragStart({ 
+        x: e.touches[0].clientX - dragPosition.x, 
+        y: e.touches[0].clientY - dragPosition.y 
+      });
+    } else if (e.touches.length === 2) {
+      // Two finger pinch for zoom
+      e.preventDefault();
+      const distance = getTouchDistance(e.touches);
+      setInitialPinchDistance(distance);
+      setInitialZoom(zoom);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isDragging && zoom > 1) {
+      // Single touch dragging
+      e.preventDefault();
+      setDragPosition({
+        x: e.touches[0].clientX - dragStart.x,
+        y: e.touches[0].clientY - dragStart.y
+      });
+    } else if (e.touches.length === 2) {
+      // Two finger pinch zoom
+      e.preventDefault();
+      const distance = getTouchDistance(e.touches);
+      if (initialPinchDistance > 0) {
+        const scale = distance / initialPinchDistance;
+        const newZoom = Math.min(Math.max(initialZoom * scale, 0.5), 5);
+        setZoom(newZoom);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      setIsDragging(false);
+      setInitialPinchDistance(0);
+    }
   };
 
   if (!currentPhoto) return null;
@@ -215,11 +290,14 @@ const PhotoLightbox = ({ photos, currentPhotoIndex, isOpen, onClose }: PhotoLigh
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             <img
               src={getPhotoUrl(currentPhoto.file_path)}
               alt={currentPhoto.file_name}
-              className={`max-w-full max-h-full object-contain transition-transform duration-200 ${
+              className={`max-w-full max-h-full object-contain transition-transform duration-200 select-none ${
                 zoom > 1 ? 'cursor-grab' : 'cursor-zoom-in'
               } ${isDragging ? 'cursor-grabbing' : ''}`}
               style={{
@@ -271,7 +349,7 @@ const PhotoLightbox = ({ photos, currentPhotoIndex, isOpen, onClose }: PhotoLigh
 
           {/* Keyboard shortcuts hint */}
           <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-muted/80 rounded px-2 py-1">
-            ESC: Fechar | ←→: Navegar | +/-: Zoom | R: Girar
+            ESC: Fechar | ←→: Navegar | Scroll/Pinça: Zoom | R: Girar | Arraste: Mover
           </div>
         </div>
       </DialogContent>
