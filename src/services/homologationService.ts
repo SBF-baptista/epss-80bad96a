@@ -36,6 +36,12 @@ export interface HomologationPhoto {
   photo_type: string | null;
 }
 
+export interface HomologationFilters {
+  brand?: string;
+  year?: string;
+  searchText?: string;
+}
+
 export interface WorkflowChainItem {
   incoming_vehicle_id: string | null;
   vehicle: string | null;
@@ -69,6 +75,42 @@ export const fetchHomologationCards = async (): Promise<HomologationCard[]> => {
   }
 
   return data || [];
+};
+
+export const filterHomologationCards = (
+  cards: HomologationCard[],
+  filters: HomologationFilters
+): HomologationCard[] => {
+  return cards.filter(card => {
+    // Brand filter
+    if (filters.brand && card.brand !== filters.brand) {
+      return false;
+    }
+    
+    // Year filter
+    if (filters.year && card.year?.toString() !== filters.year) {
+      return false;
+    }
+    
+    // Search text filter - search in brand, model, configuration, and notes
+    if (filters.searchText) {
+      const searchText = filters.searchText.toLowerCase();
+      const searchableText = [
+        card.brand,
+        card.model,
+        card.configuration,
+        card.notes,
+        card.chassis_info,
+        card.technical_observations
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      if (!searchableText.includes(searchText)) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
 };
 
 export const softDeleteHomologationCard = async (cardId: string): Promise<void> => {

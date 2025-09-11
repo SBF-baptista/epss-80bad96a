@@ -1,6 +1,12 @@
 
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchHomologationCards, fetchWorkflowChain } from "@/services/homologationService";
+import { 
+  fetchHomologationCards, 
+  fetchWorkflowChain, 
+  filterHomologationCards,
+  type HomologationFilters as HomologationFiltersType
+} from "@/services/homologationService";
 import {
   HomologationMetrics,
   CreateHomologationForm,
@@ -9,8 +15,15 @@ import {
   HomologationKanbanSection
 } from "@/components/homologation";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
+import HomologationFilters from "@/components/homologation/HomologationFilters";
 
 const Homologation = () => {
+  const [filters, setFilters] = useState<HomologationFiltersType>({
+    brand: "",
+    year: "",
+    searchText: ""
+  });
+
   const { data: cards = [], isLoading, refetch } = useQuery({
     queryKey: ['homologation-cards'],
     queryFn: fetchHomologationCards,
@@ -20,6 +33,15 @@ const Homologation = () => {
     queryKey: ['workflow-chain'],
     queryFn: fetchWorkflowChain,
   });
+
+  // Filter cards based on active filters
+  const filteredCards = useMemo(() => {
+    return filterHomologationCards(cards, filters);
+  }, [cards, filters]);
+
+  const handleFiltersChange = (newFilters: HomologationFiltersType) => {
+    setFilters(newFilters);
+  };
 
   if (isLoading) {
     return <HomologationLoadingSkeleton />;
@@ -32,14 +54,19 @@ const Homologation = () => {
           <HomologationHeader />
           
           <HomologationMetrics 
-            cards={cards} 
+            cards={filteredCards} 
             workflowData={workflowData} 
+          />
+          
+          <HomologationFilters 
+            cards={cards}
+            onFiltersChange={handleFiltersChange}
           />
           
           <CreateHomologationForm onUpdate={refetch} />
           
           <HomologationKanbanSection 
-            cards={cards} 
+            cards={filteredCards} 
             onUpdate={refetch} 
           />
         </div>
