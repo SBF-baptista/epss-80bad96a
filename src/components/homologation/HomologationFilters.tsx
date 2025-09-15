@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Filter } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, X, Filter, Truck, Car } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -16,6 +17,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { HomologationCard, type HomologationFilters } from "@/services/homologationService";
+import { useVehicleCategories } from "@/hooks/useVehicleCategories";
+import { cn } from "@/lib/utils";
 
 interface HomologationFiltersProps {
   cards: HomologationCard[];
@@ -26,17 +29,31 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
   const [filters, setFilters] = useState<HomologationFilters>({
     brand: "",
     year: "",
-    searchText: ""
+    searchText: "",
+    category: ""
   });
   
   const [brandOpen, setBrandOpen] = useState(false);
   const [yearOpen, setYearOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  
+  const { groupedBrands, getBrandCategory } = useVehicleCategories();
 
-  // Extract unique brands from cards
+  // Extract unique brands from cards, combined with standard brands
   const availableBrands = useMemo(() => {
-    const brands = [...new Set(cards.map(card => card.brand))].filter(Boolean);
-    return brands.sort();
-  }, [cards]);
+    const cardBrands = [...new Set(cards.map(card => card.brand))].filter(Boolean);
+    const allBrands = [...new Set([...Object.values(groupedBrands).flat(), ...cardBrands])];
+    
+    // Filter by category if selected
+    if (filters.category && (filters.category === "HCV" || filters.category === "LCV")) {
+      return allBrands.filter(brand => {
+        const brandCategories = getBrandCategory(brand);
+        return brandCategories.includes(filters.category as "HCV" | "LCV");
+      }).sort();
+    }
+    
+    return allBrands.sort();
+  }, [cards, groupedBrands, getBrandCategory, filters.category]);
 
   // Extract years for selected brand
   const availableYears = useMemo(() => {
@@ -69,11 +86,12 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
     setFilters({
       brand: "",
       year: "",
-      searchText: ""
+      searchText: "",
+      category: ""
     });
   };
 
-  const hasActiveFilters = filters.brand || filters.year || filters.searchText;
+  const hasActiveFilters = filters.brand || filters.year || filters.searchText || filters.category;
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border mb-4">
@@ -98,7 +116,86 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
         </div>
 
         {/* Filters Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Category Filter */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Categoria</label>
+            <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={categoryOpen}
+                  className="w-full justify-between text-left font-normal"
+                >
+                  <div className="flex items-center gap-2">
+                    {filters.category === "HCV" && (
+                      <>
+                        <Truck className="h-4 w-4 text-orange-600" />
+                        <span>Pesados (HCV)</span>
+                      </>
+                    )}
+                    {filters.category === "LCV" && (
+                      <>
+                        <Car className="h-4 w-4 text-blue-600" />
+                        <span>Leves (LCV)</span>
+                      </>
+                    )}
+                    {!filters.category && (
+                      <span className="text-muted-foreground">Todas as categorias...</span>
+                    )}
+                  </div>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0 bg-background border shadow-md z-50" align="start">
+                <Command>
+                  <CommandList>
+                    <CommandGroup>
+                      <CommandItem
+                        value=""
+                        onSelect={() => {
+                          updateFilter("category", "");
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        <span>Todas as categorias</span>
+                      </CommandItem>
+                      <CommandItem
+                        value="HCV"
+                        onSelect={() => {
+                          updateFilter("category", "HCV");
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-orange-600" />
+                          <span>Pesados (HCV)</span>
+                          <Badge variant="secondary" className="ml-auto text-xs bg-orange-100 text-orange-800">
+                            {groupedBrands.HCV.length} marcas
+                          </Badge>
+                        </div>
+                      </CommandItem>
+                      <CommandItem
+                        value="LCV"
+                        onSelect={() => {
+                          updateFilter("category", "LCV");
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Car className="h-4 w-4 text-blue-600" />
+                          <span>Leves (LCV)</span>
+                          <Badge variant="secondary" className="ml-auto text-xs bg-blue-100 text-blue-800">
+                            {groupedBrands.LCV.length} marcas
+                          </Badge>
+                        </div>
+                      </CommandItem>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
           {/* Brand Filter */}
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Marca</label>
@@ -113,24 +210,45 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
                   {filters.brand || "Selecione uma marca..."}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
+              <PopoverContent className="w-full p-0 bg-background border shadow-md z-50" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar marca..." />
                   <CommandEmpty>Nenhuma marca encontrada.</CommandEmpty>
                   <CommandList>
                     <CommandGroup>
-                      {availableBrands.map((brand) => (
-                        <CommandItem
-                          key={brand}
-                          value={brand}
-                          onSelect={() => {
-                            updateFilter("brand", brand);
-                            setBrandOpen(false);
-                          }}
-                        >
-                          {brand}
-                        </CommandItem>
-                      ))}
+                      {availableBrands.map((brand) => {
+                        const brandCategories = getBrandCategory(brand);
+                        const categoryLabel = brandCategories.length > 1 ? "BOTH" : brandCategories[0] || "OTHER";
+                        
+                        return (
+                          <CommandItem
+                            key={brand}
+                            value={brand}
+                            onSelect={() => {
+                              updateFilter("brand", brand);
+                              setBrandOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2 w-full">
+                              {categoryLabel === "HCV" && <Truck className="h-3 w-3 text-orange-600" />}
+                              {categoryLabel === "LCV" && <Car className="h-3 w-3 text-blue-600" />}
+                              {categoryLabel === "BOTH" && <span className="text-xs font-medium text-purple-600">H/L</span>}
+                              <span>{brand}</span>
+                              <Badge 
+                                variant="secondary" 
+                                className={cn(
+                                  "ml-auto text-xs",
+                                  categoryLabel === "HCV" && "bg-orange-100 text-orange-800",
+                                  categoryLabel === "LCV" && "bg-blue-100 text-blue-800",
+                                  categoryLabel === "BOTH" && "bg-purple-100 text-purple-800"
+                                )}
+                              >
+                                {categoryLabel === "BOTH" ? "H/L" : categoryLabel}
+                              </Badge>
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -153,7 +271,7 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
                   {filters.year || "Selecione um ano..."}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
+              <PopoverContent className="w-full p-0 bg-background border shadow-md z-50" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar ano..." />
                   <CommandEmpty>Nenhum ano encontrado.</CommandEmpty>
@@ -196,6 +314,27 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
         {/* Active Filters Summary */}
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2 pt-2 border-t">
+            {filters.category && (
+              <span className={cn(
+                "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium gap-1",
+                filters.category === "HCV" && "bg-orange-100 text-orange-800",
+                filters.category === "LCV" && "bg-blue-100 text-blue-800"
+              )}>
+                {filters.category === "HCV" && <Truck className="h-3 w-3" />}
+                {filters.category === "LCV" && <Car className="h-3 w-3" />}
+                Categoria: {filters.category === "HCV" ? "Pesados" : "Leves"}
+                <button
+                  onClick={() => updateFilter("category", "")}
+                  className={cn(
+                    "ml-1 rounded-full p-0.5",
+                    filters.category === "HCV" && "hover:bg-orange-200",
+                    filters.category === "LCV" && "hover:bg-blue-200"
+                  )}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
             {filters.brand && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 Marca: {filters.brand}

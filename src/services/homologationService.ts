@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getBrandCategory } from "@/types/vehicleCategories";
 
 export interface HomologationCard {
   id: string;
@@ -40,6 +41,7 @@ export interface HomologationFilters {
   brand?: string;
   year?: string;
   searchText?: string;
+  category?: "HCV" | "LCV" | "";
 }
 
 export interface WorkflowChainItem {
@@ -85,6 +87,14 @@ export const filterHomologationCards = (
     // Brand filter
     if (filters.brand && card.brand !== filters.brand) {
       return false;
+    }
+    
+    // Category filter
+    if (filters.category && (filters.category === "HCV" || filters.category === "LCV")) {
+      const brandCategories = getBrandCategory(card.brand);
+      if (!brandCategories.includes(filters.category)) {
+        return false;
+      }
     }
     
     // Year filter
