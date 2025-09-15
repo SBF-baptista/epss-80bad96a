@@ -5,6 +5,7 @@ export const photoTypes = [
   { value: 'can_wires', label: 'Fios de Conexão CAN' },
   { value: 'instalacao', label: 'Foto da Instalação' },
   { value: 'homologacao', label: 'Foto da Homologação' },
+  { value: 'plataforma_frota', label: 'Foto da plataforma (Frota)' },
   { value: 'outros', label: 'Outros' },
 ];
 
