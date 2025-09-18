@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,21 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Edit2, Package, Save, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import {
-  fetchHomologationKits,
-  createHomologationKit,
-  updateHomologationKit,
-  deleteHomologationKit
-} from "@/services/homologationKitService";
-import { fetchHomologationCards } from "@/services/homologationService";
-import type { HomologationKit, HomologationKitAccessory } from "@/types/homologationKit";
+import type { HomologationKitAccessory } from "@/types/homologationKit";
 
-interface KitManagementSectionProps {
-  homologationCardId?: string;
-}
+interface KitManagementSectionProps {}
 
 interface KitFormData {
   name: string;
@@ -29,96 +19,73 @@ interface KitFormData {
   accessories: HomologationKitAccessory[];
 }
 
-const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps) => {
-  const [selectedCardId, setSelectedCardId] = useState<string>(homologationCardId || '');
+interface ManualKit {
+  id: string;
+  name: string;
+  description: string;
+  accessories: HomologationKitAccessory[];
+}
+
+const KitManagementSection = ({}: KitManagementSectionProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingKit, setEditingKit] = useState<string | null>(null);
+  const [kits, setKits] = useState<ManualKit[]>([]);
   const [formData, setFormData] = useState<KitFormData>({
     name: '',
     description: '',
     accessories: []
   });
 
-  const queryClient = useQueryClient();
-  const currentCardId = homologationCardId || selectedCardId;
+  const createKit = () => {
+    const newKit: ManualKit = {
+      id: Date.now().toString(),
+      name: formData.name,
+      description: formData.description,
+      accessories: [...formData.accessories]
+    };
+    
+    setKits(prev => [...prev, newKit]);
+    setIsCreating(false);
+    setFormData({ name: '', description: '', accessories: [] });
+    
+    toast({
+      title: "Kit criado com sucesso",
+      description: "O kit foi adicionado.",
+      variant: "default"
+    });
+  };
 
-  // Query for homologation cards (only when no specific cardId is provided)
-  const { data: cards = [] } = useQuery({
-    queryKey: ['homologation-cards'],
-    queryFn: fetchHomologationCards,
-    enabled: !homologationCardId
-  });
+  const updateKit = () => {
+    setKits(prev => prev.map(kit => 
+      kit.id === editingKit 
+        ? { 
+            ...kit, 
+            name: formData.name,
+            description: formData.description,
+            accessories: [...formData.accessories]
+          }
+        : kit
+    ));
+    
+    setEditingKit(null);
+    setFormData({ name: '', description: '', accessories: [] });
+    
+    toast({
+      title: "Kit atualizado",
+      description: "As alterações foram salvas.",
+      variant: "default"
+    });
+  };
 
-  const { data: kits = [], isLoading } = useQuery({
-    queryKey: ['homologation-kits', currentCardId],
-    queryFn: () => fetchHomologationKits(currentCardId),
-    enabled: !!currentCardId
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createHomologationKit,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homologation-kits', currentCardId] });
-      setIsCreating(false);
-      setFormData({ name: '', description: '', accessories: [] });
-      toast({
-        title: "Kit criado com sucesso",
-        description: "O kit foi adicionado à homologação.",
-        variant: "default"
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro ao criar kit",
-        description: "Não foi possível criar o kit. Tente novamente.",
-        variant: "destructive"
-      });
-      console.error('Create kit error:', error);
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ kitId, data }: { kitId: string; data: any }) =>
-      updateHomologationKit(kitId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homologation-kits', currentCardId] });
-      setEditingKit(null);
-      setFormData({ name: '', description: '', accessories: [] });
-      toast({
-        title: "Kit atualizado",
-        description: "As alterações foram salvas.",
-        variant: "default"
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro ao atualizar kit",
-        description: "Não foi possível salvar as alterações.",
-        variant: "destructive"
-      });
-      console.error('Update kit error:', error);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteHomologationKit,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homologation-kits', currentCardId] });
-      toast({
-        title: "Kit removido",
-        description: "O kit foi removido da homologação.",
-        variant: "default"
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro ao remover kit",
-        description: "Não foi possível remover o kit.",
-        variant: "destructive"
-      });
-      console.error('Delete kit error:', error);
-    }
-  });
+  const deleteKit = (kitId: string) => {
+    setKits(prev => prev.filter(kit => kit.id !== kitId));
+    
+    toast({
+      title: "Kit removido",
+      description: "O kit foi removido.",
+      variant: "default"
+    });
+  };
 
   const addAccessory = () => {
     setFormData(prev => ({
@@ -143,8 +110,8 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
     }));
   };
 
-  const startEdit = (kit: HomologationKit) => {
-    setEditingKit(kit.id!);
+  const startEdit = (kit: ManualKit) => {
+    setEditingKit(kit.id);
     setFormData({
       name: kit.name,
       description: kit.description || '',
@@ -190,39 +157,12 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
     }
 
     if (editingKit) {
-      updateMutation.mutate({
-        kitId: editingKit,
-        data: {
-          name: formData.name,
-          description: formData.description,
-          accessories: formData.accessories
-        }
-      });
+      updateKit();
     } else {
-      createMutation.mutate({
-        homologation_card_id: currentCardId,
-        name: formData.name,
-        description: formData.description,
-        accessories: formData.accessories
-      });
+      createKit();
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Gerenciamento de Kits
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">Carregando kits...</div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -233,39 +173,8 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Card Selector (only show when no specific cardId is provided) */}
-        {!homologationCardId && (
-          <div className="space-y-2">
-            <Label htmlFor="card-selector">Selecione a Homologação</Label>
-            <Select value={selectedCardId} onValueChange={setSelectedCardId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Escolha um card de homologação" />
-              </SelectTrigger>
-              <SelectContent>
-                {cards.map((card) => (
-                  <SelectItem key={card.id} value={card.id}>
-                    {card.brand} {card.model} ({card.year})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {!currentCardId && (
-              <p className="text-sm text-muted-foreground">
-                Selecione uma homologação para gerenciar seus kits.
-              </p>
-            )}
-          </div>
-        )}
-
-        {!currentCardId ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Selecione uma homologação para começar</p>
-          </div>
-        ) : (
-          <>
-            {/* Existing Kits */}
-            {kits.map((kit) => (
+        {/* Existing Kits */}
+        {kits.map((kit) => (
           <div key={kit.id} className="border rounded-lg p-4 space-y-3">
             {editingKit === kit.id ? (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -338,15 +247,14 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
                   </Button>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button
-                    type="submit"
-                    disabled={updateMutation.isPending}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
-                  </Button>
+                 <div className="flex flex-col sm:flex-row gap-2">
+                   <Button
+                     type="submit"
+                     className="flex-1 sm:flex-none"
+                   >
+                     <Save className="h-4 w-4 mr-2" />
+                     Salvar
+                   </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -377,16 +285,15 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
                       <Edit2 className="h-4 w-4 mr-2" />
                       Editar
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteMutation.mutate(kit.id!)}
-                      disabled={deleteMutation.isPending}
-                      className="w-full sm:w-auto"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remover
-                    </Button>
+                     <Button
+                       variant="destructive"
+                       size="sm"
+                       onClick={() => deleteKit(kit.id)}
+                       className="w-full sm:w-auto"
+                     >
+                       <Trash2 className="h-4 w-4 mr-2" />
+                       Remover
+                     </Button>
                   </div>
                 </div>
 
@@ -494,15 +401,14 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
                 </Button>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="flex-1 sm:flex-none"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {createMutation.isPending ? 'Criando...' : 'Criar Kit'}
-                </Button>
+               <div className="flex flex-col sm:flex-row gap-2">
+                 <Button
+                   type="submit"
+                   className="flex-1 sm:flex-none"
+                 >
+                   <Save className="h-4 w-4 mr-2" />
+                   Criar Kit
+                 </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -517,14 +423,12 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
           </div>
         )}
 
-            {kits.length === 0 && !isCreating && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum kit configurado para esta homologação.</p>
-                <p className="text-sm">Clique em "Adicionar Novo Kit" para começar.</p>
-              </div>
-            )}
-          </>
+        {kits.length === 0 && !isCreating && (
+          <div className="text-center py-8 text-muted-foreground">
+            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Nenhum kit configurado.</p>
+            <p className="text-sm">Clique em "Adicionar Novo Kit" para começar.</p>
+          </div>
         )}
       </CardContent>
     </Card>

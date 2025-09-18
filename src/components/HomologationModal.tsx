@@ -294,9 +294,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
 
           <Separator />
 
-          <KitManagementSection 
-            homologationCardId={card.id}
-          />
+          <KitManagementSection />
 
           <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-3 pt-4 border-t">
             <Button variant="outline" onClick={onClose} className="w-full md:w-auto">
