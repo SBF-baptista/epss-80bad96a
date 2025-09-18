@@ -263,6 +263,83 @@ export type Database = {
           },
         ]
       }
+      homologation_kit_accessories: {
+        Row: {
+          accessory_name: string
+          created_at: string
+          id: string
+          kit_id: string
+          notes: string | null
+          quantity: number
+        }
+        Insert: {
+          accessory_name: string
+          created_at?: string
+          id?: string
+          kit_id: string
+          notes?: string | null
+          quantity?: number
+        }
+        Update: {
+          accessory_name?: string
+          created_at?: string
+          id?: string
+          kit_id?: string
+          notes?: string | null
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_kit_accessories_kit"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "homologation_kits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      homologation_kits: {
+        Row: {
+          created_at: string
+          description: string | null
+          homologation_card_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          homologation_card_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          homologation_card_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_homologation_kits_card"
+            columns: ["homologation_card_id"]
+            isOneToOne: false
+            referencedRelation: "homologation_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_homologation_kits_card"
+            columns: ["homologation_card_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["homologation_id"]
+          },
+        ]
+      }
       homologation_photos: {
         Row: {
           content_type: string | null

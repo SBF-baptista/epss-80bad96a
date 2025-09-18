@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import HomologationPhotos from "./HomologationPhotos";
 import TestSchedulingModal from "./TestSchedulingModal";
 import TestExecutionModal from "./TestExecutionModal";
+import KitManagementSection from "./homologation/KitManagementSection";
 
 interface HomologationModalProps {
   card: HomologationCard | null;
@@ -289,6 +290,12 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           <HomologationPhotos 
             cardId={card.id} 
             onUpdate={onUpdate}
+          />
+
+          <Separator />
+
+          <KitManagementSection 
+            homologationCardId={card.id}
           />
 
           <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-3 pt-4 border-t">

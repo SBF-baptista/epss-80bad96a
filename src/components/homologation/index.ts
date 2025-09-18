@@ -3,3 +3,4 @@ export { default as CreateHomologationForm } from './CreateHomologationForm';
 export { default as HomologationLoadingSkeleton } from './HomologationLoadingSkeleton';
 export { default as HomologationHeader } from './HomologationHeader';
 export { default as HomologationKanbanSection } from './HomologationKanbanSection';
+export { default as KitManagementSection } from './KitManagementSection';
