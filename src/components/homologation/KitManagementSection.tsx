@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Edit2, Package, Save, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -15,10 +16,11 @@ import {
   updateHomologationKit,
   deleteHomologationKit
 } from "@/services/homologationKitService";
+import { fetchHomologationCards } from "@/services/homologationService";
 import type { HomologationKit, HomologationKitAccessory } from "@/types/homologationKit";
 
 interface KitManagementSectionProps {
-  homologationCardId: string;
+  homologationCardId?: string;
 }
 
 interface KitFormData {
@@ -28,6 +30,7 @@ interface KitFormData {
 }
 
 const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps) => {
+  const [selectedCardId, setSelectedCardId] = useState<string>(homologationCardId || '');
   const [isCreating, setIsCreating] = useState(false);
   const [editingKit, setEditingKit] = useState<string | null>(null);
   const [formData, setFormData] = useState<KitFormData>({
@@ -37,17 +40,25 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
   });
 
   const queryClient = useQueryClient();
+  const currentCardId = homologationCardId || selectedCardId;
+
+  // Query for homologation cards (only when no specific cardId is provided)
+  const { data: cards = [] } = useQuery({
+    queryKey: ['homologation-cards'],
+    queryFn: fetchHomologationCards,
+    enabled: !homologationCardId
+  });
 
   const { data: kits = [], isLoading } = useQuery({
-    queryKey: ['homologation-kits', homologationCardId],
-    queryFn: () => fetchHomologationKits(homologationCardId),
-    enabled: !!homologationCardId
+    queryKey: ['homologation-kits', currentCardId],
+    queryFn: () => fetchHomologationKits(currentCardId),
+    enabled: !!currentCardId
   });
 
   const createMutation = useMutation({
     mutationFn: createHomologationKit,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homologation-kits', homologationCardId] });
+      queryClient.invalidateQueries({ queryKey: ['homologation-kits', currentCardId] });
       setIsCreating(false);
       setFormData({ name: '', description: '', accessories: [] });
       toast({
@@ -70,7 +81,7 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
     mutationFn: ({ kitId, data }: { kitId: string; data: any }) =>
       updateHomologationKit(kitId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homologation-kits', homologationCardId] });
+      queryClient.invalidateQueries({ queryKey: ['homologation-kits', currentCardId] });
       setEditingKit(null);
       setFormData({ name: '', description: '', accessories: [] });
       toast({
@@ -92,7 +103,7 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
   const deleteMutation = useMutation({
     mutationFn: deleteHomologationKit,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homologation-kits', homologationCardId] });
+      queryClient.invalidateQueries({ queryKey: ['homologation-kits', currentCardId] });
       toast({
         title: "Kit removido",
         description: "O kit foi removido da homologação.",
@@ -189,7 +200,7 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
       });
     } else {
       createMutation.mutate({
-        homologation_card_id: homologationCardId,
+        homologation_card_id: currentCardId,
         name: formData.name,
         description: formData.description,
         accessories: formData.accessories
@@ -222,8 +233,39 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Existing Kits */}
-        {kits.map((kit) => (
+        {/* Card Selector (only show when no specific cardId is provided) */}
+        {!homologationCardId && (
+          <div className="space-y-2">
+            <Label htmlFor="card-selector">Selecione a Homologação</Label>
+            <Select value={selectedCardId} onValueChange={setSelectedCardId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Escolha um card de homologação" />
+              </SelectTrigger>
+              <SelectContent>
+                {cards.map((card) => (
+                  <SelectItem key={card.id} value={card.id}>
+                    {card.brand} {card.model} ({card.year})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!currentCardId && (
+              <p className="text-sm text-muted-foreground">
+                Selecione uma homologação para gerenciar seus kits.
+              </p>
+            )}
+          </div>
+        )}
+
+        {!currentCardId ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Selecione uma homologação para começar</p>
+          </div>
+        ) : (
+          <>
+            {/* Existing Kits */}
+            {kits.map((kit) => (
           <div key={kit.id} className="border rounded-lg p-4 space-y-3">
             {editingKit === kit.id ? (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -475,12 +517,14 @@ const KitManagementSection = ({ homologationCardId }: KitManagementSectionProps)
           </div>
         )}
 
-        {kits.length === 0 && !isCreating && (
-          <div className="text-center py-8 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhum kit configurado para esta homologação.</p>
-            <p className="text-sm">Clique em "Adicionar Novo Kit" para começar.</p>
-          </div>
+            {kits.length === 0 && !isCreating && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum kit configurado para esta homologação.</p>
+                <p className="text-sm">Clique em "Adicionar Novo Kit" para começar.</p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
