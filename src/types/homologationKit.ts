@@ -1,8 +1,16 @@
-export interface HomologationKitAccessory {
+export type ItemType = 'equipment' | 'accessory' | 'supply';
+
+export interface HomologationKitItem {
   id?: string;
-  accessory_name: string;
+  item_name: string;
+  item_type: ItemType;
   quantity: number;
+  description?: string;
   notes?: string;
+}
+
+export interface HomologationKitAccessory extends HomologationKitItem {
+  item_type: 'accessory';
 }
 
 export interface HomologationKit {
@@ -10,7 +18,9 @@ export interface HomologationKit {
   homologation_card_id: string;
   name: string;
   description?: string;
-  accessories: HomologationKitAccessory[];
+  equipment: HomologationKitItem[];
+  accessories: HomologationKitItem[];
+  supplies: HomologationKitItem[];
   created_at?: string;
   updated_at?: string;
 }
@@ -19,11 +29,15 @@ export interface CreateKitRequest {
   homologation_card_id: string;
   name: string;
   description?: string;
-  accessories: Omit<HomologationKitAccessory, 'id'>[];
+  equipment: Omit<HomologationKitItem, 'id'>[];
+  accessories: Omit<HomologationKitItem, 'id'>[];
+  supplies: Omit<HomologationKitItem, 'id'>[];
 }
 
 export interface UpdateKitRequest {
   name?: string;
   description?: string;
-  accessories?: HomologationKitAccessory[];
+  equipment?: HomologationKitItem[];
+  accessories?: HomologationKitItem[];
+  supplies?: HomologationKitItem[];
 }

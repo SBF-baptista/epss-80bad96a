@@ -265,25 +265,31 @@ export type Database = {
       }
       homologation_kit_accessories: {
         Row: {
-          accessory_name: string
           created_at: string
+          description: string | null
           id: string
+          item_name: string
+          item_type: string
           kit_id: string
           notes: string | null
           quantity: number
         }
         Insert: {
-          accessory_name: string
           created_at?: string
+          description?: string | null
           id?: string
+          item_name: string
+          item_type?: string
           kit_id: string
           notes?: string | null
           quantity?: number
         }
         Update: {
-          accessory_name?: string
           created_at?: string
+          description?: string | null
           id?: string
+          item_name?: string
+          item_type?: string
           kit_id?: string
           notes?: string | null
           quantity?: number

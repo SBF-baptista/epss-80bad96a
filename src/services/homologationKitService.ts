@@ -1,177 +1,245 @@
-import { supabase } from "@/integrations/supabase/client";
-import type { HomologationKit, CreateKitRequest, UpdateKitRequest, HomologationKitAccessory } from "@/types/homologationKit";
+import { supabase } from '@/integrations/supabase/client';
+import { HomologationKit, CreateKitRequest, UpdateKitRequest, HomologationKitItem, ItemType } from '@/types/homologationKit';
 
+// Fetch all homologation kits for a specific card
 export async function fetchHomologationKits(cardId: string): Promise<HomologationKit[]> {
-  const { data: kits, error: kitsError } = await supabase
-    .from('homologation_kits')
-    .select('*')
-    .eq('homologation_card_id', cardId)
-    .order('created_at', { ascending: true });
+  try {
+    const { data: kits, error: kitsError } = await supabase
+      .from('homologation_kits')
+      .select('*')
+      .eq('homologation_card_id', cardId)
+      .order('created_at', { ascending: false });
 
-  if (kitsError) {
-    console.error('Error fetching kits:', kitsError);
-    throw kitsError;
-  }
-
-  // Fetch accessories for each kit
-  const kitsWithAccessories = await Promise.all(
-    (kits || []).map(async (kit) => {
-      const { data: accessories, error: accessoriesError } = await supabase
-        .from('homologation_kit_accessories')
-        .select('*')
-        .eq('kit_id', kit.id)
-        .order('created_at', { ascending: true });
-
-      if (accessoriesError) {
-        console.error('Error fetching accessories:', accessoriesError);
-        throw accessoriesError;
-      }
-
-      return {
-        ...kit,
-        accessories: accessories || []
-      };
-    })
-  );
-
-  return kitsWithAccessories;
-}
-
-export async function createHomologationKit(kitData: CreateKitRequest): Promise<HomologationKit> {
-  // Create the kit first
-  const { data: kit, error: kitError } = await supabase
-    .from('homologation_kits')
-    .insert({
-      homologation_card_id: kitData.homologation_card_id,
-      name: kitData.name,
-      description: kitData.description
-    })
-    .select()
-    .single();
-
-  if (kitError) {
-    console.error('Error creating kit:', kitError);
-    throw kitError;
-  }
-
-  // Create accessories
-  if (kitData.accessories.length > 0) {
-    const accessoriesData = kitData.accessories.map(accessory => ({
-      kit_id: kit.id,
-      accessory_name: accessory.accessory_name,
-      quantity: accessory.quantity,
-      notes: accessory.notes
-    }));
-
-    const { data: accessories, error: accessoriesError } = await supabase
-      .from('homologation_kit_accessories')
-      .insert(accessoriesData)
-      .select();
-
-    if (accessoriesError) {
-      console.error('Error creating accessories:', accessoriesError);
-      throw accessoriesError;
+    if (kitsError) {
+      console.error('Error fetching homologation kits:', kitsError);
+      throw kitsError;
     }
 
-    return {
-      ...kit,
-      accessories: accessories || []
-    };
-  }
+    // Fetch items for all kits
+    const kitIds = kits?.map(kit => kit.id) || [];
+    
+    if (kitIds.length === 0) {
+      return [];
+    }
 
-  return {
-    ...kit,
-    accessories: []
-  };
+    const { data: items, error: itemsError } = await supabase
+      .from('homologation_kit_accessories')
+      .select('*')
+      .in('kit_id', kitIds)
+      .order('created_at', { ascending: true });
+
+    if (itemsError) {
+      console.error('Error fetching kit items:', itemsError);
+      throw itemsError;
+    }
+
+    // Group items by kit and type
+    const kitsWithItems: HomologationKit[] = kits?.map(kit => {
+      const kitItems = items?.filter(item => item.kit_id === kit.id) || [];
+      
+      return {
+        ...kit,
+        equipment: kitItems.filter(item => item.item_type === 'equipment').map(item => ({
+          id: item.id,
+          item_name: item.item_name,
+          item_type: item.item_type as ItemType,
+          quantity: item.quantity,
+          description: item.description || undefined,
+          notes: item.notes || undefined,
+        })),
+        accessories: kitItems.filter(item => item.item_type === 'accessory').map(item => ({
+          id: item.id,
+          item_name: item.item_name,
+          item_type: item.item_type as ItemType,
+          quantity: item.quantity,
+          description: item.description || undefined,
+          notes: item.notes || undefined,
+        })),
+        supplies: kitItems.filter(item => item.item_type === 'supply').map(item => ({
+          id: item.id,
+          item_name: item.item_name,
+          item_type: item.item_type as ItemType,
+          quantity: item.quantity,
+          description: item.description || undefined,
+          notes: item.notes || undefined,
+        })),
+      };
+    }) || [];
+
+    return kitsWithItems;
+  } catch (error) {
+    console.error('Error in fetchHomologationKits:', error);
+    throw error;
+  }
 }
 
+// Create a new homologation kit with its items
+export async function createHomologationKit(kitData: CreateKitRequest): Promise<HomologationKit> {
+  try {
+    // Create the kit first
+    const { data: kit, error: kitError } = await supabase
+      .from('homologation_kits')
+      .insert({
+        homologation_card_id: kitData.homologation_card_id,
+        name: kitData.name,
+        description: kitData.description,
+      })
+      .select()
+      .single();
+
+    if (kitError) {
+      console.error('Error creating kit:', kitError);
+      throw kitError;
+    }
+
+    // Create all items (equipment, accessories, supplies)
+    const allItems = [
+      ...kitData.equipment.map(item => ({
+        kit_id: kit.id,
+        item_name: item.item_name,
+        item_type: 'equipment' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
+      ...kitData.accessories.map(item => ({
+        kit_id: kit.id,
+        item_name: item.item_name,
+        item_type: 'accessory' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
+      ...kitData.supplies.map(item => ({
+        kit_id: kit.id,
+        item_name: item.item_name,
+        item_type: 'supply' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
+    ];
+
+    if (allItems.length > 0) {
+      const { error: itemsError } = await supabase
+        .from('homologation_kit_accessories')
+        .insert(allItems);
+
+      if (itemsError) {
+        console.error('Error creating kit items:', itemsError);
+        throw itemsError;
+      }
+    }
+
+    // Return the complete kit with items
+    return {
+      ...kit,
+      equipment: kitData.equipment,
+      accessories: kitData.accessories,
+      supplies: kitData.supplies,
+    };
+  } catch (error) {
+    console.error('Error in createHomologationKit:', error);
+    throw error;
+  }
+}
+
+// Update a homologation kit
 export async function updateHomologationKit(kitId: string, updateData: UpdateKitRequest): Promise<HomologationKit> {
-  // Update kit basic info if provided
-  if (updateData.name || updateData.description !== undefined) {
-    const { error: kitError } = await supabase
+  try {
+    // Update kit basic info
+    const { data: kit, error: kitError } = await supabase
       .from('homologation_kits')
       .update({
         name: updateData.name,
-        description: updateData.description
+        description: updateData.description,
       })
-      .eq('id', kitId);
+      .eq('id', kitId)
+      .select()
+      .single();
 
     if (kitError) {
       console.error('Error updating kit:', kitError);
       throw kitError;
     }
-  }
 
-  // Update accessories if provided
-  if (updateData.accessories) {
-    // Delete existing accessories
+    // Delete existing items and create new ones
     const { error: deleteError } = await supabase
       .from('homologation_kit_accessories')
       .delete()
       .eq('kit_id', kitId);
 
     if (deleteError) {
-      console.error('Error deleting old accessories:', deleteError);
+      console.error('Error deleting old kit items:', deleteError);
       throw deleteError;
     }
 
-    // Insert new accessories
-    if (updateData.accessories.length > 0) {
-      const accessoriesData = updateData.accessories.map(accessory => ({
+    // Create new items if provided
+    const allItems = [
+      ...(updateData.equipment || []).map(item => ({
         kit_id: kitId,
-        accessory_name: accessory.accessory_name,
-        quantity: accessory.quantity,
-        notes: accessory.notes
-      }));
+        item_name: item.item_name,
+        item_type: 'equipment' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
+      ...(updateData.accessories || []).map(item => ({
+        kit_id: kitId,
+        item_name: item.item_name,
+        item_type: 'accessory' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
+      ...(updateData.supplies || []).map(item => ({
+        kit_id: kitId,
+        item_name: item.item_name,
+        item_type: 'supply' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
+    ];
 
-      const { error: insertError } = await supabase
+    if (allItems.length > 0) {
+      const { error: itemsError } = await supabase
         .from('homologation_kit_accessories')
-        .insert(accessoriesData);
+        .insert(allItems);
 
-      if (insertError) {
-        console.error('Error inserting new accessories:', insertError);
-        throw insertError;
+      if (itemsError) {
+        console.error('Error creating updated kit items:', itemsError);
+        throw itemsError;
       }
     }
+
+    // Return the updated kit
+    return {
+      ...kit,
+      equipment: updateData.equipment || [],
+      accessories: updateData.accessories || [],
+      supplies: updateData.supplies || [],
+    };
+  } catch (error) {
+    console.error('Error in updateHomologationKit:', error);
+    throw error;
   }
-
-  // Fetch and return updated kit
-  const { data: kit, error: fetchError } = await supabase
-    .from('homologation_kits')
-    .select('*')
-    .eq('id', kitId)
-    .single();
-
-  if (fetchError) {
-    console.error('Error fetching updated kit:', fetchError);
-    throw fetchError;
-  }
-
-  const { data: accessories, error: accessoriesError } = await supabase
-    .from('homologation_kit_accessories')
-    .select('*')
-    .eq('kit_id', kitId)
-    .order('created_at', { ascending: true });
-
-  if (accessoriesError) {
-    console.error('Error fetching updated accessories:', accessoriesError);
-    throw accessoriesError;
-  }
-
-  return {
-    ...kit,
-    accessories: accessories || []
-  };
 }
 
+// Delete a homologation kit
 export async function deleteHomologationKit(kitId: string): Promise<void> {
-  const { error } = await supabase
-    .from('homologation_kits')
-    .delete()
-    .eq('id', kitId);
+  try {
+    const { error } = await supabase
+      .from('homologation_kits')
+      .delete()
+      .eq('id', kitId);
 
-  if (error) {
-    console.error('Error deleting kit:', error);
+    if (error) {
+      console.error('Error deleting kit:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in deleteHomologationKit:', error);
     throw error;
   }
 }
