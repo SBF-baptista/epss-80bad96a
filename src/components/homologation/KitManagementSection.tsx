@@ -360,36 +360,73 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1">
-                        <Wrench className="h-3 w-3" />
-                        <span className="text-xs font-medium">Equipamentos</span>
+                  <div className="space-y-4 mt-3">
+                    {/* Equipment Section */}
+                    {kit.equipment.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                          <Wrench className="h-3 w-3" />
+                          <span className="text-xs font-medium">Equipamentos ({kit.equipment.length})</span>
+                        </div>
+                        <div className="pl-4 space-y-1">
+                          {kit.equipment.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
+                              <span>{item.item_name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {item.quantity}x
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {kit.equipment.length} item(s)
-                      </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1">
-                        <Box className="h-3 w-3" />
-                        <span className="text-xs font-medium">Acessórios</span>
+                    {/* Accessories Section */}
+                    {kit.accessories.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                          <Box className="h-3 w-3" />
+                          <span className="text-xs font-medium">Acessórios ({kit.accessories.length})</span>
+                        </div>
+                        <div className="pl-4 space-y-1">
+                          {kit.accessories.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
+                              <span>{item.item_name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {item.quantity}x
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {kit.accessories.length} item(s)
-                      </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1">
-                        <Package className="h-3 w-3" />
-                        <span className="text-xs font-medium">Insumos</span>
+                    {/* Supplies Section */}
+                    {kit.supplies.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          <span className="text-xs font-medium">Insumos ({kit.supplies.length})</span>
+                        </div>
+                        <div className="pl-4 space-y-1">
+                          {kit.supplies.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
+                              <span>{item.item_name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {item.quantity}x
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {kit.supplies.length} item(s)
+                    )}
+
+                    {/* Empty state */}
+                    {kit.equipment.length === 0 && kit.accessories.length === 0 && kit.supplies.length === 0 && (
+                      <div className="text-xs text-muted-foreground italic">
+                        Nenhum item cadastrado neste kit
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               ))}
