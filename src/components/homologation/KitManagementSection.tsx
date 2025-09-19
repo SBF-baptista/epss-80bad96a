@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,24 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, Edit, Package, Wrench, Box } from 'lucide-react';
+import { Plus, Trash2, Edit, Package, Wrench, Box, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { HomologationKit, HomologationKitItem, ItemType } from '@/types/homologationKit';
+import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, UpdateKitRequest } from '@/types/homologationKit';
+import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
 
 interface KitManagementSectionProps {
   homologationCardId?: string;
 }
 
 interface KitFormData {
-  name: string;
-  description: string;
-  equipment: HomologationKitItem[];
-  accessories: HomologationKitItem[];
-  supplies: HomologationKitItem[];
-}
-
-interface ManualKit {
-  id: string;
   name: string;
   description: string;
   equipment: HomologationKitItem[];
@@ -40,68 +32,133 @@ const initialFormData: KitFormData = {
   supplies: [],
 };
 
-const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
-  const [kits, setKits] = useState<ManualKit[]>([]);
+const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologationCardId }) => {
+  const [kits, setKits] = useState<HomologationKit[]>([]);
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
   const [isCreating, setIsCreating] = useState(false);
   const [editingKitId, setEditingKitId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load kits on component mount
+  useEffect(() => {
+    if (homologationCardId) {
+      loadKits();
+    }
+  }, [homologationCardId]);
+
+  const loadKits = async () => {
+    if (!homologationCardId) return;
+    
+    try {
+      setIsLoading(true);
+      const fetchedKits = await fetchHomologationKits(homologationCardId);
+      setKits(fetchedKits);
+    } catch (error) {
+      console.error('Error loading kits:', error);
+      toast({
+        title: "Erro ao carregar kits",
+        description: "Não foi possível carregar os kits desta homologação.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Kit operations
-  const createKit = () => {
-    if (!formData.name.trim()) return;
+  const createKit = async () => {
+    if (!formData.name.trim() || !homologationCardId) return;
 
-    const newKit: ManualKit = {
-      id: Date.now().toString(),
-      name: formData.name,
-      description: formData.description,
-      equipment: [...formData.equipment],
-      accessories: [...formData.accessories],
-      supplies: [...formData.supplies],
-    };
+    try {
+      setIsSaving(true);
+      const kitData: CreateKitRequest = {
+        homologation_card_id: homologationCardId,
+        name: formData.name,
+        description: formData.description,
+        equipment: formData.equipment,
+        accessories: formData.accessories,
+        supplies: formData.supplies,
+      };
 
-    setKits(prev => [newKit, ...prev]);
-    setFormData(initialFormData);
-    setIsCreating(false);
+      const newKit = await createHomologationKit(kitData);
+      setKits(prev => [newKit, ...prev]);
+      setFormData(initialFormData);
+      setIsCreating(false);
 
-    toast({
-      title: "Kit criado com sucesso",
-      description: "O kit foi adicionado à homologação.",
-    });
+      toast({
+        title: "Kit criado com sucesso",
+        description: "O kit foi adicionado à homologação.",
+      });
+    } catch (error) {
+      console.error('Error creating kit:', error);
+      toast({
+        title: "Erro ao criar kit",
+        description: "Não foi possível criar o kit. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const updateKit = () => {
+  const updateKit = async () => {
     if (!editingKitId || !formData.name.trim()) return;
 
-    setKits(prev =>
-      prev.map(kit =>
-        kit.id === editingKitId
-          ? {
-              ...kit,
-              name: formData.name,
-              description: formData.description,
-              equipment: [...formData.equipment],
-              accessories: [...formData.accessories],
-              supplies: [...formData.supplies],
-            }
-          : kit
-      )
-    );
+    try {
+      setIsSaving(true);
+      const updateData: UpdateKitRequest = {
+        name: formData.name,
+        description: formData.description,
+        equipment: formData.equipment,
+        accessories: formData.accessories,
+        supplies: formData.supplies,
+      };
 
-    setFormData(initialFormData);
-    setEditingKitId(null);
+      const updatedKit = await updateHomologationKit(editingKitId, updateData);
+      
+      setKits(prev =>
+        prev.map(kit =>
+          kit.id === editingKitId ? updatedKit : kit
+        )
+      );
 
-    toast({
-      title: "Kit atualizado",
-      description: "As alterações foram salvas com sucesso.",
-    });
+      setFormData(initialFormData);
+      setEditingKitId(null);
+      setIsCreating(false);
+
+      toast({
+        title: "Kit atualizado",
+        description: "As alterações foram salvas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error updating kit:', error);
+      toast({
+        title: "Erro ao atualizar kit",
+        description: "Não foi possível atualizar o kit. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const deleteKit = (kitId: string) => {
-    setKits(prev => prev.filter(kit => kit.id !== kitId));
-    toast({
-      title: "Kit removido",
-      description: "O kit foi removido da homologação.",
-    });
+  const deleteKit = async (kitId: string) => {
+    try {
+      await deleteHomologationKit(kitId);
+      setKits(prev => prev.filter(kit => kit.id !== kitId));
+      toast({
+        title: "Kit removido",
+        description: "O kit foi removido da homologação.",
+      });
+    } catch (error) {
+      console.error('Error deleting kit:', error);
+      toast({
+        title: "Erro ao remover kit",
+        description: "Não foi possível remover o kit. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Item operations for each type
@@ -144,15 +201,15 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
   };
 
   // Form operations
-  const startEdit = (kit: ManualKit) => {
+  const startEdit = (kit: HomologationKit) => {
     setFormData({
       name: kit.name,
-      description: kit.description,
+      description: kit.description || '',
       equipment: [...kit.equipment],
       accessories: [...kit.accessories],
       supplies: [...kit.supplies],
     });
-    setEditingKitId(kit.id);
+    setEditingKitId(kit.id!);
     setIsCreating(true);
   };
 
@@ -162,7 +219,7 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
     setEditingKitId(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name.trim()) {
@@ -198,9 +255,9 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
     }
 
     if (editingKitId) {
-      updateKit();
+      await updateKit();
     } else {
-      createKit();
+      await createKit();
     }
   };
 
@@ -327,11 +384,32 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Existing Kits */}
-        {kits.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Kits Cadastrados</h4>
-            <div className="space-y-3">
+        {/* Show message when no homologation card ID is provided */}
+        {!homologationCardId && (
+          <div className="text-center py-8">
+            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">
+              Selecione uma homologação para gerenciar seus kits
+            </p>
+          </div>
+        )}
+
+        {/* Rest of the component only renders when homologationCardId is provided */}
+        {homologationCardId && (
+          <>
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Carregando kits...</span>
+              </div>
+            )}
+
+            {/* Existing Kits */}
+            {!isLoading && kits.length > 0 && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Kits Cadastrados</h4>
+                <div className="space-y-3">
               {kits.map((kit) => (
                 <div key={kit.id} className="p-4 border rounded-lg">
                   <div className="flex items-start justify-between mb-2">
@@ -434,7 +512,8 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
           </div>
         )}
 
-        {kits.length === 0 && !isCreating && (
+        {/* Empty State */}
+        {!isLoading && kits.length === 0 && !isCreating && (
           <div className="text-center py-8">
             <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">Nenhum kit cadastrado</p>
@@ -445,7 +524,8 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
           </div>
         )}
 
-        {kits.length > 0 && !isCreating && (
+        {/* Add New Kit Button */}
+        {!isLoading && kits.length > 0 && !isCreating && (
           <Button onClick={() => setIsCreating(true)} className="w-full">
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Novo Kit
@@ -495,16 +575,28 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = () => {
                 </ScrollArea>
 
                 <div className="flex gap-2">
-                  <Button type="submit" className="flex-1">
+                  <Button 
+                    type="submit" 
+                    className="flex-1"
+                    disabled={isSaving}
+                  >
+                    {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {editingKitId ? 'Salvar Alterações' : 'Criar Kit'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={cancelEdit}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={cancelEdit}
+                     disabled={isSaving}
+                   >
+                     Cancelar
+                   </Button>
+                 </div>
+               </form>
+             </CardContent>
+           </Card>
+         )}
+          </>
         )}
       </CardContent>
     </Card>
