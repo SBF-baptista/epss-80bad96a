@@ -455,7 +455,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5" />
-          {homologationCardId ? 'Kits da Homologação' : 'Biblioteca de Kits'}
+          Gerenciamento de Kits
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
