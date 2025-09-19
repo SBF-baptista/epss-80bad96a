@@ -7,7 +7,8 @@ import {
   CheckSquare,
   ShoppingCart,
   Users,
-  LogOut
+  LogOut,
+  Package
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,6 +31,13 @@ const navigationItems = [
     label: "Homologação", 
     icon: CheckSquare,
     description: "Processo de homologação de veículos",
+    roles: ["admin", "installer"]
+  },
+  { 
+    to: "/kits", 
+    label: "Gerenciar Kits", 
+    icon: Package,
+    description: "Criar e gerenciar kits de equipamentos",
     roles: ["admin", "installer"]
   },
   { 

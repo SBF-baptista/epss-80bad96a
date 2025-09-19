@@ -1,14 +1,19 @@
 import { supabase } from '@/integrations/supabase/client';
 import { HomologationKit, CreateKitRequest, UpdateKitRequest, HomologationKitItem, ItemType } from '@/types/homologationKit';
 
-// Fetch all homologation kits for a specific card
-export async function fetchHomologationKits(cardId: string): Promise<HomologationKit[]> {
+// Fetch all homologation kits (optionally filtered by card)
+export async function fetchHomologationKits(cardId?: string): Promise<HomologationKit[]> {
   try {
-    const { data: kits, error: kitsError } = await supabase
+    let query = supabase
       .from('homologation_kits')
       .select('*')
-      .eq('homologation_card_id', cardId)
       .order('created_at', { ascending: false });
+    
+    if (cardId) {
+      query = query.eq('homologation_card_id', cardId);
+    }
+    
+    const { data: kits, error: kitsError } = await query;
 
     if (kitsError) {
       console.error('Error fetching homologation kits:', kitsError);
@@ -80,7 +85,7 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
     const { data: kit, error: kitError } = await supabase
       .from('homologation_kits')
       .insert({
-        homologation_card_id: kitData.homologation_card_id,
+        homologation_card_id: kitData.homologation_card_id || null,
         name: kitData.name,
         description: kitData.description,
       })

@@ -308,7 +308,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
-          homologation_card_id: string
+          homologation_card_id: string | null
           id: string
           name: string
           updated_at: string
@@ -316,7 +316,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
-          homologation_card_id: string
+          homologation_card_id?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -324,7 +324,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
-          homologation_card_id?: string
+          homologation_card_id?: string | null
           id?: string
           name?: string
           updated_at?: string

@@ -14,6 +14,7 @@ import Homologation from "./pages/Homologation";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
+import KitManagement from "./pages/KitManagement";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -97,6 +98,15 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['admin']}>
                   <Layout>
                     <ConfigurationManagement />
+                  </Layout>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/kits" element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                  <Layout>
+                    <KitManagement />
                   </Layout>
                 </RoleProtectedRoute>
               </ProtectedRoute>

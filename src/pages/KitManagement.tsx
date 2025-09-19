@@ -7,14 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, Edit, Package, Wrench, Box, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit, Package, Wrench, Box, Loader2, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, UpdateKitRequest } from '@/types/homologationKit';
 import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
-
-interface KitManagementSectionProps {
-  homologationCardId?: string;
-}
+import { Layout } from '@/components/Layout';
 
 interface KitFormData {
   name: string;
@@ -32,33 +29,47 @@ const initialFormData: KitFormData = {
   supplies: [],
 };
 
-const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologationCardId }) => {
+const KitManagement: React.FC = () => {
   const [kits, setKits] = useState<HomologationKit[]>([]);
+  const [filteredKits, setFilteredKits] = useState<HomologationKit[]>([]);
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
   const [isCreating, setIsCreating] = useState(false);
   const [editingKitId, setEditingKitId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Load kits on component mount
   useEffect(() => {
-    if (homologationCardId) {
-      loadKits();
+    loadKits();
+  }, []);
+
+  // Filter kits based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredKits(kits);
+    } else {
+      const filtered = kits.filter(kit =>
+        kit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        kit.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        kit.equipment.some(item => item.item_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        kit.accessories.some(item => item.item_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        kit.supplies.some(item => item.item_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setFilteredKits(filtered);
     }
-  }, [homologationCardId]);
+  }, [kits, searchTerm]);
 
   const loadKits = async () => {
-    if (!homologationCardId) return;
-    
     try {
       setIsLoading(true);
-      const fetchedKits = await fetchHomologationKits(homologationCardId);
+      const fetchedKits = await fetchHomologationKits(); // Fetch all kits, not filtered by card
       setKits(fetchedKits);
     } catch (error) {
       console.error('Error loading kits:', error);
       toast({
         title: "Erro ao carregar kits",
-        description: "Não foi possível carregar os kits desta homologação.",
+        description: "Não foi possível carregar os kits.",
         variant: "destructive"
       });
     } finally {
@@ -68,12 +79,11 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
 
   // Kit operations
   const createKit = async () => {
-    if (!formData.name.trim() || !homologationCardId) return;
+    if (!formData.name.trim()) return;
 
     try {
       setIsSaving(true);
       const kitData: CreateKitRequest = {
-        homologation_card_id: homologationCardId,
         name: formData.name,
         description: formData.description,
         equipment: formData.equipment,
@@ -88,7 +98,7 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
 
       toast({
         title: "Kit criado com sucesso",
-        description: "O kit foi adicionado à homologação.",
+        description: "O kit foi criado e está disponível para uso.",
       });
     } catch (error) {
       console.error('Error creating kit:', error);
@@ -149,7 +159,7 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
       setKits(prev => prev.filter(kit => kit.id !== kitId));
       toast({
         title: "Kit removido",
-        description: "O kit foi removido da homologação.",
+        description: "O kit foi removido com sucesso.",
       });
     } catch (error) {
       console.error('Error deleting kit:', error);
@@ -376,50 +386,79 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Gerenciamento de Kits
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Show message when no homologation card ID is provided */}
-        {!homologationCardId && (
-          <div className="text-center py-8">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+    <Layout>
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Gerenciamento de Kits</h1>
             <p className="text-muted-foreground">
-              Este componente foi movido para uma página dedicada.
-            </p>
-            <p className="text-muted-foreground text-sm mt-2">
-              Acesse "Gerenciar Kits" no menu para criar e gerenciar kits independentes.
+              Crie e gerencie kits com equipamentos, acessórios e insumos
             </p>
           </div>
+          
+          {!isCreating && kits.length > 0 && (
+            <Button onClick={() => setIsCreating(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Kit
+            </Button>
+          )}
+        </div>
+
+        {/* Search Bar */}
+        {kits.length > 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar kits por nome, descrição ou itens..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Rest of the component only renders when homologationCardId is provided */}
-        {homologationCardId && (
-          <>
-            {/* Loading State */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                <span>Carregando kits...</span>
-              </div>
-            )}
+        {/* Loading State */}
+        {isLoading && (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Carregando kits...</span>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Existing Kits */}
-            {!isLoading && kits.length > 0 && (
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium">Kits Cadastrados</h4>
-                <div className="space-y-3">
-              {kits.map((kit) => (
-                <div key={kit.id} className="p-4 border rounded-lg">
-                  <div className="flex items-start justify-between mb-2">
+        {/* Empty State */}
+        {!isLoading && kits.length === 0 && !isCreating && (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum kit cadastrado</h3>
+              <p className="text-muted-foreground mb-6">
+                Comece criando seu primeiro kit com equipamentos, acessórios e insumos
+              </p>
+              <Button onClick={() => setIsCreating(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeiro Kit
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Existing Kits */}
+        {!isLoading && filteredKits.length > 0 && !isCreating && (
+          <div className="grid gap-4">
+            {filteredKits.map((kit) => (
+              <Card key={kit.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h5 className="font-medium">{kit.name}</h5>
+                      <h3 className="text-lg font-semibold">{kit.name}</h3>
                       {kit.description && (
-                        <p className="text-sm text-muted-foreground">{kit.description}</p>
+                        <p className="text-muted-foreground">{kit.description}</p>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -428,30 +467,30 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
                         size="sm"
                         onClick={() => startEdit(kit)}
                       >
-                        <Edit className="h-3 w-3" />
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => deleteKit(kit.id)}
+                        onClick={() => deleteKit(kit.id!)}
                         className="text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-4 mt-3">
+                  <div className="space-y-4">
                     {/* Equipment Section */}
                     {kit.equipment.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-1">
-                          <Wrench className="h-3 w-3" />
-                          <span className="text-xs font-medium">Equipamentos ({kit.equipment.length})</span>
+                          <Wrench className="h-4 w-4" />
+                          <span className="text-sm font-medium">Equipamentos ({kit.equipment.length})</span>
                         </div>
-                        <div className="pl-4 space-y-1">
+                        <div className="pl-5 space-y-1">
                           {kit.equipment.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
+                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
                               <span>{item.item_name}</span>
                               <Badge variant="secondary" className="text-xs">
                                 {item.quantity}x
@@ -466,12 +505,12 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
                     {kit.accessories.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-1">
-                          <Box className="h-3 w-3" />
-                          <span className="text-xs font-medium">Acessórios ({kit.accessories.length})</span>
+                          <Box className="h-4 w-4" />
+                          <span className="text-sm font-medium">Acessórios ({kit.accessories.length})</span>
                         </div>
-                        <div className="pl-4 space-y-1">
+                        <div className="pl-5 space-y-1">
                           {kit.accessories.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
+                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
                               <span>{item.item_name}</span>
                               <Badge variant="secondary" className="text-xs">
                                 {item.quantity}x
@@ -486,12 +525,12 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
                     {kit.supplies.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-1">
-                          <Package className="h-3 w-3" />
-                          <span className="text-xs font-medium">Insumos ({kit.supplies.length})</span>
+                          <Package className="h-4 w-4" />
+                          <span className="text-sm font-medium">Insumos ({kit.supplies.length})</span>
                         </div>
-                        <div className="pl-4 space-y-1">
+                        <div className="pl-5 space-y-1">
                           {kit.supplies.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
+                            <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
                               <span>{item.item_name}</span>
                               <Badge variant="secondary" className="text-xs">
                                 {item.quantity}x
@@ -504,42 +543,22 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
 
                     {/* Empty state */}
                     {kit.equipment.length === 0 && kit.accessories.length === 0 && kit.supplies.length === 0 && (
-                      <div className="text-xs text-muted-foreground italic">
+                      <div className="text-sm text-muted-foreground italic">
                         Nenhum item cadastrado neste kit
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && kits.length === 0 && !isCreating && (
-          <div className="text-center py-8">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">Nenhum kit cadastrado</p>
-            <Button onClick={() => setIsCreating(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Criar Primeiro Kit
-            </Button>
-          </div>
-        )}
-
-        {/* Add New Kit Button */}
-        {!isLoading && kits.length > 0 && !isCreating && (
-          <Button onClick={() => setIsCreating(true)} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Novo Kit
-          </Button>
         )}
 
         {/* Kit Form */}
         {isCreating && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">
+              <CardTitle>
                 {editingKitId ? 'Editar Kit' : 'Novo Kit'}
               </CardTitle>
             </CardHeader>
@@ -590,20 +609,31 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
                     type="button" 
                     variant="outline" 
                     onClick={cancelEdit}
-                     disabled={isSaving}
-                   >
-                     Cancelar
-                   </Button>
-                 </div>
-               </form>
-             </CardContent>
-           </Card>
-         )}
-          </>
+                    disabled={isSaving}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         )}
-      </CardContent>
-    </Card>
+
+        {/* No search results */}
+        {!isLoading && kits.length > 0 && filteredKits.length === 0 && searchTerm && !isCreating && (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum kit encontrado</h3>
+              <p className="text-muted-foreground">
+                Tente ajustar os termos de busca ou criar um novo kit
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </Layout>
   );
 };
 
-export default KitManagementSection;
+export default KitManagement;

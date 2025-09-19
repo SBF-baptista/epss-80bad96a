@@ -15,7 +15,7 @@ export interface HomologationKitAccessory extends HomologationKitItem {
 
 export interface HomologationKit {
   id?: string;
-  homologation_card_id: string;
+  homologation_card_id?: string;
   name: string;
   description?: string;
   equipment: HomologationKitItem[];
@@ -26,7 +26,7 @@ export interface HomologationKit {
 }
 
 export interface CreateKitRequest {
-  homologation_card_id: string;
+  homologation_card_id?: string;
   name: string;
   description?: string;
   equipment: Omit<HomologationKitItem, 'id'>[];

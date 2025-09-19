@@ -12,8 +12,7 @@ import {
   CreateHomologationForm,
   HomologationLoadingSkeleton,
   HomologationHeader,
-  HomologationKanbanSection,
-  KitManagementSection
+  HomologationKanbanSection
 } from "@/components/homologation";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import HomologationFilters from "@/components/homologation/HomologationFilters";
@@ -66,9 +65,7 @@ const Homologation = () => {
           
           <CreateHomologationForm onUpdate={refetch} />
           
-          <KitManagementSection />
-          
-          <HomologationKanbanSection 
+          <HomologationKanbanSection
             cards={filteredCards} 
             onUpdate={refetch} 
           />
