@@ -24,6 +24,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { toast } from '@/hooks/use-toast';
 import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, UpdateKitRequest } from '@/types/homologationKit';
 import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
+import { SelectOrCreateInput } from '@/components/kit-items';
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
@@ -400,11 +401,12 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <Label className="text-xs">Nome *</Label>
-                <Input
+                <SelectOrCreateInput
                   value={item.item_name}
-                  onChange={(e) => updateItem(type, index, 'item_name', e.target.value)}
-                  placeholder="Nome do item"
-                  className="h-8"
+                  onChange={(value) => updateItem(type, index, 'item_name', value)}
+                  itemType={type}
+                  placeholder={`Selecione ${type === 'equipment' ? 'equipamento' : type === 'accessory' ? 'acessório' : 'insumo'}...`}
+                  className="w-full"
                 />
               </div>
               <div>

@@ -445,6 +445,36 @@ export type Database = {
         }
         Relationships: []
       }
+      kit_item_options: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          item_name: string
+          item_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          item_name: string
+          item_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          item_name?: string
+          item_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           company_name: string | null
