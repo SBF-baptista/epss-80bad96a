@@ -5,3 +5,6 @@ export { default as HomologationHeader } from './HomologationHeader';
 export { default as HomologationKanbanSection } from './HomologationKanbanSection';
 export { default as KitManagementSection } from './KitManagementSection';
 export { default as HomologationKitsSection } from './HomologationKitsSection';
+export { AccessoryHomologationSection } from './AccessoryHomologationSection';
+export { AccessoryHomologationForm } from './AccessoryHomologationForm';
+export { AccessoryHomologationList } from './AccessoryHomologationList';
