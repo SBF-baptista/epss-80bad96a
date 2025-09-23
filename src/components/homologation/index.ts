@@ -8,3 +8,5 @@ export { default as HomologationKitsSection } from './HomologationKitsSection';
 export { AccessoryHomologationSection } from './AccessoryHomologationSection';
 export { AccessoryHomologationForm } from './AccessoryHomologationForm';
 export { AccessoryHomologationList } from './AccessoryHomologationList';
+export { SupplyHomologationForm } from './SupplyHomologationForm';
+export { SupplyHomologationList } from './SupplyHomologationList';

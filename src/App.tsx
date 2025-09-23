@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Kanban from "./pages/Kanban";
 import Homologation from "./pages/Homologation";
 import KitManagement from "./pages/KitManagement";
+import AccessorySupplyHomologation from "./pages/AccessorySupplyHomologation";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
@@ -89,6 +90,15 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
                   <Layout>
                     <KitManagement />
+                  </Layout>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/accessories-supplies" element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                  <Layout>
+                    <AccessorySupplyHomologation />
                   </Layout>
                 </RoleProtectedRoute>
               </ProtectedRoute>

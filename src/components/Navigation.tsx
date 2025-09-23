@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Kanban, Settings, CheckSquare, Package } from "lucide-react";
+import { BarChart3, Kanban, Settings, CheckSquare, Package, Cog } from "lucide-react";
 
 const Navigation = () => {
   const location = useLocation();
@@ -8,6 +8,7 @@ const Navigation = () => {
   const navItems = [
     { to: "/homologation", label: "Homologação", icon: CheckSquare },
     { to: "/kits", label: "Kits", icon: Package },
+    { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog },
     { to: "/dashboard", label: "Dashboard", icon: BarChart3 },
     { to: "/kanban", label: "Kanban", icon: Kanban },
     { to: "/orders", label: "Pedidos", icon: Settings },
