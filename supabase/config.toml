@@ -1,14 +1,1 @@
-
 project_id = "eeidevcyxpnorbgcskdf"
-
-[functions.verify-vehicle]
-verify_jwt = true
-
-[functions.receive-vehicle]
-verify_jwt = false
-
-[functions.manage-users]
-verify_jwt = true
-
-[functions.send-whatsapp]
-verify_jwt = false
