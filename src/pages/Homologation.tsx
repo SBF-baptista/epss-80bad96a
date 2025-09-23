@@ -12,8 +12,7 @@ import {
   CreateHomologationForm,
   HomologationLoadingSkeleton,
   HomologationHeader,
-  HomologationKanbanSection,
-  AccessoryHomologationSection
+  HomologationKanbanSection
 } from "@/components/homologation";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import HomologationFilters from "@/components/homologation/HomologationFilters";
@@ -59,14 +58,12 @@ const Homologation = () => {
             workflowData={workflowData} 
           />
           
+          <CreateHomologationForm onUpdate={refetch} />
+          
           <HomologationFilters 
             cards={cards}
             onFiltersChange={handleFiltersChange}
           />
-          
-          <CreateHomologationForm onUpdate={refetch} />
-          
-          <AccessoryHomologationSection />
           
           <HomologationKanbanSection
             cards={filteredCards} 
