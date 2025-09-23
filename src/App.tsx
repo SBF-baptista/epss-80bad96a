@@ -11,6 +11,7 @@ import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Kanban from "./pages/Kanban";
 import Homologation from "./pages/Homologation";
+import KitManagement from "./pages/KitManagement";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
@@ -79,6 +80,15 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
                   <Layout>
                     <Homologation />
+                  </Layout>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/kits" element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                  <Layout>
+                    <KitManagement />
                   </Layout>
                 </RoleProtectedRoute>
               </ProtectedRoute>
