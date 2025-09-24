@@ -13,7 +13,8 @@ import {
   Package,
   Cog,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Calendar
 } from "lucide-react";
 import {
   Sidebar,
@@ -91,6 +92,13 @@ const navigationGroups = {
 
 // Itens individuais (não agrupados)
 const singleNavigationItems = [
+  { 
+    to: "/planning", 
+    label: "Planejamento", 
+    icon: Calendar,
+    description: "Gestão de técnicos, kits e cronograma",
+    roles: ["admin", "installer"]
+  },
   { 
     to: "/technicians", 
     label: "Técnicos", 

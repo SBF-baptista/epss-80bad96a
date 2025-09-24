@@ -14,6 +14,7 @@ import Homologation from "./pages/Homologation";
 import KitManagement from "./pages/KitManagement";
 import AccessorySupplyHomologation from "./pages/AccessorySupplyHomologation";
 import TechnicianManagement from "./pages/TechnicianManagement";
+import Planning from "./pages/Planning";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
@@ -109,6 +110,15 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
                   <Layout>
                     <TechnicianManagement />
+                  </Layout>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/planning" element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                  <Layout>
+                    <Planning />
                   </Layout>
                 </RoleProtectedRoute>
               </ProtectedRoute>
