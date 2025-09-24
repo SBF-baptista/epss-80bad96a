@@ -1,5 +1,6 @@
 
 import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { 
   BarChart3, 
   Kanban, 
@@ -10,7 +11,9 @@ import {
   UserCog,
   LogOut,
   Package,
-  Cog
+  Cog,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import {
   Sidebar,
@@ -23,52 +26,71 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
-const navigationItems = [
-  { 
-    to: "/homologation", 
-    label: "Homologação", 
+// Definindo grupos de navegação
+const navigationGroups = {
+  homologation: {
+    label: "Homologação",
     icon: CheckSquare,
-    description: "Processo de homologação de veículos",
-    roles: ["admin", "installer"]
+    roles: ["admin", "installer"],
+    items: [
+      { 
+        to: "/homologation", 
+        label: "Homologação de Veículos", 
+        icon: CheckSquare,
+        roles: ["admin", "installer"]
+      },
+      { 
+        to: "/kits", 
+        label: "Kits", 
+        icon: Package,
+        roles: ["admin", "installer"]
+      },
+      { 
+        to: "/accessories-supplies", 
+        label: "Acessórios & Insumos", 
+        icon: Cog,
+        roles: ["admin", "installer"]
+      }
+    ]
   },
-  { 
-    to: "/kits", 
-    label: "Kits", 
-    icon: Package,
-    description: "Gerenciamento de kits de homologação",
-    roles: ["admin", "installer"]
-  },
-  { 
-    to: "/accessories-supplies", 
-    label: "Acessórios & Insumos", 
-    icon: Cog,
-    description: "Homologação de acessórios e insumos",
-    roles: ["admin", "installer"]
-  },
+  orders: {
+    label: "Esteira de Pedidos",
+    icon: BarChart3,
+    roles: ["admin", "order_manager"],
+    items: [
+      { 
+        to: "/kanban", 
+        label: "Kanban", 
+        icon: Kanban,
+        roles: ["admin", "order_manager"]
+      },
+      { 
+        to: "/dashboard", 
+        label: "Dash Esteira de Pedidos", 
+        icon: BarChart3,
+        roles: ["admin"]
+      }
+    ]
+  }
+};
+
+// Itens individuais (não agrupados)
+const singleNavigationItems = [
   { 
     to: "/technicians", 
     label: "Técnicos", 
     icon: Users,
     description: "Gerenciamento de técnicos",
     roles: ["admin", "installer"]
-  },
-  { 
-    to: "/dashboard", 
-    label: "Dash esteira de pedidos", 
-    icon: BarChart3,
-    description: "Análises e relatórios",
-    roles: ["admin"]
-  },
-  { 
-    to: "/kanban", 
-    label: "Kanban", 
-    icon: Kanban,
-    description: "Gestão de pedidos",
-    roles: ["admin", "order_manager"]
   },
   { 
     to: "/config", 
@@ -92,14 +114,28 @@ export function AppNavigation() {
   const isCollapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const { role, loading } = useUserRole();
+  
+  // Estados para controlar abertura dos dropdowns
+  const [homologationOpen, setHomologationOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+  
+  // Verificar se algum item do grupo está ativo
+  const isGroupActive = (items: any[]) => {
+    return items.some(item => isActive(item.to));
+  };
 
-  // Filter navigation items based on user role
-  const filteredNavigationItems = navigationItems.filter(item => {
+  // Filtrar grupos e itens baseado no papel do usuário
+  const canAccessGroup = (groupRoles: string[]) => {
     if (!role) return false;
-    return item.roles.includes(role);
-  });
+    return groupRoles.includes(role);
+  };
+
+  const canAccessItem = (itemRoles: string[]) => {
+    if (!role) return false;
+    return itemRoles.includes(role);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -126,24 +162,116 @@ export function AppNavigation() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredNavigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive(item.to)}
-                      tooltip={isCollapsed ? item.label : undefined}
-                      className="touch-manipulation tap-target"
-                    >
-                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="font-medium text-sm truncate">{item.label}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              
+              {/* Grupo Homologação */}
+              {canAccessGroup(navigationGroups.homologation.roles) && (
+                <SidebarMenuItem>
+                  <Collapsible open={homologationOpen} onOpenChange={setHomologationOpen}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton 
+                        className="w-full justify-between touch-manipulation tap-target"
+                        tooltip={isCollapsed ? navigationGroups.homologation.label : undefined}
+                      >
+                        <div className="flex items-center gap-3">
+                          <navigationGroups.homologation.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-medium text-sm">{navigationGroups.homologation.label}</span>
+                        </div>
+                        {!isCollapsed && (
+                          homologationOpen ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="ml-4">
+                      {navigationGroups.homologation.items
+                        .filter(item => canAccessItem(item.roles))
+                        .map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                <span className="font-medium text-sm truncate">{item.label}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+              )}
+
+              {/* Grupo Esteira de Pedidos */}
+              {canAccessGroup(navigationGroups.orders.roles) && (
+                <SidebarMenuItem>
+                  <Collapsible open={ordersOpen} onOpenChange={setOrdersOpen}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton 
+                        className="w-full justify-between touch-manipulation tap-target"
+                        tooltip={isCollapsed ? navigationGroups.orders.label : undefined}
+                      >
+                        <div className="flex items-center gap-3">
+                          <navigationGroups.orders.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-medium text-sm">{navigationGroups.orders.label}</span>
+                        </div>
+                        {!isCollapsed && (
+                          ordersOpen ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="ml-4">
+                      {navigationGroups.orders.items
+                        .filter(item => canAccessItem(item.roles))
+                        .map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                <span className="font-medium text-sm truncate">{item.label}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+              )}
+
+              {/* Itens individuais */}
+              {singleNavigationItems
+                .filter(item => canAccessItem(item.roles))
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(item.to)}
+                        tooltip={isCollapsed ? item.label : undefined}
+                        className="touch-manipulation tap-target"
+                      >
+                        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                          <Icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-medium text-sm truncate">{item.label}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
