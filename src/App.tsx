@@ -107,7 +107,9 @@ function App() {
             <Route path="/technicians" element={
               <ProtectedRoute>
                 <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
-                  <TechnicianManagement />
+                  <Layout>
+                    <TechnicianManagement />
+                  </Layout>
                 </RoleProtectedRoute>
               </ProtectedRoute>
             } />

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Navigation from "@/components/Navigation";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import { TechnicianForm } from "@/components/technicians/TechnicianForm";
 import { TechnicianList } from "@/components/technicians/TechnicianList";
@@ -35,12 +34,9 @@ const TechnicianManagement = () => {
 
   return (
     <HomologationErrorBoundary>
-      <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">
-        <div className="w-full max-w-7xl mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Gerenciamento de Técnicos</h1>
-            <Navigation />
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold">Gerenciamento de Técnicos</h1>
 
           {isFormVisible ? (
             <div className="space-y-4">
