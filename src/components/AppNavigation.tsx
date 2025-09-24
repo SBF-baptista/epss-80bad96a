@@ -7,6 +7,7 @@ import {
   CheckSquare,
   ShoppingCart,
   Users,
+  UserCog,
   LogOut,
   Package,
   Cog
@@ -49,6 +50,13 @@ const navigationItems = [
     roles: ["admin", "installer"]
   },
   { 
+    to: "/technicians", 
+    label: "Técnicos", 
+    icon: Users,
+    description: "Gerenciamento de técnicos",
+    roles: ["admin", "installer"]
+  },
+  { 
     to: "/dashboard", 
     label: "Dash esteira de pedidos", 
     icon: BarChart3,
@@ -72,7 +80,7 @@ const navigationItems = [
   { 
     to: "/users", 
     label: "Usuários", 
-    icon: Users,
+    icon: UserCog,
     description: "Gerenciar usuários e permissões",
     roles: ["admin"]
   },
