@@ -8,6 +8,7 @@ import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import { KitScheduleModal } from './KitScheduleModal';
+import { KitCreationModal } from './KitCreationModal';
 
 interface KitManagementPanelProps {
   kits: HomologationKit[];
@@ -25,6 +26,7 @@ export const KitManagementPanel = ({
   const { toast } = useToast();
   const [selectedKit, setSelectedKit] = useState<HomologationKit | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
 
   const handleScheduleKit = (kit: HomologationKit) => {
     // Check if kit has homologation
@@ -74,9 +76,31 @@ export const KitManagementPanel = ({
 
   return (
     <div className="h-full space-y-4">
+      {/* Header with Add Kit Button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Kits de Homologação</h3>
+        <Button onClick={() => setIsCreationModalOpen(true)}>
+          <Package className="w-4 h-4 mr-2" />
+          Novo Kit
+        </Button>
+      </div>
+
       {/* Kit Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full overflow-auto">
-        {kits.map((kit) => {
+        {kits.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+            <Package className="w-12 h-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-muted-foreground mb-2">Nenhum Kit Encontrado</h3>
+            <p className="text-muted-foreground mb-4 max-w-md">
+              Ainda não há kits de homologação criados. Crie o primeiro kit para começar a gerenciar as instalações.
+            </p>
+            <Button onClick={() => setIsCreationModalOpen(true)}>
+              <Package className="w-4 h-4 mr-2" />
+              Criar Primeiro Kit
+            </Button>
+          </div>
+        ) : (
+          kits.map((kit) => {
           const kitStatus = getKitStatus(kit);
           const kitSchedules = getKitSchedules(kit.id!);
           const totalItems = kit.equipment.length + kit.accessories.length + kit.supplies.length;
@@ -157,8 +181,18 @@ export const KitManagementPanel = ({
               </CardContent>
             </Card>
           );
-        })}
+        }))}
       </div>
+
+      {/* Kit Creation Modal */}
+      <KitCreationModal
+        isOpen={isCreationModalOpen}
+        onClose={() => setIsCreationModalOpen(false)}
+        onSuccess={() => {
+          onRefresh();
+          setIsCreationModalOpen(false);
+        }}
+      />
 
       {/* Schedule Modal */}
       {selectedKit && (
