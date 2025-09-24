@@ -13,6 +13,7 @@ import Kanban from "./pages/Kanban";
 import Homologation from "./pages/Homologation";
 import KitManagement from "./pages/KitManagement";
 import AccessorySupplyHomologation from "./pages/AccessorySupplyHomologation";
+import TechnicianManagement from "./pages/TechnicianManagement";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
@@ -100,6 +101,13 @@ function App() {
                   <Layout>
                     <AccessorySupplyHomologation />
                   </Layout>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/technicians" element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                  <TechnicianManagement />
                 </RoleProtectedRoute>
               </ProtectedRoute>
             } />

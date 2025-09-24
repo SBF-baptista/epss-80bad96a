@@ -695,6 +695,48 @@ export type Database = {
         }
         Relationships: []
       }
+      technicians: {
+        Row: {
+          address_city: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          postal_code: string
+          updated_at: string
+        }
+        Insert: {
+          address_city?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          postal_code: string
+          updated_at?: string
+        }
+        Update: {
+          address_city?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          postal_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
