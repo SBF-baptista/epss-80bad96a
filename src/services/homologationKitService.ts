@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { HomologationKit, CreateKitRequest, UpdateKitRequest, HomologationKitItem, ItemType } from '@/types/homologationKit';
 
+export type { HomologationKit, CreateKitRequest, UpdateKitRequest, HomologationKitItem, ItemType };
+
 // Fetch all homologation kits (optionally filtered by card)
 export async function fetchHomologationKits(cardId?: string): Promise<HomologationKit[]> {
   try {

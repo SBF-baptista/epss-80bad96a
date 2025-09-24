@@ -475,6 +475,60 @@ export type Database = {
         }
         Relationships: []
       }
+      kit_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          installation_time: string | null
+          kit_id: string
+          notes: string | null
+          scheduled_date: string
+          status: string
+          technician_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          installation_time?: string | null
+          kit_id: string
+          notes?: string | null
+          scheduled_date: string
+          status?: string
+          technician_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          installation_time?: string | null
+          kit_id?: string
+          notes?: string | null
+          scheduled_date?: string
+          status?: string
+          technician_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kit_schedules_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "homologation_kits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kit_schedules_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos: {
         Row: {
           company_name: string | null
