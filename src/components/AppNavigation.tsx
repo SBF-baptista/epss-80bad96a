@@ -59,6 +59,12 @@ const navigationGroups = {
         label: "Acessórios & Insumos", 
         icon: Cog,
         roles: ["admin", "installer"]
+      },
+      { 
+        to: "/config", 
+        label: "Gestão de Configurações", 
+        icon: Settings,
+        roles: ["admin"]
       }
     ]
   },
@@ -91,13 +97,6 @@ const singleNavigationItems = [
     icon: Users,
     description: "Gerenciamento de técnicos",
     roles: ["admin", "installer"]
-  },
-  { 
-    to: "/config", 
-    label: "Configurações", 
-    icon: Settings,
-    description: "Configurações do sistema",
-    roles: ["admin"]
   },
   { 
     to: "/users", 
