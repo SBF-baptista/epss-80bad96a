@@ -12,6 +12,8 @@ import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitSche
 import { ConfigurationStats } from './ConfigurationStats';
 import { KitManagementPanel } from './KitManagementPanel';
 import { ScheduleCalendar } from './ScheduleCalendar';
+import { supabase } from '@/integrations/supabase/client';
+import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 
 interface ConfigurationDashboardProps {
   onNavigateToSection?: (section: string) => void;
@@ -26,9 +28,27 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [kits, setKits] = useState<HomologationKit[]>([]);
   const [schedules, setSchedules] = useState<KitScheduleWithDetails[]>([]);
+  const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
+
+  // Load homologation statuses
+  const loadHomologationStatuses = async (kitsData: HomologationKit[]) => {
+    try {
+      if (kitsData.length > 0) {
+        const statuses = await checkMultipleKitsHomologation(kitsData);
+        setHomologationStatuses(statuses);
+      }
+    } catch (error) {
+      console.error('Error loading homologation statuses:', error);
+      toast({
+        title: "Erro de sincronização",
+        description: "Não foi possível sincronizar o status de homologação dos kits.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Load all data
   const loadData = async () => {
@@ -43,6 +63,9 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
       setTechnicians(techniciansData);
       setKits(kitsData);
       setSchedules(schedulesData);
+      
+      // Load homologation statuses after kits are loaded
+      await loadHomologationStatuses(kitsData);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -59,6 +82,32 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     loadData();
   }, []);
 
+  // Set up real-time subscription for kit_item_options changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('planning-kit-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'kit_item_options'
+        },
+        (payload) => {
+          console.log('Kit item option changed in Planning:', payload);
+          // Reload homologation statuses when kit_item_options changes
+          if (kits.length > 0) {
+            loadHomologationStatuses(kits);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [kits]);
+
   // Filter data based on search
   const filteredKits = kits.filter(kit => 
     kit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,11 +119,11 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     tech.address_city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get kits without homologation (alerts)
-  const kitsWithoutHomologation = kits.filter(kit => 
-    !kit.homologation_card_id || 
-    (kit.homologation_card_id && schedules.some(s => s.kit_id === kit.id))
-  );
+  // Get kits without homologation (alerts) - using real homologation status
+  const kitsWithoutHomologation = kits.filter(kit => {
+    const homologationStatus = homologationStatuses.get(kit.id!);
+    return homologationStatus ? !homologationStatus.isHomologated : true;
+  });
 
   if (isLoading) {
     return (
