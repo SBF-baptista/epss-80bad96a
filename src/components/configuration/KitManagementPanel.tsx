@@ -85,8 +85,7 @@ const calculatePendingDays = (createdAt: string): number => {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 };
 
-const KitItemsSection = ({ kit, homologationStatus }: { kit: HomologationKit, homologationStatus: HomologationStatus | undefined }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const renderKitItems = (kit: HomologationKit, homologationStatus: HomologationStatus | undefined) => {
   const allItems = [
     ...kit.equipment.map(item => ({ ...item, category: 'Equipamentos' })),
     ...kit.accessories.map(item => ({ ...item, category: 'Acessórios' })),
@@ -94,82 +93,63 @@ const KitItemsSection = ({ kit, homologationStatus }: { kit: HomologationKit, ho
   ];
 
   const homologatedItems = homologationStatus?.homologatedItems || { equipment: [], accessories: [], supplies: [] };
-  const homologatedCount = allItems.filter(item => [
-    ...homologatedItems.equipment,
-    ...homologatedItems.accessories,
-    ...homologatedItems.supplies
-  ].some(homItem => homItem.item_name === item.item_name)).length;
 
   return (
-    <div className="space-y-2">
-      <div 
-        className="flex items-center justify-between cursor-pointer p-2 bg-muted/20 rounded-md hover:bg-muted/40 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium">Itens do Kit</span>
-          <Badge variant="outline" className="text-xs">
-            {homologatedCount}/{allItems.length} homologados
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          {isExpanded ? '▼' : '▶'}
-        </div>
-      </div>
-      
-      {isExpanded && (
-        <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto border rounded-md p-2 bg-background/50">
-          {allItems.map((item, index) => {
-            const isHomologated = [
-              ...homologatedItems.equipment,
-              ...homologatedItems.accessories,
-              ...homologatedItems.supplies
-            ].some(homItem => homItem.item_name === item.item_name);
+    <div className="space-y-3">
+      <h4 className="text-sm font-semibold">Detalhamento dos Itens:</h4>
+      <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+        {allItems.map((item, index) => {
+          const isHomologated = [
+            ...homologatedItems.equipment,
+            ...homologatedItems.accessories,
+            ...homologatedItems.supplies
+          ].some(homItem => homItem.item_name === item.item_name);
 
-            return (
-              <div key={index} className="flex items-center justify-between p-1 text-xs">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {isHomologated ? (
-                    <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-3 h-3 text-red-600 flex-shrink-0" />
-                  )}
-                  <span className="font-medium truncate">{item.item_name}</span>
-                  <Badge variant="outline" className="text-xs px-1 py-0">
-                    {item.category.charAt(0)}
-                  </Badge>
-                </div>
-                <span className="text-xs text-muted-foreground">{item.quantity}</span>
+          return (
+            <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-md text-xs">
+              <div className="flex items-center gap-2">
+                {isHomologated ? (
+                  <CheckCircle className="w-3 h-3 text-green-600" />
+                ) : (
+                  <XCircle className="w-3 h-3 text-red-600" />
+                )}
+                <span className="font-medium">{item.item_name}</span>
+                <Badge variant="outline" className="text-xs">
+                  {item.category}
+                </Badge>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <Badge variant="outline" className="text-xs">
+                Qtd: {item.quantity}
+              </Badge>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
   return (
-    <div className="h-full flex flex-col space-y-3">
+    <div className="h-full space-y-4">
       {/* Header with Add Kit Button */}
-      <div className="flex justify-between items-center flex-shrink-0">
+      <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Kits de Homologação</h3>
-        <Button onClick={() => setIsCreationModalOpen(true)} size="sm">
+        <Button onClick={() => setIsCreationModalOpen(true)}>
           <Package className="w-4 h-4 mr-2" />
           Novo Kit
         </Button>
       </div>
 
       {/* Kit Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 overflow-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full overflow-auto">
         {kits.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
-            <Package className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="text-base font-semibold text-muted-foreground mb-2">Nenhum Kit Encontrado</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-md">
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+            <Package className="w-12 h-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-muted-foreground mb-2">Nenhum Kit Encontrado</h3>
+            <p className="text-muted-foreground mb-4 max-w-md">
               Ainda não há kits de homologação criados. Crie o primeiro kit para começar a gerenciar as instalações.
             </p>
-            <Button onClick={() => setIsCreationModalOpen(true)} size="sm">
+            <Button onClick={() => setIsCreationModalOpen(true)}>
               <Package className="w-4 h-4 mr-2" />
               Criar Primeiro Kit
             </Button>
@@ -185,110 +165,105 @@ const KitItemsSection = ({ kit, homologationStatus }: { kit: HomologationKit, ho
 
             return (
               <Card key={kit.id} className="h-fit hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2 px-4 pt-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Package className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{kit.name}</span>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Package className="w-5 h-5" />
+                        {kit.name}
                       </CardTitle>
                       {kit.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{kit.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{kit.description}</p>
                       )}
                       {/* Contador de dias pendentes */}
                       {!isHomologated && pendingDays > 0 && (
-                        <div className="flex items-center gap-2 mt-2 text-red-600 bg-red-50 p-1.5 rounded-md">
-                          <Timer className="w-3 h-3 flex-shrink-0" />
-                          <span className="text-xs font-semibold">
-                            {pendingDays} dia{pendingDays !== 1 ? 's' : ''} pendente{pendingDays !== 1 ? 's' : ''}
+                        <div className="flex items-center gap-2 mt-2 text-red-600 bg-red-50 p-2 rounded-md">
+                          <Timer className="w-4 h-4" />
+                          <span className="text-sm font-semibold">
+                            {pendingDays} dia{pendingDays !== 1 ? 's' : ''} pendente{pendingDays !== 1 ? 's' : ''} de homologação
                           </span>
                         </div>
                       )}
                     </div>
-                    <Badge variant={kitStatus.variant} className="text-xs px-2 py-1 flex-shrink-0">
+                    <Badge variant={kitStatus.variant} className="ml-2">
                       {kitStatus.label}
                     </Badge>
                   </div>
                 </CardHeader>
 
-                <CardContent className="px-4 pb-4">
-                  <div className="space-y-3">
-                    {/* Kit Details com números destacados - mais compacto */}
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <div className="flex items-center justify-between p-1.5 bg-primary/5 rounded-md">
-                        <span className="text-xs font-medium">Total</span>
-                        <Badge variant="secondary" className="bg-primary text-primary-foreground font-bold text-xs px-2 py-0">
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Kit Details com números destacados */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center justify-between p-2 bg-primary/5 rounded-md">
+                        <span className="text-sm font-medium">Total de itens</span>
+                        <Badge variant="secondary" className="bg-primary text-primary-foreground font-bold">
                           {totalItems}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-1.5 bg-blue-50 rounded-md">
-                        <span className="text-xs font-medium">Equip.</span>
-                        <Badge variant="outline" className="border-blue-500 text-blue-700 font-bold text-xs px-2 py-0">
+                      <div className="flex items-center justify-between p-2 bg-blue-50 rounded-md">
+                        <span className="text-sm font-medium">Equipamentos</span>
+                        <Badge variant="outline" className="border-blue-500 text-blue-700 font-bold">
                           {kit.equipment.length}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-1.5 bg-green-50 rounded-md">
-                        <span className="text-xs font-medium">Acess.</span>
-                        <Badge variant="outline" className="border-green-500 text-green-700 font-bold text-xs px-2 py-0">
+                      <div className="flex items-center justify-between p-2 bg-green-50 rounded-md">
+                        <span className="text-sm font-medium">Acessórios</span>
+                        <Badge variant="outline" className="border-green-500 text-green-700 font-bold">
                           {kit.accessories.length}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-1.5 bg-purple-50 rounded-md">
-                        <span className="text-xs font-medium">Insum.</span>
-                        <Badge variant="outline" className="border-purple-500 text-purple-700 font-bold text-xs px-2 py-0">
+                      <div className="flex items-center justify-between p-2 bg-purple-50 rounded-md">
+                        <span className="text-sm font-medium">Insumos</span>
+                        <Badge variant="outline" className="border-purple-500 text-purple-700 font-bold">
                           {kit.supplies.length}
                         </Badge>
                       </div>
                     </div>
 
-                    {/* Detalhamento dos itens do kit - agora colapsável */}
-                    <KitItemsSection kit={kit} homologationStatus={homologationStatus} />
+                    {/* Detalhamento dos itens do kit */}
+                    {renderKitItems(kit, homologationStatus)}
 
-                    {/* Homologation Status - mais compacto */}
+                    {/* Homologation Status */}
                     {!isHomologated && (
-                      <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-1.5 rounded-md">
-                        <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-                        <span className="text-xs">Aguardando homologação</span>
+                      <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-md">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span className="text-sm">Aguardando homologação</span>
                       </div>
                     )}
 
-                    {/* Current Schedules - mais compacto */}
+                    {/* Current Schedules */}
                     {kitSchedules.length > 0 && (
-                      <div className="space-y-1.5">
-                        <h4 className="text-xs font-medium">Agendamentos:</h4>
-                        {kitSchedules.slice(0, 1).map((schedule) => (
-                          <div key={schedule.id} className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded-md">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="flex-1 truncate">{schedule.technician.name}</span>
-                            <div className="flex items-center gap-1 text-muted-foreground flex-shrink-0">
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium">Agendamentos:</h4>
+                        {kitSchedules.slice(0, 2).map((schedule) => (
+                          <div key={schedule.id} className="flex items-center gap-2 text-sm p-2 bg-muted/50 rounded-md">
+                            <User className="w-4 h-4" />
+                            <span className="flex-1">{schedule.technician.name}</span>
+                            <div className="flex items-center gap-1 text-muted-foreground">
                               <Calendar className="w-3 h-3" />
-                              <span className="text-xs">
-                                {new Date(schedule.scheduled_date).toLocaleDateString('pt-BR', { 
-                                  day: '2-digit', 
-                                  month: '2-digit' 
-                                })}
-                              </span>
+                              {new Date(schedule.scheduled_date).toLocaleDateString('pt-BR')}
                             </div>
                           </div>
                         ))}
-                        {kitSchedules.length > 1 && (
+                        {kitSchedules.length > 2 && (
                           <p className="text-xs text-muted-foreground">
-                            +{kitSchedules.length - 1} agendamento(s)
+                            +{kitSchedules.length - 2} agendamento(s) adicional(is)
                           </p>
                         )}
                       </div>
                     )}
 
-                    {/* Actions - mais compacto */}
-                    <div className="pt-2 border-t">
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-2 border-t">
                       <Button
                         variant="default"
                         size="sm"
                         onClick={() => handleScheduleKit(kit)}
                         disabled={!isHomologated}
-                        className="w-full h-8 text-xs"
+                        className="flex-1"
                       >
-                        <Clock className="w-3 h-3 mr-2" />
+                        <Clock className="w-4 h-4 mr-2" />
                         {kitSchedules.length > 0 ? 'Reagendar' : 'Agendar'}
                       </Button>
                     </div>
