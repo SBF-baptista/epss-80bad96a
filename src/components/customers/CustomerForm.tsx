@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useStates, useCities } from '@/hooks/useIBGEData';
+import { fetchAddressByCEP, formatCEP, isValidCEP } from '@/services/cepService';
 import { 
   createCustomer, 
   validateCPF, 
@@ -44,6 +45,7 @@ interface CustomerFormProps {
 export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingCEP, setIsLoadingCEP] = useState(false);
   const { states } = useStates();
   
   const form = useForm<CustomerFormData>({
@@ -80,6 +82,41 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
     }
 
     return null;
+  };
+
+  const handleCEPChange = async (cep: string) => {
+    // Update the CEP field with formatted value
+    const formattedCEP = formatCEP(cep);
+    form.setValue('address_postal_code', formattedCEP);
+
+    // Only fetch address if CEP is valid
+    if (!isValidCEP(cep)) {
+      return;
+    }
+
+    setIsLoadingCEP(true);
+    try {
+      const addressData = await fetchAddressByCEP(cep);
+      if (addressData) {
+        // Auto-fill address fields
+        form.setValue('address_street', addressData.logradouro);
+        form.setValue('address_neighborhood', addressData.bairro);
+        form.setValue('address_city', addressData.localidade);
+        form.setValue('address_state', addressData.uf);
+        
+        // Clear any previous errors
+        form.clearErrors(['address_street', 'address_neighborhood', 'address_city', 'address_state']);
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível buscar o endereço. Verifique o CEP informado.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingCEP(false);
+    }
   };
 
   const onSubmit = async (data: CustomerFormData) => {
@@ -267,7 +304,12 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
                   id="address_postal_code"
                   placeholder="00000-000"
                   {...form.register('address_postal_code')}
+                  onChange={(e) => handleCEPChange(e.target.value)}
+                  disabled={isLoadingCEP}
                 />
+                {isLoadingCEP && (
+                  <p className="text-sm text-muted-foreground">Buscando endereço...</p>
+                )}
                 {form.formState.errors.address_postal_code && (
                   <p className="text-sm text-destructive">{form.formState.errors.address_postal_code.message}</p>
                 )}
