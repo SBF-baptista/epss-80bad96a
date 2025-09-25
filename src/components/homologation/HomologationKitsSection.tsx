@@ -21,8 +21,7 @@ import {
   Copy,
   AlertTriangle,
   CheckCircle,
-  Clock,
-  Zap
+  Clock
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
@@ -30,7 +29,6 @@ import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, Updat
 import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
 import { SelectOrCreateInput } from '@/components/kit-items';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
-import { createKitItemOption } from '@/services/kitItemOptionsService';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HomologationKitsSectionProps {
@@ -64,7 +62,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
-  const [isAutoHomologating, setIsAutoHomologating] = useState<Set<string>>(new Set());
 
   // Load kits on component mount
   useEffect(() => {
@@ -298,50 +295,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
     }
   };
 
-  // Auto-homologate a kit by adding its pending items to kit_item_options
-  const autoHomologateKit = async (kit: HomologationKit, homologationStatus: HomologationStatus) => {
-    if (!kit.id) return;
-
-    try {
-      setIsAutoHomologating(prev => new Set(prev).add(kit.id!));
-
-      const pendingItems = [
-        ...homologationStatus.pendingItems.equipment,
-        ...homologationStatus.pendingItems.accessories,
-        ...homologationStatus.pendingItems.supplies,
-      ];
-
-      // Create all pending items in kit_item_options
-      for (const item of pendingItems) {
-        await createKitItemOption({
-          item_name: item.item_name,
-          item_type: item.item_type,
-          description: item.description
-        });
-      }
-
-      // Reload homologation statuses to reflect the changes
-      await loadHomologationStatuses();
-
-      toast({
-        title: "Kit homologado automaticamente",
-        description: `O kit "${kit.name}" foi homologado com sucesso. Todos os itens pendentes foram adicionados à base de homologações.`,
-      });
-    } catch (error) {
-      console.error('Error auto-homologating kit:', error);
-      toast({
-        title: "Erro na homologação automática",
-        description: "Não foi possível homologar o kit automaticamente. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAutoHomologating(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(kit.id!);
-        return newSet;
-      });
-    }
-  };
 
   // Item operations for each type
   const addItem = (type: ItemType) => {
@@ -717,25 +670,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                         Itens Pendentes de Homologação
                                       </span>
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => autoHomologateKit(kit, homologationStatus)}
-                                      disabled={isAutoHomologating.has(kit.id!)}
-                                      className="h-7 text-xs border-orange-300 text-orange-700 hover:bg-orange-100"
-                                    >
-                                      {isAutoHomologating.has(kit.id!) ? (
-                                        <>
-                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                          Homologando...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Zap className="h-3 w-3 mr-1" />
-                                          Homologar Automaticamente
-                                        </>
-                                      )}
-                                    </Button>
                                   </div>
                                   <div className="text-xs text-orange-700 space-y-1">
                                     {homologationStatus.pendingItems.equipment.length > 0 && (
