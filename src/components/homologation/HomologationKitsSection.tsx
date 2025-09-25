@@ -18,13 +18,17 @@ import {
   Search, 
   ChevronDown, 
   ChevronRight,
-  Copy
+  Copy,
+  AlertTriangle,
+  CheckCircle,
+  Clock
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
 import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, UpdateKitRequest } from '@/types/homologationKit';
 import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
 import { SelectOrCreateInput } from '@/components/kit-items';
+import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
@@ -56,11 +60,19 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
+  const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
 
   // Load kits on component mount
   useEffect(() => {
     loadKits();
   }, [homologationCardId]);
+
+  // Load homologation statuses when kits change
+  useEffect(() => {
+    if (kits.length > 0) {
+      loadHomologationStatuses();
+    }
+  }, [kits]);
 
   // Filter kits based on search term
   useEffect(() => {
@@ -97,6 +109,20 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
     }
   };
 
+  const loadHomologationStatuses = async () => {
+    try {
+      const statuses = await checkMultipleKitsHomologation(kits);
+      setHomologationStatuses(statuses);
+    } catch (error) {
+      console.error('Error loading homologation statuses:', error);
+      toast({
+        title: "Erro ao verificar homologações",
+        description: "Não foi possível verificar o status de homologação dos kits.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const toggleKitExpansion = (kitId: string) => {
     const newExpanded = new Set(expandedKits);
     if (newExpanded.has(kitId)) {
@@ -124,6 +150,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
 
       const newKit = await createHomologationKit(kitData);
       setKits(prev => [newKit, ...prev]);
+      // Reload homologation statuses for the updated list
+      setTimeout(() => loadHomologationStatuses(), 100);
       setFormData(initialFormData);
       setIsCreating(false);
 
@@ -164,6 +192,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
         )
       );
 
+      // Reload homologation statuses for the updated list
+      setTimeout(() => loadHomologationStatuses(), 100);
       setFormData(initialFormData);
       setEditingKitId(null);
       setIsCreating(false);
@@ -197,6 +227,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
 
       const newKit = await createHomologationKit(kitData);
       setKits(prev => [newKit, ...prev]);
+      // Reload homologation statuses
+      setTimeout(() => loadHomologationStatuses(), 100);
 
       toast({
         title: "Kit duplicado",
@@ -458,6 +490,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5" />
           Gerenciamento de Kits
+          <div className="text-sm text-muted-foreground font-normal">
+            Status de homologação e distribuição dos kits
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -501,6 +536,12 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                 {filteredKits.map((kit) => {
                   const isExpanded = expandedKits.has(kit.id!);
                   const primaryEquipment = kit.equipment[0]?.item_name || 'Nenhum equipamento';
+                  const homologationStatus = homologationStatuses.get(kit.id!);
+                  const isHomologated = homologationStatus?.isHomologated ?? false;
+                  const pendingItemsCount = homologationStatus ? 
+                    (homologationStatus.pendingItems.equipment.length + 
+                     homologationStatus.pendingItems.accessories.length + 
+                     homologationStatus.pendingItems.supplies.length) : 0;
                   
                   return (
                     <Collapsible
@@ -520,6 +561,29 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     <ChevronRight className="h-4 w-4" />
                                   )}
                                   <CardTitle className="text-lg">{kit.name}</CardTitle>
+                                  {/* Homologation Status Badge */}
+                                  {homologationStatus && (
+                                    <Badge 
+                                      variant={isHomologated ? "default" : "destructive"} 
+                                      className={`flex items-center gap-1 ${
+                                        isHomologated 
+                                          ? "bg-green-100 text-green-800 border-green-200" 
+                                          : "bg-orange-100 text-orange-800 border-orange-200"
+                                      }`}
+                                    >
+                                      {isHomologated ? (
+                                        <>
+                                          <CheckCircle className="h-3 w-3" />
+                                          Homologado
+                                        </>
+                                      ) : (
+                                        <>
+                                          <AlertTriangle className="h-3 w-3" />
+                                          Não Homologado ({pendingItemsCount} pendentes)
+                                        </>
+                                      )}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-2">
                                   <Wrench className="h-4 w-4 text-muted-foreground" />
@@ -567,7 +631,46 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                   {kit.description}
                                 </p>
                               )}
-                              
+
+                              {/* Homologation Status Details */}
+                              {homologationStatus && !isHomologated && (
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                    <span className="text-sm font-medium text-orange-800">
+                                      Itens Pendentes de Homologação
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-orange-700 space-y-1">
+                                    {homologationStatus.pendingItems.equipment.length > 0 && (
+                                      <p>• {homologationStatus.pendingItems.equipment.length} equipamento(s): {homologationStatus.pendingItems.equipment.map(item => item.item_name).join(', ')}</p>
+                                    )}
+                                    {homologationStatus.pendingItems.accessories.length > 0 && (
+                                      <p>• {homologationStatus.pendingItems.accessories.length} acessório(s): {homologationStatus.pendingItems.accessories.map(item => item.item_name).join(', ')}</p>
+                                    )}
+                                    {homologationStatus.pendingItems.supplies.length > 0 && (
+                                      <p>• {homologationStatus.pendingItems.supplies.length} insumo(s): {homologationStatus.pendingItems.supplies.map(item => item.item_name).join(', ')}</p>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-orange-600 mt-2 font-medium">
+                                    O kit ficará disponível para distribuição após todos os itens serem homologados.
+                                  </p>
+                                </div>
+                              )}
+
+                              {homologationStatus && isHomologated && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    <span className="text-sm font-medium text-green-800">
+                                      Kit Totalmente Homologado
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-green-700 mt-1">
+                                    Todos os itens foram homologados. O kit está pronto para distribuição aos técnicos.
+                                  </p>
+                                </div>
+                              )}
                               {/* Equipment List */}
                               {kit.equipment.length > 0 && (
                                 <div className="space-y-2">
@@ -578,14 +681,41 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     </span>
                                   </div>
                                   <div className="pl-6 space-y-1">
-                                    {kit.equipment.map((item, index) => (
-                                      <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
-                                        <span>{item.item_name}</span>
-                                        <Badge variant="secondary" className="text-xs">
-                                          {item.quantity}x
-                                        </Badge>
-                                      </div>
-                                    ))}
+                                    {kit.equipment.map((item, index) => {
+                                      const isItemHomologated = homologationStatus?.homologatedItems.equipment.some(hItem => hItem.item_name === item.item_name);
+                                      return (
+                                        <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
+                                          <div className="flex items-center gap-2">
+                                            <span>{item.item_name}</span>
+                                            {homologationStatus && (
+                                              <Badge 
+                                                variant={isItemHomologated ? "default" : "secondary"} 
+                                                className={`text-xs ${
+                                                  isItemHomologated 
+                                                    ? "bg-green-100 text-green-800" 
+                                                    : "bg-orange-100 text-orange-800"
+                                                }`}
+                                              >
+                                                {isItemHomologated ? (
+                                                  <>
+                                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                                    Homologado
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    Pendente
+                                                  </>
+                                                )}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <Badge variant="secondary" className="text-xs">
+                                            {item.quantity}x
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -600,14 +730,41 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     </span>
                                   </div>
                                   <div className="pl-6 space-y-1">
-                                    {kit.accessories.map((item, index) => (
-                                      <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
-                                        <span>{item.item_name}</span>
-                                        <Badge variant="secondary" className="text-xs">
-                                          {item.quantity}x
-                                        </Badge>
-                                      </div>
-                                    ))}
+                                    {kit.accessories.map((item, index) => {
+                                      const isItemHomologated = homologationStatus?.homologatedItems.accessories.some(hItem => hItem.item_name === item.item_name);
+                                      return (
+                                        <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
+                                          <div className="flex items-center gap-2">
+                                            <span>{item.item_name}</span>
+                                            {homologationStatus && (
+                                              <Badge 
+                                                variant={isItemHomologated ? "default" : "secondary"} 
+                                                className={`text-xs ${
+                                                  isItemHomologated 
+                                                    ? "bg-green-100 text-green-800" 
+                                                    : "bg-orange-100 text-orange-800"
+                                                }`}
+                                              >
+                                                {isItemHomologated ? (
+                                                  <>
+                                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                                    Homologado
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    Pendente
+                                                  </>
+                                                )}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <Badge variant="secondary" className="text-xs">
+                                            {item.quantity}x
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -622,14 +779,41 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     </span>
                                   </div>
                                   <div className="pl-6 space-y-1">
-                                    {kit.supplies.map((item, index) => (
-                                      <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
-                                        <span>{item.item_name}</span>
-                                        <Badge variant="secondary" className="text-xs">
-                                          {item.quantity}x
-                                        </Badge>
-                                      </div>
-                                    ))}
+                                    {kit.supplies.map((item, index) => {
+                                      const isItemHomologated = homologationStatus?.homologatedItems.supplies.some(hItem => hItem.item_name === item.item_name);
+                                      return (
+                                        <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
+                                          <div className="flex items-center gap-2">
+                                            <span>{item.item_name}</span>
+                                            {homologationStatus && (
+                                              <Badge 
+                                                variant={isItemHomologated ? "default" : "secondary"} 
+                                                className={`text-xs ${
+                                                  isItemHomologated 
+                                                    ? "bg-green-100 text-green-800" 
+                                                    : "bg-orange-100 text-orange-800"
+                                                }`}
+                                              >
+                                                {isItemHomologated ? (
+                                                  <>
+                                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                                    Homologado
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    Pendente
+                                                  </>
+                                                )}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <Badge variant="secondary" className="text-xs">
+                                            {item.quantity}x
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}

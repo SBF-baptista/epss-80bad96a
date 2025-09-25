@@ -90,7 +90,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
       <div className="flex-none px-3 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Gestão de Configurações</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Planejamento</h1>
             <p className="text-muted-foreground mt-1 text-xs sm:text-sm lg:text-base">
               Gerencie técnicos, kits e cronogramas de instalação
             </p>
