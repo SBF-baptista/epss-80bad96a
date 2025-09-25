@@ -176,7 +176,7 @@ const renderKitItems = (kit: HomologationKit, homologationStatus: HomologationSt
                         <p className="text-sm text-muted-foreground mt-1">{kit.description}</p>
                       )}
                       {/* Contador de dias pendentes */}
-                      {!isHomologated && pendingDays > 0 && (
+                      {!isHomologated && (
                         <div className="flex items-center gap-2 mt-2 text-red-600 bg-red-50 p-2 rounded-md">
                           <Timer className="w-4 h-4" />
                           <span className="text-sm font-semibold">

@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useStates, useCities } from '@/hooks/useIBGEData';
 import { fetchAddressByCEP, formatCEP, isValidCEP } from '@/services/cepService';
 import { 
-  createCustomer, 
+  updateCustomer, 
   validateCPF, 
   validateCNPJ, 
   validatePhone, 
@@ -40,12 +40,13 @@ const customerSchema = z.object({
 
 type CustomerFormData = z.infer<typeof customerSchema>;
 
-interface CustomerFormProps {
+interface CustomerEditFormProps {
+  customer: Customer;
   onSuccess: (customer: Customer) => void;
   onCancel: () => void;
 }
 
-export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
+export const CustomerEditForm = ({ customer, onSuccess, onCancel }: CustomerEditFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingCEP, setIsLoadingCEP] = useState(false);
@@ -54,8 +55,18 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
-      document_type: 'cpf',
-      address_complement: ''
+      name: customer.name,
+      document_type: customer.document_type as 'cpf' | 'cnpj',
+      document_number: customer.document_type === 'cpf' ? formatCPF(customer.document_number) : formatCNPJ(customer.document_number),
+      phone: formatPhone(customer.phone),
+      email: customer.email,
+      address_street: customer.address_street,
+      address_number: customer.address_number,
+      address_neighborhood: customer.address_neighborhood,
+      address_city: customer.address_city,
+      address_state: customer.address_state,
+      address_postal_code: formatCEP(customer.address_postal_code),
+      address_complement: customer.address_complement || ''
     }
   });
 
@@ -74,29 +85,19 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
       return 'CNPJ inválido';
     }
 
-    // Check if document already exists
-    try {
-      const existingCustomer = await getCustomerByDocument(cleanDocument);
-      if (existingCustomer) {
-        return `${type.toUpperCase()} já cadastrado para ${existingCustomer.name}`;
+    // Check if document already exists (skip if it's the same customer)
+    if (cleanDocument !== customer.document_number) {
+      try {
+        const existingCustomer = await getCustomerByDocument(cleanDocument);
+        if (existingCustomer && existingCustomer.id !== customer.id) {
+          return `${type.toUpperCase()} já cadastrado para ${existingCustomer.name}`;
+        }
+      } catch (error) {
+        console.error('Error checking existing document:', error);
       }
-    } catch (error) {
-      console.error('Error checking existing document:', error);
     }
 
     return null;
-  };
-
-  const handleDocumentChange = (value: string) => {
-    const cleanValue = value.replace(/[^\d]/g, '');
-    const formattedValue = documentType === 'cpf' ? formatCPF(cleanValue) : formatCNPJ(cleanValue);
-    form.setValue('document_number', formattedValue);
-  };
-
-  const handlePhoneChange = (value: string) => {
-    const cleanValue = value.replace(/[^\d]/g, '');
-    const formattedValue = formatPhone(cleanValue);
-    form.setValue('phone', formattedValue);
   };
 
   const handleCEPChange = async (cep: string) => {
@@ -134,6 +135,18 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
     }
   };
 
+  const handleDocumentChange = (value: string) => {
+    const cleanValue = value.replace(/[^\d]/g, '');
+    const formattedValue = documentType === 'cpf' ? formatCPF(cleanValue) : formatCNPJ(cleanValue);
+    form.setValue('document_number', formattedValue);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const cleanValue = value.replace(/[^\d]/g, '');
+    const formattedValue = formatPhone(cleanValue);
+    form.setValue('phone', formattedValue);
+  };
+
   const onSubmit = async (data: CustomerFormData) => {
     try {
       setIsSubmitting(true);
@@ -157,8 +170,8 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
         return;
       }
 
-      // Clean document number for storage
-      const customerData: CreateCustomerData = {
+      // Clean document number and phone for storage
+      const customerData: Partial<CreateCustomerData> = {
         name: data.name,
         document_type: data.document_type,
         document_number: data.document_number.replace(/[^\d]/g, ''),
@@ -173,19 +186,19 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
         address_complement: data.address_complement
       };
 
-      const customer = await createCustomer(customerData);
+      const updatedCustomer = await updateCustomer(customer.id, customerData);
       
       toast({
-        title: "Cliente cadastrado",
-        description: `Cliente "${customer.name}" foi cadastrado com sucesso.`
+        title: "Cliente atualizado",
+        description: `Dados do cliente "${updatedCustomer.name}" foram atualizados com sucesso.`
       });
 
-      onSuccess(customer);
+      onSuccess(updatedCustomer);
     } catch (error) {
-      console.error('Error creating customer:', error);
+      console.error('Error updating customer:', error);
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao cadastrar cliente",
+        description: error instanceof Error ? error.message : "Erro ao atualizar cliente",
         variant: "destructive"
       });
     } finally {
@@ -196,7 +209,7 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cadastrar Novo Cliente</CardTitle>
+        <CardTitle>Editar Dados do Cliente</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -219,7 +232,10 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
               <Label>Tipo de Documento *</Label>
               <Select
                 value={form.watch('document_type')}
-                onValueChange={(value: 'cpf' | 'cnpj') => form.setValue('document_type', value)}
+                onValueChange={(value: 'cpf' | 'cnpj') => {
+                  form.setValue('document_type', value);
+                  form.setValue('document_number', ''); // Reset document when type changes
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -400,7 +416,7 @@ export const CustomerForm = ({ onSuccess, onCancel }: CustomerFormProps) => {
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting} className="flex-1">
-              {isSubmitting ? "Cadastrando..." : "Cadastrar Cliente"}
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
         </form>
