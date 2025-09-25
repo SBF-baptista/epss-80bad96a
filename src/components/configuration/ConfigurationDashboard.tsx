@@ -268,14 +268,15 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
           </div>
         )}
 
-        {activeTab === 'kits' && (
-          <KitManagementPanel
-            kits={filteredKits}
-            technicians={filteredTechnicians}
-            schedules={schedules}
-            onRefresh={loadData}
-          />
-        )}
+{activeTab === 'kits' && (
+  <KitManagementPanel
+    kits={filteredKits}
+    technicians={filteredTechnicians}
+    schedules={schedules}
+    homologationStatuses={homologationStatuses}
+    onRefresh={loadData}
+  />
+)}
 
         {activeTab === 'schedule' && (
           <ScheduleCalendar

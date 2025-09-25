@@ -9,11 +9,13 @@ import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import { KitScheduleModal } from './KitScheduleModal';
 import { KitCreationModal } from './KitCreationModal';
+import type { HomologationStatus } from '@/services/kitHomologationService';
 
 interface KitManagementPanelProps {
   kits: HomologationKit[];
   technicians: Technician[];
   schedules: KitScheduleWithDetails[];
+  homologationStatuses: Map<string, HomologationStatus>;
   onRefresh: () => void;
 }
 
@@ -21,6 +23,7 @@ export const KitManagementPanel = ({
   kits, 
   technicians, 
   schedules, 
+  homologationStatuses,
   onRefresh 
 }: KitManagementPanelProps) => {
   const { toast } = useToast();
@@ -28,51 +31,51 @@ export const KitManagementPanel = ({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
 
-  const handleScheduleKit = (kit: HomologationKit) => {
-    // Check if kit has homologation
-    if (!kit.homologation_card_id) {
-      toast({
-        title: "Kit sem homologação",
-        description: "Este kit precisa ser homologado antes de ser agendado.",
-        variant: "destructive"
-      });
-      return;
-    }
+const handleScheduleKit = (kit: HomologationKit) => {
+  const isHomologated = homologationStatuses.get(kit.id!)?.isHomologated ?? false;
+  if (!isHomologated) {
+    toast({
+      title: "Kit sem homologação",
+      description: "Este kit precisa ser homologado antes de ser agendado.",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    setSelectedKit(kit);
-    setIsScheduleModalOpen(true);
-  };
+  setSelectedKit(kit);
+  setIsScheduleModalOpen(true);
+};
 
   const getKitSchedules = (kitId: string) => {
     return schedules.filter(schedule => schedule.kit_id === kitId);
   };
 
-  const getKitStatus = (kit: HomologationKit) => {
-    if (!kit.homologation_card_id) {
-      return { status: 'not_homologated', label: 'Não Homologado', variant: 'destructive' as const };
-    }
+const getKitStatus = (kit: HomologationKit, isHomologated: boolean) => {
+  if (!isHomologated) {
+    return { status: 'not_homologated', label: 'Não Homologado', variant: 'destructive' as const };
+  }
 
-    const kitSchedules = getKitSchedules(kit.id!);
-    if (kitSchedules.length === 0) {
-      return { status: 'available', label: 'Disponível', variant: 'default' as const };
-    }
-
-    const hasScheduled = kitSchedules.some(s => s.status === 'scheduled');
-    const hasInProgress = kitSchedules.some(s => s.status === 'in_progress');
-    const hasCompleted = kitSchedules.some(s => s.status === 'completed');
-
-    if (hasInProgress) {
-      return { status: 'in_progress', label: 'Em Instalação', variant: 'secondary' as const };
-    }
-    if (hasScheduled) {
-      return { status: 'scheduled', label: 'Agendado', variant: 'outline' as const };
-    }
-    if (hasCompleted) {
-      return { status: 'completed', label: 'Instalado', variant: 'default' as const };
-    }
-
+  const kitSchedules = getKitSchedules(kit.id!);
+  if (kitSchedules.length === 0) {
     return { status: 'available', label: 'Disponível', variant: 'default' as const };
-  };
+  }
+
+  const hasScheduled = kitSchedules.some(s => s.status === 'scheduled');
+  const hasInProgress = kitSchedules.some(s => s.status === 'in_progress');
+  const hasCompleted = kitSchedules.some(s => s.status === 'completed');
+
+  if (hasInProgress) {
+    return { status: 'in_progress', label: 'Em Instalação', variant: 'secondary' as const };
+  }
+  if (hasScheduled) {
+    return { status: 'scheduled', label: 'Agendado', variant: 'outline' as const };
+  }
+  if (hasCompleted) {
+    return { status: 'completed', label: 'Instalado', variant: 'default' as const };
+  }
+
+  return { status: 'available', label: 'Disponível', variant: 'default' as const };
+};
 
   return (
     <div className="h-full space-y-4">
@@ -100,10 +103,11 @@ export const KitManagementPanel = ({
             </Button>
           </div>
         ) : (
-          kits.map((kit) => {
-          const kitStatus = getKitStatus(kit);
-          const kitSchedules = getKitSchedules(kit.id!);
-          const totalItems = kit.equipment.length + kit.accessories.length + kit.supplies.length;
+kits.map((kit) => {
+  const isHomologated = homologationStatuses.get(kit.id!)?.isHomologated ?? false;
+  const kitStatus = getKitStatus(kit, isHomologated);
+  const kitSchedules = getKitSchedules(kit.id!);
+  const totalItems = kit.equipment.length + kit.accessories.length + kit.supplies.length;
 
           return (
             <Card key={kit.id} className="h-fit hover:shadow-md transition-shadow">
@@ -135,12 +139,12 @@ export const KitManagementPanel = ({
                   </div>
 
                   {/* Homologation Status */}
-                  {!kit.homologation_card_id && (
-                    <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-md">
-                      <AlertTriangle className="w-4 h-4" />
-                      <span className="text-sm">Aguardando homologação</span>
-                    </div>
-                  )}
+{!isHomologated && (
+  <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-md">
+    <AlertTriangle className="w-4 h-4" />
+    <span className="text-sm">Aguardando homologação</span>
+  </div>
+)}
 
                   {/* Current Schedules */}
                   {kitSchedules.length > 0 && (
@@ -166,13 +170,13 @@ export const KitManagementPanel = ({
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleScheduleKit(kit)}
-                      disabled={!kit.homologation_card_id}
-                      className="flex-1"
-                    >
+<Button
+  variant="default"
+  size="sm"
+  onClick={() => handleScheduleKit(kit)}
+  disabled={!isHomologated}
+  className="flex-1"
+>
                       <Clock className="w-4 h-4 mr-2" />
                       {kitSchedules.length > 0 ? 'Reagendar' : 'Agendar'}
                     </Button>
