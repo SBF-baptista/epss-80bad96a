@@ -6,7 +6,6 @@ import { format } from 'date-fns';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
@@ -44,7 +43,6 @@ import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
 import { CustomerSelector, CustomerForm } from '@/components/customers';
 import type { Customer } from '@/services/customerService';
-import { validatePhone, validateEmail } from '@/services/customerService';
 
 const formSchema = z.object({
   technician_id: z.string().min(1, 'Selecione um técnico'),
@@ -55,7 +53,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface KitScheduleModalProps {
+interface EnhancedKitScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   kit: HomologationKit;
@@ -64,14 +62,14 @@ interface KitScheduleModalProps {
   onSuccess: () => void;
 }
 
-export const KitScheduleModal = ({
+export const EnhancedKitScheduleModal = ({
   isOpen,
   onClose,
   kit,
   technicians,
   existingSchedules,
   onSuccess
-}: KitScheduleModalProps) => {
+}: EnhancedKitScheduleModalProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);

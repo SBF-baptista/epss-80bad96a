@@ -32,6 +32,18 @@ export interface KitScheduleWithDetails extends KitSchedule {
     model: string;
     status: string;
   };
+  customer_id?: string;
+  customer_name?: string;
+  customer_document_number?: string;
+  customer_phone?: string;
+  customer_email?: string;
+  installation_address_street?: string;
+  installation_address_number?: string;
+  installation_address_neighborhood?: string;
+  installation_address_city?: string;
+  installation_address_state?: string;
+  installation_address_postal_code?: string;
+  installation_address_complement?: string;
 }
 
 export interface CreateKitScheduleData {
@@ -40,6 +52,18 @@ export interface CreateKitScheduleData {
   scheduled_date: string;
   installation_time?: string;
   notes?: string;
+  customer_id?: string;
+  customer_name: string;
+  customer_document_number: string;
+  customer_phone: string;
+  customer_email: string;
+  installation_address_street: string;
+  installation_address_number: string;
+  installation_address_neighborhood: string;
+  installation_address_city: string;
+  installation_address_state: string;
+  installation_address_postal_code: string;
+  installation_address_complement?: string;
 }
 
 // Create a new kit schedule

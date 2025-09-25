@@ -159,6 +159,63 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          address_city: string
+          address_complement: string | null
+          address_neighborhood: string
+          address_number: string
+          address_postal_code: string
+          address_state: string
+          address_street: string
+          created_at: string
+          created_by: string | null
+          document_number: string
+          document_type: string
+          email: string
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address_city: string
+          address_complement?: string | null
+          address_neighborhood: string
+          address_number: string
+          address_postal_code: string
+          address_state: string
+          address_street: string
+          created_at?: string
+          created_by?: string | null
+          document_number: string
+          document_type: string
+          email: string
+          id?: string
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          address_city?: string
+          address_complement?: string | null
+          address_neighborhood?: string
+          address_number?: string
+          address_postal_code?: string
+          address_state?: string
+          address_street?: string
+          created_at?: string
+          created_by?: string | null
+          document_number?: string
+          document_type?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       homologation_cards: {
         Row: {
           brand: string
@@ -479,7 +536,19 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          customer_document_number: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
           id: string
+          installation_address_city: string | null
+          installation_address_complement: string | null
+          installation_address_neighborhood: string | null
+          installation_address_number: string | null
+          installation_address_postal_code: string | null
+          installation_address_state: string | null
+          installation_address_street: string | null
           installation_time: string | null
           kit_id: string
           notes: string | null
@@ -491,7 +560,19 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          customer_document_number?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
+          installation_address_city?: string | null
+          installation_address_complement?: string | null
+          installation_address_neighborhood?: string | null
+          installation_address_number?: string | null
+          installation_address_postal_code?: string | null
+          installation_address_state?: string | null
+          installation_address_street?: string | null
           installation_time?: string | null
           kit_id: string
           notes?: string | null
@@ -503,7 +584,19 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          customer_document_number?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
+          installation_address_city?: string | null
+          installation_address_complement?: string | null
+          installation_address_neighborhood?: string | null
+          installation_address_number?: string | null
+          installation_address_postal_code?: string | null
+          installation_address_state?: string | null
+          installation_address_street?: string | null
           installation_time?: string | null
           kit_id?: string
           notes?: string | null
@@ -513,6 +606,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "kit_schedules_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "kit_schedules_kit_id_fkey"
             columns: ["kit_id"]
