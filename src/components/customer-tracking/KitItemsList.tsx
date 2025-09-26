@@ -3,13 +3,17 @@ import { CheckCircle, AlertCircle, Package, Wrench, Droplets } from "lucide-reac
 
 interface KitItemsListProps {
   homologationStatus?: {
-    isFullyHomologated: boolean;
-    homologatedEquipment: Array<{ item_name: string; quantity: number }>;
-    homologatedAccessories: Array<{ item_name: string; quantity: number }>;
-    homologatedSupplies: Array<{ item_name: string; quantity: number }>;
-    pendingEquipment: Array<{ item_name: string; quantity: number }>;
-    pendingAccessories: Array<{ item_name: string; quantity: number }>;
-    pendingSupplies: Array<{ item_name: string; quantity: number }>;
+    isHomologated: boolean;
+    pendingItems: {
+      equipment: Array<{ item_name: string; quantity: number }>;
+      accessories: Array<{ item_name: string; quantity: number }>;
+      supplies: Array<{ item_name: string; quantity: number }>;
+    };
+    homologatedItems: {
+      equipment: Array<{ item_name: string; quantity: number }>;
+      accessories: Array<{ item_name: string; quantity: number }>;
+      supplies: Array<{ item_name: string; quantity: number }>;
+    };
   };
   kit?: {
     equipment: Array<{ item_name: string; quantity: number }>;
@@ -38,7 +42,7 @@ export const KitItemsList = ({
   };
 
   const renderItemsList = (items: Array<{ item_name: string; quantity: number }>, type: string, isHomologated?: boolean) => {
-    if (items.length === 0) return null;
+    if (!items || items.length === 0) return null;
 
     return (
       <div key={type} className="space-y-2">
@@ -81,12 +85,12 @@ export const KitItemsList = ({
   if (showHomologationStatus && homologationStatus) {
     return (
       <div className="space-y-4">
-        {renderItemsList(homologationStatus.homologatedEquipment, 'equipment', true)}
-        {renderItemsList(homologationStatus.homologatedAccessories, 'accessory', true)}
-        {renderItemsList(homologationStatus.homologatedSupplies, 'supply', true)}
-        {renderItemsList(homologationStatus.pendingEquipment, 'equipment', false)}
-        {renderItemsList(homologationStatus.pendingAccessories, 'accessory', false)}
-        {renderItemsList(homologationStatus.pendingSupplies, 'supply', false)}
+        {renderItemsList(homologationStatus.homologatedItems?.equipment || [], 'equipment', true)}
+        {renderItemsList(homologationStatus.homologatedItems?.accessories || [], 'accessory', true)}
+        {renderItemsList(homologationStatus.homologatedItems?.supplies || [], 'supply', true)}
+        {renderItemsList(homologationStatus.pendingItems?.equipment || [], 'equipment', false)}
+        {renderItemsList(homologationStatus.pendingItems?.accessories || [], 'accessory', false)}
+        {renderItemsList(homologationStatus.pendingItems?.supplies || [], 'supply', false)}
       </div>
     );
   }
