@@ -42,13 +42,18 @@ const CustomerTracking = () => {
         fetchHomologationKits()
       ]);
 
-      setCustomers(customersData);
-      setFilteredCustomers(customersData);
-      setKitSchedules(schedulesData);
-      setHomologationKits(kitsData);
+      // Add safety checks for undefined data
+      const safeCustomersData = customersData || [];
+      const safeSchedulesData = schedulesData || [];
+      const safeKitsData = kitsData || [];
 
-      if (kitsData.length > 0) {
-        const homologationMap = await checkMultipleKitsHomologation(kitsData);
+      setCustomers(safeCustomersData);
+      setFilteredCustomers(safeCustomersData);
+      setKitSchedules(safeSchedulesData);
+      setHomologationKits(safeKitsData);
+
+      if (safeKitsData.length > 0) {
+        const homologationMap = await checkMultipleKitsHomologation(safeKitsData);
         setKitHomologationStatus(homologationMap);
       }
     } catch (error) {

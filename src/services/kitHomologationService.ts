@@ -69,8 +69,9 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
       supplies: [] as HomologationKitItem[]
     };
 
-    // Processar equipamentos
-    kit.equipment.forEach(item => {
+    // Processar equipamentos - add safety check
+    const equipment = kit.equipment || [];
+    equipment.forEach(item => {
       const key = `${item.item_name}:equipment`;
       if (homologatedSet.has(key)) {
         homologatedKitItems.equipment.push(item);
@@ -79,8 +80,9 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
       }
     });
 
-    // Processar acessórios
-    kit.accessories.forEach(item => {
+    // Processar acessórios - add safety check
+    const accessories = kit.accessories || [];
+    accessories.forEach(item => {
       const key = `${item.item_name}:accessory`;
       if (homologatedSet.has(key)) {
         homologatedKitItems.accessories.push(item);
@@ -89,8 +91,9 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
       }
     });
 
-    // Processar insumos
-    kit.supplies.forEach(item => {
+    // Processar insumos - add safety check
+    const supplies = kit.supplies || [];
+    supplies.forEach(item => {
       const key = `${item.item_name}:supply`;
       if (homologatedSet.has(key)) {
         homologatedKitItems.supplies.push(item);
@@ -153,8 +156,9 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
         supplies: [] as HomologationKitItem[]
       };
 
-      // Verificar equipamentos
-      kit.equipment.forEach(item => {
+      // Verificar equipamentos - add safety check
+      const equipment = kit.equipment || [];
+      equipment.forEach(item => {
         const key = `${item.item_name}:equipment`;
         if (homologatedSet.has(key)) {
           homologatedKitItems.equipment.push(item);
@@ -163,8 +167,9 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
         }
       });
 
-      // Verificar acessórios
-      kit.accessories.forEach(item => {
+      // Verificar acessórios - add safety check
+      const accessories = kit.accessories || [];
+      accessories.forEach(item => {
         const key = `${item.item_name}:accessory`;
         if (homologatedSet.has(key)) {
           homologatedKitItems.accessories.push(item);
@@ -173,8 +178,9 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
         }
       });
 
-      // Verificar insumos
-      kit.supplies.forEach(item => {
+      // Verificar insumos - add safety check
+      const supplies = kit.supplies || [];
+      supplies.forEach(item => {
         const key = `${item.item_name}:supply`;
         if (homologatedSet.has(key)) {
           homologatedKitItems.supplies.push(item);
