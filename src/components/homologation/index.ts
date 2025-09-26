@@ -10,3 +10,5 @@ export { AccessoryHomologationForm } from './AccessoryHomologationForm';
 export { AccessoryHomologationList } from './AccessoryHomologationList';
 export { SupplyHomologationForm } from './SupplyHomologationForm';
 export { SupplyHomologationList } from './SupplyHomologationList';
+export { PendingAccessoriesSection } from './PendingAccessoriesSection';
+export { PendingSuppliesSection } from './PendingSuppliesSection';

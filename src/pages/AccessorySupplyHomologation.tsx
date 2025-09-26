@@ -2,6 +2,8 @@ import HomologationErrorBoundary from "@/components/homologation/HomologationErr
 import { AccessoryHomologationForm, AccessoryHomologationList } from "@/components/homologation";
 import { SupplyHomologationForm } from "@/components/homologation/SupplyHomologationForm";
 import { SupplyHomologationList } from "@/components/homologation/SupplyHomologationList";
+import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
+import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
 
@@ -32,11 +34,13 @@ const AccessorySupplyHomologation = () => {
             </TabsList>
             
             <TabsContent value="accessories" className="space-y-6 mt-6">
+              <PendingAccessoriesSection />
               <AccessoryHomologationForm />
               <AccessoryHomologationList />
             </TabsContent>
             
             <TabsContent value="supplies" className="space-y-6 mt-6">
+              <PendingSuppliesSection />
               <SupplyHomologationForm />
               <SupplyHomologationList />
             </TabsContent>
