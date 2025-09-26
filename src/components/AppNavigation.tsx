@@ -14,7 +14,8 @@ import {
   Cog,
   ChevronRight,
   ChevronDown,
-  Calendar
+  Calendar,
+  UserCheck
 } from "lucide-react";
 import {
   Sidebar,
@@ -92,6 +93,13 @@ const navigationGroups = {
 
 // Itens individuais (não agrupados)
 const singleNavigationItems = [
+  { 
+    to: "/customer-tracking", 
+    label: "Acompanhamento de Clientes", 
+    icon: UserCheck,
+    description: "Acompanhar status dos clientes e kits",
+    roles: ["admin", "installer"]
+  },
   { 
     to: "/planning", 
     label: "Planejamento", 
