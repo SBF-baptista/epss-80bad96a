@@ -1,20 +1,36 @@
+import { useState } from "react";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import { AccessoryHomologationForm, AccessoryHomologationList } from "@/components/homologation";
 import { SupplyHomologationForm } from "@/components/homologation/SupplyHomologationForm";
 import { SupplyHomologationList } from "@/components/homologation/SupplyHomologationList";
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
+import { KitCreationModal } from "@/components/configuration/KitCreationModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import Navigation from "@/components/Navigation";
 
 const AccessorySupplyHomologation = () => {
+  const [isKitModalOpen, setIsKitModalOpen] = useState(false);
+
+  const handleKitCreated = () => {
+    // Refresh any kit-related data if needed
+  };
+
   return (
     <HomologationErrorBoundary>
       <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">
         <div className="w-full max-w-7xl mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">Homologação de Acessórios e Insumos</h1>
-            <Navigation />
+            <div className="flex items-center gap-3">
+              <Button onClick={() => setIsKitModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Kit
+              </Button>
+              <Navigation />
+            </div>
           </div>
           
           <Tabs defaultValue="accessories" className="w-full">
@@ -47,6 +63,12 @@ const AccessorySupplyHomologation = () => {
           </Tabs>
         </div>
       </div>
+      
+      <KitCreationModal
+        isOpen={isKitModalOpen}
+        onClose={() => setIsKitModalOpen(false)}
+        onSuccess={handleKitCreated}
+      />
     </HomologationErrorBoundary>
   );
 };
