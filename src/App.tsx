@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Kanban from "./pages/Kanban";
 import Homologation from "./pages/Homologation";
 import KitManagement from "./pages/KitManagement";
+import CustomerTracking from "./pages/CustomerTracking";
 import AccessorySupplyHomologation from "./pages/AccessorySupplyHomologation";
 import TechnicianManagement from "./pages/TechnicianManagement";
 import Planning from "./pages/Planning";
@@ -110,6 +111,15 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
                   <Layout>
                     <TechnicianManagement />
+                  </Layout>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/customer-tracking" element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                  <Layout>
+                    <CustomerTracking />
                   </Layout>
                 </RoleProtectedRoute>
               </ProtectedRoute>
