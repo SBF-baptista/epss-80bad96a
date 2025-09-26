@@ -31,21 +31,23 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const getStatusInfo = () => {
     // First check homologation status if kit exists
     if (kitData.kit && kitData.homologationStatus) {
-      if (!kitData.homologationStatus.isFullyHomologated) {
-        const pendingCount = 
-          kitData.homologationStatus.pendingEquipment.length +
-          kitData.homologationStatus.pendingAccessories.length +
-          kitData.homologationStatus.pendingSupplies.length;
-        
+      const hs = kitData.homologationStatus;
+      if (!hs.isHomologated) {
+        const pendingCount =
+          (hs.pendingItems?.equipment?.length || 0) +
+          (hs.pendingItems?.accessories?.length || 0) +
+          (hs.pendingItems?.supplies?.length || 0);
+
         return {
           status: "homologation",
           label: "🔴 Em homologação",
           color: "bg-red-500",
           description: `${pendingCount} itens pendentes de homologação`,
-          progress: 25
+          progress: 25,
         };
       }
     }
+
 
     switch (kitData.status) {
       case "scheduled":
