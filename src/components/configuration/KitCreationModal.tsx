@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Package, Wrench, Box } from 'lucide-react';
+import { Plus, Minus, Package, Wrench, Box, AlertTriangle } from 'lucide-react';
 import { createHomologationKit, type CreateKitRequest, type HomologationKitItem } from '@/services/homologationKitService';
+import { SelectOrCreateInput } from '@/components/kit-items';
+import { checkItemHomologation } from '@/services/kitHomologationService';
 
 interface KitCreationModalProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
   const { toast } = useToast();
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
+  const [nonHomologatedItems, setNonHomologatedItems] = useState<Set<string>>(new Set());
 
   const addItem = (type: 'equipment' | 'accessories' | 'supplies') => {
     const newItem = { 
@@ -63,6 +66,26 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         i === index ? { ...item, [field]: value } : item
       )
     }));
+  };
+
+  const handleItemNameChange = async (type: 'equipment' | 'accessories' | 'supplies', index: number, itemName: string) => {
+    updateItem(type, index, 'item_name', itemName);
+    
+    if (itemName.trim()) {
+      const itemType = type === 'equipment' ? 'equipment' : type === 'accessories' ? 'accessory' : 'supply';
+      const isHomologated = await checkItemHomologation(itemName.trim(), itemType);
+      const itemKey = `${type}-${index}`;
+      
+      setNonHomologatedItems(prev => {
+        const newSet = new Set(prev);
+        if (!isHomologated) {
+          newSet.add(itemKey);
+        } else {
+          newSet.delete(itemKey);
+        }
+        return newSet;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,47 +172,63 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       </div>
 
       <div className="space-y-2 max-h-40 overflow-y-auto">
-        {items.map((item, index) => (
-          <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
-            <div className="col-span-4">
-              <Input
-                placeholder="Nome do item"
-                value={item.item_name}
-                onChange={(e) => updateItem(type, index, 'item_name', e.target.value)}
-                className="h-8"
-              />
+        {items.map((item, index) => {
+          const itemKey = `${type}-${index}`;
+          const isNonHomologated = nonHomologatedItems.has(itemKey);
+          
+          return (
+            <div key={index} className={`grid grid-cols-12 gap-2 items-end p-2 border rounded-md ${isNonHomologated ? 'border-orange-300 bg-orange-50' : ''}`}>
+              <div className="col-span-4 relative">
+                <SelectOrCreateInput
+                  value={item.item_name}
+                  onChange={(value) => handleItemNameChange(type, index, value)}
+                  itemType={type === 'equipment' ? 'equipment' : type === 'accessories' ? 'accessory' : 'supply'}
+                  placeholder="Nome do item"
+                  className="h-8"
+                />
+                {isNonHomologated && (
+                  <div className="absolute -top-1 -right-1">
+                    <AlertTriangle className="w-4 h-4 text-orange-500" />
+                  </div>
+                )}
+              </div>
+              <div className="col-span-2">
+                <Input
+                  type="number"
+                  placeholder="Qtd"
+                  min="1"
+                  value={item.quantity}
+                  onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
+                  className="h-8"
+                />
+              </div>
+              <div className="col-span-5">
+                <Input
+                  placeholder="Descrição (opcional)"
+                  value={item.description || ''}
+                  onChange={(e) => updateItem(type, index, 'description', e.target.value)}
+                  className="h-8"
+                />
+              </div>
+              <div className="col-span-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeItem(type, index)}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <Minus className="w-3 h-3" />
+                </Button>
+              </div>
+              {isNonHomologated && (
+                <div className="col-span-12 text-xs text-orange-600 mt-1">
+                  ⚠️ Este item não está homologado e será sinalizado como pendência
+                </div>
+              )}
             </div>
-            <div className="col-span-2">
-              <Input
-                type="number"
-                placeholder="Qtd"
-                min="1"
-                value={item.quantity}
-                onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
-                className="h-8"
-              />
-            </div>
-            <div className="col-span-5">
-              <Input
-                placeholder="Descrição (opcional)"
-                value={item.description || ''}
-                onChange={(e) => updateItem(type, index, 'description', e.target.value)}
-                className="h-8"
-              />
-            </div>
-            <div className="col-span-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeItem(type, index)}
-                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-              >
-                <Minus className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
