@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, User, Package, AlertTriangle, Clock, CheckCircle, XCircle, Timer } from 'lucide-react';
+import { Package, AlertTriangle, CheckCircle, XCircle, Timer } from 'lucide-react';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
-import { KitScheduleModal } from './KitScheduleModal';
-import { KitCreationModal } from './KitCreationModal';
 import type { HomologationStatus } from '@/services/kitHomologationService';
 
 interface KitManagementPanelProps {
@@ -27,55 +24,17 @@ export const KitManagementPanel = ({
   onRefresh 
 }: KitManagementPanelProps) => {
   const { toast } = useToast();
-  const [selectedKit, setSelectedKit] = useState<HomologationKit | null>(null);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
-
-const handleScheduleKit = (kit: HomologationKit) => {
-  const isHomologated = homologationStatuses.get(kit.id!)?.isHomologated ?? false;
-  if (!isHomologated) {
-    toast({
-      title: "Kit sem homologação",
-      description: "Este kit precisa ser homologado antes de ser agendado.",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  setSelectedKit(kit);
-  setIsScheduleModalOpen(true);
-};
 
   const getKitSchedules = (kitId: string) => {
     return schedules.filter(schedule => schedule.kit_id === kitId);
   };
 
-const getKitStatus = (kit: HomologationKit, isHomologated: boolean) => {
-  if (!isHomologated) {
-    return { status: 'not_homologated', label: 'Não Homologado', variant: 'destructive' as const };
-  }
-
-  const kitSchedules = getKitSchedules(kit.id!);
-  if (kitSchedules.length === 0) {
-    return { status: 'available', label: 'Disponível', variant: 'default' as const };
-  }
-
-  const hasScheduled = kitSchedules.some(s => s.status === 'scheduled');
-  const hasInProgress = kitSchedules.some(s => s.status === 'in_progress');
-  const hasCompleted = kitSchedules.some(s => s.status === 'completed');
-
-  if (hasInProgress) {
-    return { status: 'in_progress', label: 'Em Instalação', variant: 'secondary' as const };
-  }
-  if (hasScheduled) {
-    return { status: 'scheduled', label: 'Agendado', variant: 'outline' as const };
-  }
-  if (hasCompleted) {
-    return { status: 'completed', label: 'Instalado', variant: 'default' as const };
-  }
-
-  return { status: 'available', label: 'Disponível', variant: 'default' as const };
-};
+  const getKitStatus = (kit: HomologationKit, isHomologated: boolean) => {
+    if (!isHomologated) {
+      return { status: 'not_homologated', label: 'Não Homologado', variant: 'destructive' as const };
+    }
+    return { status: 'homologated', label: 'Homologado', variant: 'default' as const };
+  };
 
 const calculatePendingDays = (createdAt: string): number => {
   if (!createdAt) return 0;
@@ -131,13 +90,9 @@ const renderKitItems = (kit: HomologationKit, homologationStatus: HomologationSt
 
   return (
     <div className="h-full space-y-4">
-      {/* Header with Add Kit Button */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Kits de Homologação</h3>
-        <Button onClick={() => setIsCreationModalOpen(true)}>
-          <Package className="w-4 h-4 mr-2" />
-          Novo Kit
-        </Button>
       </div>
 
       {/* Kit Cards */}
@@ -149,10 +104,9 @@ const renderKitItems = (kit: HomologationKit, homologationStatus: HomologationSt
             <p className="text-muted-foreground mb-4 max-w-md">
               Ainda não há kits de homologação criados. Crie o primeiro kit para começar a gerenciar as instalações.
             </p>
-            <Button onClick={() => setIsCreationModalOpen(true)}>
-              <Package className="w-4 h-4 mr-2" />
-              Criar Primeiro Kit
-            </Button>
+            <p className="text-muted-foreground">
+              Não há kits de homologação criados no momento.
+            </p>
           </div>
         ) : (
           kits.map((kit) => {
@@ -232,41 +186,6 @@ const renderKitItems = (kit: HomologationKit, homologationStatus: HomologationSt
                       </div>
                     )}
 
-                    {/* Current Schedules */}
-                    {kitSchedules.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Agendamentos:</h4>
-                        {kitSchedules.slice(0, 2).map((schedule) => (
-                          <div key={schedule.id} className="flex items-center gap-2 text-sm p-2 bg-muted/50 rounded-md">
-                            <User className="w-4 h-4" />
-                            <span className="flex-1">{schedule.technician.name}</span>
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(schedule.scheduled_date).toLocaleDateString('pt-BR')}
-                            </div>
-                          </div>
-                        ))}
-                        {kitSchedules.length > 2 && (
-                          <p className="text-xs text-muted-foreground">
-                            +{kitSchedules.length - 2} agendamento(s) adicional(is)
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2 border-t">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleScheduleKit(kit)}
-                        disabled={!isHomologated}
-                        className="flex-1"
-                      >
-                        <Clock className="w-4 h-4 mr-2" />
-                        {kitSchedules.length > 0 ? 'Reagendar' : 'Agendar'}
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -275,34 +194,6 @@ const renderKitItems = (kit: HomologationKit, homologationStatus: HomologationSt
         )}
       </div>
 
-      {/* Kit Creation Modal */}
-      <KitCreationModal
-        isOpen={isCreationModalOpen}
-        onClose={() => setIsCreationModalOpen(false)}
-        onSuccess={() => {
-          onRefresh();
-          setIsCreationModalOpen(false);
-        }}
-      />
-
-      {/* Schedule Modal */}
-      {selectedKit && (
-        <KitScheduleModal
-          isOpen={isScheduleModalOpen}
-          onClose={() => {
-            setIsScheduleModalOpen(false);
-            setSelectedKit(null);
-          }}
-          kit={selectedKit}
-          technicians={technicians}
-          existingSchedules={getKitSchedules(selectedKit.id!)}
-          onSuccess={() => {
-            onRefresh();
-            setIsScheduleModalOpen(false);
-            setSelectedKit(null);
-          }}
-        />
-      )}
     </div>
   );
 };

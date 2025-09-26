@@ -12,6 +12,7 @@ import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitSche
 import { ConfigurationStats } from './ConfigurationStats';
 import { KitManagementPanel } from './KitManagementPanel';
 import { ScheduleCalendar } from './ScheduleCalendar';
+import { SchedulingSection } from './SchedulingSection';
 import { supabase } from '@/integrations/supabase/client';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 
@@ -22,7 +23,7 @@ interface ConfigurationDashboardProps {
 export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDashboardProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'kits' | 'schedule'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'kits' | 'scheduling' | 'schedule'>('overview');
   
   // Data states
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -182,8 +183,17 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
             onClick={() => setActiveTab('kits')}
             className="flex items-center gap-2"
           >
-            <Users className="w-4 h-4" />
+            <Package className="w-4 h-4" />
             Gestão de Kits
+          </Button>
+          <Button
+            variant={activeTab === 'scheduling' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('scheduling')}
+            className="flex items-center gap-2"
+          >
+            <Users className="w-4 h-4" />
+            Agendamento
           </Button>
           <Button
             variant={activeTab === 'schedule' ? 'default' : 'outline'}
@@ -277,6 +287,16 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     onRefresh={loadData}
   />
 )}
+
+        {activeTab === 'scheduling' && (
+          <SchedulingSection
+            kits={kits}
+            technicians={technicians}
+            schedules={schedules}
+            homologationStatuses={homologationStatuses}
+            onRefresh={loadData}
+          />
+        )}
 
         {activeTab === 'schedule' && (
           <ScheduleCalendar
