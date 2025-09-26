@@ -18,6 +18,7 @@ interface SelectOrCreateInputProps {
   itemType: ItemType;
   placeholder?: string;
   className?: string;
+  allowCreate?: boolean; // New prop to control creation capability
 }
 
 const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
@@ -25,7 +26,8 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
   onChange,
   itemType,
   placeholder = "Selecione ou digite um item...",
-  className
+  className,
+  allowCreate = true
 }) => {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<KitItemOption[]>([]);
@@ -236,7 +238,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
             )}
             
             {/* Create new item option */}
-            {newItemName.trim() && !options.some(opt => opt.item_name.toLowerCase() === newItemName.toLowerCase()) && (
+            {allowCreate && newItemName.trim() && !options.some(opt => opt.item_name.toLowerCase() === newItemName.toLowerCase()) && (
               <CommandGroup>
                 <CommandItem
                   onSelect={handleCreateNewItem}
@@ -249,6 +251,20 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
                   </span>
                 </CommandItem>
               </CommandGroup>
+            )}
+            
+            {/* Message when creation is not allowed */}
+            {!allowCreate && newItemName.trim() && !options.some(opt => opt.item_name.toLowerCase() === newItemName.toLowerCase()) && (
+              <div className="px-2 py-3 text-sm text-muted-foreground border-t">
+                <div className="flex items-center gap-2 mb-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="font-medium">Item não encontrado</span>
+                </div>
+                <p className="text-xs">
+                  Para adicionar novos {itemType === 'equipment' ? 'equipamentos' : itemType === 'accessory' ? 'acessórios' : 'insumos'}, 
+                  acesse a página de Homologação de Acessórios e Insumos.
+                </p>
+              </div>
             )}
           </CommandList>
         </Command>

@@ -185,6 +185,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   itemType={type === 'equipment' ? 'equipment' : type === 'accessories' ? 'accessory' : 'supply'}
                   placeholder="Nome do item"
                   className="h-8"
+                  allowCreate={false}
                 />
                 {isNonHomologated && (
                   <div className="absolute -top-1 -right-1">

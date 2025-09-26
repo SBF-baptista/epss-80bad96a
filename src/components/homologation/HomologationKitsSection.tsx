@@ -548,6 +548,14 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                   />
                 </div>
               )}
+              
+              {/* Add Kit Button */}
+              {!isCreating && (
+                <Button onClick={() => setIsCreating(true)} className="shrink-0">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Kit
+                </Button>
+              )}
             </div>
 
             {/* Kit Cards */}
@@ -856,8 +864,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                 <h3 className="text-lg font-semibold mb-2">Nenhum kit na biblioteca</h3>
                 <p className="text-muted-foreground">
                   {homologationCardId 
-                    ? 'Kits serão criados através da página de Homologação de Acessórios e Insumos'
-                    : 'A biblioteca de kits está vazia. Use a página de Homologação para criar novos kits'
+                    ? 'Use o botão "Novo Kit" para criar kits organizados com equipamentos, acessórios e insumos'
+                    : 'A biblioteca de kits está vazia. Use o botão "Novo Kit" para começar'
                   }
                 </p>
               </div>
