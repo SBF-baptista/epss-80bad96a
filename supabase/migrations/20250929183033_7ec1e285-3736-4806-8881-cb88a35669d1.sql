@@ -1,0 +1,38 @@
+-- Inserir cliente de teste com dados aleatórios (corrigido)
+INSERT INTO customers (
+  name,
+  document_number,
+  document_type,
+  phone,
+  email,
+  address_street,
+  address_number,
+  address_neighborhood,
+  address_city,
+  address_state,
+  address_postal_code,
+  address_complement,
+  company_name,
+  package_name,
+  contract_number,
+  sales_representative,
+  total_value
+) VALUES (
+  'Maria Oliveira Silva',
+  '98765432100',
+  'cpf',
+  '21987654321',
+  'maria.oliveira@email.com',
+  'Rua das Flores',
+  '456',
+  'Jardim Botânico',
+  'São Paulo',
+  'SP',
+  '04567-890',
+  'Apto 301',
+  'Tech Solutions Ltda',
+  'Premium Fleet',
+  'CONT-2025-002',
+  'Carlos Mendes',
+  15750.00
+);
