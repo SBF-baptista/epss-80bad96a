@@ -36,16 +36,19 @@ export const SchedulingSection = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
-    loadCustomers();
-  }, [searchTerm]);
+    // Criar clientes com dados completos apenas uma vez
+    const initializeCustomers = async () => {
+      await createCustomersWithSalesData();
+      // Recarregar após criação com pequeno delay
+      setTimeout(() => loadCustomers(), 1000);
+    };
+    
+    initializeCustomers();
+  }, []); // Array vazio para executar apenas uma vez
 
   useEffect(() => {
-    // Criar clientes com dados completos apenas uma vez
-    createCustomersWithSalesData().then(() => {
-      // Recarregar clientes após criação
-      loadCustomers();
-    });
-  }, []); // Array vazio para executar apenas uma vez
+    loadCustomers();
+  }, [searchTerm]);
 
   const loadCustomers = async () => {
     try {
@@ -109,13 +112,19 @@ export const SchedulingSection = ({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total de Clientes</p>
                 <p className="text-2xl font-bold">{customers.length}</p>
+                <button 
+                  onClick={loadCustomers}
+                  className="text-xs text-blue-600 hover:underline mt-1"
+                >
+                  Atualizar
+                </button>
               </div>
               <User className="w-8 h-8 text-primary" />
             </div>
@@ -183,6 +192,9 @@ export const SchedulingSection = ({
                 <p className="text-muted-foreground mb-4">
                   {searchTerm ? 'Tente ajustar os termos de busca.' : 'Nenhum cliente encontrado.'}
                 </p>
+                <Button onClick={loadCustomers} variant="outline">
+                  Recarregar Clientes
+                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">

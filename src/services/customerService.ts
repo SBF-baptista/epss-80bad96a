@@ -180,7 +180,7 @@ export const createCustomer = async (data: CreateCustomerData): Promise<Customer
 export const getCustomers = async (search?: string): Promise<Customer[]> => {
   let query = supabase.from('customers').select('*');
   
-  if (search) {
+  if (search && search.trim()) {
     query = query.or(`name.ilike.%${search}%,document_number.ilike.%${search}%,email.ilike.%${search}%`);
   }
   
@@ -190,12 +190,14 @@ export const getCustomers = async (search?: string): Promise<Customer[]> => {
     console.error('Error fetching customers:', error);
     throw new Error(error.message);
   }
-
-  return data?.map(customer => ({
+  
+  const processedCustomers = data?.map(customer => ({
     ...customer,
     document_type: customer.document_type as 'cpf' | 'cnpj',
     vehicles: customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined
   })) || [];
+  
+  return processedCustomers;
 };
 
 export const getCustomerById = async (id: string): Promise<Customer | null> => {
@@ -268,7 +270,22 @@ export const createCustomersWithSalesData = async (): Promise<void> => {
   try {
     const user = await supabase.auth.getUser();
     if (!user.data.user) {
-      console.log('Usuário não autenticado, não é possível criar clientes');
+      return;
+    }
+
+    // Verificar quantos clientes já existem
+    const { data: existingCustomers, error: countError } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('created_by', user.data.user.id);
+
+    if (countError) {
+      console.error('Error checking existing customers:', countError);
+      return;
+    }
+
+    // Se já temos clientes suficientes, não criar novos
+    if (existingCustomers && existingCustomers.length >= 3) {
       return;
     }
 
@@ -349,35 +366,38 @@ export const createCustomersWithSalesData = async (): Promise<void> => {
     ];
 
     for (const customerData of customersData) {
-      // Verificar se cliente já existe
-      const { data: existingCustomer } = await supabase
+      // Verificar se cliente já existe pelo documento
+      const { data: existingCustomer, error: checkError } = await supabase
         .from('customers')
-        .select('id')
+        .select('id, name')
         .eq('document_number', customerData.document_number)
-        .single();
+        .maybeSingle();
 
-      if (!existingCustomer) {
-        const insertData = {
-          ...customerData,
-          created_by: user.data.user.id,
-          vehicles: JSON.stringify(customerData.vehicles)
-        };
+      if (checkError) {
+        console.error('Error checking customer existence:', checkError);
+        continue;
+      }
 
-        const { data, error } = await supabase
-          .from('customers')
-          .insert([insertData])
-          .select();
+      if (existingCustomer) {
+        continue;
+      }
 
-        if (error) {
-          console.error('Error creating customer:', customerData.name, error);
-        } else {
-          console.log('Created customer:', customerData.name);
-        }
-      } else {
-        console.log('Customer already exists:', customerData.name);
+      const insertData = {
+        ...customerData,
+        created_by: user.data.user.id,
+        vehicles: JSON.stringify(customerData.vehicles)
+      };
+
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([insertData])
+        .select();
+
+      if (error) {
+        console.error('Error creating customer:', customerData.name, error);
       }
     }
   } catch (error) {
-    console.error('Error creating customers with sales data:', error);
+    console.error('Error in createCustomersWithSalesData:', error);
   }
 };
