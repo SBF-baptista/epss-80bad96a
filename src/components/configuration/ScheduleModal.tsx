@@ -266,25 +266,9 @@ export const ScheduleModal = ({
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Basic Customer Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Nome</p>
-                    <p className="font-semibold">{selectedCustomer.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {selectedCustomer.document_type === 'cpf' ? 'CPF' : 'CNPJ'}
-                    </p>
-                    <p className="font-semibold">{selectedCustomer.document_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Telefone</p>
-                    <p className="font-semibold">{selectedCustomer.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p className="font-semibold">{selectedCustomer.email}</p>
-                  </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Nome</p>
+                  <p className="font-semibold">{selectedCustomer.name}</p>
                 </div>
 
                 {/* Company and Package Info */}
@@ -365,38 +349,14 @@ export const ScheduleModal = ({
                   </div>
                 )}
 
-                {/* Sales Info */}
-                {(selectedCustomer.total_value || selectedCustomer.contract_number || selectedCustomer.sales_representative) && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
-                    {selectedCustomer.total_value && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Valor Total</span>
-                        </div>
-                        <p className="font-semibold text-green-600">
-                          R$ {selectedCustomer.total_value.toLocaleString('pt-BR')}
-                        </p>
-                      </div>
-                    )}
-                    {selectedCustomer.contract_number && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Contrato</span>
-                        </div>
-                        <p className="font-medium">{selectedCustomer.contract_number}</p>
-                      </div>
-                    )}
-                    {selectedCustomer.sales_representative && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Vendedor</span>
-                        </div>
-                        <p className="font-medium">{selectedCustomer.sales_representative}</p>
-                      </div>
-                    )}
+                {/* Contract Info */}
+                {selectedCustomer.contract_number && (
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      <span className="text-sm font-medium text-muted-foreground">Contrato</span>
+                    </div>
+                    <p className="font-medium">{selectedCustomer.contract_number}</p>
                   </div>
                 )}
               </CardContent>
