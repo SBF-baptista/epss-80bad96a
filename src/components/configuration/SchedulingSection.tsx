@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus } from 'lucide-react';
+import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, CalendarCheck } from 'lucide-react';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
@@ -12,6 +12,7 @@ import type { HomologationStatus } from '@/services/kitHomologationService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { getCustomers, createCustomersWithSalesData } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
+import { RescheduleModal } from '../customer-tracking/RescheduleModal';
 
 interface SchedulingSectionProps {
   kits: HomologationKit[];
@@ -33,8 +34,10 @@ export const SchedulingSection = ({
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
 
   useEffect(() => {
     // Remover criação automática de clientes - sistema agora inicia vazio
@@ -68,6 +71,13 @@ export const SchedulingSection = ({
     setSelectedCustomer(customer);
     setSelectedVehicle(vehicle || null);
     setIsScheduleModalOpen(true);
+  };
+
+  const handleRescheduleCustomer = (customer: Customer, schedule: any) => {
+    console.log('Rescheduling for customer:', customer.id, customer.name);
+    setSelectedCustomer(customer);
+    setSelectedSchedule(schedule);
+    setIsRescheduleModalOpen(true);
   };
 
   const getCustomerSchedules = (customerId: string) => {
@@ -267,16 +277,31 @@ export const SchedulingSection = ({
                             )}
                           </div>
 
-                          {/* General Action Button */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleScheduleCustomer(customer)}
-                            className="w-full"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Novo Agendamento Geral
-                          </Button>
+                          {/* Action Buttons */}
+                          <div className="space-y-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleScheduleCustomer(customer)}
+                              disabled={activeSchedules.length > 0}
+                              className="w-full"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Novo Agendamento Geral
+                            </Button>
+                            
+                            {activeSchedules.length > 0 && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => handleRescheduleCustomer(customer, activeSchedules[0])}
+                                className="w-full"
+                              >
+                                <CalendarCheck className="w-4 h-4 mr-2" />
+                                Reagendamento
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -308,6 +333,26 @@ export const SchedulingSection = ({
           loadCustomers();
         }}
       />
+
+      {/* Reschedule Modal */}
+      {selectedSchedule && (
+        <RescheduleModal
+          schedule={{
+            ...selectedSchedule,
+            customer_id: selectedCustomer?.id
+          }}
+          isOpen={isRescheduleModalOpen}
+          onClose={() => {
+            setIsRescheduleModalOpen(false);
+            setSelectedSchedule(null);
+            setSelectedCustomer(null);
+          }}
+          onUpdate={() => {
+            onRefresh();
+            loadCustomers();
+          }}
+        />
+      )}
     </div>
   );
 };
