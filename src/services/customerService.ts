@@ -313,9 +313,13 @@ export const createCustomersWithSalesData = async (): Promise<void> => {
         contract_number: 'CT-1759515431240',
         sales_representative: 'Carlos Silva',
         vehicles: [
-          { brand: 'Volvo', model: 'FM 370 4x2 2p', year: 2020, quantity: 2 },
-          { brand: 'Ford', model: 'Cargo 1719 4x2', year: 2018, quantity: 3 },
-          { brand: 'DAF', model: 'XF 510 6x4', year: 2019, quantity: 2 }
+          { brand: 'Volvo', model: 'FM 370 4x2 2p', year: 2020, plate: 'ABC-1234' },
+          { brand: 'Volvo', model: 'FM 370 4x2 2p', year: 2020, plate: 'ABC-1235' },
+          { brand: 'Ford', model: 'Cargo 1719 4x2', year: 2018, plate: 'DEF-5678' },
+          { brand: 'Ford', model: 'Cargo 1719 4x2', year: 2018, plate: 'DEF-5679' },
+          { brand: 'Ford', model: 'Cargo 1719 4x2', year: 2018, plate: 'DEF-5680' },
+          { brand: 'DAF', model: 'XF 510 6x4', year: 2019, plate: 'GHI-9012' },
+          { brand: 'DAF', model: 'XF 510 6x4', year: 2019, plate: 'GHI-9013' }
         ],
         accessories: ['Cabo de Alimentação', 'Kit de Câmeras Frontais', 'Suporte de Fixação', 'Monitor LCD 7"', 'Câmera de Ré'],
         modules: ['Bloqueador Veicular', 'Sistema de Backup', 'Módulo de Temperatura', 'Central de Monitoramento']
@@ -338,8 +342,9 @@ export const createCustomersWithSalesData = async (): Promise<void> => {
         contract_number: 'CT-1759515431241',
         sales_representative: 'Ana Costa',
         vehicles: [
-          { brand: 'Scania', model: 'R 450 6x4 3p', year: 2021, quantity: 1 },
-          { brand: 'Mercedes-Benz', model: 'Actros 2546 6x4', year: 2020, quantity: 2 }
+          { brand: 'Scania', model: 'R 450 6x4 3p', year: 2021, plate: 'JKL-3456' },
+          { brand: 'Mercedes-Benz', model: 'Actros 2546 6x4', year: 2020, plate: 'MNO-7890' },
+          { brand: 'Mercedes-Benz', model: 'Actros 2546 6x4', year: 2020, plate: 'MNO-7891' }
         ],
         accessories: ['Kit de Câmeras Frontais', 'Sensor de Fadiga', 'Monitor LCD 7"', 'Câmera de Ré', 'Câmeras Laterais', 'Sistema de Áudio'],
         modules: ['Módulo de Rastreamento GPS', 'Central de Monitoramento', 'Módulo de Telemetria', 'Sistema Anti-furto']
@@ -362,8 +367,10 @@ export const createCustomersWithSalesData = async (): Promise<void> => {
         contract_number: 'CT-1759515431242',
         sales_representative: 'João Oliveira',
         vehicles: [
-          { brand: 'Volkswagen', model: 'Constellation 19.330 4x2', year: 2019, quantity: 3 },
-          { brand: 'Iveco', model: 'Stralis 440 4x2', year: 2020, quantity: 1 }
+          { brand: 'Volkswagen', model: 'Constellation 19.330 4x2', year: 2019, plate: 'PQR-2468' },
+          { brand: 'Volkswagen', model: 'Constellation 19.330 4x2', year: 2019, plate: 'PQR-2469' },
+          { brand: 'Volkswagen', model: 'Constellation 19.330 4x2', year: 2019, plate: 'PQR-2470' },
+          { brand: 'Iveco', model: 'Stralis 440 4x2', year: 2020, plate: 'STU-1357' }
         ],
         accessories: ['Microfone Externo', 'Botão de Pânico', 'Sensor de Porta', 'Antena GPS Externa', 'Cabo de Alimentação'],
         modules: ['Bloqueador Veicular', 'Sensor de Combustível', 'Módulo de Temperatura', 'Sistema de Comunicação', 'Módulo de Identificação']

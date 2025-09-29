@@ -69,6 +69,7 @@ export const ScheduleModal = ({
   isOpen,
   onClose,
   selectedCustomer: initialCustomer,
+  selectedVehicle: initialVehicle,
   kits,
   technicians,
   onSuccess
@@ -76,6 +77,7 @@ export const ScheduleModal = ({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(initialVehicle || null);
   
 
   const form = useForm<FormData>({
@@ -86,6 +88,16 @@ export const ScheduleModal = ({
       notes: ''
     }
   });
+
+  // Update selected vehicle when initialVehicle changes
+  useEffect(() => {
+    if (initialVehicle) {
+      setSelectedVehicle(initialVehicle);
+      // Pre-fill notes with vehicle information
+      const vehicleInfo = `Veículo: ${initialVehicle.brand} ${initialVehicle.model} (${initialVehicle.year}) - Placa: ${initialVehicle.plate}`;
+      form.setValue('notes', vehicleInfo);
+    }
+  }, [initialVehicle, form]);
 
 
   const onSubmit = async (data: FormData) => {
@@ -149,7 +161,11 @@ export const ScheduleModal = ({
           installation_address_city: selectedCustomer.address_city,
           installation_address_state: selectedCustomer.address_state,
           installation_address_postal_code: selectedCustomer.address_postal_code,
-          installation_address_complement: selectedCustomer.address_complement || undefined
+          installation_address_complement: selectedCustomer.address_complement || undefined,
+          vehicle_plate: selectedVehicle?.plate,
+          vehicle_brand: selectedVehicle?.brand,
+          vehicle_model: selectedVehicle?.model,
+          vehicle_year: selectedVehicle?.year
         });
       }
 
@@ -178,6 +194,7 @@ export const ScheduleModal = ({
   const handleClose = () => {
     form.reset();
     setSelectedCustomer(initialCustomer || null);
+    setSelectedVehicle(initialVehicle || null);
     onClose();
   };
 
@@ -265,14 +282,21 @@ export const ScheduleModal = ({
                       <span className="text-sm font-medium text-muted-foreground">Veículos</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {selectedCustomer.vehicles.map((vehicle, index) => (
-                        <div key={index} className="p-3 border rounded-lg">
-                          <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
-                           <p className="text-sm text-muted-foreground">
-                             Ano: {vehicle.year} | Placa: {vehicle.plate}
-                           </p>
-                        </div>
-                      ))}
+                       {selectedCustomer.vehicles.map((vehicle, index) => (
+                         <div key={index} className={`p-3 border rounded-lg ${
+                           selectedVehicle?.plate === vehicle.plate ? 'border-primary bg-primary/5' : ''
+                         }`}>
+                           <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Ano: {vehicle.year} | Placa: {vehicle.plate}
+                            </p>
+                            {selectedVehicle?.plate === vehicle.plate && (
+                              <Badge variant="default" className="mt-1 text-xs">
+                                Veículo Selecionado
+                              </Badge>
+                            )}
+                         </div>
+                       ))}
                     </div>
                   </div>
                 )}
