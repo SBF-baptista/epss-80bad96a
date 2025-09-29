@@ -147,7 +147,7 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
 
   } catch (error) {
     console.error(`[${timestamp}] ❌ ERROR in createAutomaticOrder:`, error)
-    console.error(`[${timestamp}] Error stack:`, error.stack)
+    console.error(`[${timestamp}] Error stack:`, (error as any)?.stack)
     throw error
   }
 }

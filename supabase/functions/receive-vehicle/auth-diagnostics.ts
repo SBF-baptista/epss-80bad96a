@@ -65,24 +65,25 @@ export function createAuthDiagnosticsEndpoint(req: Request, timestamp: string, r
         }
       },
       all_headers: Object.fromEntries(req.headers.entries()),
-      recommendations: []
+      recommendations: [] as string[]
     }
     
     // Generate specific recommendations based on analysis
+    const recommendations = authAnalysis.recommendations as string[]
     if (!authAnalysis.api_key_analysis.header_present) {
-      authAnalysis.recommendations.push('❌ The x-api-key header is missing. Add it to your request.')
+      recommendations.push('❌ The x-api-key header is missing. Add it to your request.')
     } else if (!authAnalysis.api_key_analysis.header_value_provided) {
-      authAnalysis.recommendations.push('❌ The x-api-key header is present but empty. Provide a valid API key.')
+      recommendations.push('❌ The x-api-key header is present but empty. Provide a valid API key.')
     } else if (!authAnalysis.server_config.expected_key_configured) {
-      authAnalysis.recommendations.push('❌ Server misconfiguration: VEHICLE_API_KEY not set in environment.')
+      recommendations.push('❌ Server misconfiguration: VEHICLE_API_KEY not set in environment.')
     } else if (authAnalysis.api_key_analysis.has_leading_whitespace || authAnalysis.api_key_analysis.has_trailing_whitespace) {
-      authAnalysis.recommendations.push('⚠️ API key has leading/trailing whitespace. Trim the key.')
+      recommendations.push('⚠️ API key has leading/trailing whitespace. Trim the key.')
     } else if (authAnalysis.authentication_result.length_comparison.difference !== 0) {
-      authAnalysis.recommendations.push(`❌ API key length mismatch. Provided: ${authAnalysis.authentication_result.length_comparison.provided}, Expected: ${authAnalysis.authentication_result.length_comparison.expected}`)
+      recommendations.push(`❌ API key length mismatch. Provided: ${authAnalysis.authentication_result.length_comparison.provided}, Expected: ${authAnalysis.authentication_result.length_comparison.expected}`)
     } else if (!authAnalysis.authentication_result.keys_match_exact) {
-      authAnalysis.recommendations.push('❌ API key value does not match. Verify the correct key is being used.')
+      recommendations.push('❌ API key value does not match. Verify the correct key is being used.')
     } else {
-      authAnalysis.recommendations.push('✅ Authentication should work correctly.')
+      recommendations.push('✅ Authentication should work correctly.')
     }
     
     return new Response(
@@ -98,7 +99,7 @@ export function createAuthDiagnosticsEndpoint(req: Request, timestamp: string, r
 }
 
 export function createEnhancedAuthError(apiKey: string | null, expectedApiKey: string | null, requestId: string): Response {
-  const errorDetails = {
+  const errorDetails: any = {
     error: 'Unauthorized',
     message: 'Authentication failed',
     request_id: requestId,

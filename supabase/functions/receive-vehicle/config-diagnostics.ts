@@ -45,49 +45,52 @@ export function createConfigDiagnosticsEndpoint(req: Request, timestamp: string,
           full_preview: vehicleApiKey ? `${vehicleApiKey.substring(0, 15)}...${vehicleApiKey.substring(vehicleApiKey.length - 15)}` : 'Not configured'
         }
       },
-      configuration_issues: [],
-      recommendations: []
+      configuration_issues: [] as string[],
+      recommendations: [] as string[]
     }
     
     // Check for configuration issues
+    const configIssues = configAnalysis.configuration_issues as string[]
+    const recommendations = configAnalysis.recommendations as string[]
+    
     if (!supabaseUrl) {
-      configAnalysis.configuration_issues.push('SUPABASE_URL is not configured')
-      configAnalysis.recommendations.push('Set SUPABASE_URL in Supabase Edge Functions secrets')
+      configIssues.push('SUPABASE_URL is not configured')
+      recommendations.push('Set SUPABASE_URL in Supabase Edge Functions secrets')
     }
     
     if (!supabaseAnonKey) {
-      configAnalysis.configuration_issues.push('SUPABASE_ANON_KEY is not configured')
-      configAnalysis.recommendations.push('Set SUPABASE_ANON_KEY in Supabase Edge Functions secrets')
+      configIssues.push('SUPABASE_ANON_KEY is not configured')
+      recommendations.push('Set SUPABASE_ANON_KEY in Supabase Edge Functions secrets')
     }
     
     if (!vehicleApiKey) {
-      configAnalysis.configuration_issues.push('VEHICLE_API_KEY is not configured - this is critical for authentication')
-      configAnalysis.recommendations.push('❌ Set VEHICLE_API_KEY in Supabase Edge Functions secrets - this is the most critical missing configuration')
+      configIssues.push('VEHICLE_API_KEY is not configured - this is critical for authentication')
+      recommendations.push('❌ Set VEHICLE_API_KEY in Supabase Edge Functions secrets - this is the most critical missing configuration')
     } else {
       // Detailed analysis of the vehicle API key
-      configAnalysis.recommendations.push('✅ VEHICLE_API_KEY is configured')
+      recommendations.push('✅ VEHICLE_API_KEY is configured')
       
       // Check for common issues with the key
       const trimmedKey = vehicleApiKey.trim()
       if (vehicleApiKey !== trimmedKey) {
-        configAnalysis.configuration_issues.push('VEHICLE_API_KEY has leading/trailing whitespace')
-        configAnalysis.recommendations.push('⚠️ Remove leading/trailing whitespace from VEHICLE_API_KEY')
+        configIssues.push('VEHICLE_API_KEY has leading/trailing whitespace')
+        recommendations.push('⚠️ Remove leading/trailing whitespace from VEHICLE_API_KEY')
       }
       
       if (vehicleApiKey.length < 10) {
-        configAnalysis.configuration_issues.push('VEHICLE_API_KEY appears to be too short')
-        configAnalysis.recommendations.push('⚠️ Verify VEHICLE_API_KEY is complete - seems unusually short')
+        configIssues.push('VEHICLE_API_KEY appears to be too short')
+        recommendations.push('⚠️ Verify VEHICLE_API_KEY is complete - seems unusually short')
       }
       
       if (vehicleApiKey.length > 100) {
-        configAnalysis.configuration_issues.push('VEHICLE_API_KEY appears to be unusually long')
-        configAnalysis.recommendations.push('⚠️ Verify VEHICLE_API_KEY is correct - seems unusually long')
+        configIssues.push('VEHICLE_API_KEY appears to be unusually long')
+        recommendations.push('⚠️ Verify VEHICLE_API_KEY is correct - seems unusually long')
       }
     }
     
     // Add general recommendations
-    if (configAnalysis.configuration_issues.length === 0) {
-      configAnalysis.recommendations.push('✅ All required environment variables are configured')
+    if (configIssues.length === 0) {
+      recommendations.push('✅ All required environment variables are configured')
     }
     
     return new Response(

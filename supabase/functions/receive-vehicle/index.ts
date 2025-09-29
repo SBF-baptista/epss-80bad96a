@@ -19,7 +19,7 @@ serve(async (req) => {
   console.log(`[${timestamp}][${requestId}] Origin: ${req.headers.get('origin') || 'Not provided'}`)
   console.log(`[${timestamp}][${requestId}] Content-Type: ${req.headers.get('content-type') || 'Not provided'}`)
   console.log(`[${timestamp}][${requestId}] Content-Length: ${req.headers.get('content-length') || 'Not provided'}`)
-  console.log(`[${timestamp}][${requestId}] Headers count: ${req.headers.entries().length}`)
+  console.log(`[${timestamp}][${requestId}] Headers count: ${Array.from(req.headers.entries()).length}`)
   
   // Log all headers for debug (excluding sensitive ones)
   const headers = Object.fromEntries(req.headers.entries())
@@ -161,11 +161,11 @@ serve(async (req) => {
       }
       console.log(`[${timestamp}][${requestId}] Request body structure:`, JSON.stringify(requestBody, null, 2))
     } catch (error) {
-      console.log(`[${timestamp}][${requestId}] ERROR - Invalid JSON in request body:`, error.message)
+      console.log(`[${timestamp}][${requestId}] ERROR - Invalid JSON in request body:`, (error as any)?.message)
       return new Response(
         JSON.stringify({ 
           error: 'Invalid JSON', 
-          message: `Request body must be valid JSON. Error: ${error.message}`,
+          message: `Request body must be valid JSON. Error: ${(error as any)?.message}`,
           request_id: requestId
         }),
         { 
@@ -223,9 +223,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[${timestamp}][${requestId}] ===== UNEXPECTED ERROR =====`)
-    console.error(`[${timestamp}][${requestId}] Error message:`, error.message)
-    console.error(`[${timestamp}][${requestId}] Error stack:`, error.stack)
-    console.error(`[${timestamp}][${requestId}] Error name:`, error.name)
+    console.error(`[${timestamp}][${requestId}] Error message:`, (error as any)?.message)
+    console.error(`[${timestamp}][${requestId}] Error stack:`, (error as any)?.stack)
+    console.error(`[${timestamp}][${requestId}] Error name:`, (error as any)?.name)
     console.error(`[${timestamp}][${requestId}] ===== END UNEXPECTED ERROR =====`)
     return new Response(
       JSON.stringify({ 

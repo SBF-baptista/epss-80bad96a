@@ -132,7 +132,7 @@ export async function processVehicleGroups(
           try {
             const orderNumber = await generateAutoOrderNumber(supabase)
             console.log(`[${timestamp}][${requestId}] Generated order number: ${orderNumber}`)
-            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name, groupAccessories)
+            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name, groupAccessories.map(acc => ({ accessory_name: acc.accessory_name, quantity: acc.quantity || 1 })))
             processingNotes = `Automation rule found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
             
             // Update incoming vehicle record with order info
