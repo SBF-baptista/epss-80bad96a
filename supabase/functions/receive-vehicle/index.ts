@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-// Supabase client will be loaded dynamically at runtime to avoid CDN build issues
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from './shared.ts'
 import { validateRequestBody } from './validation.ts'
 import { processVehicleGroups } from './processing.ts'
@@ -19,7 +19,7 @@ serve(async (req) => {
   console.log(`[${timestamp}][${requestId}] Origin: ${req.headers.get('origin') || 'Not provided'}`)
   console.log(`[${timestamp}][${requestId}] Content-Type: ${req.headers.get('content-type') || 'Not provided'}`)
   console.log(`[${timestamp}][${requestId}] Content-Length: ${req.headers.get('content-length') || 'Not provided'}`)
-  console.log(`[${timestamp}][${requestId}] Headers count: ${Array.from(req.headers.entries()).length}`)
+  console.log(`[${timestamp}][${requestId}] Headers count: ${req.headers.entries().length}`)
   
   // Log all headers for debug (excluding sensitive ones)
   const headers = Object.fromEntries(req.headers.entries())
@@ -86,7 +86,6 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration')
     }
     
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     console.log(`[${timestamp}][${requestId}] Supabase client initialized successfully`)
 
@@ -162,12 +161,11 @@ serve(async (req) => {
       }
       console.log(`[${timestamp}][${requestId}] Request body structure:`, JSON.stringify(requestBody, null, 2))
     } catch (error) {
-      const err = error as any;
-      console.log(`[${timestamp}][${requestId}] ERROR - Invalid JSON in request body:`, err?.message);
+      console.log(`[${timestamp}][${requestId}] ERROR - Invalid JSON in request body:`, error.message)
       return new Response(
         JSON.stringify({ 
           error: 'Invalid JSON', 
-          message: `Request body must be valid JSON. Error: ${err?.message}`,
+          message: `Request body must be valid JSON. Error: ${error.message}`,
           request_id: requestId
         }),
         { 
@@ -225,10 +223,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[${timestamp}][${requestId}] ===== UNEXPECTED ERROR =====`)
-    const err = error as any;
-    console.error(`[${timestamp}][${requestId}] Error message:`, err?.message)
-    console.error(`[${timestamp}][${requestId}] Error stack:`, err?.stack)
-    console.error(`[${timestamp}][${requestId}] Error name:`, err?.name)
+    console.error(`[${timestamp}][${requestId}] Error message:`, error.message)
+    console.error(`[${timestamp}][${requestId}] Error stack:`, error.stack)
+    console.error(`[${timestamp}][${requestId}] Error name:`, error.name)
     console.error(`[${timestamp}][${requestId}] ===== END UNEXPECTED ERROR =====`)
     return new Response(
       JSON.stringify({ 

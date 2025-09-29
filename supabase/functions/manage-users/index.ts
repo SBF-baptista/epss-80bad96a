@@ -1,15 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// Supabase client will be loaded dynamically at runtime to avoid CDN build issues
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// Dynamically load Supabase client to prevent build-time fetch from CDN
-const loadCreateClient = async () => {
-  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-  return createClient;
 };
 
 interface CreateUserRequest {
@@ -59,8 +53,8 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Create admin client with service role key (dynamic import)
-    const supabaseAdmin = (await (await import('https://esm.sh/@supabase/supabase-js@2')).createClient)(
+    // Create admin client with service role key
+    const supabaseAdmin = createClient(
       supabaseUrl,
       supabaseServiceKey,
       {
@@ -102,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (error) {
         return new Response(JSON.stringify({ 
           error: 'Invalid request format',
-          details: (error as any)?.message || String(error)
+          details: error.message 
         }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -300,12 +294,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Roles fetched:', roles?.length || 0);
 
-    const usersWithRoles = users.users.map((user: any) => ({
+    const usersWithRoles = users.users.map(user => ({
       id: user.id,
       email: user.email,
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
-      roles: (roles as any[])?.filter((r: any) => r.user_id === user.id).map((r: any) => r.role) || []
+      roles: roles?.filter(r => r.user_id === user.id).map(r => r.role) || []
     }));
 
     console.log('Returning users with roles:', usersWithRoles.length);
@@ -319,7 +313,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error('Error in manage-users function:', error);
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      details: (error as any)?.message || String(error)
+      details: error.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

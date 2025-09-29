@@ -45,49 +45,49 @@ export function createConfigDiagnosticsEndpoint(req: Request, timestamp: string,
           full_preview: vehicleApiKey ? `${vehicleApiKey.substring(0, 15)}...${vehicleApiKey.substring(vehicleApiKey.length - 15)}` : 'Not configured'
         }
       },
-      configuration_issues: [] as string[],
-      recommendations: [] as string[]
+      configuration_issues: [],
+      recommendations: []
     }
     
     // Check for configuration issues
     if (!supabaseUrl) {
-      (configAnalysis.configuration_issues as string[]).push('SUPABASE_URL is not configured')
-      ;(configAnalysis.recommendations as string[]).push('Set SUPABASE_URL in Supabase Edge Functions secrets')
+      configAnalysis.configuration_issues.push('SUPABASE_URL is not configured')
+      configAnalysis.recommendations.push('Set SUPABASE_URL in Supabase Edge Functions secrets')
     }
     
     if (!supabaseAnonKey) {
-      (configAnalysis.configuration_issues as string[]).push('SUPABASE_ANON_KEY is not configured')
-      ;(configAnalysis.recommendations as string[]).push('Set SUPABASE_ANON_KEY in Supabase Edge Functions secrets')
+      configAnalysis.configuration_issues.push('SUPABASE_ANON_KEY is not configured')
+      configAnalysis.recommendations.push('Set SUPABASE_ANON_KEY in Supabase Edge Functions secrets')
     }
     
     if (!vehicleApiKey) {
-      (configAnalysis.configuration_issues as string[]).push('VEHICLE_API_KEY is not configured - this is critical for authentication')
-      ;(configAnalysis.recommendations as string[]).push('❌ Set VEHICLE_API_KEY in Supabase Edge Functions secrets - this is the most critical missing configuration')
+      configAnalysis.configuration_issues.push('VEHICLE_API_KEY is not configured - this is critical for authentication')
+      configAnalysis.recommendations.push('❌ Set VEHICLE_API_KEY in Supabase Edge Functions secrets - this is the most critical missing configuration')
     } else {
       // Detailed analysis of the vehicle API key
-      ;(configAnalysis.recommendations as string[]).push('✅ VEHICLE_API_KEY is configured')
+      configAnalysis.recommendations.push('✅ VEHICLE_API_KEY is configured')
       
       // Check for common issues with the key
       const trimmedKey = vehicleApiKey.trim()
       if (vehicleApiKey !== trimmedKey) {
-        (configAnalysis.configuration_issues as string[]).push('VEHICLE_API_KEY has leading/trailing whitespace')
-        ;(configAnalysis.recommendations as string[]).push('⚠️ Remove leading/trailing whitespace from VEHICLE_API_KEY')
+        configAnalysis.configuration_issues.push('VEHICLE_API_KEY has leading/trailing whitespace')
+        configAnalysis.recommendations.push('⚠️ Remove leading/trailing whitespace from VEHICLE_API_KEY')
       }
       
       if (vehicleApiKey.length < 10) {
-        (configAnalysis.configuration_issues as string[]).push('VEHICLE_API_KEY appears to be too short')
-        ;(configAnalysis.recommendations as string[]).push('⚠️ Verify VEHICLE_API_KEY is complete - seems unusually short')
+        configAnalysis.configuration_issues.push('VEHICLE_API_KEY appears to be too short')
+        configAnalysis.recommendations.push('⚠️ Verify VEHICLE_API_KEY is complete - seems unusually short')
       }
       
       if (vehicleApiKey.length > 100) {
-        (configAnalysis.configuration_issues as string[]).push('VEHICLE_API_KEY appears to be unusually long')
-        ;(configAnalysis.recommendations as string[]).push('⚠️ Verify VEHICLE_API_KEY is correct - seems unusually long')
+        configAnalysis.configuration_issues.push('VEHICLE_API_KEY appears to be unusually long')
+        configAnalysis.recommendations.push('⚠️ Verify VEHICLE_API_KEY is correct - seems unusually long')
       }
     }
     
     // Add general recommendations
     if (configAnalysis.configuration_issues.length === 0) {
-      ;(configAnalysis.recommendations as string[]).push('✅ All required environment variables are configured')
+      configAnalysis.recommendations.push('✅ All required environment variables are configured')
     }
     
     return new Response(
