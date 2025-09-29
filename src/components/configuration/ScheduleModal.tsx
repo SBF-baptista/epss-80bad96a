@@ -42,12 +42,11 @@ import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { Customer } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
-import { CustomerSelector, CustomerForm, CustomerEditForm } from '@/components/customers';
+import { CustomerSelector, CustomerForm } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const formSchema = z.object({
-  kit_id: z.string().min(1, 'Selecione um kit'),
   technician_ids: z.array(z.string()).min(1, 'Selecione pelo menos um técnico'),
   scheduled_date: z.date({ required_error: 'Selecione uma data' }),
   installation_time: z.string().optional(),
@@ -77,12 +76,10 @@ export const ScheduleModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
-  const [showCustomerEdit, setShowCustomerEdit] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      kit_id: '',
       technician_ids: [],
       installation_time: '',
       notes: ''
@@ -122,11 +119,20 @@ export const ScheduleModal = ({
         }
       }
 
-      // Create schedules for each technician
-      const selectedKit = kits.find(k => k.id === data.kit_id);
+      // Create schedules for each technician - use first available kit
+      const selectedKit = kits.length > 0 ? kits[0] : null;
+      if (!selectedKit) {
+        toast({
+          title: "Erro",
+          description: "Nenhum kit homologado disponível para agendamento.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       for (const technicianId of data.technician_ids) {
         await createKitSchedule({
-          kit_id: data.kit_id,
+          kit_id: selectedKit.id!,
           technician_id: technicianId,
           scheduled_date: data.scheduled_date.toISOString().split('T')[0],
           installation_time: data.installation_time || undefined,
@@ -172,18 +178,12 @@ export const ScheduleModal = ({
     form.reset();
     setSelectedCustomer(initialCustomer || null);
     setShowCustomerForm(false);
-    setShowCustomerEdit(false);
     onClose();
   };
 
   const handleCustomerCreated = (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowCustomerForm(false);
-  };
-
-  const handleCustomerUpdated = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowCustomerEdit(false);
   };
 
   // Generate time slots
@@ -363,75 +363,22 @@ export const ScheduleModal = ({
                 onSuccess={handleCustomerCreated}
                 onCancel={() => setShowCustomerForm(false)}
               />
-            ) : showCustomerEdit && selectedCustomer ? (
-              <CustomerEditForm
-                customer={selectedCustomer}
-                onSuccess={handleCustomerUpdated}
-                onCancel={() => setShowCustomerEdit(false)}
-              />
             ) : (
-              <div className="space-y-4">
-                <CustomerSelector
-                  selectedCustomer={selectedCustomer}
-                  onSelectCustomer={setSelectedCustomer}
-                  onCreateNew={() => setShowCustomerForm(true)}
-                />
-                {selectedCustomer && (
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowCustomerEdit(true)}
-                    >
-                      Editar Dados do Cliente
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <CustomerSelector
+                selectedCustomer={selectedCustomer}
+                onSelectCustomer={setSelectedCustomer}
+                onCreateNew={() => setShowCustomerForm(true)}
+              />
             )}
           </div>
 
           {/* Schedule Form */}
-          {selectedCustomer && !showCustomerForm && !showCustomerEdit && (
+          {selectedCustomer && !showCustomerForm && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Detalhes da Instalação</h3>
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  {/* Kit Selection */}
-                  <FormField
-                    control={form.control}
-                    name="kit_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Kit para Instalação *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um kit homologado" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {kits.map((kit) => (
-                              <SelectItem key={kit.id} value={kit.id!}>
-                                <div className="flex flex-col">
-                                  <span>{kit.name}</span>
-                                  {kit.description && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {kit.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   {/* Technician Selection */}
                   <FormField
                     control={form.control}
