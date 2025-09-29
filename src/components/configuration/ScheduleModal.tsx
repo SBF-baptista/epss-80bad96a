@@ -46,11 +46,30 @@ import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const formSchema = z.object({
+interface VehicleScheduleData {
+  plate: string;
+  brand: string;
+  model: string;
+  year: number;
+  technician_ids: string[];
+  scheduled_date: Date | null;
+  installation_time: string;
+  notes: string;
+}
+
+const vehicleScheduleSchema = z.object({
+  plate: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  year: z.number(),
   technician_ids: z.array(z.string()).min(1, 'Selecione pelo menos um técnico'),
   scheduled_date: z.date({ required_error: 'Selecione uma data' }),
   installation_time: z.string().optional(),
   notes: z.string().optional()
+});
+
+const formSchema = z.object({
+  vehicles: z.array(vehicleScheduleSchema).min(1, 'Configure pelo menos um veículo')
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -77,27 +96,40 @@ export const ScheduleModal = ({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(initialVehicle || null);
-  
+  const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      technician_ids: [],
-      installation_time: '',
-      notes: ''
+      vehicles: []
     }
   });
 
-  // Update selected vehicle when initialVehicle changes
+  // Initialize vehicle schedules when customer is selected
   useEffect(() => {
-    if (initialVehicle) {
-      setSelectedVehicle(initialVehicle);
-      // Pre-fill notes with vehicle information
-      const vehicleInfo = `Veículo: ${initialVehicle.brand} ${initialVehicle.model} (${initialVehicle.year}) - Placa: ${initialVehicle.plate}`;
-      form.setValue('notes', vehicleInfo);
+    if (selectedCustomer?.vehicles) {
+      const initialSchedules = selectedCustomer.vehicles.map(vehicle => ({
+        plate: vehicle.plate,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year,
+        technician_ids: [],
+        scheduled_date: null,
+        installation_time: '',
+        notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`
+      }));
+      setVehicleSchedules(initialSchedules);
+      form.setValue('vehicles', initialSchedules);
     }
-  }, [initialVehicle, form]);
+  }, [selectedCustomer, form]);
+
+  const updateVehicleSchedule = (plate: string, field: keyof VehicleScheduleData, value: any) => {
+    const updatedSchedules = vehicleSchedules.map(schedule => 
+      schedule.plate === plate ? { ...schedule, [field]: value } : schedule
+    );
+    setVehicleSchedules(updatedSchedules);
+    form.setValue('vehicles', updatedSchedules);
+  };
 
 
   const onSubmit = async (data: FormData) => {
@@ -113,26 +145,7 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Check for conflicts for each technician
-      for (const technicianId of data.technician_ids) {
-        const hasConflict = await checkScheduleConflict(
-          technicianId,
-          data.scheduled_date.toISOString().split('T')[0],
-          data.installation_time || undefined
-        );
-
-        if (hasConflict) {
-          const technician = technicians.find(t => t.id === technicianId);
-          toast({
-            title: "Conflito de horário",
-            description: `O técnico ${technician?.name} já possui um agendamento neste horário.`,
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-
-      // Create schedules for each technician - use first available kit
+      // Get first available kit
       const selectedKit = kits.length > 0 ? kits[0] : null;
       if (!selectedKit) {
         toast({
@@ -143,43 +156,63 @@ export const ScheduleModal = ({
         return;
       }
 
-      for (const technicianId of data.technician_ids) {
-        await createKitSchedule({
-          kit_id: selectedKit.id!,
-          technician_id: technicianId,
-          scheduled_date: data.scheduled_date.toISOString().split('T')[0],
-          installation_time: data.installation_time || undefined,
-          notes: data.notes || undefined,
-          customer_id: selectedCustomer.id,
-          customer_name: selectedCustomer.name,
-          customer_document_number: selectedCustomer.document_number,
-          customer_phone: selectedCustomer.phone,
-          customer_email: selectedCustomer.email,
-          installation_address_street: selectedCustomer.address_street,
-          installation_address_number: selectedCustomer.address_number,
-          installation_address_neighborhood: selectedCustomer.address_neighborhood,
-          installation_address_city: selectedCustomer.address_city,
-          installation_address_state: selectedCustomer.address_state,
-          installation_address_postal_code: selectedCustomer.address_postal_code,
-          installation_address_complement: selectedCustomer.address_complement || undefined,
-          vehicle_plate: selectedVehicle?.plate,
-          vehicle_brand: selectedVehicle?.brand,
-          vehicle_model: selectedVehicle?.model,
-          vehicle_year: selectedVehicle?.year
-        });
+      let schedulesCreated = 0;
+
+      // Process each vehicle schedule
+      for (const vehicleSchedule of data.vehicles) {
+        if (!vehicleSchedule.scheduled_date) continue;
+
+        // Check for conflicts for each technician
+        for (const technicianId of vehicleSchedule.technician_ids) {
+          const hasConflict = await checkScheduleConflict(
+            technicianId,
+            vehicleSchedule.scheduled_date.toISOString().split('T')[0],
+            vehicleSchedule.installation_time || undefined
+          );
+
+          if (hasConflict) {
+            const technician = technicians.find(t => t.id === technicianId);
+            toast({
+              title: "Conflito de horário",
+              description: `O técnico ${technician?.name} já possui um agendamento no dia ${format(vehicleSchedule.scheduled_date, 'dd/MM/yyyy')} para o veículo ${vehicleSchedule.plate}.`,
+              variant: "destructive"
+            });
+            return;
+          }
+        }
+
+        // Create schedule for each technician
+        for (const technicianId of vehicleSchedule.technician_ids) {
+          await createKitSchedule({
+            kit_id: selectedKit.id!,
+            technician_id: technicianId,
+            scheduled_date: vehicleSchedule.scheduled_date.toISOString().split('T')[0],
+            installation_time: vehicleSchedule.installation_time || undefined,
+            notes: vehicleSchedule.notes || undefined,
+            customer_id: selectedCustomer.id,
+            customer_name: selectedCustomer.name,
+            customer_document_number: selectedCustomer.document_number,
+            customer_phone: selectedCustomer.phone,
+            customer_email: selectedCustomer.email,
+            installation_address_street: selectedCustomer.address_street,
+            installation_address_number: selectedCustomer.address_number,
+            installation_address_neighborhood: selectedCustomer.address_neighborhood,
+            installation_address_city: selectedCustomer.address_city,
+            installation_address_state: selectedCustomer.address_state,
+            installation_address_postal_code: selectedCustomer.address_postal_code,
+            installation_address_complement: selectedCustomer.address_complement || undefined,
+            vehicle_plate: vehicleSchedule.plate,
+            vehicle_brand: vehicleSchedule.brand,
+            vehicle_model: vehicleSchedule.model,
+            vehicle_year: vehicleSchedule.year
+          });
+          schedulesCreated++;
+        }
       }
 
-      const technicianNames = data.technician_ids.map(id => 
-        technicians.find(t => t.id === id)?.name
-      ).filter(Boolean).join(', ');
-      
-      const vehicleInfo = selectedVehicle ? 
-        ` para o veículo ${selectedVehicle.brand} ${selectedVehicle.model} (${selectedVehicle.plate})` : 
-        '';
-      
       toast({
-        title: "Agendamento(s) criado(s)",
-        description: `Kit "${selectedKit?.name}" agendado com sucesso para ${selectedCustomer.name}${vehicleInfo} com os técnicos: ${technicianNames}.`
+        title: "Agendamentos criados",
+        description: `${schedulesCreated} agendamento(s) criado(s) com sucesso para ${selectedCustomer.name}.`
       });
 
       onSuccess();
@@ -198,7 +231,7 @@ export const ScheduleModal = ({
   const handleClose = () => {
     form.reset();
     setSelectedCustomer(initialCustomer || null);
-    setSelectedVehicle(initialVehicle || null);
+    setVehicleSchedules([]);
     onClose();
   };
 
@@ -285,23 +318,16 @@ export const ScheduleModal = ({
                       <Truck className="w-4 h-4" />
                       <span className="text-sm font-medium text-muted-foreground">Veículos</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                       {selectedCustomer.vehicles.map((vehicle, index) => (
-                         <div key={index} className={`p-3 border rounded-lg ${
-                           selectedVehicle?.plate === vehicle.plate ? 'border-primary bg-primary/5' : ''
-                         }`}>
-                           <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Ano: {vehicle.year} | Placa: {vehicle.plate}
-                            </p>
-                            {selectedVehicle?.plate === vehicle.plate && (
-                              <Badge variant="default" className="mt-1 text-xs">
-                                Veículo Selecionado
-                              </Badge>
-                            )}
-                         </div>
-                       ))}
-                    </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {selectedCustomer.vehicles.map((vehicle, index) => (
+                          <div key={index} className="p-3 border rounded-lg">
+                            <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
+                             <p className="text-sm text-muted-foreground">
+                               Ano: {vehicle.year} | Placa: {vehicle.plate}
+                             </p>
+                          </div>
+                        ))}
+                     </div>
                   </div>
                 )}
 
@@ -389,152 +415,137 @@ export const ScheduleModal = ({
             </div>
           )}
 
-          {/* Schedule Form */}
-          {selectedCustomer && (
+          {/* Vehicle Schedules */}
+          {selectedCustomer && vehicleSchedules.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Detalhes da Instalação</h3>
               
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  {/* Technician Selection */}
-                  <FormField
-                    control={form.control}
-                    name="technician_ids"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Técnicos *</FormLabel>
-                        <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
-                          {technicians.map((technician) => (
-                            <div key={technician.id} className="flex items-start space-x-2">
-                              <input
-                                type="checkbox"
-                                id={`technician-${technician.id}`}
-                                checked={field.value?.includes(technician.id!) || false}
-                                onChange={(e) => {
-                                  const currentValues = field.value || [];
-                                  if (e.target.checked) {
-                                    field.onChange([...currentValues, technician.id!]);
-                                  } else {
-                                    field.onChange(currentValues.filter(id => id !== technician.id));
-                                  }
-                                }}
-                                className="mt-1"
-                              />
-                              <label 
-                                htmlFor={`technician-${technician.id}`}
-                                className="flex-1 cursor-pointer"
-                              >
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-medium">{technician.name}</span>
-                                  {technician.address_city && technician.address_state && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {technician.address_city} - {technician.address_state}
-                                    </span>
-                                  )}
-                                </div>
-                              </label>
-                            </div>
-                          ))}
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {vehicleSchedules.map((vehicleSchedule, index) => (
+                    <Card key={vehicleSchedule.plate} className="border-l-4 border-l-primary">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Truck className="w-5 h-5" />
+                          {vehicleSchedule.brand} {vehicleSchedule.model} ({vehicleSchedule.year})
+                          <Badge variant="secondary" className="ml-auto">
+                            {vehicleSchedule.plate}
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Technicians */}
+                        <div>
+                          <label className="text-sm font-medium">Técnicos *</label>
+                          <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto mt-2">
+                            {technicians.map((technician) => (
+                              <div key={technician.id} className="flex items-start space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`technician-${vehicleSchedule.plate}-${technician.id}`}
+                                  checked={vehicleSchedule.technician_ids.includes(technician.id!)}
+                                  onChange={(e) => {
+                                    const currentIds = vehicleSchedule.technician_ids;
+                                    if (e.target.checked) {
+                                      updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [...currentIds, technician.id!]);
+                                    } else {
+                                      updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', currentIds.filter(id => id !== technician.id));
+                                    }
+                                  }}
+                                  className="mt-1"
+                                />
+                                <label 
+                                  htmlFor={`technician-${vehicleSchedule.plate}-${technician.id}`}
+                                  className="flex-1 cursor-pointer"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">{technician.name}</span>
+                                    {technician.address_city && technician.address_state && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {technician.address_city} - {technician.address_state}
+                                      </span>
+                                    )}
+                                  </div>
+                                </label>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
-                  {/* Date and Time */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="scheduled_date"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Data da Instalação *</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
+                        {/* Date and Time */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col">
+                            <label className="text-sm font-medium mb-2">Data da Instalação *</label>
+                            <Popover>
+                              <PopoverTrigger asChild>
                                 <Button
                                   variant="outline"
                                   className={cn(
                                     "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
+                                    !vehicleSchedule.scheduled_date && "text-muted-foreground"
                                   )}
                                 >
-                                  {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
+                                  {vehicleSchedule.scheduled_date ? (
+                                    format(vehicleSchedule.scheduled_date, "dd/MM/yyyy")
                                   ) : (
                                     <span>Selecione uma data</span>
                                   )}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date < new Date()}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={vehicleSchedule.scheduled_date || undefined}
+                                  onSelect={(date) => updateVehicleSchedule(vehicleSchedule.plate, 'scheduled_date', date)}
+                                  disabled={(date) => date < new Date()}
+                                  initialFocus
+                                  className="pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
 
-                    <FormField
-                      control={form.control}
-                      name="installation_time"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Horário (Opcional)</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
+                          <div>
+                            <label className="text-sm font-medium">Horário (Opcional)</label>
+                            <Select 
+                              value={vehicleSchedule.installation_time} 
+                              onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'installation_time', value)}
+                            >
+                              <SelectTrigger className="mt-2">
                                 <SelectValue placeholder="Selecione um horário" />
                               </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {timeSlots.map((time) => (
-                                <SelectItem key={time} value={time}>
-                                  {time}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                              <SelectContent>
+                                {timeSlots.map((time) => (
+                                  <SelectItem key={time} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
 
-
-                  {/* Notes */}
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Observações</FormLabel>
-                        <FormControl>
+                        {/* Notes */}
+                        <div>
+                          <label className="text-sm font-medium">Observações</label>
                           <Textarea
                             placeholder="Informações adicionais sobre a instalação..."
-                            className="resize-none"
-                            {...field}
+                            className="resize-none mt-2"
+                            value={vehicleSchedule.notes}
+                            onChange={(e) => updateVehicleSchedule(vehicleSchedule.plate, 'notes', e.target.value)}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
 
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={handleClose}>
                       Cancelar
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Agendando..." : "Criar Agendamento"}
+                      {isSubmitting ? "Criando Agendamentos..." : "Criar Agendamentos"}
                     </Button>
                   </DialogFooter>
                 </form>
