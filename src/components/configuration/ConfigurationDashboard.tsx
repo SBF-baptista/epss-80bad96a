@@ -9,6 +9,7 @@ import { Search, Calendar, Users, Package, AlertTriangle } from 'lucide-react';
 import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
 import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitScheduleService';
+import { generateMockScheduleData, type ExtendedScheduleData } from '@/services/mockScheduleDataService';
 import { ConfigurationStats } from './ConfigurationStats';
 import { KitManagementPanel } from './KitManagementPanel';
 import { ScheduleCalendar } from './ScheduleCalendar';
@@ -29,6 +30,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [kits, setKits] = useState<HomologationKit[]>([]);
   const [schedules, setSchedules] = useState<KitScheduleWithDetails[]>([]);
+  const [mockSchedules, setMockSchedules] = useState<ExtendedScheduleData[]>([]);
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   
   // Loading states
@@ -64,6 +66,10 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
       setTechnicians(techniciansData);
       setKits(kitsData);
       setSchedules(schedulesData);
+      
+      // Generate mock data for demonstration
+      const mockData = generateMockScheduleData(techniciansData, kitsData, 15);
+      setMockSchedules(mockData);
       
       // Load homologation statuses after kits are loaded
       await loadHomologationStatuses(kitsData);
@@ -203,7 +209,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
 
         {activeTab === 'schedule' && (
           <ScheduleCalendar
-            schedules={schedules}
+            schedules={[...schedules, ...mockSchedules]}
             technicians={technicians}
             kits={kits}
             onRefresh={loadData}

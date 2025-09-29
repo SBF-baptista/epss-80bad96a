@@ -9,9 +9,10 @@ import { ptBR } from 'date-fns/locale';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
+import type { ExtendedScheduleData } from '@/services/mockScheduleDataService';
 
 interface ScheduleCalendarProps {
-  schedules: KitScheduleWithDetails[];
+  schedules: (KitScheduleWithDetails | ExtendedScheduleData)[];
   technicians: Technician[];
   kits: HomologationKit[];
   onRefresh: () => void;
@@ -43,7 +44,7 @@ export const ScheduleCalendar = ({
 
   // Group schedules by customer
   const groupedSchedules = useMemo(() => {
-    const groups = new Map<string, KitScheduleWithDetails[]>();
+    const groups = new Map<string, (KitScheduleWithDetails | ExtendedScheduleData)[]>();
     
     filteredSchedules.forEach(schedule => {
       const customerKey = schedule.customer_document_number || `${schedule.customer_name}-${schedule.customer_phone}`;
@@ -68,6 +69,11 @@ export const ScheduleCalendar = ({
 
     return Array.from(groups.values());
   }, [filteredSchedules]);
+
+  // Check if schedule is extended with mock data
+  const isExtendedSchedule = (schedule: KitScheduleWithDetails | ExtendedScheduleData): schedule is ExtendedScheduleData => {
+    return 'company_name' in schedule;
+  };
 
   // Get calendar days
   const monthStart = startOfMonth(currentDate);
@@ -342,6 +348,74 @@ export const ScheduleCalendar = ({
                                 <div className="text-sm text-muted-foreground">
                                   <span className="font-medium">Descrição do Kit:</span> {visit.kit.description}
                                 </div>
+                              )}
+
+                              {isExtendedSchedule(visit) && (
+                                <>
+                                  {/* Company and Package Info */}
+                                  <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                                    <div className="text-sm">
+                                      <span className="font-medium text-foreground">Empresa:</span> {visit.company_name}
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="font-medium text-foreground">Pacote:</span> {visit.package_name}
+                                    </div>
+                                    
+                                    {/* Sales Info */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                                      <div>
+                                        <span className="font-medium">Contrato:</span> {visit.sales_info.contract_number}
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Vendedor:</span> {visit.sales_info.sales_representative}
+                                      </div>
+                                      {visit.sales_info.total_value && (
+                                        <div>
+                                          <span className="font-medium">Valor:</span> R$ {visit.sales_info.total_value.toLocaleString('pt-BR')}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Vehicles */}
+                                  <div className="space-y-2">
+                                    <h5 className="font-medium text-foreground">Veículos:</h5>
+                                    {visit.vehicles.map((vehicle, vehicleIndex) => (
+                                      <div key={vehicleIndex} className="bg-muted/30 rounded-md p-2 text-sm">
+                                        <div className="font-medium text-foreground">
+                                          {vehicle.brand} {vehicle.model} ({vehicle.year})
+                                        </div>
+                                        <div className="text-muted-foreground">
+                                          Quantidade: {vehicle.quantity}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Accessories */}
+                                  <div className="space-y-2">
+                                    <h5 className="font-medium text-foreground">Acessórios:</h5>
+                                    <div className="flex flex-wrap gap-1">
+                                      {visit.accessories.map((accessory, accessoryIndex) => (
+                                        <Badge key={accessoryIndex} variant="outline" className="text-xs">
+                                          {accessory}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Modules */}
+                                  <div className="space-y-2">
+                                    <h5 className="font-medium text-foreground">Módulos:</h5>
+                                    <div className="flex flex-wrap gap-1">
+                                      {visit.modules.map((module, moduleIndex) => (
+                                        <Badge key={moduleIndex} variant="secondary" className="text-xs">
+                                          {module}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </>
                               )}
 
                               {visit.notes && (
