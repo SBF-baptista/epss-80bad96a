@@ -10,7 +10,7 @@ import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import type { HomologationStatus } from '@/services/kitHomologationService';
 import type { Customer } from '@/services/customerService';
-import { getCustomers } from '@/services/customerService';
+import { getCustomers, createCustomersWithSalesData } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
 
 interface SchedulingSectionProps {
@@ -37,6 +37,8 @@ export const SchedulingSection = ({
 
   useEffect(() => {
     loadCustomers();
+    // Criar clientes com dados completos na primeira execução
+    createCustomersWithSalesData();
   }, [searchTerm]);
 
   const loadCustomers = async () => {

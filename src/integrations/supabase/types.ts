@@ -161,6 +161,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          accessories: string[] | null
           address_city: string
           address_complement: string | null
           address_neighborhood: string
@@ -168,17 +169,25 @@ export type Database = {
           address_postal_code: string
           address_state: string
           address_street: string
+          company_name: string | null
+          contract_number: string | null
           created_at: string
           created_by: string | null
           document_number: string
           document_type: string
           email: string
           id: string
+          modules: string[] | null
           name: string
+          package_name: string | null
           phone: string
+          sales_representative: string | null
+          total_value: number | null
           updated_at: string
+          vehicles: Json | null
         }
         Insert: {
+          accessories?: string[] | null
           address_city: string
           address_complement?: string | null
           address_neighborhood: string
@@ -186,17 +195,25 @@ export type Database = {
           address_postal_code: string
           address_state: string
           address_street: string
+          company_name?: string | null
+          contract_number?: string | null
           created_at?: string
           created_by?: string | null
           document_number: string
           document_type: string
           email: string
           id?: string
+          modules?: string[] | null
           name: string
+          package_name?: string | null
           phone: string
+          sales_representative?: string | null
+          total_value?: number | null
           updated_at?: string
+          vehicles?: Json | null
         }
         Update: {
+          accessories?: string[] | null
           address_city?: string
           address_complement?: string | null
           address_neighborhood?: string
@@ -204,15 +221,22 @@ export type Database = {
           address_postal_code?: string
           address_state?: string
           address_street?: string
+          company_name?: string | null
+          contract_number?: string | null
           created_at?: string
           created_by?: string | null
           document_number?: string
           document_type?: string
           email?: string
           id?: string
+          modules?: string[] | null
           name?: string
+          package_name?: string | null
           phone?: string
+          sales_representative?: string | null
+          total_value?: number | null
           updated_at?: string
+          vehicles?: Json | null
         }
         Relationships: []
       }

@@ -1,5 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export interface VehicleInfo {
+  brand: string;
+  model: string;
+  year: number;
+  quantity: number;
+}
+
 export interface Customer {
   id?: string;
   created_by?: string;
@@ -17,6 +24,15 @@ export interface Customer {
   address_state: string;
   address_postal_code: string;
   address_complement?: string;
+  // Novos campos para dados de vendas
+  company_name?: string;
+  package_name?: string;
+  total_value?: number;
+  contract_number?: string;
+  sales_representative?: string;
+  vehicles?: VehicleInfo[];
+  accessories?: string[];
+  modules?: string[];
 }
 
 export interface CreateCustomerData {
@@ -32,6 +48,15 @@ export interface CreateCustomerData {
   address_state: string;
   address_postal_code: string;
   address_complement?: string;
+  // Novos campos opcionais
+  company_name?: string;
+  package_name?: string;
+  total_value?: number;
+  contract_number?: string;
+  sales_representative?: string;
+  vehicles?: VehicleInfo[];
+  accessories?: string[];
+  modules?: string[];
 }
 
 // Validation functions
@@ -128,12 +153,15 @@ export const formatPhone = (phone: string): string => {
 
 // Customer service functions
 export const createCustomer = async (data: CreateCustomerData): Promise<Customer> => {
+  const customerData = {
+    ...data,
+    created_by: (await supabase.auth.getUser()).data.user?.id,
+    vehicles: data.vehicles ? JSON.stringify(data.vehicles) : null
+  };
+
   const { data: customer, error } = await supabase
     .from('customers')
-    .insert([{
-      ...data,
-      created_by: (await supabase.auth.getUser()).data.user?.id
-    }])
+    .insert([customerData])
     .select()
     .single();
 
@@ -144,7 +172,8 @@ export const createCustomer = async (data: CreateCustomerData): Promise<Customer
 
   return {
     ...customer,
-    document_type: customer.document_type as 'cpf' | 'cnpj'
+    document_type: customer.document_type as 'cpf' | 'cnpj',
+    vehicles: customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined
   };
 };
 
@@ -164,7 +193,8 @@ export const getCustomers = async (search?: string): Promise<Customer[]> => {
 
   return data?.map(customer => ({
     ...customer,
-    document_type: customer.document_type as 'cpf' | 'cnpj'
+    document_type: customer.document_type as 'cpf' | 'cnpj',
+    vehicles: customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined
   })) || [];
 };
 
@@ -183,14 +213,20 @@ export const getCustomerById = async (id: string): Promise<Customer | null> => {
 
   return {
     ...data,
-    document_type: data.document_type as 'cpf' | 'cnpj'
+    document_type: data.document_type as 'cpf' | 'cnpj',
+    vehicles: data.vehicles ? JSON.parse(data.vehicles as string) : undefined
   };
 };
 
 export const updateCustomer = async (id: string, data: Partial<CreateCustomerData>): Promise<Customer> => {
+  const updateData = {
+    ...data,
+    vehicles: data.vehicles ? JSON.stringify(data.vehicles) : undefined
+  };
+
   const { data: customer, error } = await supabase
     .from('customers')
-    .update(data)
+    .update(updateData)
     .eq('id', id)
     .select()
     .single();
@@ -202,7 +238,8 @@ export const updateCustomer = async (id: string, data: Partial<CreateCustomerDat
 
   return {
     ...customer,
-    document_type: customer.document_type as 'cpf' | 'cnpj'
+    document_type: customer.document_type as 'cpf' | 'cnpj',
+    vehicles: customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined
   };
 };
 
@@ -221,6 +258,109 @@ export const getCustomerByDocument = async (documentNumber: string): Promise<Cus
 
   return {
     ...data,
-    document_type: data.document_type as 'cpf' | 'cnpj'
+    document_type: data.document_type as 'cpf' | 'cnpj',
+    vehicles: data.vehicles ? JSON.parse(data.vehicles as string) : undefined
   };
+};
+
+// Função para criar clientes com dados completos
+export const createCustomersWithSalesData = async (): Promise<void> => {
+  try {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Usuário não autenticado');
+
+    const customersData = [
+      {
+        name: 'João Silva Santos',
+        document_number: '49061905000',
+        document_type: 'cpf' as const,
+        phone: '(11) 38285-7611',
+        email: 'joao.silva@logisticasulexpress.com.br',
+        address_street: 'Rua das Empresas',
+        address_number: '123',
+        address_neighborhood: 'Centro',
+        address_city: 'São Paulo',
+        address_state: 'SP',
+        address_postal_code: '01000-000',
+        company_name: 'Logística Sul Express',
+        package_name: 'Rastreamento Básico',
+        total_value: 49433,
+        contract_number: 'CT-1759515431240',
+        sales_representative: 'Carlos Silva',
+        vehicles: [
+          { brand: 'Volvo', model: 'FM 370 4x2 2p', year: 2020, quantity: 2 },
+          { brand: 'Ford', model: 'Cargo 1719 4x2', year: 2018, quantity: 3 },
+          { brand: 'DAF', model: 'XF 510 6x4', year: 2019, quantity: 2 }
+        ],
+        accessories: ['Cabo de Alimentação', 'Kit de Câmeras Frontais', 'Suporte de Fixação', 'Monitor LCD 7"', 'Câmera de Ré'],
+        modules: ['Bloqueador Veicular', 'Sistema de Backup', 'Módulo de Temperatura', 'Central de Monitoramento']
+      },
+      {
+        name: 'Maria Santos Costa',
+        document_number: '12345678901',
+        document_type: 'cpf' as const,
+        phone: '(11) 99999-8888',
+        email: 'maria.santos@transportadora.com.br',
+        address_street: 'Av. Paulista',
+        address_number: '1000',
+        address_neighborhood: 'Bela Vista',
+        address_city: 'São Paulo',
+        address_state: 'SP',
+        address_postal_code: '01310-100',
+        company_name: 'Transportadora Águia Dourada',
+        package_name: 'Copiloto 4 câmeras',
+        total_value: 75000,
+        contract_number: 'CT-1759515431241',
+        sales_representative: 'Ana Costa',
+        vehicles: [
+          { brand: 'Scania', model: 'R 450 6x4 3p', year: 2021, quantity: 1 },
+          { brand: 'Mercedes-Benz', model: 'Actros 2546 6x4', year: 2020, quantity: 2 }
+        ],
+        accessories: ['Kit de Câmeras Frontais', 'Sensor de Fadiga', 'Monitor LCD 7"', 'Câmera de Ré', 'Câmeras Laterais', 'Sistema de Áudio'],
+        modules: ['Módulo de Rastreamento GPS', 'Central de Monitoramento', 'Módulo de Telemetria', 'Sistema Anti-furto']
+      },
+      {
+        name: 'Pedro Rodrigues Lima',
+        document_number: '98765432100',
+        document_type: 'cpf' as const,
+        phone: '(11) 88888-7777',
+        email: 'pedro.lima@cargomaster.com.br',
+        address_street: 'Rua da Logística',
+        address_number: '500',
+        address_neighborhood: 'Industrial',
+        address_city: 'Guarulhos',
+        address_state: 'SP',
+        address_postal_code: '07000-000',
+        company_name: 'Cargo Master Ltda',
+        package_name: 'Monitoramento Avançado',
+        total_value: 62500,
+        contract_number: 'CT-1759515431242',
+        sales_representative: 'João Oliveira',
+        vehicles: [
+          { brand: 'Volkswagen', model: 'Constellation 19.330 4x2', year: 2019, quantity: 3 },
+          { brand: 'Iveco', model: 'Stralis 440 4x2', year: 2020, quantity: 1 }
+        ],
+        accessories: ['Microfone Externo', 'Botão de Pânico', 'Sensor de Porta', 'Antena GPS Externa', 'Cabo de Alimentação'],
+        modules: ['Bloqueador Veicular', 'Sensor de Combustível', 'Módulo de Temperatura', 'Sistema de Comunicação', 'Módulo de Identificação']
+      }
+    ];
+
+    for (const customerData of customersData) {
+      const insertData = {
+        ...customerData,
+        created_by: user.data.user.id,
+        vehicles: JSON.stringify(customerData.vehicles)
+      };
+
+      const { error } = await supabase
+        .from('customers')
+        .insert([insertData]);
+
+      if (error && !error.message.includes('duplicate key')) {
+        console.error('Error creating customer:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error creating customers with sales data:', error);
+  }
 };
