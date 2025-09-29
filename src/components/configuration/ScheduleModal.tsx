@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building } from 'lucide-react';
+import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,7 @@ import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
+import { checkItemHomologation } from '@/services/kitHomologationService';
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,6 +101,7 @@ export const ScheduleModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
   const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
+  const [homologationStatus, setHomologationStatus] = useState<Map<string, boolean>>(new Map());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -110,42 +112,59 @@ export const ScheduleModal = ({
 
   // Initialize vehicle schedules when customer is selected
   useEffect(() => {
-    console.log('Customer selected:', selectedCustomer);
-    console.log('Customer vehicles:', selectedCustomer?.vehicles);
-    
-    if (selectedCustomer) {
-      // Check if customer has vehicles
-      if (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) {
-        console.warn('Customer has no vehicles registered');
-        toast({
-          title: "Aviso",
-          description: "Este cliente não possui veículos cadastrados. Por favor, adicione veículos ao cliente antes de agendar.",
-          variant: "destructive"
-        });
-        setVehicleSchedules([]);
-        form.setValue('vehicles', []);
-        return;
-      }
-
-      // Initialize schedules with customer vehicles
-      const initialSchedules = selectedCustomer.vehicles.map((vehicle, index) => ({
-        plate: vehicle.plate,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        year: vehicle.year,
-        technician_ids: [],
-        scheduled_date: null,
-        installation_time: '',
-        notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
-        contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
-        accessories: selectedCustomer.accessories || [],
-        modules: selectedCustomer.modules || []
-      }));
+    const initializeSchedules = async () => {
+      console.log('Customer selected:', selectedCustomer);
+      console.log('Customer vehicles:', selectedCustomer?.vehicles);
       
-      console.log('Initial schedules created:', initialSchedules);
-      setVehicleSchedules(initialSchedules);
-      form.setValue('vehicles', initialSchedules);
-    }
+      if (selectedCustomer) {
+        // Check if customer has vehicles
+        if (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) {
+          console.warn('Customer has no vehicles registered');
+          toast({
+            title: "Aviso",
+            description: "Este cliente não possui veículos cadastrados. Por favor, adicione veículos ao cliente antes de agendar.",
+            variant: "destructive"
+          });
+          setVehicleSchedules([]);
+          form.setValue('vehicles', []);
+          return;
+        }
+
+        // Check homologation status for accessories and modules
+        const allItems = [
+          ...(selectedCustomer.accessories || []).map(name => ({ name, type: 'accessory' })),
+          ...(selectedCustomer.modules || []).map(name => ({ name, type: 'equipment' }))
+        ];
+
+        const statusMap = new Map<string, boolean>();
+        for (const item of allItems) {
+          const isHomologated = await checkItemHomologation(item.name, item.type);
+          statusMap.set(`${item.name}:${item.type}`, isHomologated);
+        }
+        setHomologationStatus(statusMap);
+
+        // Initialize schedules with customer vehicles
+        const initialSchedules = selectedCustomer.vehicles.map((vehicle, index) => ({
+          plate: vehicle.plate,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          technician_ids: [],
+          scheduled_date: null,
+          installation_time: '',
+          notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
+          contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
+          accessories: selectedCustomer.accessories || [],
+          modules: selectedCustomer.modules || []
+        }));
+        
+        console.log('Initial schedules created:', initialSchedules);
+        setVehicleSchedules(initialSchedules);
+        form.setValue('vehicles', initialSchedules);
+      }
+    };
+
+    initializeSchedules();
   }, [selectedCustomer, form, toast]);
 
   const updateVehicleSchedule = (plate: string, field: keyof VehicleScheduleData, value: any) => {
@@ -373,17 +392,6 @@ export const ScheduleModal = ({
                     </div>
                   </div>
                 )}
-
-                {/* Contract Info */}
-                {selectedCustomer.contract_number && (
-                  <div className="pt-4 border-t">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      <span className="text-sm font-medium text-muted-foreground">Contrato</span>
-                    </div>
-                    <p className="font-medium">{selectedCustomer.contract_number}</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           )}
@@ -427,7 +435,7 @@ export const ScheduleModal = ({
                       <table className="w-full">
                         <thead className="bg-muted">
                           <tr>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Contrato</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Contrato (Placa)</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
@@ -454,26 +462,52 @@ export const ScheduleModal = ({
                               </td>
                               <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
                               <td className="px-4 py-3">
-                                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                <div className="flex flex-col gap-1 max-w-[180px]">
                                   {vehicleSchedule.accessories.length > 0 ? (
-                                    vehicleSchedule.accessories.map((acc, i) => (
-                                      <Badge key={i} variant="outline" className="text-xs">
-                                        {acc}
-                                      </Badge>
-                                    ))
+                                    vehicleSchedule.accessories.map((acc, i) => {
+                                      const isHomologated = homologationStatus.get(`${acc}:accessory`);
+                                      return (
+                                        <div key={i} className="flex items-center gap-1">
+                                          {isHomologated ? (
+                                            <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                          ) : (
+                                            <X className="h-3 w-3 text-red-600 flex-shrink-0" />
+                                          )}
+                                          <span className={cn(
+                                            "text-xs",
+                                            isHomologated ? "text-green-700" : "text-red-700"
+                                          )}>
+                                            {acc}
+                                          </span>
+                                        </div>
+                                      );
+                                    })
                                   ) : (
                                     <span className="text-xs text-muted-foreground">-</span>
                                   )}
                                 </div>
                               </td>
                               <td className="px-4 py-3">
-                                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                <div className="flex flex-col gap-1 max-w-[180px]">
                                   {vehicleSchedule.modules.length > 0 ? (
-                                    vehicleSchedule.modules.map((mod, i) => (
-                                      <Badge key={i} variant="outline" className="text-xs">
-                                        {mod}
-                                      </Badge>
-                                    ))
+                                    vehicleSchedule.modules.map((mod, i) => {
+                                      const isHomologated = homologationStatus.get(`${mod}:equipment`);
+                                      return (
+                                        <div key={i} className="flex items-center gap-1">
+                                          {isHomologated ? (
+                                            <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                          ) : (
+                                            <X className="h-3 w-3 text-red-600 flex-shrink-0" />
+                                          )}
+                                          <span className={cn(
+                                            "text-xs",
+                                            isHomologated ? "text-green-700" : "text-red-700"
+                                          )}>
+                                            {mod}
+                                          </span>
+                                        </div>
+                                      );
+                                    })
                                   ) : (
                                     <span className="text-xs text-muted-foreground">-</span>
                                   )}
