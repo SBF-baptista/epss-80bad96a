@@ -64,6 +64,10 @@ export interface CreateKitScheduleData {
   installation_address_state: string;
   installation_address_postal_code: string;
   installation_address_complement?: string;
+  vehicle_plate?: string;
+  vehicle_brand?: string;
+  vehicle_model?: string;
+  vehicle_year?: number;
 }
 
 // Create a new kit schedule

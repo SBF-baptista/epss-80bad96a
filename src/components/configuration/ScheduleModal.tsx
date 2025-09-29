@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/popover';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
-import type { Customer } from '@/services/customerService';
+import type { Customer, VehicleInfo } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +59,7 @@ interface ScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedCustomer?: Customer | null;
+  selectedVehicle?: VehicleInfo | null;
   kits: HomologationKit[];
   technicians: Technician[];
   onSuccess: () => void;
@@ -267,9 +268,9 @@ export const ScheduleModal = ({
                       {selectedCustomer.vehicles.map((vehicle, index) => (
                         <div key={index} className="p-3 border rounded-lg">
                           <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Ano: {vehicle.year} | Quantidade: {vehicle.quantity}
-                          </p>
+                           <p className="text-sm text-muted-foreground">
+                             Ano: {vehicle.year} | Placa: {vehicle.plate}
+                           </p>
                         </div>
                       ))}
                     </div>

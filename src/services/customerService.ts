@@ -1,10 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export interface VehicleInfo {
+  id?: string;
   brand: string;
   model: string;
   year: number;
-  quantity: number;
+  plate: string;
+  scheduled?: boolean;
+  schedule_id?: string;
+  schedule_date?: string;
+  technician_name?: string;
 }
 
 export interface Customer {

@@ -9,7 +9,7 @@ import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import type { HomologationStatus } from '@/services/kitHomologationService';
-import type { Customer } from '@/services/customerService';
+import type { Customer, VehicleInfo } from '@/services/customerService';
 import { getCustomers, createCustomersWithSalesData } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
 
@@ -67,7 +67,9 @@ export const SchedulingSection = ({
     }
   };
 
-  const handleScheduleCustomer = (customer: Customer) => {
+  const handleScheduleCustomer = (customer: Customer, vehicle?: VehicleInfo) => {
+    console.log('Scheduling for customer:', customer.id, customer.name);
+    console.log('Selected vehicle:', vehicle);
     setSelectedCustomer(customer);
     setIsScheduleModalOpen(true);
   };
@@ -236,8 +238,58 @@ export const SchedulingSection = ({
                             </div>
                           </div>
 
-                          {/* Schedule Info */}
+                          {/* Vehicles Info */}
                           <div className="space-y-2">
+                            {customer.vehicles && customer.vehicles.length > 0 && (
+                              <div className="space-y-2">
+                                <h5 className="text-xs font-semibold text-gray-700">
+                                  Veículos ({customer.vehicles.length})
+                                </h5>
+                                {customer.vehicles.map((vehicle, index) => {
+                                  const vehicleSchedules = customerSchedules.filter(s => 
+                                    s.notes?.includes(vehicle.plate) || 
+                                    s.notes?.includes(`${vehicle.brand} ${vehicle.model}`)
+                                  );
+                                  const isScheduled = vehicleSchedules.length > 0;
+                                  
+                                  return (
+                                    <div key={`${vehicle.brand}-${vehicle.model}-${index}`} 
+                                         className="bg-gray-50 p-2 rounded-md">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex-1">
+                                          <p className="text-xs font-medium text-gray-800">
+                                            {vehicle.brand} {vehicle.model} ({vehicle.year})
+                                          </p>
+                                          <p className="text-xs text-gray-600">
+                                            Placa: {vehicle.plate}
+                                          </p>
+                                          {isScheduled && vehicleSchedules[0] && (
+                                            <p className="text-xs text-blue-600">
+                                              Agendado: {new Date(vehicleSchedules[0].scheduled_date).toLocaleDateString('pt-BR')}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <Badge variant={isScheduled ? 'default' : 'outline'} className="text-xs">
+                                          {isScheduled ? 'Agendado' : 'Disponível'}
+                                        </Badge>
+                                      </div>
+                                      {!isScheduled && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleScheduleCustomer(customer, vehicle)}
+                                          className="w-full text-xs py-1"
+                                        >
+                                          <Calendar className="w-3 h-3 mr-1" />
+                                          Agendar
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
                             {activeSchedules.length > 0 && (
                               <div className="bg-blue-50 p-2 rounded-md">
                                 <h5 className="text-xs font-semibold text-blue-800 mb-1">
@@ -268,15 +320,15 @@ export const SchedulingSection = ({
                             )}
                           </div>
 
-                          {/* Action Button */}
+                          {/* General Action Button */}
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleScheduleCustomer(customer)}
                             className="w-full"
                           >
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {activeSchedules.length > 0 ? 'Novo Agendamento' : 'Agendar Instalação'}
+                            <Plus className="w-4 h-4 mr-2" />
+                            Novo Agendamento Geral
                           </Button>
                         </div>
                       </CardContent>
@@ -297,6 +349,7 @@ export const SchedulingSection = ({
           setSelectedCustomer(null);
         }}
         selectedCustomer={selectedCustomer}
+        selectedVehicle={null}
         kits={getHomologatedKits()}
         technicians={technicians}
         onSuccess={() => {
