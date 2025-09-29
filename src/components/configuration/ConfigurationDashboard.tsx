@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, Users, Package, AlertTriangle } from 'lucide-react';
+import { Search, Calendar, Users, Package, AlertTriangle, RefreshCw } from 'lucide-react';
 import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
 import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitScheduleService';
@@ -152,15 +152,29 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
             </p>
           </div>
           
-          {/* Search */}
-          <div className="relative w-full sm:w-auto sm:min-w-[300px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar por kit, técnico ou empresa..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-2 items-center">
+            {/* Refresh Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadData}
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+            
+            {/* Search */}
+            <div className="relative w-full sm:w-auto sm:min-w-[300px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Buscar por kit, técnico ou empresa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
         </div>
 
