@@ -252,7 +252,7 @@ export const ScheduleModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[1400px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo Agendamento de Instalação</DialogTitle>
           <DialogDescription>
