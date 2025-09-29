@@ -178,7 +178,9 @@ export const createCustomer = async (data: CreateCustomerData): Promise<Customer
   return {
     ...customer,
     document_type: customer.document_type as 'cpf' | 'cnpj',
-    vehicles: customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined
+    vehicles: Array.isArray(customer.vehicles) 
+      ? customer.vehicles 
+      : (customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined)
   };
 };
 
@@ -199,7 +201,9 @@ export const getCustomers = async (search?: string): Promise<Customer[]> => {
   const processedCustomers = data?.map(customer => ({
     ...customer,
     document_type: customer.document_type as 'cpf' | 'cnpj',
-    vehicles: customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined
+    vehicles: Array.isArray(customer.vehicles) 
+      ? customer.vehicles 
+      : (customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined)
   })) || [];
   
   return processedCustomers;
@@ -221,7 +225,9 @@ export const getCustomerById = async (id: string): Promise<Customer | null> => {
   return {
     ...data,
     document_type: data.document_type as 'cpf' | 'cnpj',
-    vehicles: data.vehicles ? JSON.parse(data.vehicles as string) : undefined
+    vehicles: Array.isArray(data.vehicles) 
+      ? data.vehicles 
+      : (data.vehicles ? JSON.parse(data.vehicles as string) : undefined)
   };
 };
 
@@ -246,7 +252,9 @@ export const updateCustomer = async (id: string, data: Partial<CreateCustomerDat
   return {
     ...customer,
     document_type: customer.document_type as 'cpf' | 'cnpj',
-    vehicles: customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined
+    vehicles: Array.isArray(customer.vehicles) 
+      ? customer.vehicles 
+      : (customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined)
   };
 };
 
@@ -266,7 +274,9 @@ export const getCustomerByDocument = async (documentNumber: string): Promise<Cus
   return {
     ...data,
     document_type: data.document_type as 'cpf' | 'cnpj',
-    vehicles: data.vehicles ? JSON.parse(data.vehicles as string) : undefined
+    vehicles: Array.isArray(data.vehicles) 
+      ? data.vehicles 
+      : (data.vehicles ? JSON.parse(data.vehicles as string) : undefined)
   };
 };
 
