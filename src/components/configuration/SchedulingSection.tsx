@@ -325,6 +325,7 @@ export const SchedulingSection = ({
         selectedVehicle={selectedVehicle}
         kits={getHomologatedKits()}
         technicians={technicians}
+        homologationStatuses={homologationStatuses}
         onSuccess={() => {
           onRefresh();
           setIsScheduleModalOpen(false);

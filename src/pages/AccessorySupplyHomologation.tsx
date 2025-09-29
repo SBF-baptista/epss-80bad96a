@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import { AccessoryHomologationForm, AccessoryHomologationList } from "@/components/homologation";
 import { SupplyHomologationForm } from "@/components/homologation/SupplyHomologationForm";
@@ -6,8 +8,35 @@ import { PendingAccessoriesSection } from "@/components/homologation/PendingAcce
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
+import { supabase } from "@/integrations/supabase/client";
 
 const AccessorySupplyHomologation = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription for kit_item_options changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('accessory-homologation-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'kit_item_options'
+        },
+        (payload) => {
+          console.log('Kit item option changed in Accessories:', payload);
+          // Invalidate queries to refetch pending items
+          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return (
     <HomologationErrorBoundary>
       <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">

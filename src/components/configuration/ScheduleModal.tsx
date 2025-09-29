@@ -42,7 +42,7 @@ import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
-import { checkItemHomologation } from '@/services/kitHomologationService';
+import { checkItemHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,6 +85,7 @@ interface ScheduleModalProps {
   selectedVehicle?: VehicleInfo | null;
   kits: HomologationKit[];
   technicians: Technician[];
+  homologationStatuses: Map<string, HomologationStatus>;
   onSuccess: () => void;
 }
 
@@ -95,6 +96,7 @@ export const ScheduleModal = ({
   selectedVehicle: initialVehicle,
   kits,
   technicians,
+  homologationStatuses,
   onSuccess
 }: ScheduleModalProps) => {
   const { toast } = useToast();
@@ -153,22 +155,44 @@ export const ScheduleModal = ({
     // 2) Fire-and-forget: check homologation in background and update icons
     (async () => {
       try {
+        const statusMap = new Map<string, boolean>();
+        
+        // Check accessories and modules
         const allItems = [
           ...(selectedCustomer.accessories || []).map(name => ({ name, type: 'accessory' })),
           ...(selectedCustomer.modules || []).map(name => ({ name, type: 'equipment' }))
         ];
-        const entries = await Promise.all(
+        
+        await Promise.all(
           allItems.map(async (item) => {
             const ok = await checkItemHomologation(item.name, item.type);
-            return [`${item.name}:${item.type}`, ok] as const;
+            statusMap.set(`${item.name}:${item.type}`, ok);
           })
         );
-        setHomologationStatus(new Map(entries));
+        
+        // Check overall homologation status for each vehicle/plate
+        // A vehicle is ready for scheduling if all its accessories and modules are homologated
+        for (const vehicle of selectedCustomer.vehicles || []) {
+          const vehicleAccessories = selectedCustomer.accessories || [];
+          const vehicleModules = selectedCustomer.modules || [];
+          
+          const allAccessoriesHomologated = vehicleAccessories.every(acc => 
+            statusMap.get(`${acc}:accessory`) === true
+          );
+          const allModulesHomologated = vehicleModules.every(mod => 
+            statusMap.get(`${mod}:equipment`) === true
+          );
+          
+          const vehicleReady = allAccessoriesHomologated && allModulesHomologated;
+          statusMap.set(`vehicle-ready:${vehicle.plate}`, vehicleReady);
+        }
+        
+        setHomologationStatus(statusMap);
       } catch (e) {
         console.warn('Falha ao checar homologação de itens:', e);
       }
     })();
-  }, [selectedCustomer, form, toast]);
+  }, [selectedCustomer, homologationStatuses, form, toast]);
 
   const updateVehicleSchedule = (plate: string, field: keyof VehicleScheduleData, value: any) => {
     const updatedSchedules = vehicleSchedules.map(schedule => 
@@ -438,6 +462,7 @@ export const ScheduleModal = ({
                       <table className="w-full">
                         <thead className="bg-muted">
                           <tr>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Contrato (Placa)</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
@@ -450,8 +475,23 @@ export const ScheduleModal = ({
                           </tr>
                         </thead>
                         <tbody>
-                          {vehicleSchedules.map((vehicleSchedule, index) => (
+                          {vehicleSchedules.map((vehicleSchedule, index) => {
+                            const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicleSchedule.plate}`);
+                            return (
                             <tr key={vehicleSchedule.plate} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}>
+                              <td className="px-4 py-3">
+                                {vehicleReady ? (
+                                  <Badge className="bg-green-100 text-green-800 border-green-300">
+                                    <Check className="w-3 h-3 mr-1" />
+                                    Pronto
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-orange-100 text-orange-800 border-orange-300">
+                                    <X className="w-3 h-3 mr-1" />
+                                    Pendente
+                                  </Badge>
+                                )}
+                              </td>
                               <td className="px-4 py-3">
                                 <Badge variant="outline" className="font-mono text-xs">
                                   {vehicleSchedule.contract_number}
@@ -588,7 +628,8 @@ export const ScheduleModal = ({
                                 </Select>
                               </td>
                             </tr>
-                          ))}
+                          );
+                          })}
                         </tbody>
                       </table>
                     </div>

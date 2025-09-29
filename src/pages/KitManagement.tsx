@@ -1,8 +1,37 @@
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import { HomologationKitsSection } from "@/components/homologation";
 import Navigation from "@/components/Navigation";
+import { supabase } from "@/integrations/supabase/client";
 
 const KitManagement = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription for kit_item_options changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('kit-management-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'kit_item_options'
+        },
+        (payload) => {
+          console.log('Kit item option changed in Kit Management:', payload);
+          // Trigger refetch of kits data
+          queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return (
     <HomologationErrorBoundary>
       <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">
