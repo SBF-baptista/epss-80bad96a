@@ -55,6 +55,9 @@ interface VehicleScheduleData {
   scheduled_date: Date | null;
   installation_time: string;
   notes: string;
+  contract_number: string;
+  accessories: string[];
+  modules: string[];
 }
 
 const vehicleScheduleSchema = z.object({
@@ -108,7 +111,7 @@ export const ScheduleModal = ({
   // Initialize vehicle schedules when customer is selected
   useEffect(() => {
     if (selectedCustomer?.vehicles) {
-      const initialSchedules = selectedCustomer.vehicles.map(vehicle => ({
+      const initialSchedules = selectedCustomer.vehicles.map((vehicle, index) => ({
         plate: vehicle.plate,
         brand: vehicle.brand,
         model: vehicle.model,
@@ -116,7 +119,10 @@ export const ScheduleModal = ({
         technician_ids: [],
         scheduled_date: null,
         installation_time: '',
-        notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`
+        notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
+        contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
+        accessories: selectedCustomer.accessories || [],
+        modules: selectedCustomer.modules || []
       }));
       setVehicleSchedules(initialSchedules);
       form.setValue('vehicles', initialSchedules);
@@ -378,127 +384,144 @@ export const ScheduleModal = ({
           {/* Vehicle Schedules */}
           {selectedCustomer && vehicleSchedules.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Detalhes da Instalação</h3>
+              <h3 className="text-lg font-semibold">Detalhes da Instalação por Veículo</h3>
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {vehicleSchedules.map((vehicleSchedule, index) => (
-                    <Card key={vehicleSchedule.plate} className="border-l-4 border-l-primary">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <Truck className="w-5 h-5" />
-                          {vehicleSchedule.brand} {vehicleSchedule.model} ({vehicleSchedule.year})
-                          <Badge variant="secondary" className="ml-auto">
-                            {vehicleSchedule.plate}
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {/* Technicians */}
-                        <div>
-                          <label className="text-sm font-medium">Técnicos *</label>
-                          <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto mt-2">
-                            {technicians.map((technician) => (
-                              <div key={technician.id} className="flex items-start space-x-2">
-                                <input
-                                  type="checkbox"
-                                  id={`technician-${vehicleSchedule.plate}-${technician.id}`}
-                                  checked={vehicleSchedule.technician_ids.includes(technician.id!)}
-                                  onChange={(e) => {
-                                    const currentIds = vehicleSchedule.technician_ids;
-                                    if (e.target.checked) {
-                                      updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [...currentIds, technician.id!]);
-                                    } else {
-                                      updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', currentIds.filter(id => id !== technician.id));
-                                    }
-                                  }}
-                                  className="mt-1"
-                                />
-                                <label 
-                                  htmlFor={`technician-${vehicleSchedule.plate}-${technician.id}`}
-                                  className="flex-1 cursor-pointer"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-medium">{technician.name}</span>
-                                    {technician.address_city && technician.address_state && (
-                                      <span className="text-xs text-muted-foreground">
-                                        {technician.address_city} - {technician.address_state}
-                                      </span>
-                                    )}
-                                  </div>
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Date and Time */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="flex flex-col">
-                            <label className="text-sm font-medium mb-2">Data da Instalação *</label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !vehicleSchedule.scheduled_date && "text-muted-foreground"
-                                  )}
-                                >
-                                  {vehicleSchedule.scheduled_date ? (
-                                    format(vehicleSchedule.scheduled_date, "dd/MM/yyyy")
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-muted">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Contrato</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Módulos</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Técnico *</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Data *</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Horário</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {vehicleSchedules.map((vehicleSchedule, index) => (
+                            <tr key={vehicleSchedule.plate} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}>
+                              <td className="px-4 py-3">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {vehicleSchedule.contract_number}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                {vehicleSchedule.brand} {vehicleSchedule.model}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge variant="secondary">{vehicleSchedule.plate}</Badge>
+                              </td>
+                              <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                  {vehicleSchedule.accessories.length > 0 ? (
+                                    vehicleSchedule.accessories.map((acc, i) => (
+                                      <Badge key={i} variant="outline" className="text-xs">
+                                        {acc}
+                                      </Badge>
+                                    ))
                                   ) : (
-                                    <span>Selecione uma data</span>
+                                    <span className="text-xs text-muted-foreground">-</span>
                                   )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={vehicleSchedule.scheduled_date || undefined}
-                                  onSelect={(date) => updateVehicleSchedule(vehicleSchedule.plate, 'scheduled_date', date)}
-                                  disabled={(date) => date < new Date()}
-                                  initialFocus
-                                  className="pointer-events-auto"
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium">Horário (Opcional)</label>
-                            <Select 
-                              value={vehicleSchedule.installation_time} 
-                              onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'installation_time', value)}
-                            >
-                              <SelectTrigger className="mt-2">
-                                <SelectValue placeholder="Selecione um horário" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {timeSlots.map((time) => (
-                                  <SelectItem key={time} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {/* Notes */}
-                        <div>
-                          <label className="text-sm font-medium">Observações</label>
-                          <Textarea
-                            placeholder="Informações adicionais sobre a instalação..."
-                            className="resize-none mt-2"
-                            value={vehicleSchedule.notes}
-                            onChange={(e) => updateVehicleSchedule(vehicleSchedule.plate, 'notes', e.target.value)}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                  {vehicleSchedule.modules.length > 0 ? (
+                                    vehicleSchedule.modules.map((mod, i) => (
+                                      <Badge key={i} variant="outline" className="text-xs">
+                                        {mod}
+                                      </Badge>
+                                    ))
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">-</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Select 
+                                  value={vehicleSchedule.technician_ids[0] || ''} 
+                                  onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [value])}
+                                >
+                                  <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Selecionar" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {technicians.map((technician) => (
+                                      <SelectItem key={technician.id} value={technician.id!}>
+                                        <div className="flex flex-col">
+                                          <span>{technician.name}</span>
+                                          {technician.address_city && technician.address_state && (
+                                            <span className="text-xs text-muted-foreground">
+                                              {technician.address_city} - {technician.address_state}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className={cn(
+                                        "w-[140px] pl-3 text-left font-normal",
+                                        !vehicleSchedule.scheduled_date && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {vehicleSchedule.scheduled_date ? (
+                                        format(vehicleSchedule.scheduled_date, "dd/MM/yyyy")
+                                      ) : (
+                                        <span>Selecionar</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={vehicleSchedule.scheduled_date || undefined}
+                                      onSelect={(date) => updateVehicleSchedule(vehicleSchedule.plate, 'scheduled_date', date)}
+                                      disabled={(date) => date < new Date()}
+                                      initialFocus
+                                      className="pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Select 
+                                  value={vehicleSchedule.installation_time} 
+                                  onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'installation_time', value)}
+                                >
+                                  <SelectTrigger className="w-[100px]">
+                                    <SelectValue placeholder="--:--" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {timeSlots.map((time) => (
+                                      <SelectItem key={time} value={time}>
+                                        {time}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
 
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={handleClose}>
