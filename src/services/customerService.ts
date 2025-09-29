@@ -267,7 +267,10 @@ export const getCustomerByDocument = async (documentNumber: string): Promise<Cus
 export const createCustomersWithSalesData = async (): Promise<void> => {
   try {
     const user = await supabase.auth.getUser();
-    if (!user.data.user) throw new Error('Usuário não autenticado');
+    if (!user.data.user) {
+      console.log('Usuário não autenticado, não é possível criar clientes');
+      return;
+    }
 
     const customersData = [
       {
@@ -346,18 +349,32 @@ export const createCustomersWithSalesData = async (): Promise<void> => {
     ];
 
     for (const customerData of customersData) {
-      const insertData = {
-        ...customerData,
-        created_by: user.data.user.id,
-        vehicles: JSON.stringify(customerData.vehicles)
-      };
-
-      const { error } = await supabase
+      // Verificar se cliente já existe
+      const { data: existingCustomer } = await supabase
         .from('customers')
-        .insert([insertData]);
+        .select('id')
+        .eq('document_number', customerData.document_number)
+        .single();
 
-      if (error && !error.message.includes('duplicate key')) {
-        console.error('Error creating customer:', error);
+      if (!existingCustomer) {
+        const insertData = {
+          ...customerData,
+          created_by: user.data.user.id,
+          vehicles: JSON.stringify(customerData.vehicles)
+        };
+
+        const { data, error } = await supabase
+          .from('customers')
+          .insert([insertData])
+          .select();
+
+        if (error) {
+          console.error('Error creating customer:', customerData.name, error);
+        } else {
+          console.log('Created customer:', customerData.name);
+        }
+      } else {
+        console.log('Customer already exists:', customerData.name);
       }
     }
   } catch (error) {

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Clock } from 'lucide-react';
+import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,8 @@ import type { HomologationKit } from '@/services/homologationKitService';
 import type { Customer } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
 import { CustomerSelector, CustomerForm, CustomerEditForm } from '@/components/customers';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const formSchema = z.object({
   kit_id: z.string().min(1, 'Selecione um kit'),
@@ -204,6 +206,154 @@ export const ScheduleModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Customer Information */}
+          {selectedCustomer && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Informações do Cliente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Basic Customer Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Nome</p>
+                    <p className="font-semibold">{selectedCustomer.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {selectedCustomer.document_type === 'cpf' ? 'CPF' : 'CNPJ'}
+                    </p>
+                    <p className="font-semibold">{selectedCustomer.document_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Telefone</p>
+                    <p className="font-semibold">{selectedCustomer.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Email</p>
+                    <p className="font-semibold">{selectedCustomer.email}</p>
+                  </div>
+                </div>
+
+                {/* Company and Package Info */}
+                {(selectedCustomer.company_name || selectedCustomer.package_name) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                    {selectedCustomer.company_name && (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4" />
+                          <span className="text-sm font-medium text-muted-foreground">Empresa</span>
+                        </div>
+                        <p className="font-semibold">{selectedCustomer.company_name}</p>
+                      </div>
+                    )}
+                    {selectedCustomer.package_name && (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4" />
+                          <span className="text-sm font-medium text-muted-foreground">Pacote</span>
+                        </div>
+                        <p className="font-semibold">{selectedCustomer.package_name}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Vehicles */}
+                {selectedCustomer.vehicles && selectedCustomer.vehicles.length > 0 && (
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Truck className="w-4 h-4" />
+                      <span className="text-sm font-medium text-muted-foreground">Veículos</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedCustomer.vehicles.map((vehicle, index) => (
+                        <div key={index} className="p-3 border rounded-lg">
+                          <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Ano: {vehicle.year} | Quantidade: {vehicle.quantity}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Accessories */}
+                {selectedCustomer.accessories && selectedCustomer.accessories.length > 0 && (
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="w-4 h-4" />
+                      <span className="text-sm font-medium text-muted-foreground">Acessórios</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedCustomer.accessories.map((accessory, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {accessory}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Modules */}
+                {selectedCustomer.modules && selectedCustomer.modules.length > 0 && (
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Cpu className="w-4 h-4" />
+                      <span className="text-sm font-medium text-muted-foreground">Módulos</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedCustomer.modules.map((module, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {module}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sales Info */}
+                {(selectedCustomer.total_value || selectedCustomer.contract_number || selectedCustomer.sales_representative) && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+                    {selectedCustomer.total_value && (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          <span className="text-sm font-medium text-muted-foreground">Valor Total</span>
+                        </div>
+                        <p className="font-semibold text-green-600">
+                          R$ {selectedCustomer.total_value.toLocaleString('pt-BR')}
+                        </p>
+                      </div>
+                    )}
+                    {selectedCustomer.contract_number && (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4" />
+                          <span className="text-sm font-medium text-muted-foreground">Contrato</span>
+                        </div>
+                        <p className="font-medium">{selectedCustomer.contract_number}</p>
+                      </div>
+                    )}
+                    {selectedCustomer.sales_representative && (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          <span className="text-sm font-medium text-muted-foreground">Vendedor</span>
+                        </div>
+                        <p className="font-medium">{selectedCustomer.sales_representative}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Customer Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Cliente</h3>

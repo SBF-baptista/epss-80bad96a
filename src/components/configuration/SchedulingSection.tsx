@@ -37,9 +37,15 @@ export const SchedulingSection = ({
 
   useEffect(() => {
     loadCustomers();
-    // Criar clientes com dados completos na primeira execução
-    createCustomersWithSalesData();
   }, [searchTerm]);
+
+  useEffect(() => {
+    // Criar clientes com dados completos apenas uma vez
+    createCustomersWithSalesData().then(() => {
+      // Recarregar clientes após criação
+      loadCustomers();
+    });
+  }, []); // Array vazio para executar apenas uma vez
 
   const loadCustomers = async () => {
     try {
@@ -161,19 +167,7 @@ export const SchedulingSection = ({
       <div className="flex-1 overflow-hidden">
         <Card className="h-full">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Clientes Cadastrados</span>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setSelectedCustomer(null);
-                  setIsScheduleModalOpen(true);
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Agendamento
-              </Button>
-            </CardTitle>
+            <CardTitle>Clientes Cadastrados</CardTitle>
           </CardHeader>
           <CardContent className="h-full overflow-auto">
             {isLoading ? (
@@ -187,12 +181,8 @@ export const SchedulingSection = ({
                   {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm ? 'Tente ajustar os termos de busca.' : 'Crie o primeiro agendamento para começar.'}
+                  {searchTerm ? 'Tente ajustar os termos de busca.' : 'Nenhum cliente encontrado.'}
                 </p>
-                <Button onClick={() => setIsScheduleModalOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeiro Agendamento
-                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
