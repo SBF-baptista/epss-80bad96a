@@ -60,8 +60,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create admin client with service role key (dynamic import)
-    const createClient = await (await import('https://esm.sh/@supabase/supabase-js@2')).createClient;
-    const supabaseAdmin = createClient(
+    const supabaseAdmin = (await (await import('https://esm.sh/@supabase/supabase-js@2')).createClient)(
       supabaseUrl,
       supabaseServiceKey,
       {
