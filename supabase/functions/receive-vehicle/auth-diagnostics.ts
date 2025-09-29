@@ -65,7 +65,7 @@ export function createAuthDiagnosticsEndpoint(req: Request, timestamp: string, r
         }
       },
       all_headers: Object.fromEntries(req.headers.entries()),
-      recommendations: []
+      recommendations: [] as string[]
     }
     
     // Generate specific recommendations based on analysis
@@ -116,17 +116,17 @@ export function createEnhancedAuthError(apiKey: string | null, expectedApiKey: s
         basic_test: 'Add ?test=true to URL for basic connectivity test',
         auth_debug: 'Add ?auth-debug=true to URL for detailed authentication analysis'
       }
-    }
+    } as Record<string, any>
   }
   
   if (!apiKey) {
-    errorDetails.debug_info['specific_issue'] = 'x-api-key header is missing or empty'
+    (errorDetails.debug_info as Record<string, any>)['specific_issue'] = 'x-api-key header is missing or empty'
   } else if (!expectedApiKey) {
-    errorDetails.debug_info['specific_issue'] = 'Server configuration error: VEHICLE_API_KEY not configured'
+    (errorDetails.debug_info as Record<string, any>)['specific_issue'] = 'Server configuration error: VEHICLE_API_KEY not configured'
   } else {
-    errorDetails.debug_info['specific_issue'] = 'API key value does not match expected value'
-    errorDetails.debug_info['key_length_provided'] = apiKey.length
-    errorDetails.debug_info['key_length_expected'] = expectedApiKey.length
+    (errorDetails.debug_info as Record<string, any>)['specific_issue'] = 'API key value does not match expected value'
+    ;(errorDetails.debug_info as Record<string, any>)['key_length_provided'] = apiKey.length
+    ;(errorDetails.debug_info as Record<string, any>)['key_length_expected'] = expectedApiKey.length
   }
   
   return new Response(

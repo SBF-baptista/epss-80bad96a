@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// Supabase client will be loaded dynamically at runtime to avoid CDN build issues
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -185,6 +185,7 @@ serve(async (req) => {
     // Initialize Supabase client with service role for system operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get JWT token from Authorization header

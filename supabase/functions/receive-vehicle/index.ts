@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// Supabase client will be loaded dynamically at runtime to avoid CDN build issues
 import { corsHeaders } from './shared.ts'
 import { validateRequestBody } from './validation.ts'
 import { processVehicleGroups } from './processing.ts'
@@ -86,6 +86,7 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration')
     }
     
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     console.log(`[${timestamp}][${requestId}] Supabase client initialized successfully`)
 

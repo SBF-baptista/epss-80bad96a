@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// Removed unused Supabase import to prevent CDN build fetch issues
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
