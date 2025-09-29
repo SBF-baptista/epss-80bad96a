@@ -173,9 +173,13 @@ export const ScheduleModal = ({
         technicians.find(t => t.id === id)?.name
       ).filter(Boolean).join(', ');
       
+      const vehicleInfo = selectedVehicle ? 
+        ` para o veículo ${selectedVehicle.brand} ${selectedVehicle.model} (${selectedVehicle.plate})` : 
+        '';
+      
       toast({
         title: "Agendamento(s) criado(s)",
-        description: `Kit "${selectedKit?.name}" agendado com sucesso para ${selectedCustomer.name} com os técnicos: ${technicianNames}.`
+        description: `Kit "${selectedKit?.name}" agendado com sucesso para ${selectedCustomer.name}${vehicleInfo} com os técnicos: ${technicianNames}.`
       });
 
       onSuccess();

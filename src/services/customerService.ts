@@ -476,3 +476,59 @@ export const createCustomersWithSalesData = async (): Promise<void> => {
 
   console.log(`${customers.length} clientes de teste criados com sucesso!`);
 };
+
+// Função para criar um único cliente para testes
+export const createSingleCustomerForTesting = async (): Promise<void> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) {
+    throw new Error('Usuário não autenticado');
+  }
+
+  // Verificar se já existe cliente
+  const { data: existingCustomers } = await supabase
+    .from('customers')
+    .select('id')
+    .limit(1);
+
+  if (existingCustomers && existingCustomers.length > 0) {
+    console.log('Cliente já existe, pulando criação');
+    return;
+  }
+
+  // Dados do cliente único
+  const customerData = {
+    name: "João Silva Santos",
+    document_number: "12345678901",
+    document_type: "cpf" as const,
+    phone: "(11) 99999-1111",
+    email: "joao.silva@email.com",
+    address_street: "Rua das Flores",
+    address_number: "123",
+    address_neighborhood: "Centro",
+    address_city: "São Paulo",
+    address_state: "SP",
+    address_postal_code: "01234-567",
+    address_complement: "Apto 45",
+    company_name: "Silva Transportes Ltda",
+    package_name: "Premium Fleet",
+    contract_number: "CT-2024-001",
+    sales_representative: "Ana Costa",
+    total_value: 15000.00,
+    modules: ["GPS", "RFID", "Camera"],
+    accessories: ["Antena", "Chicote"],
+    vehicles: [
+      { plate: "ABC-1234", brand: "VOLKSWAGEN", model: "GOL", year: 2020 },
+      { plate: "DEF-5678", brand: "FORD", model: "KA", year: 2019 },
+      { plate: "GHI-9012", brand: "CHEVROLET", model: "ONIX", year: 2021 }
+    ]
+  };
+
+  try {
+    await createCustomer(customerData);
+    console.log(`Cliente ${customerData.name} criado com sucesso`);
+  } catch (error) {
+    console.error(`Erro ao criar cliente ${customerData.name}:`, error);
+  }
+
+  console.log('Cliente de teste criado');
+};
