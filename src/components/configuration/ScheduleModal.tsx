@@ -252,15 +252,15 @@ export const ScheduleModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[1400px] max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[1400px] h-[95vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Novo Agendamento de Instalação</DialogTitle>
           <DialogDescription>
             Selecione o cliente, kit, técnico e configure os detalhes da instalação.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* Customer Information */}
           {selectedCustomer && (
             <Card>
@@ -389,7 +389,7 @@ export const ScheduleModal = ({
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                       <table className="w-full">
                         <thead className="bg-muted">
                           <tr>
@@ -523,14 +523,16 @@ export const ScheduleModal = ({
                     </div>
                   </div>
 
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={handleClose}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Criando Agendamentos..." : "Criar Agendamentos"}
-                    </Button>
-                  </DialogFooter>
+                  <div className="sticky bottom-0 bg-background pt-4 border-t px-6 pb-6 -mx-6">
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={handleClose}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Criando Agendamentos..." : "Criar Agendamentos"}
+                      </Button>
+                    </DialogFooter>
+                  </div>
                 </form>
               </Form>
             </div>

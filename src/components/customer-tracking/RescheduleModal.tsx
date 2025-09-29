@@ -179,8 +179,8 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1400px] max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[1400px] h-[95vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Reagendar Instalação
@@ -190,10 +190,11 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+              <Table>
+                <TableHeader>
                 <TableRow>
                   <TableHead>Modelo</TableHead>
                   <TableHead>Placa</TableHead>
@@ -266,15 +267,18 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
               </TableBody>
             </Table>
           </div>
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Reagendando..." : "Reagendar"}
-            </Button>
-          </DialogFooter>
+        <div className="border-t px-6 py-4">
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Reagendando..." : "Reagendar"}
+              </Button>
+            </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
