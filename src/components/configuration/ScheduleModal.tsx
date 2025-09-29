@@ -348,15 +348,17 @@ export const ScheduleModal = ({
             </Card>
           )}
 
-          {/* Customer Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Cliente</h3>
-            
-            <CustomerSelector
-              selectedCustomer={selectedCustomer}
-              onSelectCustomer={setSelectedCustomer}
-            />
-          </div>
+          {/* Customer Section - Only show if no customer is pre-selected */}
+          {!initialCustomer && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Cliente</h3>
+              
+              <CustomerSelector
+                selectedCustomer={selectedCustomer}
+                onSelectCustomer={setSelectedCustomer}
+              />
+            </div>
+          )}
 
           {/* Schedule Form */}
           {selectedCustomer && (
