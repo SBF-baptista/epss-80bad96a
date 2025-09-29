@@ -110,7 +110,24 @@ export const ScheduleModal = ({
 
   // Initialize vehicle schedules when customer is selected
   useEffect(() => {
-    if (selectedCustomer?.vehicles) {
+    console.log('Customer selected:', selectedCustomer);
+    console.log('Customer vehicles:', selectedCustomer?.vehicles);
+    
+    if (selectedCustomer) {
+      // Check if customer has vehicles
+      if (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) {
+        console.warn('Customer has no vehicles registered');
+        toast({
+          title: "Aviso",
+          description: "Este cliente não possui veículos cadastrados. Por favor, adicione veículos ao cliente antes de agendar.",
+          variant: "destructive"
+        });
+        setVehicleSchedules([]);
+        form.setValue('vehicles', []);
+        return;
+      }
+
+      // Initialize schedules with customer vehicles
       const initialSchedules = selectedCustomer.vehicles.map((vehicle, index) => ({
         plate: vehicle.plate,
         brand: vehicle.brand,
@@ -124,10 +141,12 @@ export const ScheduleModal = ({
         accessories: selectedCustomer.accessories || [],
         modules: selectedCustomer.modules || []
       }));
+      
+      console.log('Initial schedules created:', initialSchedules);
       setVehicleSchedules(initialSchedules);
       form.setValue('vehicles', initialSchedules);
     }
-  }, [selectedCustomer, form]);
+  }, [selectedCustomer, form, toast]);
 
   const updateVehicleSchedule = (plate: string, field: keyof VehicleScheduleData, value: any) => {
     const updatedSchedules = vehicleSchedules.map(schedule => 
@@ -378,6 +397,21 @@ export const ScheduleModal = ({
                 selectedCustomer={selectedCustomer}
                 onSelectCustomer={setSelectedCustomer}
               />
+            </div>
+          )}
+
+          {/* Warning message when no vehicles */}
+          {selectedCustomer && (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="font-semibold">Cliente sem veículos cadastrados</span>
+              </div>
+              <p className="text-sm text-yellow-700 mt-2">
+                Este cliente não possui veículos cadastrados. Por favor, edite o cliente e adicione veículos antes de criar um agendamento.
+              </p>
             </div>
           )}
 
