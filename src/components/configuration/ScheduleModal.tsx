@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Clock, MapPin } from 'lucide-react';
+import { CalendarIcon, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,16 +46,9 @@ import { CustomerSelector, CustomerForm, CustomerEditForm } from '@/components/c
 
 const formSchema = z.object({
   kit_id: z.string().min(1, 'Selecione um kit'),
-  technician_id: z.string().min(1, 'Selecione um técnico'),
+  technician_ids: z.array(z.string()).min(1, 'Selecione pelo menos um técnico'),
   scheduled_date: z.date({ required_error: 'Selecione uma data' }),
   installation_time: z.string().optional(),
-  installation_address_street: z.string().min(1, 'Endereço é obrigatório'),
-  installation_address_number: z.string().min(1, 'Número é obrigatório'),
-  installation_address_neighborhood: z.string().min(1, 'Bairro é obrigatório'),
-  installation_address_city: z.string().min(1, 'Cidade é obrigatória'),
-  installation_address_state: z.string().min(1, 'Estado é obrigatório'),
-  installation_address_postal_code: z.string().min(1, 'CEP é obrigatório'),
-  installation_address_complement: z.string().optional(),
   notes: z.string().optional()
 });
 
@@ -88,31 +81,12 @@ export const ScheduleModal = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       kit_id: '',
-      technician_id: '',
+      technician_ids: [],
       installation_time: '',
-      installation_address_street: selectedCustomer?.address_street || '',
-      installation_address_number: selectedCustomer?.address_number || '',
-      installation_address_neighborhood: selectedCustomer?.address_neighborhood || '',
-      installation_address_city: selectedCustomer?.address_city || '',
-      installation_address_state: selectedCustomer?.address_state || '',
-      installation_address_postal_code: selectedCustomer?.address_postal_code || '',
-      installation_address_complement: selectedCustomer?.address_complement || '',
       notes: ''
     }
   });
 
-  // Update form when customer changes
-  useState(() => {
-    if (selectedCustomer) {
-      form.setValue('installation_address_street', selectedCustomer.address_street);
-      form.setValue('installation_address_number', selectedCustomer.address_number);
-      form.setValue('installation_address_neighborhood', selectedCustomer.address_neighborhood);
-      form.setValue('installation_address_city', selectedCustomer.address_city);
-      form.setValue('installation_address_state', selectedCustomer.address_state);
-      form.setValue('installation_address_postal_code', selectedCustomer.address_postal_code);
-      form.setValue('installation_address_complement', selectedCustomer.address_complement || '');
-    }
-  });
 
   const onSubmit = async (data: FormData) => {
     if (!selectedCustomer) {
@@ -127,47 +101,56 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Check for conflicts
-      const hasConflict = await checkScheduleConflict(
-        data.technician_id,
-        data.scheduled_date.toISOString().split('T')[0],
-        data.installation_time || undefined
-      );
+      // Check for conflicts for each technician
+      for (const technicianId of data.technician_ids) {
+        const hasConflict = await checkScheduleConflict(
+          technicianId,
+          data.scheduled_date.toISOString().split('T')[0],
+          data.installation_time || undefined
+        );
 
-      if (hasConflict) {
-        toast({
-          title: "Conflito de horário",
-          description: "Este técnico já possui um agendamento neste horário.",
-          variant: "destructive"
-        });
-        return;
+        if (hasConflict) {
+          const technician = technicians.find(t => t.id === technicianId);
+          toast({
+            title: "Conflito de horário",
+            description: `O técnico ${technician?.name} já possui um agendamento neste horário.`,
+            variant: "destructive"
+          });
+          return;
+        }
       }
 
-      // Create the schedule
-      await createKitSchedule({
-        kit_id: data.kit_id,
-        technician_id: data.technician_id,
-        scheduled_date: data.scheduled_date.toISOString().split('T')[0],
-        installation_time: data.installation_time || undefined,
-        notes: data.notes || undefined,
-        customer_id: selectedCustomer.id,
-        customer_name: selectedCustomer.name,
-        customer_document_number: selectedCustomer.document_number,
-        customer_phone: selectedCustomer.phone,
-        customer_email: selectedCustomer.email,
-        installation_address_street: data.installation_address_street,
-        installation_address_number: data.installation_address_number,
-        installation_address_neighborhood: data.installation_address_neighborhood,
-        installation_address_city: data.installation_address_city,
-        installation_address_state: data.installation_address_state,
-        installation_address_postal_code: data.installation_address_postal_code,
-        installation_address_complement: data.installation_address_complement || undefined
-      });
-
+      // Create schedules for each technician
       const selectedKit = kits.find(k => k.id === data.kit_id);
+      for (const technicianId of data.technician_ids) {
+        await createKitSchedule({
+          kit_id: data.kit_id,
+          technician_id: technicianId,
+          scheduled_date: data.scheduled_date.toISOString().split('T')[0],
+          installation_time: data.installation_time || undefined,
+          notes: data.notes || undefined,
+          customer_id: selectedCustomer.id,
+          customer_name: selectedCustomer.name,
+          customer_document_number: selectedCustomer.document_number,
+          customer_phone: selectedCustomer.phone,
+          customer_email: selectedCustomer.email,
+          installation_address_street: selectedCustomer.address_street,
+          installation_address_number: selectedCustomer.address_number,
+          installation_address_neighborhood: selectedCustomer.address_neighborhood,
+          installation_address_city: selectedCustomer.address_city,
+          installation_address_state: selectedCustomer.address_state,
+          installation_address_postal_code: selectedCustomer.address_postal_code,
+          installation_address_complement: selectedCustomer.address_complement || undefined
+        });
+      }
+
+      const technicianNames = data.technician_ids.map(id => 
+        technicians.find(t => t.id === id)?.name
+      ).filter(Boolean).join(', ');
+      
       toast({
-        title: "Agendamento criado",
-        description: `Kit "${selectedKit?.name}" agendado com sucesso para ${selectedCustomer.name}.`
+        title: "Agendamento(s) criado(s)",
+        description: `Kit "${selectedKit?.name}" agendado com sucesso para ${selectedCustomer.name} com os técnicos: ${technicianNames}.`
       });
 
       onSuccess();
@@ -194,27 +177,11 @@ export const ScheduleModal = ({
   const handleCustomerCreated = (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowCustomerForm(false);
-    // Update form with new customer data
-    form.setValue('installation_address_street', customer.address_street);
-    form.setValue('installation_address_number', customer.address_number);
-    form.setValue('installation_address_neighborhood', customer.address_neighborhood);
-    form.setValue('installation_address_city', customer.address_city);
-    form.setValue('installation_address_state', customer.address_state);
-    form.setValue('installation_address_postal_code', customer.address_postal_code);
-    form.setValue('installation_address_complement', customer.address_complement || '');
   };
 
   const handleCustomerUpdated = (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowCustomerEdit(false);
-    // Update form with updated customer data
-    form.setValue('installation_address_street', customer.address_street);
-    form.setValue('installation_address_number', customer.address_number);
-    form.setValue('installation_address_neighborhood', customer.address_neighborhood);
-    form.setValue('installation_address_city', customer.address_city);
-    form.setValue('installation_address_state', customer.address_state);
-    form.setValue('installation_address_postal_code', customer.address_postal_code);
-    form.setValue('installation_address_complement', customer.address_complement || '');
   };
 
   // Generate time slots
@@ -318,31 +285,43 @@ export const ScheduleModal = ({
                   {/* Technician Selection */}
                   <FormField
                     control={form.control}
-                    name="technician_id"
+                    name="technician_ids"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Técnico *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um técnico" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {technicians.map((technician) => (
-                              <SelectItem key={technician.id} value={technician.id!}>
+                        <FormLabel>Técnicos *</FormLabel>
+                        <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
+                          {technicians.map((technician) => (
+                            <div key={technician.id} className="flex items-start space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`technician-${technician.id}`}
+                                checked={field.value?.includes(technician.id!) || false}
+                                onChange={(e) => {
+                                  const currentValues = field.value || [];
+                                  if (e.target.checked) {
+                                    field.onChange([...currentValues, technician.id!]);
+                                  } else {
+                                    field.onChange(currentValues.filter(id => id !== technician.id));
+                                  }
+                                }}
+                                className="mt-1"
+                              />
+                              <label 
+                                htmlFor={`technician-${technician.id}`}
+                                className="flex-1 cursor-pointer"
+                              >
                                 <div className="flex flex-col">
-                                  <span>{technician.name}</span>
+                                  <span className="text-sm font-medium">{technician.name}</span>
                                   {technician.address_city && technician.address_state && (
                                     <span className="text-xs text-muted-foreground">
                                       {technician.address_city} - {technician.address_state}
                                     </span>
                                   )}
                                 </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -416,119 +395,6 @@ export const ScheduleModal = ({
                     />
                   </div>
 
-                  {/* Installation Address */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <h4 className="font-medium">Local da Instalação</h4>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="md:col-span-2">
-                        <FormField
-                          control={form.control}
-                          name="installation_address_street"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Rua *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Nome da rua" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <FormField
-                        control={form.control}
-                        name="installation_address_number"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Número *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="123" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="installation_address_neighborhood"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bairro *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nome do bairro" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="installation_address_postal_code"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>CEP *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="00000-000" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="installation_address_city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cidade *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nome da cidade" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="installation_address_state"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Estado *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="SP" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="installation_address_complement"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Complemento</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Apartamento, casa, etc." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
 
                   {/* Notes */}
                   <FormField
