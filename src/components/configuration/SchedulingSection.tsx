@@ -37,14 +37,8 @@ export const SchedulingSection = ({
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
 
   useEffect(() => {
-    // Criar clientes com dados completos apenas uma vez
-    const initializeCustomers = async () => {
-      await createCustomersWithSalesData();
-      // Recarregar após criação com pequeno delay
-      setTimeout(() => loadCustomers(), 1000);
-    };
-    
-    initializeCustomers();
+    // Remover criação automática de clientes - sistema agora inicia vazio
+    loadCustomers();
   }, []); // Array vazio para executar apenas uma vez
 
   useEffect(() => {

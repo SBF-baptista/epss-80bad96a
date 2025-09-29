@@ -580,6 +580,10 @@ export type Database = {
           status: string
           technician_id: string
           updated_at: string
+          vehicle_brand: string | null
+          vehicle_model: string | null
+          vehicle_plate: string | null
+          vehicle_year: number | null
         }
         Insert: {
           created_at?: string
@@ -604,6 +608,10 @@ export type Database = {
           status?: string
           technician_id: string
           updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
         }
         Update: {
           created_at?: string
@@ -628,6 +636,10 @@ export type Database = {
           status?: string
           technician_id?: string
           updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
         }
         Relationships: [
           {
