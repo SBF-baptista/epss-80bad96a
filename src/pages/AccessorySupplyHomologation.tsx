@@ -5,6 +5,7 @@ import { AccessoryHomologationForm, AccessoryHomologationList } from "@/componen
 import { SupplyHomologationForm } from "@/components/homologation/SupplyHomologationForm";
 import { SupplyHomologationList } from "@/components/homologation/SupplyHomologationList";
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
+import { PendingEquipmentSection } from "@/components/homologation/PendingEquipmentSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
@@ -13,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 const AccessorySupplyHomologation = () => {
   const queryClient = useQueryClient();
 
-  // Set up real-time subscription for kit_item_options changes
+  // Set up real-time subscription for kit_item_options and customers changes
   useEffect(() => {
     const channel = supabase
       .channel('accessory-homologation-sync')
@@ -27,6 +28,19 @@ const AccessorySupplyHomologation = () => {
         (payload) => {
           console.log('Kit item option changed in Accessories:', payload);
           // Invalidate queries to refetch pending items
+          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'customers'
+        },
+        (payload) => {
+          console.log('Customer changed in Accessories:', payload);
+          // Invalidate queries to refetch pending items when customers change
           queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
         }
       )
@@ -64,6 +78,7 @@ const AccessorySupplyHomologation = () => {
             
             <TabsContent value="accessories" className="space-y-6 mt-6">
               <PendingAccessoriesSection />
+              <PendingEquipmentSection />
               <AccessoryHomologationForm />
               <AccessoryHomologationList />
             </TabsContent>
