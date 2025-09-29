@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Calendar, User, Package, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, User, Package, Clock, MapPin, Phone, Mail, FileText } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Technician } from '@/services/technicianService';
@@ -40,6 +40,34 @@ export const ScheduleCalendar = ({
       return true;
     });
   }, [schedules, selectedTechnician, selectedKit]);
+
+  // Group schedules by customer
+  const groupedSchedules = useMemo(() => {
+    const groups = new Map<string, KitScheduleWithDetails[]>();
+    
+    filteredSchedules.forEach(schedule => {
+      const customerKey = schedule.customer_document_number || `${schedule.customer_name}-${schedule.customer_phone}`;
+      if (!groups.has(customerKey)) {
+        groups.set(customerKey, []);
+      }
+      groups.get(customerKey)!.push(schedule);
+    });
+
+    // Sort visits within each group chronologically
+    groups.forEach(visits => {
+      visits.sort((a, b) => {
+        const dateCompare = new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
+        if (dateCompare !== 0) return dateCompare;
+        
+        if (a.installation_time && b.installation_time) {
+          return a.installation_time.localeCompare(b.installation_time);
+        }
+        return 0;
+      });
+    });
+
+    return Array.from(groups.values());
+  }, [filteredSchedules]);
 
   // Get calendar days
   const monthStart = startOfMonth(currentDate);
@@ -223,54 +251,123 @@ export const ScheduleCalendar = ({
             </div>
           ) : (
             <div className="h-full overflow-auto p-4">
-              {filteredSchedules.length === 0 ? (
+              {groupedSchedules.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
                   Nenhum agendamento encontrado
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {filteredSchedules.map((schedule) => (
-                    <div key={schedule.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Package className="w-4 h-4" />
-                            <span className="font-medium">{schedule.kit.name}</span>
-                            <Badge className={getStatusColor(schedule.status)}>
-                              {getStatusLabel(schedule.status)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {schedule.technician.name}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(schedule.scheduled_date).toLocaleDateString('pt-BR')}
-                            </div>
-                            {schedule.installation_time && (
+                <div className="space-y-6">
+                  {groupedSchedules.map((customerVisits, index) => {
+                    const firstVisit = customerVisits[0];
+                    return (
+                      <div key={index} className="border rounded-lg p-6 hover:bg-muted/20 transition-colors">
+                        {/* Customer Information Header */}
+                        <div className="flex items-start justify-between mb-4 pb-4 border-b">
+                          <div className="flex-1 space-y-2">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {firstVisit.customer_name}
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {schedule.installation_time}
+                                <FileText className="w-3 h-3" />
+                                <span>CPF/CNPJ: {firstVisit.customer_document_number}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                <span>{firstVisit.customer_phone}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Mail className="w-3 h-3" />
+                                <span>{firstVisit.customer_email}</span>
+                              </div>
+                            </div>
+
+                            {/* Installation Address */}
+                            {(firstVisit.installation_address_street || firstVisit.installation_address_city) && (
+                              <div className="flex items-start gap-1 text-sm text-muted-foreground">
+                                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  {firstVisit.installation_address_street} {firstVisit.installation_address_number}
+                                  {firstVisit.installation_address_complement && `, ${firstVisit.installation_address_complement}`}
+                                  <br />
+                                  {firstVisit.installation_address_neighborhood}, {firstVisit.installation_address_city} - {firstVisit.installation_address_state}
+                                  <br />
+                                  CEP: {firstVisit.installation_address_postal_code}
+                                </div>
                               </div>
                             )}
                           </div>
+                          
+                          <Badge variant="outline" className="ml-4">
+                            {customerVisits.length} visita{customerVisits.length > 1 ? 's' : ''}
+                          </Badge>
+                        </div>
 
-                          {schedule.notes && (
-                            <p className="text-sm text-muted-foreground">{schedule.notes}</p>
-                          )}
+                        {/* All Visits for this Customer */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-foreground">Agendamentos:</h4>
+                          {customerVisits.map((visit) => (
+                            <div key={visit.id} className="bg-muted/30 rounded-lg p-4 space-y-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Package className="w-4 h-4" />
+                                  <span className="font-medium">{visit.kit.name}</span>
+                                  <Badge className={getStatusColor(visit.status)}>
+                                    {getStatusLabel(visit.status)}
+                                  </Badge>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <User className="w-3 h-3" />
+                                  <span className="font-medium text-foreground">{visit.technician.name}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  <span className="font-medium text-foreground">
+                                    {new Date(visit.scheduled_date).toLocaleDateString('pt-BR')}
+                                  </span>
+                                </div>
+                                {visit.installation_time && (
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    <span className="font-medium text-foreground">{visit.installation_time}</span>
+                                  </div>
+                                )}
+                              </div>
 
-                          {schedule.homologation_card && (
-                            <div className="text-xs text-muted-foreground">
-                              Veículo: {schedule.homologation_card.brand} {schedule.homologation_card.model}
+                              {visit.kit.description && (
+                                <div className="text-sm text-muted-foreground">
+                                  <span className="font-medium">Descrição do Kit:</span> {visit.kit.description}
+                                </div>
+                              )}
+
+                              {visit.notes && (
+                                <div className="text-sm text-muted-foreground">
+                                  <span className="font-medium">Observações:</span> {visit.notes}
+                                </div>
+                              )}
+
+                              {visit.homologation_card && (
+                                <div className="text-sm text-muted-foreground">
+                                  <span className="font-medium">Veículo:</span> {visit.homologation_card.brand} {visit.homologation_card.model}
+                                </div>
+                              )}
+
+                              {visit.technician.address_city && (
+                                <div className="text-sm text-muted-foreground">
+                                  <span className="font-medium">Técnico de:</span> {visit.technician.address_city}
+                                  {visit.technician.address_state && ` - ${visit.technician.address_state}`}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
