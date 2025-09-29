@@ -112,59 +112,62 @@ export const ScheduleModal = ({
 
   // Initialize vehicle schedules when customer is selected
   useEffect(() => {
-    const initializeSchedules = async () => {
-      console.log('Customer selected:', selectedCustomer);
-      console.log('Customer vehicles:', selectedCustomer?.vehicles);
-      
-      if (selectedCustomer) {
-        // Check if customer has vehicles
-        if (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) {
-          console.warn('Customer has no vehicles registered');
-          toast({
-            title: "Aviso",
-            description: "Este cliente não possui veículos cadastrados. Por favor, adicione veículos ao cliente antes de agendar.",
-            variant: "destructive"
-          });
-          setVehicleSchedules([]);
-          form.setValue('vehicles', []);
-          return;
-        }
+    console.log('Customer selected:', selectedCustomer);
+    console.log('Customer vehicles:', selectedCustomer?.vehicles);
 
-        // Check homologation status for accessories and modules
+    if (!selectedCustomer) return;
+
+    // Check if customer has vehicles
+    if (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) {
+      console.warn('Customer has no vehicles registered');
+      toast({
+        title: "Aviso",
+        description: "Este cliente não possui veículos cadastrados. Por favor, adicione veículos ao cliente antes de agendar.",
+        variant: "destructive"
+      });
+      setVehicleSchedules([]);
+      form.reset({ vehicles: [] });
+      return;
+    }
+
+    // 1) Initialize schedules immediately to render UI without delay
+    const initialSchedules = selectedCustomer.vehicles.map((vehicle, index) => ({
+      plate: vehicle.plate,
+      brand: vehicle.brand,
+      model: vehicle.model,
+      year: vehicle.year,
+      technician_ids: [],
+      scheduled_date: null,
+      installation_time: '',
+      notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
+      contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
+      // clone arrays to avoid shared references
+      accessories: [...(selectedCustomer.accessories || [])],
+      modules: [...(selectedCustomer.modules || [])]
+    }));
+
+    console.log('Initial schedules created:', initialSchedules);
+    setVehicleSchedules(initialSchedules);
+    form.reset({ vehicles: initialSchedules });
+
+    // 2) Fire-and-forget: check homologation in background and update icons
+    (async () => {
+      try {
         const allItems = [
           ...(selectedCustomer.accessories || []).map(name => ({ name, type: 'accessory' })),
           ...(selectedCustomer.modules || []).map(name => ({ name, type: 'equipment' }))
         ];
-
-        const statusMap = new Map<string, boolean>();
-        for (const item of allItems) {
-          const isHomologated = await checkItemHomologation(item.name, item.type);
-          statusMap.set(`${item.name}:${item.type}`, isHomologated);
-        }
-        setHomologationStatus(statusMap);
-
-        // Initialize schedules with customer vehicles
-        const initialSchedules = selectedCustomer.vehicles.map((vehicle, index) => ({
-          plate: vehicle.plate,
-          brand: vehicle.brand,
-          model: vehicle.model,
-          year: vehicle.year,
-          technician_ids: [],
-          scheduled_date: null,
-          installation_time: '',
-          notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
-          contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
-          accessories: selectedCustomer.accessories || [],
-          modules: selectedCustomer.modules || []
-        }));
-        
-        console.log('Initial schedules created:', initialSchedules);
-        setVehicleSchedules(initialSchedules);
-        form.setValue('vehicles', initialSchedules);
+        const entries = await Promise.all(
+          allItems.map(async (item) => {
+            const ok = await checkItemHomologation(item.name, item.type);
+            return [`${item.name}:${item.type}`, ok] as const;
+          })
+        );
+        setHomologationStatus(new Map(entries));
+      } catch (e) {
+        console.warn('Falha ao checar homologação de itens:', e);
       }
-    };
-
-    initializeSchedules();
+    })();
   }, [selectedCustomer, form, toast]);
 
   const updateVehicleSchedule = (plate: string, field: keyof VehicleScheduleData, value: any) => {
@@ -289,7 +292,7 @@ export const ScheduleModal = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="sm:max-w-[1400px] h-[95vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Novo Agendamento de Instalação</DialogTitle>
