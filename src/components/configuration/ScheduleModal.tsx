@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText } from 'lucide-react';
+import { CalendarIcon, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,9 +43,6 @@ import type { HomologationKit } from '@/services/homologationKitService';
 import type { Customer } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
 import { CustomerSelector, CustomerForm, CustomerEditForm } from '@/components/customers';
-import { generateMockScheduleData, type ExtendedScheduleData, type VehicleData } from '@/services/mockScheduleDataService';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const formSchema = z.object({
   kit_id: z.string().min(1, 'Selecione um kit'),
@@ -79,7 +76,6 @@ export const ScheduleModal = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [showCustomerEdit, setShowCustomerEdit] = useState(false);
-  const [mockData, setMockData] = useState<ExtendedScheduleData | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -90,22 +86,6 @@ export const ScheduleModal = ({
       notes: ''
     }
   });
-
-  // Generate mock data when modal opens
-  useEffect(() => {
-    if (isOpen && !mockData) {
-      const selectedKit = kits.length > 0 ? kits[0] : {
-        id: 'mock-kit',
-        name: 'Kit Exemplo',
-        description: 'Kit de exemplo',
-        homologation_card_id: undefined,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as HomologationKit;
-      const generated = generateMockScheduleData(technicians, [selectedKit], 1)[0];
-      setMockData(generated);
-    }
-  }, [isOpen, technicians, kits, mockData]);
 
 
   const onSubmit = async (data: FormData) => {
@@ -191,7 +171,6 @@ export const ScheduleModal = ({
     setSelectedCustomer(initialCustomer || null);
     setShowCustomerForm(false);
     setShowCustomerEdit(false);
-    setMockData(null);
     onClose();
   };
 
@@ -225,130 +204,6 @@ export const ScheduleModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Mock Client and Sales Data */}
-          {mockData && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Dados do Cliente e Vendas (Exemplo)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Company and Package Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Empresa</p>
-                    <p className="font-semibold">{mockData.company_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Pacote</p>
-                    <p className="font-semibold">{mockData.package_name}</p>
-                  </div>
-                </div>
-
-                {/* Customer Info */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Cliente</p>
-                    <p className="font-medium">{mockData.customer_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">CPF/CNPJ</p>
-                    <p className="font-medium">{mockData.customer_document_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Telefone</p>
-                    <p className="font-medium">{mockData.customer_phone}</p>
-                  </div>
-                </div>
-
-                {/* Vehicles */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Truck className="w-4 h-4" />
-                    <span className="text-sm font-medium text-muted-foreground">Veículos</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {mockData.vehicles.map((vehicle: VehicleData, index: number) => (
-                      <div key={index} className="p-3 border rounded-lg">
-                        <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Ano: {vehicle.year} | Quantidade: {vehicle.quantity}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Accessories */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Package className="w-4 h-4" />
-                    <span className="text-sm font-medium text-muted-foreground">Acessórios</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {mockData.accessories.map((accessory, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {accessory}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Modules */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Cpu className="w-4 h-4" />
-                    <span className="text-sm font-medium text-muted-foreground">Módulos</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {mockData.modules.map((module, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {module}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sales Info */}
-                {mockData.sales_info && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
-                    {mockData.sales_info.total_value && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Valor Total</span>
-                        </div>
-                        <p className="font-semibold text-green-600">
-                          R$ {mockData.sales_info.total_value.toLocaleString('pt-BR')}
-                        </p>
-                      </div>
-                    )}
-                    {mockData.sales_info.contract_number && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Contrato</span>
-                        </div>
-                        <p className="font-medium">{mockData.sales_info.contract_number}</p>
-                      </div>
-                    )}
-                    {mockData.sales_info.sales_representative && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Vendedor</span>
-                        </div>
-                        <p className="font-medium">{mockData.sales_info.sales_representative}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* Customer Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Cliente</h3>
