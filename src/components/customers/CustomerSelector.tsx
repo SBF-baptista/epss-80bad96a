@@ -11,13 +11,11 @@ import type { Customer } from '@/services/customerService';
 
 interface CustomerSelectorProps {
   onSelectCustomer: (customer: Customer | null) => void;
-  onCreateNew: () => void;
   selectedCustomer?: Customer | null;
 }
 
 export const CustomerSelector = ({ 
   onSelectCustomer, 
-  onCreateNew, 
   selectedCustomer 
 }: CustomerSelectorProps) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -119,15 +117,6 @@ export const CustomerSelector = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium">Selecionar Cliente</h4>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onCreateNew}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Cliente
-        </Button>
       </div>
 
       <div className="relative">

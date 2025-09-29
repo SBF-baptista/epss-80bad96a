@@ -178,7 +178,7 @@ export const SchedulingSection = ({
           <CardHeader>
             <CardTitle>Clientes Cadastrados</CardTitle>
           </CardHeader>
-          <CardContent className="h-full overflow-auto">
+          <CardContent className="p-4 h-full overflow-auto max-h-[calc(100vh-400px)]">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -197,7 +197,7 @@ export const SchedulingSection = ({
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 pb-4">
                 {filteredCustomers.map((customer) => {
                   const customerSchedules = getCustomerSchedules(customer.id!);
                   const activeSchedules = customerSchedules.filter(s => 

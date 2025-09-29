@@ -41,7 +41,7 @@ import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
-import { CustomerSelector, CustomerForm } from '@/components/customers';
+import { CustomerSelector } from '@/components/customers';
 import type { Customer } from '@/services/customerService';
 import { generateMockScheduleData, type ExtendedScheduleData, type VehicleData } from '@/services/mockScheduleDataService';
 import { Badge } from '@/components/ui/badge';
@@ -77,7 +77,7 @@ export const EnhancedKitScheduleModal = ({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  
   const [mockData, setMockData] = useState<ExtendedScheduleData | null>(null);
 
   const form = useForm<FormData>({
@@ -168,14 +168,8 @@ export const EnhancedKitScheduleModal = ({
   const handleClose = () => {
     form.reset();
     setSelectedCustomer(null);
-    setShowCustomerForm(false);
     setMockData(null);
     onClose();
-  };
-
-  const handleCustomerCreated = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowCustomerForm(false);
   };
 
   // Generate time slots
@@ -326,22 +320,14 @@ export const EnhancedKitScheduleModal = ({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Dados do Cliente</h3>
             
-            {showCustomerForm ? (
-              <CustomerForm
-                onSuccess={handleCustomerCreated}
-                onCancel={() => setShowCustomerForm(false)}
-              />
-            ) : (
-              <CustomerSelector
-                selectedCustomer={selectedCustomer}
-                onSelectCustomer={setSelectedCustomer}
-                onCreateNew={() => setShowCustomerForm(true)}
-              />
-            )}
+            <CustomerSelector
+              selectedCustomer={selectedCustomer}
+              onSelectCustomer={setSelectedCustomer}
+            />
           </div>
 
           {/* Schedule Form */}
-          {selectedCustomer && !showCustomerForm && (
+          {selectedCustomer && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Dados do Agendamento</h3>
               

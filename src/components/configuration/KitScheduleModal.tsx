@@ -42,7 +42,7 @@ import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
-import { CustomerSelector, CustomerForm, CustomerEditForm } from '@/components/customers';
+import { CustomerSelector } from '@/components/customers';
 import type { Customer } from '@/services/customerService';
 import { validatePhone, validateEmail } from '@/services/customerService';
 
@@ -75,8 +75,6 @@ export const KitScheduleModal = ({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
-  const [showCustomerEdit, setShowCustomerEdit] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -158,19 +156,7 @@ export const KitScheduleModal = ({
   const handleClose = () => {
     form.reset();
     setSelectedCustomer(null);
-    setShowCustomerForm(false);
-    setShowCustomerEdit(false);
     onClose();
-  };
-
-  const handleCustomerCreated = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowCustomerForm(false);
-  };
-
-  const handleCustomerUpdated = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowCustomerEdit(false);
   };
 
   // Generate time slots
@@ -199,42 +185,14 @@ export const KitScheduleModal = ({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Dados do Cliente</h3>
             
-            {showCustomerForm ? (
-              <CustomerForm
-                onSuccess={handleCustomerCreated}
-                onCancel={() => setShowCustomerForm(false)}
-              />
-            ) : showCustomerEdit && selectedCustomer ? (
-              <CustomerEditForm
-                customer={selectedCustomer}
-                onSuccess={handleCustomerUpdated}
-                onCancel={() => setShowCustomerEdit(false)}
-              />
-            ) : (
-              <div className="space-y-4">
-                <CustomerSelector
-                  selectedCustomer={selectedCustomer}
-                  onSelectCustomer={setSelectedCustomer}
-                  onCreateNew={() => setShowCustomerForm(true)}
-                />
-                {selectedCustomer && (
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowCustomerEdit(true)}
-                    >
-                      Editar Dados do Cliente
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+            <CustomerSelector
+              selectedCustomer={selectedCustomer}
+              onSelectCustomer={setSelectedCustomer}
+            />
           </div>
 
           {/* Schedule Form */}
-          {selectedCustomer && !showCustomerForm && !showCustomerEdit && (
+          {selectedCustomer && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Dados do Agendamento</h3>
               
