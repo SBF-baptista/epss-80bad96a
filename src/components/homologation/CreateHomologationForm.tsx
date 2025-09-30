@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Loader2 } from "lucide-react";
 import { createHomologationCard } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useFipeBrands, useFipeModels, useFipeYears } from "@/hooks/useFipeData";
 
 interface CreateHomologationFormProps {
   onUpdate: () => void;
@@ -16,46 +17,49 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const { toast } = useToast();
   const { isInstaller } = useUserRole();
   const [isCreating, setIsCreating] = useState(false);
-  const [newBrand, setNewBrand] = useState("");
-  const [newModel, setNewModel] = useState("");
-  const [newYear, setNewYear] = useState("");
+  const [selectedBrandCode, setSelectedBrandCode] = useState("");
+  const [selectedBrandName, setSelectedBrandName] = useState("");
+  const [selectedModelCode, setSelectedModelCode] = useState("");
+  const [selectedModelName, setSelectedModelName] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
   const [nextStep, setNextStep] = useState<"queue" | "execute" | "">(isInstaller() ? "execute" : "");
 
+  const { brands, loading: loadingBrands } = useFipeBrands();
+  const { models, loading: loadingModels } = useFipeModels(selectedBrandCode);
+  const { years, loading: loadingYears } = useFipeYears(selectedBrandCode, selectedModelCode);
+
   const handleCreateCard = async () => {
-    if (!newBrand.trim() || !newModel.trim() || (!isInstaller() && !nextStep)) {
+    if (!selectedBrandName || !selectedModelName || (!isInstaller() && !nextStep)) {
       toast({
         title: "Campos obrigatórios",
         description: isInstaller() 
-          ? "Por favor, preencha marca e modelo" 
-          : "Por favor, preencha marca, modelo e como deseja prosseguir",
+          ? "Por favor, selecione marca e modelo" 
+          : "Por favor, selecione marca, modelo e como deseja prosseguir",
         variant: "destructive"
       });
       return;
     }
 
-    const year = newYear.trim() ? parseInt(newYear.trim()) : undefined;
-    if (newYear.trim() && (isNaN(year!) || year! < 1900 || year! > new Date().getFullYear() + 1)) {
-      toast({
-        title: "Ano inválido",
-        description: "Por favor, insira um ano válido",
-        variant: "destructive"
-      });
-      return;
-    }
+    const year = selectedYear ? parseInt(selectedYear) : undefined;
 
     setIsCreating(true);
     try {
       const executeNow = isInstaller() || nextStep === "execute";
-      await createHomologationCard(newBrand.trim(), newModel.trim(), year, undefined, executeNow);
-      setNewBrand("");
-      setNewModel("");
-      setNewYear("");
+      await createHomologationCard(selectedBrandName, selectedModelName, year, undefined, executeNow);
+      
+      // Reset form
+      setSelectedBrandCode("");
+      setSelectedBrandName("");
+      setSelectedModelCode("");
+      setSelectedModelName("");
+      setSelectedYear("");
       setNextStep(isInstaller() ? "execute" : "");
+      
       onUpdate();
       const statusMessage = executeNow ? " e movido para execução de testes" : " e adicionado à fila";
       toast({
         title: "Card criado",
-        description: `Card de homologação criado para ${newBrand} ${newModel}${year ? ` (${year})` : ""}${statusMessage}`
+        description: `Card de homologação criado para ${selectedBrandName} ${selectedModelName}${year ? ` (${year})` : ""}${statusMessage}`
       });
     } catch (error) {
       console.error("Error creating homologation card:", error);
@@ -69,47 +73,104 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
     }
   };
 
+  const handleBrandChange = (value: string) => {
+    const brand = brands.find(b => b.code === value);
+    if (brand) {
+      setSelectedBrandCode(brand.code);
+      setSelectedBrandName(brand.name);
+      setSelectedModelCode("");
+      setSelectedModelName("");
+      setSelectedYear("");
+    }
+  };
+
+  const handleModelChange = (value: string) => {
+    const model = models.find(m => m.code === value);
+    if (model) {
+      setSelectedModelCode(model.code);
+      setSelectedModelName(model.name);
+      setSelectedYear("");
+    }
+  };
+
   return (
     <div className="bg-white p-3 md:p-4 lg:p-6 rounded-lg shadow-sm border">
       <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Criar Nova Homologação</h2>
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Marca *
-          </label>
-          <Input
-            value={newBrand}
-            onChange={(e) => setNewBrand(e.target.value)}
-            placeholder="Ex: Toyota"
-            className="text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Modelo *
-          </label>
-          <Input
-            value={newModel}
-            onChange={(e) => setNewModel(e.target.value)}
-            placeholder="Ex: Corolla"
-            className="text-sm"
-          />
-        </div>
-        <div className="sm:col-span-2 lg:col-span-1">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ano
-          </label>
-          <Input
-            type="number"
-            value={newYear}
-            onChange={(e) => setNewYear(e.target.value)}
-            placeholder="Ex: 2024"
-            min="1900"
-            max={new Date().getFullYear() + 1}
-            className="text-sm"
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Marca *
+            </label>
+            <Select
+              value={selectedBrandCode}
+              onValueChange={handleBrandChange}
+              disabled={loadingBrands}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder={loadingBrands ? "Carregando..." : "Selecione a marca"} />
+              </SelectTrigger>
+              <SelectContent>
+                {brands.map((brand) => (
+                  <SelectItem key={brand.code} value={brand.code}>
+                    {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Modelo *
+            </label>
+            <Select
+              value={selectedModelCode}
+              onValueChange={handleModelChange}
+              disabled={!selectedBrandCode || loadingModels}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder={
+                  !selectedBrandCode ? "Selecione uma marca primeiro" :
+                  loadingModels ? "Carregando..." :
+                  "Selecione o modelo"
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((model) => (
+                  <SelectItem key={model.code} value={model.code}>
+                    {model.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ano
+            </label>
+            <Select
+              value={selectedYear}
+              onValueChange={setSelectedYear}
+              disabled={!selectedModelCode || loadingYears}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder={
+                  !selectedModelCode ? "Selecione um modelo primeiro" :
+                  loadingYears ? "Carregando..." :
+                  "Selecione o ano (opcional)"
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year.code} value={year.code}>
+                    {year.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         
         {!isInstaller() && (
@@ -149,12 +210,21 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
         <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
           <Button
             onClick={handleCreateCard}
-            disabled={isCreating}
+            disabled={isCreating || loadingBrands}
             className="flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
             size="sm"
           >
-            <Plus className="h-4 w-4" />
-            {isCreating ? "Criando..." : "Criar Card"}
+            {isCreating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Criando...
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                Criar Card
+              </>
+            )}
           </Button>
         </div>
       </div>
