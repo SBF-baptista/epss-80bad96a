@@ -263,11 +263,11 @@ export const EnhancedKitScheduleModal = ({
                   </div>
                 </div>
 
-                {/* Accessories */}
+                {/* Modules */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Cpu className="w-4 h-4" />
-                    <span className="text-sm font-medium text-muted-foreground">Acessórios</span>
+                    <span className="text-sm font-medium text-muted-foreground">Módulos</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {mockData.modules.map((module, index) => (

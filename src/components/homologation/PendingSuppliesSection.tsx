@@ -1,18 +1,13 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { fetchPendingHomologationItems, type PendingItem } from "@/services/pendingHomologationService";
-import { AlertTriangle, Wrench, ChevronDown, Clock, Cog, CheckCircle } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Clock, Cog } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 export const PendingSuppliesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
-  const [approvingItems, setApprovingItems] = useState<Set<string>>(new Set());
-  const queryClient = useQueryClient();
 
   const { data: pendingItems, isLoading } = useQuery({
     queryKey: ['pending-homologation-items'],
@@ -21,38 +16,6 @@ export const PendingSuppliesSection = () => {
   });
 
   const supplies = pendingItems?.supplies || [];
-
-  const handleQuickApproval = async (item: PendingItem) => {
-    setApprovingItems(prev => new Set(prev).add(item.item_name));
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from('kit_item_options')
-        .insert({
-          item_name: item.item_name,
-          item_type: item.item_type,
-          created_by: user?.id,
-        });
-
-      if (error) throw error;
-
-      toast.success(`${item.item_name} homologado com sucesso!`);
-      queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
-      queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
-      queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
-    } catch (error) {
-      console.error('Error approving item:', error);
-      toast.error('Erro ao homologar item');
-    } finally {
-      setApprovingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(item.item_name);
-        return newSet;
-      });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -133,26 +96,17 @@ export const PendingSuppliesSection = () => {
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-2">
                         <Wrench className="h-4 w-4 text-orange-600" />
                         <h4 className="font-medium text-orange-900">{supply.item_name}</h4>
                         <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300">
                           <Clock className="h-3 w-3 mr-1" />
                           Pendente
                         </Badge>
-                        <Badge variant="outline" className="text-orange-700 border-orange-300">
-                          Qtd total: {supply.quantity}
-                        </Badge>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleQuickApproval(supply)}
-                        disabled={approvingItems.has(supply.item_name)}
-                        className="ml-2"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        {approvingItems.has(supply.item_name) ? 'Homologando...' : 'Homologar'}
-                      </Button>
+                      <Badge variant="outline" className="text-orange-700 border-orange-300">
+                        Qtd total: {supply.quantity}
+                      </Badge>
                     </div>
                     
                     <div className="space-y-2">

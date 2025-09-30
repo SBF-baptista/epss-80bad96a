@@ -403,12 +403,12 @@ export const ScheduleModal = ({
                   </div>
                 )}
 
-                {/* Accessories (previously modules) */}
+                {/* Modules */}
                 {selectedCustomer.modules && selectedCustomer.modules.length > 0 && (
                   <div className="pt-4 border-t">
                     <div className="flex items-center gap-2 mb-2">
                       <Cpu className="w-4 h-4" />
-                      <span className="text-sm font-medium text-muted-foreground">Acessórios</span>
+                      <span className="text-sm font-medium text-muted-foreground">Módulos</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {selectedCustomer.modules.map((module, index) => (
@@ -468,7 +468,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Módulos</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Técnico *</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Data *</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Horário</th>
