@@ -39,7 +39,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import type { Technician } from '@/services/technicianService';
-import type { HomologationKit } from '@/services/homologationKitService';
+import { createHomologationKit, type HomologationKit } from '@/services/homologationKitService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
 import { checkItemHomologation, type HomologationStatus } from '@/services/kitHomologationService';
@@ -260,18 +260,28 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Check if we have at least one kit
-      if (kits.length === 0) {
-        toast({
-          title: "Erro",
-          description: "É necessário ter pelo menos um kit configurado no sistema para criar agendamentos.",
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
+      // Resolve kit automatically: if none exists, create a default one
+      let selectedKit: HomologationKit | null = kits.length > 0 ? kits[0] : null;
+      if (!selectedKit) {
+        try {
+          selectedKit = await createHomologationKit({
+            name: `Kit Padrão - ${new Date().toISOString().slice(0, 10)}`,
+            description: 'Criado automaticamente para agendamento',
+            equipment: [],
+            accessories: [],
+            supplies: []
+          });
+        } catch (e) {
+          console.error('Falha ao criar kit padrão automaticamente:', e);
+          toast({
+            title: 'Erro ao criar kit padrão',
+            description: 'Não foi possível criar um kit automaticamente para o agendamento.',
+            variant: 'destructive'
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
-
-      const selectedKit = kits[0];
 
       let schedulesCreated = 0;
       let schedulesSkipped = 0;
