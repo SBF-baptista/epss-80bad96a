@@ -103,8 +103,7 @@ export const ScheduleModal = ({
 }: ScheduleModalProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Always use initialCustomer directly when provided
-  const selectedCustomer = initialCustomer || null;
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
   const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
   const [homologationStatus, setHomologationStatus] = useState<Map<string, boolean>>(new Map());
 
@@ -115,10 +114,8 @@ export const ScheduleModal = ({
     }
   });
 
-  // Initialize vehicle schedules when modal opens with customer
+  // Initialize vehicle schedules when customer is selected
   useEffect(() => {
-    if (!isOpen) return;
-    
     console.log('Customer selected:', selectedCustomer);
     console.log('Customer vehicles:', selectedCustomer?.vehicles);
 
@@ -404,6 +401,7 @@ export const ScheduleModal = ({
 
   const handleClose = () => {
     form.reset();
+    setSelectedCustomer(null);
     setVehicleSchedules([]);
     setHomologationStatus(new Map());
     onClose();
@@ -526,7 +524,17 @@ export const ScheduleModal = ({
             </Card>
           )}
 
-          {/* Customer selector removed - always pre-selected from parent */}
+          {/* Customer Section - Show when no customer is selected */}
+          {!selectedCustomer && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Cliente</h3>
+              
+              <CustomerSelector
+                selectedCustomer={selectedCustomer}
+                onSelectCustomer={setSelectedCustomer}
+              />
+            </div>
+          )}
 
           {/* Warning message when no vehicles */}
           {selectedCustomer && (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) && (
