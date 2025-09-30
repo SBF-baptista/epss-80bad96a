@@ -236,7 +236,7 @@ export const ScheduleModal = ({
   };
 
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async () => {
     if (!selectedCustomer) {
       toast({
         title: "Cliente obrigatório",
@@ -257,6 +257,7 @@ export const ScheduleModal = ({
           description: "Nenhum kit configurado no sistema. Por favor, configure um kit antes de criar agendamentos.",
           variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
       }
 
@@ -265,19 +266,19 @@ export const ScheduleModal = ({
       const skippedVehicles: string[] = [];
 
       // Process each vehicle schedule
-      for (const vehicleSchedule of data.vehicles) {
-        if (!vehicleSchedule.scheduled_date) continue;
-
+      for (const vehicleSchedule of vehicleSchedules) {
         // Check if this vehicle is ready for scheduling (all items homologated)
         const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicleSchedule.plate}`);
         
-        if (!vehicleReady) {
-          schedulesSkipped++;
-          skippedVehicles.push(vehicleSchedule.plate);
-          console.log(`Skipping vehicle ${vehicleSchedule.plate} - not all items are homologated`);
+        // Skip vehicles that are not ready or don't have required data
+        if (!vehicleReady || !vehicleSchedule.scheduled_date || vehicleSchedule.technician_ids.length === 0) {
+          if (!vehicleReady) {
+            schedulesSkipped++;
+            skippedVehicles.push(vehicleSchedule.plate);
+            console.log(`Skipping vehicle ${vehicleSchedule.plate} - not all items are homologated`);
+          }
           continue;
         }
-
         // Check for conflicts for each technician
         for (const technicianId of vehicleSchedule.technician_ids) {
           const hasConflict = await checkScheduleConflict(
@@ -293,6 +294,7 @@ export const ScheduleModal = ({
               description: `O técnico ${technician?.name} já possui um agendamento no dia ${format(vehicleSchedule.scheduled_date, 'dd/MM/yyyy')} para o veículo ${vehicleSchedule.plate}.`,
               variant: "destructive"
             });
+            setIsSubmitting(false);
             return;
           }
         }
@@ -344,6 +346,17 @@ export const ScheduleModal = ({
           description: `Todos os ${schedulesSkipped} veículo(s) estão aguardando homologação de acessórios/insumos: ${skippedVehicles.join(', ')}.`,
           variant: "destructive"
         });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (schedulesCreated === 0) {
+        toast({
+          title: "Nenhum agendamento criado",
+          description: "Preencha pelo menos uma data e técnico para os veículos prontos para criar o agendamento.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
         return;
       }
 
@@ -516,8 +529,7 @@ export const ScheduleModal = ({
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Detalhes da Instalação por Veículo</h3>
               
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="space-y-6">
                   <div className="border rounded-lg overflow-hidden">
                     <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                       <table className="w-full">
@@ -704,13 +716,12 @@ export const ScheduleModal = ({
                       <Button type="button" variant="outline" onClick={handleClose}>
                         Cancelar
                       </Button>
-                      <Button type="submit" disabled={isSubmitting}>
+                      <Button type="button" onClick={onSubmit} disabled={isSubmitting}>
                         {isSubmitting ? "Criando Agendamentos..." : "Criar Agendamentos"}
                       </Button>
                     </DialogFooter>
                   </div>
-                </form>
-              </Form>
+              </div>
             </div>
           )}
         </div>
