@@ -7,10 +7,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getTechnicians, Technician } from "@/services/technicianService";
-import { Calendar } from "lucide-react";
+import { Calendar, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { deleteKitSchedule } from "@/services/kitScheduleService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface VehicleScheduleData {
+  schedule_id: string;
   vehicle_plate: string;
   vehicle_brand: string;
   vehicle_model: string;
@@ -44,6 +56,7 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
   const [isLoading, setIsLoading] = useState(false);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [vehicles, setVehicles] = useState<VehicleScheduleData[]>([]);
+  const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && schedule.id) {
@@ -78,6 +91,7 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
 
       if (schedules && schedules.length > 0) {
         const vehicleData: VehicleScheduleData[] = schedules.map((s) => ({
+          schedule_id: s.id,
           vehicle_plate: s.vehicle_plate || '',
           vehicle_brand: s.vehicle_brand || '',
           vehicle_model: s.vehicle_model || '',
@@ -98,6 +112,36 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
         description: "Erro ao carregar agendamentos existentes",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleRemoveSchedule = async () => {
+    if (!scheduleToDelete) return;
+
+    try {
+      setIsLoading(true);
+      await deleteKitSchedule(scheduleToDelete);
+
+      toast({
+        title: "Sucesso",
+        description: "Agendamento removido com sucesso. O veículo está disponível para novo agendamento."
+      });
+
+      // Remove from local state
+      setVehicles(vehicles.filter(v => v.schedule_id !== scheduleToDelete));
+      setScheduleToDelete(null);
+      
+      // Refresh parent component
+      onUpdate();
+    } catch (error) {
+      console.error('Error removing schedule:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover agendamento",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -202,6 +246,7 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
                   <TableHead>Técnico *</TableHead>
                   <TableHead>Data *</TableHead>
                   <TableHead>Horário</TableHead>
+                  <TableHead className="w-[100px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -262,6 +307,17 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
                         className="min-w-[100px]"
                       />
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setScheduleToDelete(vehicle.schedule_id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -281,6 +337,23 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
           </div>
         </form>
       </DialogContent>
+
+      <AlertDialog open={!!scheduleToDelete} onOpenChange={() => setScheduleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover Agendamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover este agendamento? O veículo ficará disponível para novo agendamento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveSchedule} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

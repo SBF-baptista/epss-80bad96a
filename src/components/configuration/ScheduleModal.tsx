@@ -119,7 +119,11 @@ export const ScheduleModal = ({
     console.log('Customer selected:', selectedCustomer);
     console.log('Customer vehicles:', selectedCustomer?.vehicles);
 
-    if (!selectedCustomer) return;
+    if (!selectedCustomer) {
+      setVehicleSchedules([]);
+      form.reset({ vehicles: [] });
+      return;
+    }
 
     // Check if customer has vehicles
     if (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) {
@@ -397,8 +401,9 @@ export const ScheduleModal = ({
 
   const handleClose = () => {
     form.reset();
-    setSelectedCustomer(initialCustomer || null);
+    setSelectedCustomer(null);
     setVehicleSchedules([]);
+    setHomologationStatus(new Map());
     onClose();
   };
 
@@ -519,8 +524,8 @@ export const ScheduleModal = ({
             </Card>
           )}
 
-          {/* Customer Section - Only show if no customer is pre-selected */}
-          {!initialCustomer && (
+          {/* Customer Section - Show when no customer is selected */}
+          {!selectedCustomer && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Cliente</h3>
               
