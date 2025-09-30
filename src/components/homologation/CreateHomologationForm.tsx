@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { createHomologationCard } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useFipeBrands, useFipeModels, useFipeYears } from "@/hooks/useFipeData";
+import { cn } from "@/lib/utils";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface CreateHomologationFormProps {
   onUpdate: () => void;
@@ -23,6 +25,9 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const [selectedModelName, setSelectedModelName] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [nextStep, setNextStep] = useState<"queue" | "execute" | "">(isInstaller() ? "execute" : "");
+  const [openBrand, setOpenBrand] = useState(false);
+  const [openModel, setOpenModel] = useState(false);
+  const [openYear, setOpenYear] = useState(false);
 
   const { brands, loading: loadingBrands } = useFipeBrands();
   const { models, loading: loadingModels } = useFipeModels(selectedBrandCode);
@@ -81,6 +86,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
       setSelectedModelCode("");
       setSelectedModelName("");
       setSelectedYear("");
+      setOpenBrand(false);
     }
   };
 
@@ -90,7 +96,13 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
       setSelectedModelCode(model.code);
       setSelectedModelName(model.name);
       setSelectedYear("");
+      setOpenModel(false);
     }
+  };
+
+  const handleYearChange = (value: string) => {
+    setSelectedYear(value);
+    setOpenYear(false);
   };
 
   return (
@@ -102,74 +114,141 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Marca *
             </label>
-            <Select
-              value={selectedBrandCode}
-              onValueChange={handleBrandChange}
-              disabled={loadingBrands}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder={loadingBrands ? "Carregando..." : "Selecione a marca"} />
-              </SelectTrigger>
-              <SelectContent>
-                {brands.map((brand) => (
-                  <SelectItem key={brand.code} value={brand.code}>
-                    {brand.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={openBrand} onOpenChange={setOpenBrand}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openBrand}
+                  className="w-full justify-between text-sm"
+                  disabled={loadingBrands}
+                >
+                  {selectedBrandName || (loadingBrands ? "Carregando..." : "Selecione a marca")}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Pesquisar marca..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma marca encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      {brands.map((brand) => (
+                        <CommandItem
+                          key={brand.code}
+                          value={brand.name}
+                          onSelect={() => handleBrandChange(brand.code)}
+                        >
+                          {brand.name}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              selectedBrandCode === brand.code ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Modelo *
             </label>
-            <Select
-              value={selectedModelCode}
-              onValueChange={handleModelChange}
-              disabled={!selectedBrandCode || loadingModels}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder={
-                  !selectedBrandCode ? "Selecione uma marca primeiro" :
-                  loadingModels ? "Carregando..." :
-                  "Selecione o modelo"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {models.map((model) => (
-                  <SelectItem key={model.code} value={model.code}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={openModel} onOpenChange={setOpenModel}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openModel}
+                  className="w-full justify-between text-sm"
+                  disabled={!selectedBrandCode || loadingModels}
+                >
+                  {selectedModelName || 
+                    (!selectedBrandCode ? "Selecione uma marca primeiro" :
+                    loadingModels ? "Carregando..." :
+                    "Selecione o modelo")}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Pesquisar modelo..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum modelo encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {models.map((model) => (
+                        <CommandItem
+                          key={model.code}
+                          value={model.name}
+                          onSelect={() => handleModelChange(model.code)}
+                        >
+                          {model.name}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              selectedModelCode === model.code ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           
           <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ano
             </label>
-            <Select
-              value={selectedYear}
-              onValueChange={setSelectedYear}
-              disabled={!selectedModelCode || loadingYears}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder={
-                  !selectedModelCode ? "Selecione um modelo primeiro" :
-                  loadingYears ? "Carregando..." :
-                  "Selecione o ano (opcional)"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year.code} value={year.code}>
-                    {year.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={openYear} onOpenChange={setOpenYear}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openYear}
+                  className="w-full justify-between text-sm"
+                  disabled={!selectedModelCode || loadingYears}
+                >
+                  {selectedYear ? years.find(y => y.code === selectedYear)?.name : 
+                    (!selectedModelCode ? "Selecione um modelo primeiro" :
+                    loadingYears ? "Carregando..." :
+                    "Selecione o ano (opcional)")}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Pesquisar ano..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum ano encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {years.map((year) => (
+                        <CommandItem
+                          key={year.code}
+                          value={year.name}
+                          onSelect={() => handleYearChange(year.code)}
+                        >
+                          {year.name}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              selectedYear === year.code ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         
