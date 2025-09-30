@@ -238,10 +238,7 @@ export const ScheduleModal = ({
 
   // Check if button should be enabled
   const isButtonEnabled = () => {
-    // Must have kits configured
-    if (kits.length === 0) return false;
-    
-    // Must have at least one vehicle ready for scheduling
+    // Must have at least one vehicle ready for scheduling with all required fields
     const hasReadyVehicle = vehicleSchedules.some(vehicle => {
       const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicle.plate}`);
       return vehicleReady && vehicle.scheduled_date && vehicle.technician_ids.length > 0;
@@ -263,16 +260,14 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Get first available kit
+      // Get first available kit (optional - will use first kit if available)
       const selectedKit = kits.length > 0 ? kits[0] : null;
       if (!selectedKit) {
         toast({
-          title: "Erro",
-          description: "Nenhum kit configurado no sistema. Por favor, configure um kit antes de criar agendamentos.",
-          variant: "destructive"
+          title: "Aviso",
+          description: "Nenhum kit configurado no sistema. Os agendamentos serão criados sem kit associado.",
+          variant: "default"
         });
-        setIsSubmitting(false);
-        return;
       }
 
       let schedulesCreated = 0;
@@ -316,7 +311,7 @@ export const ScheduleModal = ({
         // Create schedule for each technician
         for (const technicianId of vehicleSchedule.technician_ids) {
           await createKitSchedule({
-            kit_id: selectedKit.id!,
+            kit_id: selectedKit?.id || kits[0]?.id || '',
             technician_id: technicianId,
             scheduled_date: vehicleSchedule.scheduled_date.toISOString().split('T')[0],
             installation_time: vehicleSchedule.installation_time || undefined,
