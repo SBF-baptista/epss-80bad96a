@@ -30,12 +30,19 @@ export const PendingSuppliesSection = () => {
     setApprovingItems(prev => new Set(prev).add(itemKey));
 
     try {
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const { error } = await supabase
         .from('kit_item_options')
         .insert({
           item_name: item.item_name,
           item_type: item.item_type,
-          description: `Homologado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`
+          description: `Homologado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`,
+          created_by: user.id
         });
 
       if (error) throw error;
