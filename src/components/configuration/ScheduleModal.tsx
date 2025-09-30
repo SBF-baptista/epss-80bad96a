@@ -216,22 +216,34 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Get first available kit
+      // Get first available kit (or create a default one if needed)
       const selectedKit = kits.length > 0 ? kits[0] : null;
       if (!selectedKit) {
         toast({
           title: "Erro",
-          description: "Nenhum kit homologado disponível para agendamento.",
+          description: "Nenhum kit configurado no sistema. Por favor, configure um kit antes de criar agendamentos.",
           variant: "destructive"
         });
         return;
       }
 
       let schedulesCreated = 0;
+      let schedulesSkipped = 0;
+      const skippedVehicles: string[] = [];
 
       // Process each vehicle schedule
       for (const vehicleSchedule of data.vehicles) {
         if (!vehicleSchedule.scheduled_date) continue;
+
+        // Check if this vehicle is ready for scheduling (all items homologated)
+        const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicleSchedule.plate}`);
+        
+        if (!vehicleReady) {
+          schedulesSkipped++;
+          skippedVehicles.push(vehicleSchedule.plate);
+          console.log(`Skipping vehicle ${vehicleSchedule.plate} - not all items are homologated`);
+          continue;
+        }
 
         // Check for conflicts for each technician
         for (const technicianId of vehicleSchedule.technician_ids) {
@@ -281,10 +293,26 @@ export const ScheduleModal = ({
         }
       }
 
-      toast({
-        title: "Agendamentos criados",
-        description: `${schedulesCreated} agendamento(s) criado(s) com sucesso para ${selectedCustomer.name}.`
-      });
+      // Show result toast
+      if (schedulesCreated > 0 && schedulesSkipped > 0) {
+        toast({
+          title: "Agendamentos criados parcialmente",
+          description: `${schedulesCreated} agendamento(s) criado(s) com sucesso. ${schedulesSkipped} veículo(s) ignorado(s) por falta de homologação: ${skippedVehicles.join(', ')}.`,
+          variant: "default"
+        });
+      } else if (schedulesCreated > 0) {
+        toast({
+          title: "Agendamentos criados",
+          description: `${schedulesCreated} agendamento(s) criado(s) com sucesso para ${selectedCustomer.name}.`
+        });
+      } else if (schedulesSkipped > 0) {
+        toast({
+          title: "Nenhum agendamento criado",
+          description: `Todos os ${schedulesSkipped} veículo(s) estão aguardando homologação de acessórios/insumos: ${skippedVehicles.join(', ')}.`,
+          variant: "destructive"
+        });
+        return;
+      }
 
       onSuccess();
     } catch (error) {
@@ -556,77 +584,80 @@ export const ScheduleModal = ({
                                   )}
                                 </div>
                               </td>
-                              <td className="px-4 py-3">
-                                <Select 
-                                  value={vehicleSchedule.technician_ids[0] || ''} 
-                                  onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [value])}
-                                >
-                                  <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Selecionar" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {technicians.map((technician) => (
-                                      <SelectItem key={technician.id} value={technician.id!}>
-                                        <div className="flex flex-col">
-                                          <span>{technician.name}</span>
-                                          {technician.address_city && technician.address_state && (
-                                            <span className="text-xs text-muted-foreground">
-                                              {technician.address_city} - {technician.address_state}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </td>
-                              <td className="px-4 py-3">
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        "w-[140px] pl-3 text-left font-normal",
-                                        !vehicleSchedule.scheduled_date && "text-muted-foreground"
-                                      )}
-                                    >
-                                      {vehicleSchedule.scheduled_date ? (
-                                        format(vehicleSchedule.scheduled_date, "dd/MM/yyyy")
-                                      ) : (
-                                        <span>Selecionar</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                      mode="single"
-                                      selected={vehicleSchedule.scheduled_date || undefined}
-                                      onSelect={(date) => updateVehicleSchedule(vehicleSchedule.plate, 'scheduled_date', date)}
-                                      disabled={(date) => date < new Date()}
-                                      initialFocus
-                                      className="pointer-events-auto"
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                              </td>
-                              <td className="px-4 py-3">
-                                <Select 
-                                  value={vehicleSchedule.installation_time} 
-                                  onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'installation_time', value)}
-                                >
-                                  <SelectTrigger className="w-[100px]">
-                                    <SelectValue placeholder="--:--" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {timeSlots.map((time) => (
-                                      <SelectItem key={time} value={time}>
-                                        {time}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </td>
+                               <td className="px-4 py-3">
+                                 <Select 
+                                   value={vehicleSchedule.technician_ids[0] || ''} 
+                                   onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [value])}
+                                   disabled={!vehicleReady}
+                                 >
+                                   <SelectTrigger className="w-[180px]">
+                                     <SelectValue placeholder={vehicleReady ? "Selecionar" : "Aguardando homologação"} />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     {technicians.map((technician) => (
+                                       <SelectItem key={technician.id} value={technician.id!}>
+                                         <div className="flex flex-col">
+                                           <span>{technician.name}</span>
+                                           {technician.address_city && technician.address_state && (
+                                             <span className="text-xs text-muted-foreground">
+                                               {technician.address_city} - {technician.address_state}
+                                             </span>
+                                           )}
+                                         </div>
+                                       </SelectItem>
+                                     ))}
+                                   </SelectContent>
+                                 </Select>
+                               </td>
+                               <td className="px-4 py-3">
+                                 <Popover>
+                                   <PopoverTrigger asChild>
+                                     <Button
+                                       variant="outline"
+                                       disabled={!vehicleReady}
+                                       className={cn(
+                                         "w-[140px] pl-3 text-left font-normal",
+                                         !vehicleSchedule.scheduled_date && "text-muted-foreground"
+                                       )}
+                                     >
+                                       {vehicleSchedule.scheduled_date ? (
+                                         format(vehicleSchedule.scheduled_date, "dd/MM/yyyy")
+                                       ) : (
+                                         <span>{vehicleReady ? "Selecionar" : "Aguardando"}</span>
+                                       )}
+                                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                     </Button>
+                                   </PopoverTrigger>
+                                   <PopoverContent className="w-auto p-0" align="start">
+                                     <Calendar
+                                       mode="single"
+                                       selected={vehicleSchedule.scheduled_date || undefined}
+                                       onSelect={(date) => updateVehicleSchedule(vehicleSchedule.plate, 'scheduled_date', date)}
+                                       disabled={(date) => date < new Date()}
+                                       initialFocus
+                                       className="pointer-events-auto"
+                                     />
+                                   </PopoverContent>
+                                 </Popover>
+                               </td>
+                               <td className="px-4 py-3">
+                                 <Select 
+                                   value={vehicleSchedule.installation_time} 
+                                   onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'installation_time', value)}
+                                   disabled={!vehicleReady}
+                                 >
+                                   <SelectTrigger className="w-[100px]">
+                                     <SelectValue placeholder="--:--" />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     {timeSlots.map((time) => (
+                                       <SelectItem key={time} value={time}>
+                                         {time}
+                                       </SelectItem>
+                                     ))}
+                                   </SelectContent>
+                                 </Select>
+                               </td>
                             </tr>
                           );
                           })}
