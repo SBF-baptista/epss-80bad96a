@@ -22,6 +22,8 @@ export const PendingSuppliesSection = () => {
   });
 
   const supplies = pendingItems?.supplies || [];
+  const equipment = pendingItems?.equipment || [];
+  const allItems = [...supplies, ...equipment];
 
   const handleApprove = async (item: PendingItem) => {
     const itemKey = item.item_name;
@@ -32,7 +34,7 @@ export const PendingSuppliesSection = () => {
         .from('kit_item_options')
         .insert({
           item_name: item.item_name,
-          item_type: 'supply',
+          item_type: item.item_type,
           description: `Homologado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`
         });
 
@@ -83,7 +85,7 @@ export const PendingSuppliesSection = () => {
     );
   }
 
-  if (supplies.length === 0) {
+  if (allItems.length === 0) {
     return (
       <Card>
         <CardHeader className="pb-3">
@@ -111,7 +113,7 @@ export const PendingSuppliesSection = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-medium text-orange-800 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
-                Insumos Pendentes de Homologação ({supplies.length})
+                Insumos Pendentes de Homologação ({allItems.length})
               </CardTitle>
               <ChevronDown 
                 className={`h-5 w-5 text-orange-600 transition-transform duration-200 ${
@@ -135,53 +137,79 @@ export const PendingSuppliesSection = () => {
             </div>
 
             <div className="space-y-3">
-              {supplies.map((supply, index) => (
+              {allItems.map((item, index) => (
                 <div
-                  key={`${supply.item_name}-${index}`}
+                  key={`${item.item_name}-${index}`}
                   className="p-4 border border-orange-200 rounded-lg bg-white hover:bg-orange-50 transition-colors"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Wrench className="h-4 w-4 text-orange-600" />
-                        <h4 className="font-medium text-orange-900">{supply.item_name}</h4>
+                        <h4 className="font-medium text-orange-900">{item.item_name}</h4>
                         <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300">
                           <Clock className="h-3 w-3 mr-1" />
                           Pendente
                         </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {item.item_type === 'supply' ? 'Insumo' : 'Equipamento'}
+                        </Badge>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
-                          Qtd total: {supply.quantity}
+                          Qtd total: {item.quantity}
                         </Badge>
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                          onClick={() => handleApprove(supply)}
-                          disabled={approvingItems.has(supply.item_name)}
+                          onClick={() => handleApprove(item)}
+                          disabled={approvingItems.has(item.item_name)}
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          {approvingItems.has(supply.item_name) ? 'Homologando...' : 'Homologar'}
+                          {approvingItems.has(item.item_name) ? 'Homologando...' : 'Homologar'}
                         </Button>
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <p className="text-sm text-orange-700 font-medium">
-                        Usado em {supply.kits.length} kit(s):
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {supply.kits.map((kit, kitIndex) => (
-                          <Badge 
-                            key={`${kit.id}-${kitIndex}`} 
-                            variant="secondary" 
-                            className="bg-orange-100 text-orange-800 border-orange-200"
-                          >
-                            {kit.name}
-                          </Badge>
-                        ))}
-                      </div>
+                      {item.kits && item.kits.length > 0 && (
+                        <div>
+                          <p className="text-sm text-orange-700 font-medium">
+                            Usado em {item.kits.length} kit(s):
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {item.kits.map((kit, kitIndex) => (
+                              <Badge 
+                                key={`${kit.id}-${kitIndex}`} 
+                                variant="secondary" 
+                                className="bg-orange-100 text-orange-800 border-orange-200"
+                              >
+                                {kit.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {item.customers && item.customers.length > 0 && (
+                        <div>
+                          <p className="text-sm text-orange-700 font-medium">
+                            Usado por {item.customers.length} cliente(s):
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {item.customers.map((customer, customerIndex) => (
+                              <Badge 
+                                key={`${customer.id}-${customerIndex}`} 
+                                variant="secondary" 
+                                className="bg-orange-100 text-orange-800 border-orange-200"
+                              >
+                                {customer.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

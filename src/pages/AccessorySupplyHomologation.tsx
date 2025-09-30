@@ -5,7 +5,6 @@ import { AccessoryHomologationForm, AccessoryHomologationList } from "@/componen
 import { SupplyHomologationForm } from "@/components/homologation/SupplyHomologationForm";
 import { SupplyHomologationList } from "@/components/homologation/SupplyHomologationList";
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
-import { PendingEquipmentSection } from "@/components/homologation/PendingEquipmentSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
@@ -84,7 +83,6 @@ const AccessorySupplyHomologation = () => {
             
             <TabsContent value="supplies" className="space-y-6 mt-6">
               <PendingSuppliesSection />
-              <PendingEquipmentSection />
               <SupplyHomologationForm />
               <SupplyHomologationList />
             </TabsContent>
