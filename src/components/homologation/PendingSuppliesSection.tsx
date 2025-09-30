@@ -1,13 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { fetchPendingHomologationItems, type PendingItem } from "@/services/pendingHomologationService";
-import { AlertTriangle, Wrench, ChevronDown, Clock, Cog } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Clock, Cog, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export const PendingSuppliesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [approvingItems, setApprovingItems] = useState<Set<string>>(new Set());
 
   const { data: pendingItems, isLoading } = useQuery({
     queryKey: ['pending-homologation-items'],
@@ -16,6 +22,46 @@ export const PendingSuppliesSection = () => {
   });
 
   const supplies = pendingItems?.supplies || [];
+
+  const handleApprove = async (item: PendingItem) => {
+    const itemKey = item.item_name;
+    setApprovingItems(prev => new Set(prev).add(itemKey));
+
+    try {
+      const { error } = await supabase
+        .from('kit_item_options')
+        .insert({
+          item_name: item.item_name,
+          item_type: 'supply',
+          description: `Homologado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Item homologado",
+        description: `${item.item_name} foi homologado com sucesso.`
+      });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+      await queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+      await queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+    } catch (error) {
+      console.error('Error approving item:', error);
+      toast({
+        title: "Erro ao homologar",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao homologar o item",
+        variant: "destructive"
+      });
+    } finally {
+      setApprovingItems(prev => {
+        const next = new Set(prev);
+        next.delete(itemKey);
+        return next;
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -104,9 +150,21 @@ export const PendingSuppliesSection = () => {
                           Pendente
                         </Badge>
                       </div>
-                      <Badge variant="outline" className="text-orange-700 border-orange-300">
-                        Qtd total: {supply.quantity}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-orange-700 border-orange-300">
+                          Qtd total: {supply.quantity}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                          onClick={() => handleApprove(supply)}
+                          disabled={approvingItems.has(supply.item_name)}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          {approvingItems.has(supply.item_name) ? 'Homologando...' : 'Homologar'}
+                        </Button>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
@@ -135,7 +193,7 @@ export const PendingSuppliesSection = () => {
                 <Cog className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium">Como homologar:</p>
-                  <p>Use o formulário acima para cadastrar estes insumos como homologados. Depois que forem homologados, os kits correspondentes ficarão disponíveis para distribuição.</p>
+                  <p>Clique no botão "Homologar" ao lado de cada item ou use o formulário acima para cadastrar estes insumos como homologados. Depois que forem homologados, os kits correspondentes ficarão disponíveis para distribuição.</p>
                 </div>
               </div>
             </div>

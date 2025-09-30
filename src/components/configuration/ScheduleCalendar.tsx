@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Calendar, User, Package, Clock, MapPin, Phone, Mail, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, User, Package, Clock, MapPin, Phone, Mail, FileText, Wrench } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Technician } from '@/services/technicianService';
@@ -404,12 +404,13 @@ export const ScheduleCalendar = ({
                                     </div>
                                   </div>
 
-                                  {/* Modules */}
+                                  {/* Insumos */}
                                   <div className="space-y-2">
-                                    <h5 className="font-medium text-foreground">Módulos:</h5>
+                                    <h5 className="font-medium text-foreground">Insumos:</h5>
                                     <div className="flex flex-wrap gap-1">
                                       {visit.modules.map((module, moduleIndex) => (
                                         <Badge key={moduleIndex} variant="secondary" className="text-xs">
+                                          <Wrench className="w-3 h-3 mr-1" />
                                           {module}
                                         </Badge>
                                       ))}

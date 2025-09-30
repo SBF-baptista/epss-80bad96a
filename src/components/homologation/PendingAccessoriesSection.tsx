@@ -1,14 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { fetchPendingHomologationItems, type PendingItem } from "@/services/pendingHomologationService";
-import { AlertTriangle, Package, ChevronDown, Clock, Wrench, User, Users } from "lucide-react";
+import { AlertTriangle, Package, ChevronDown, Clock, Wrench, User, Users, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export const PendingAccessoriesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [approvingItems, setApprovingItems] = useState<Set<string>>(new Set());
 
   const { data: pendingItems, isLoading } = useQuery({
     queryKey: ['pending-homologation-items'],
@@ -17,6 +22,46 @@ export const PendingAccessoriesSection = () => {
   });
 
   const accessories = pendingItems?.accessories || [];
+
+  const handleApprove = async (item: PendingItem) => {
+    const itemKey = item.item_name;
+    setApprovingItems(prev => new Set(prev).add(itemKey));
+
+    try {
+      const { error } = await supabase
+        .from('kit_item_options')
+        .insert({
+          item_name: item.item_name,
+          item_type: 'accessory',
+          description: `Homologado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Item homologado",
+        description: `${item.item_name} foi homologado com sucesso.`
+      });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+      await queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+      await queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+    } catch (error) {
+      console.error('Error approving item:', error);
+      toast({
+        title: "Erro ao homologar",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao homologar o item",
+        variant: "destructive"
+      });
+    } finally {
+      setApprovingItems(prev => {
+        const next = new Set(prev);
+        next.delete(itemKey);
+        return next;
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -105,9 +150,21 @@ export const PendingAccessoriesSection = () => {
                           Pendente
                         </Badge>
                       </div>
-                      <Badge variant="outline" className="text-orange-700 border-orange-300">
-                        Qtd total: {accessory.quantity}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-orange-700 border-orange-300">
+                          Qtd total: {accessory.quantity}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                          onClick={() => handleApprove(accessory)}
+                          disabled={approvingItems.has(accessory.item_name)}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          {approvingItems.has(accessory.item_name) ? 'Homologando...' : 'Homologar'}
+                        </Button>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
