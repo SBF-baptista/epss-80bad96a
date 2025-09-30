@@ -451,7 +451,7 @@ export const ScheduleModal = ({
           )}
 
           {/* Vehicle Schedules */}
-          {selectedCustomer && vehicleSchedules.length > 0 && (
+          {selectedCustomer && selectedCustomer.vehicles && selectedCustomer.vehicles.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Detalhes da Instalação por Veículo</h3>
               
