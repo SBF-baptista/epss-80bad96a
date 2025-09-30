@@ -260,15 +260,18 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Get first available kit (optional - will use first kit if available)
-      const selectedKit = kits.length > 0 ? kits[0] : null;
-      if (!selectedKit) {
+      // Check if we have at least one kit
+      if (kits.length === 0) {
         toast({
-          title: "Aviso",
-          description: "Nenhum kit configurado no sistema. Os agendamentos serão criados sem kit associado.",
-          variant: "default"
+          title: "Erro",
+          description: "É necessário ter pelo menos um kit configurado no sistema para criar agendamentos.",
+          variant: "destructive"
         });
+        setIsSubmitting(false);
+        return;
       }
+
+      const selectedKit = kits[0];
 
       let schedulesCreated = 0;
       let schedulesSkipped = 0;
@@ -311,7 +314,7 @@ export const ScheduleModal = ({
         // Create schedule for each technician
         for (const technicianId of vehicleSchedule.technician_ids) {
           await createKitSchedule({
-            kit_id: selectedKit?.id || kits[0]?.id || '',
+            kit_id: selectedKit.id!,
             technician_id: technicianId,
             scheduled_date: vehicleSchedule.scheduled_date.toISOString().split('T')[0],
             installation_time: vehicleSchedule.installation_time || undefined,
