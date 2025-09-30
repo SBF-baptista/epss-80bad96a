@@ -78,13 +78,13 @@ const AccessorySupplyHomologation = () => {
             
             <TabsContent value="accessories" className="space-y-6 mt-6">
               <PendingAccessoriesSection />
-              <PendingEquipmentSection />
               <AccessoryHomologationForm />
               <AccessoryHomologationList />
             </TabsContent>
             
             <TabsContent value="supplies" className="space-y-6 mt-6">
               <PendingSuppliesSection />
+              <PendingEquipmentSection />
               <SupplyHomologationForm />
               <SupplyHomologationList />
             </TabsContent>
