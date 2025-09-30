@@ -404,9 +404,9 @@ export const ScheduleCalendar = ({
                                     </div>
                                   </div>
 
-                                  {/* Modules */}
+                                  {/* Accessories */}
                                   <div className="space-y-2">
-                                    <h5 className="font-medium text-foreground">Módulos:</h5>
+                                    <h5 className="font-medium text-foreground">Acessórios:</h5>
                                     <div className="flex flex-wrap gap-1">
                                       {visit.modules.map((module, moduleIndex) => (
                                         <Badge key={moduleIndex} variant="secondary" className="text-xs">

@@ -1,13 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { fetchPendingHomologationItems, type PendingItem } from "@/services/pendingHomologationService";
-import { AlertTriangle, Cpu, ChevronDown, Clock, Wrench, User, Users } from "lucide-react";
+import { AlertTriangle, Cpu, ChevronDown, Clock, Wrench, User, Users, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const PendingEquipmentSection = () => {
   const [isOpen, setIsOpen] = useState(true);
+  const [approvingItems, setApprovingItems] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   const { data: pendingItems, isLoading } = useQuery({
     queryKey: ['pending-homologation-items'],
@@ -17,13 +22,45 @@ export const PendingEquipmentSection = () => {
 
   const equipment = pendingItems?.equipment || [];
 
+  const handleQuickApproval = async (item: PendingItem) => {
+    setApprovingItems(prev => new Set(prev).add(item.item_name));
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('kit_item_options')
+        .insert({
+          item_name: item.item_name,
+          item_type: item.item_type,
+          created_by: user?.id,
+        });
+
+      if (error) throw error;
+
+      toast.success(`${item.item_name} homologado com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+      queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+      queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+    } catch (error) {
+      console.error('Error approving item:', error);
+      toast.error('Erro ao homologar item');
+    } finally {
+      setApprovingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(item.item_name);
+        return newSet;
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
-            Módulos/Equipamentos Pendentes de Homologação
+            Acessórios/Equipamentos Pendentes de Homologação
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -43,14 +80,14 @@ export const PendingEquipmentSection = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
             <Cpu className="h-5 w-5 text-green-500" />
-            Módulos/Equipamentos Pendentes de Homologação
+            Acessórios/Equipamentos Pendentes de Homologação
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <Cpu className="h-12 w-12 mx-auto mb-4 opacity-50 text-green-500" />
-            <p className="text-lg font-medium mb-2">Todos os módulos homologados!</p>
-            <p className="text-sm">Não há módulos/equipamentos pendentes de homologação.</p>
+            <p className="text-lg font-medium mb-2">Todos os acessórios homologados!</p>
+            <p className="text-sm">Não há acessórios/equipamentos pendentes de homologação.</p>
           </div>
         </CardContent>
       </Card>
@@ -65,7 +102,7 @@ export const PendingEquipmentSection = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-medium text-purple-800 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-purple-500" />
-                Módulos/Equipamentos Pendentes de Homologação ({equipment.length})
+                Acessórios/Equipamentos Pendentes de Homologação ({equipment.length})
               </CardTitle>
               <ChevronDown 
                 className={`h-5 w-5 text-purple-600 transition-transform duration-200 ${
@@ -83,7 +120,7 @@ export const PendingEquipmentSection = () => {
                 <AlertTriangle className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-purple-800">
                   <p className="font-medium">Atenção!</p>
-                  <p>Os módulos/equipamentos abaixo estão sendo utilizados em kits ou clientes, mas ainda não foram homologados. Homologue-os para que os kits possam ser distribuídos.</p>
+                  <p>Os acessórios/equipamentos abaixo estão sendo utilizados em kits ou clientes, mas ainda não foram homologados. Homologue-os para que os kits possam ser distribuídos.</p>
                 </div>
               </div>
             </div>
@@ -96,17 +133,26 @@ export const PendingEquipmentSection = () => {
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1">
                         <Cpu className="h-4 w-4 text-purple-600" />
                         <h4 className="font-medium text-purple-900">{item.item_name}</h4>
                         <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-300">
                           <Clock className="h-3 w-3 mr-1" />
                           Pendente
                         </Badge>
+                        <Badge variant="outline" className="text-purple-700 border-purple-300">
+                          Qtd total: {item.quantity}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="text-purple-700 border-purple-300">
-                        Qtd total: {item.quantity}
-                      </Badge>
+                      <Button
+                        size="sm"
+                        onClick={() => handleQuickApproval(item)}
+                        disabled={approvingItems.has(item.item_name)}
+                        className="ml-2"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        {approvingItems.has(item.item_name) ? 'Homologando...' : 'Homologar'}
+                      </Button>
                     </div>
                     
                     <div className="space-y-2">
