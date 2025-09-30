@@ -236,6 +236,20 @@ export const ScheduleModal = ({
   };
 
 
+  // Check if button should be enabled
+  const isButtonEnabled = () => {
+    // Must have kits configured
+    if (kits.length === 0) return false;
+    
+    // Must have at least one vehicle ready for scheduling
+    const hasReadyVehicle = vehicleSchedules.some(vehicle => {
+      const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicle.plate}`);
+      return vehicleReady && vehicle.scheduled_date && vehicle.technician_ids.length > 0;
+    });
+    
+    return hasReadyVehicle;
+  };
+
   const onSubmit = async () => {
     if (!selectedCustomer) {
       toast({
@@ -249,7 +263,7 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Get first available kit (or create a default one if needed)
+      // Get first available kit
       const selectedKit = kits.length > 0 ? kits[0] : null;
       if (!selectedKit) {
         toast({
@@ -716,7 +730,11 @@ export const ScheduleModal = ({
                       <Button type="button" variant="outline" onClick={handleClose}>
                         Cancelar
                       </Button>
-                      <Button type="button" onClick={onSubmit} disabled={isSubmitting}>
+                      <Button 
+                        type="button" 
+                        onClick={onSubmit} 
+                        disabled={isSubmitting || !isButtonEnabled()}
+                      >
                         {isSubmitting ? "Criando Agendamentos..." : "Criar Agendamentos"}
                       </Button>
                     </DialogFooter>
