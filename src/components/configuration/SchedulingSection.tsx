@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, CalendarCheck } from 'lucide-react';
+import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, CalendarCheck, Truck } from 'lucide-react';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
@@ -245,32 +245,49 @@ export const SchedulingSection = ({
                             </div>
                           </div>
 
-                          {/* Schedules Info - Show associated vehicles and technicians */}
+                          {/* Schedules Info - Show scheduled vehicles and technicians */}
                           <div className="space-y-2">
-
+                            {/* Scheduled Vehicles with Details */}
                             {activeSchedules.length > 0 && (
-                              <div className="bg-blue-50 p-2 rounded-md">
-                                <h5 className="text-xs font-semibold text-blue-800 mb-1">
-                                  Agendamentos Ativos ({activeSchedules.length})
-                                </h5>
-                                {activeSchedules.slice(0, 2).map((schedule) => (
-                                  <div key={schedule.id} className="flex items-center justify-between text-xs text-blue-700">
-                                    <span>{schedule.kit.name}</span>
-                                    <span>
-                                      {new Date(schedule.scheduled_date).toLocaleDateString('pt-BR')}
-                                    </span>
+                              <div className="space-y-2">
+                                {activeSchedules.map((schedule) => (
+                                  <div key={schedule.id} className="bg-blue-50 border border-blue-200 p-3 rounded-md">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <Badge className="bg-blue-600 text-white">
+                                        Placa Agendada
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {new Date(schedule.scheduled_date).toLocaleDateString('pt-BR')}
+                                        {schedule.installation_time && ` - ${schedule.installation_time}`}
+                                      </Badge>
+                                    </div>
+                                    
+                                    <div className="space-y-1 text-xs">
+                                      <div className="flex items-center gap-2 text-blue-900 font-semibold">
+                                        <Truck className="w-3 h-3" />
+                                        <span>Placa: {schedule.vehicle_plate}</span>
+                                      </div>
+                                      <div className="text-blue-800">
+                                        {schedule.vehicle_brand} {schedule.vehicle_model} ({schedule.vehicle_year})
+                                      </div>
+                                      <div className="flex items-center gap-2 text-blue-700">
+                                        <User className="w-3 h-3" />
+                                        <span>Técnico: {schedule.technician.name}</span>
+                                      </div>
+                                      {schedule.notes && (
+                                        <div className="flex items-start gap-2 text-blue-700 mt-2 pt-2 border-t border-blue-200">
+                                          <FileText className="w-3 h-3 mt-0.5" />
+                                          <span className="flex-1">{schedule.notes}</span>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 ))}
-                                {activeSchedules.length > 2 && (
-                                  <p className="text-xs text-blue-600">
-                                    +{activeSchedules.length - 2} mais
-                                  </p>
-                                )}
                               </div>
                             )}
 
                             {completedSchedules.length > 0 && (
-                              <div className="bg-green-50 p-2 rounded-md">
+                              <div className="bg-green-50 border border-green-200 p-2 rounded-md">
                                 <p className="text-xs font-semibold text-green-800">
                                   {completedSchedules.length} instalação(ões) concluída(s)
                                 </p>
@@ -280,16 +297,23 @@ export const SchedulingSection = ({
 
                           {/* Action Buttons */}
                           <div className="space-y-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleScheduleCustomer(customer)}
-                              disabled={activeSchedules.length > 0}
-                              className="w-full"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Novo Agendamento Geral
-                            </Button>
+                            {/* Show "New Schedule" button for customers with pending vehicles or no schedules */}
+                            {(() => {
+                              const scheduledPlates = activeSchedules.map(s => s.vehicle_plate);
+                              const hasUnscheduledVehicles = customer.vehicles?.some(v => !scheduledPlates.includes(v.plate));
+                              
+                              return hasUnscheduledVehicles || activeSchedules.length === 0 ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleScheduleCustomer(customer)}
+                                  className="w-full"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Novo Agendamento de Instalação
+                                </Button>
+                              ) : null;
+                            })()}
                             
                             {activeSchedules.length > 0 && (
                               <Button
@@ -299,7 +323,7 @@ export const SchedulingSection = ({
                                 className="w-full"
                               >
                                 <CalendarCheck className="w-4 h-4 mr-2" />
-                                Reagendamento
+                                Reagendar Instalação
                               </Button>
                             )}
                           </div>
@@ -327,6 +351,7 @@ export const SchedulingSection = ({
         kits={getHomologatedKits()}
         technicians={technicians}
         homologationStatuses={homologationStatuses}
+        existingSchedules={schedules}
         onSuccess={() => {
           onRefresh();
           setIsScheduleModalOpen(false);

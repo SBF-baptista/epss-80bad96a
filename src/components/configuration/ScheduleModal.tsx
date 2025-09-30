@@ -86,6 +86,7 @@ interface ScheduleModalProps {
   kits: HomologationKit[];
   technicians: Technician[];
   homologationStatuses: Map<string, HomologationStatus>;
+  existingSchedules?: any[];
   onSuccess: () => void;
 }
 
@@ -97,6 +98,7 @@ export const ScheduleModal = ({
   kits,
   technicians,
   homologationStatuses,
+  existingSchedules = [],
   onSuccess
 }: ScheduleModalProps) => {
   const { toast } = useToast();
@@ -132,8 +134,31 @@ export const ScheduleModal = ({
       return;
     }
 
-    // 1) Initialize schedules immediately to render UI without delay
-    const initialSchedules = selectedCustomer.vehicles.map((vehicle, index) => ({
+    // Filter out vehicles that already have active schedules
+    const scheduledPlates = existingSchedules
+      .filter(s => s.customer_id === selectedCustomer.id && ['scheduled', 'in_progress'].includes(s.status))
+      .map(s => s.vehicle_plate);
+    
+    const unscheduledVehicles = selectedCustomer.vehicles.filter(
+      vehicle => !scheduledPlates.includes(vehicle.plate)
+    );
+
+    console.log('Scheduled plates:', scheduledPlates);
+    console.log('Unscheduled vehicles:', unscheduledVehicles);
+
+    if (unscheduledVehicles.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Todos os veículos deste cliente já possuem agendamentos ativos.",
+        variant: "default"
+      });
+      setVehicleSchedules([]);
+      form.reset({ vehicles: [] });
+      return;
+    }
+
+    // 1) Initialize schedules immediately to render UI without delay (only for unscheduled vehicles)
+    const initialSchedules = unscheduledVehicles.map((vehicle, index) => ({
       plate: vehicle.plate,
       brand: vehicle.brand,
       model: vehicle.model,
@@ -170,9 +195,17 @@ export const ScheduleModal = ({
           })
         );
         
-        // Check overall homologation status for each vehicle/plate
+        // Check overall homologation status for each unscheduled vehicle
         // A vehicle is ready for scheduling if all its accessories and modules are homologated
-        for (const vehicle of selectedCustomer.vehicles || []) {
+        const scheduledPlates = existingSchedules
+          .filter(s => s.customer_id === selectedCustomer.id && ['scheduled', 'in_progress'].includes(s.status))
+          .map(s => s.vehicle_plate);
+        
+        const unscheduledVehicles = selectedCustomer.vehicles?.filter(
+          vehicle => !scheduledPlates.includes(vehicle.plate)
+        ) || [];
+        
+        for (const vehicle of unscheduledVehicles) {
           const vehicleAccessories = selectedCustomer.accessories || [];
           const vehicleModules = selectedCustomer.modules || [];
           
