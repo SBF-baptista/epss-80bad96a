@@ -72,7 +72,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     }
   };
 
-
+  const equipment = kit?.equipment || [];
   const accessories = kit?.accessories || [];
   const supplies = kit?.supplies || [];
 
@@ -116,6 +116,32 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                       <p className="text-sm text-muted-foreground">Ano: {order.vehicles[0].year}</p>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Rastreadores */}
+            {equipment.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Rastreadores ({equipment.reduce((sum, eq) => sum + eq.quantity, 0)} unidades)
+                </h3>
+                <div className="space-y-2">
+                  {equipment.map((item, index) => (
+                    <div key={index} className="p-3 bg-muted/50 rounded-lg border">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-foreground">{item.item_name}</p>
+                          {item.description && (
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="font-semibold">
+                          {item.quantity}x
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
