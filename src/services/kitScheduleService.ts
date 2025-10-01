@@ -19,6 +19,24 @@ export interface KitScheduleWithDetails extends KitSchedule {
     name: string;
     description?: string;
     homologation_card_id?: string;
+    equipment?: Array<{
+      id: string;
+      item_name: string;
+      quantity: number;
+      description?: string;
+    }>;
+    accessories?: Array<{
+      id: string;
+      item_name: string;
+      quantity: number;
+      description?: string;
+    }>;
+    supplies?: Array<{
+      id: string;
+      item_name: string;
+      quantity: number;
+      description?: string;
+    }>;
   };
   technician: {
     id: string;
@@ -129,6 +147,13 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
         name,
         description,
         homologation_card_id,
+        kit_items:homologation_kit_accessories(
+          id,
+          item_name,
+          quantity,
+          description,
+          item_type
+        ),
         homologation_card:homologation_cards(
           id,
           brand,
@@ -150,11 +175,20 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
     throw new Error(error.message || 'Erro ao carregar agendamentos');
   }
 
-  return schedules?.map(schedule => ({
-    ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    homologation_card: schedule.kit?.homologation_card || undefined
-  })) || [];
+  return schedules?.map(schedule => {
+    const kitItems = schedule.kit?.kit_items || [];
+    return {
+      ...schedule,
+      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+      homologation_card: schedule.kit?.homologation_card || undefined,
+      kit: schedule.kit ? {
+        ...schedule.kit,
+        equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
+        accessories: kitItems.filter((item: any) => item.item_type === 'accessory'),
+        supplies: kitItems.filter((item: any) => item.item_type === 'supply'),
+      } : undefined
+    };
+  }) || [];
 };
 
 // Get schedules by technician

@@ -72,21 +72,10 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     }
   };
 
-  const equipment = kit?.equipment || [];
-  const accessories = kit?.accessories || [];
-  const supplies = kit?.supplies || [];
-
-  // Debug logs
-  console.log('OrderModal - Kit data:', {
-    kitId: kit?.id,
-    kitName: kit?.name,
-    equipment: equipment,
-    accessories: accessories,
-    supplies: supplies,
-    hasEquipment: equipment.length > 0,
-    hasAccessories: accessories.length > 0,
-    hasSupplies: supplies.length > 0,
-  });
+  // Get equipment, accessories and supplies from schedule's kit
+  const equipment = schedule?.kit?.equipment || [];
+  const accessories = schedule?.kit?.accessories || [];
+  const supplies = schedule?.kit?.supplies || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
