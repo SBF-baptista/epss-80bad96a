@@ -17,6 +17,11 @@ import { useToast } from '@/hooks/use-toast'
 import { useMutation } from '@tanstack/react-query'
 import { createAutomationRule, updateAutomationRule, AutomationRule } from '@/services/automationRulesService'
 import AutomationRulePhotos from './AutomationRulePhotos'
+import { useFipeBrands, useFipeModels, useFipeYears } from '@/hooks/useFipeData'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Check, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface AutomationRuleModalProps {
   isOpen: boolean
@@ -58,8 +63,16 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
     notes: ''
   })
   const [temporaryPhotos, setTemporaryPhotos] = useState<File[]>([])
+  const [selectedBrandCode, setSelectedBrandCode] = useState("")
+  const [selectedModelCode, setSelectedModelCode] = useState("")
+  const [openBrand, setOpenBrand] = useState(false)
+  const [openModel, setOpenModel] = useState(false)
+  const [openYear, setOpenYear] = useState(false)
 
   const { toast } = useToast()
+  const { brands, loading: loadingBrands } = useFipeBrands()
+  const { models, loading: loadingModels } = useFipeModels(selectedBrandCode)
+  const { years, loading: loadingYears } = useFipeYears(selectedBrandCode, selectedModelCode)
 
   // Reset form when modal opens/closes or when editing rule changes
   useEffect(() => {
@@ -73,6 +86,8 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
         configuration: editingRule.configuration,
         notes: editingRule.notes || ''
       })
+      setSelectedBrandCode("")
+      setSelectedModelCode("")
       setTemporaryPhotos([])
     } else {
       setFormData({
@@ -84,9 +99,35 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
         configuration: '',
         notes: ''
       })
+      setSelectedBrandCode("")
+      setSelectedModelCode("")
       setTemporaryPhotos([])
     }
   }, [editingRule, isOpen])
+
+  const handleBrandChange = (value: string) => {
+    const brand = brands.find(b => b.code === value)
+    if (brand) {
+      setSelectedBrandCode(brand.code)
+      setFormData({ ...formData, brand: brand.name, model: '', model_year: '' })
+      setSelectedModelCode("")
+      setOpenBrand(false)
+    }
+  }
+
+  const handleModelChange = (value: string) => {
+    const model = models.find(m => m.code === value)
+    if (model) {
+      setSelectedModelCode(model.code)
+      setFormData({ ...formData, model: model.name, model_year: '' })
+      setOpenModel(false)
+    }
+  }
+
+  const handleYearChange = (value: string) => {
+    setFormData({ ...formData, model_year: value })
+    setOpenYear(false)
+  }
 
   // Create mutation
   const createMutation = useMutation({
@@ -208,40 +249,222 @@ const AutomationRuleModal = ({ isOpen, onClose, onRuleCreated, editingRule }: Au
 
               <div className="space-y-2">
                 <Label htmlFor="brand">Marca do Veículo *</Label>
-                <Select 
-                  value={formData.brand} 
-                  onValueChange={(value) => setFormData({ ...formData, brand: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a marca" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicleBrands.map(brand => (
-                      <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={openBrand} onOpenChange={setOpenBrand}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openBrand}
+                      className="w-full justify-between"
+                      disabled={loadingBrands}
+                    >
+                      {formData.brand || (loadingBrands ? "Carregando..." : "Selecione ou digite a marca")}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput 
+                        placeholder="Pesquisar ou criar marca..." 
+                        className="h-9"
+                        value={formData.brand}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, brand: value });
+                          setSelectedBrandCode("");
+                        }}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <div className="py-6 text-center text-sm">
+                            <p className="mb-2">Marca não encontrada na FIPE</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (formData.brand.trim()) {
+                                  setOpenBrand(false);
+                                  setFormData({ ...formData, model: '', model_year: '' });
+                                  setSelectedModelCode("");
+                                }
+                              }}
+                            >
+                              Criar "{formData.brand}" manualmente
+                            </Button>
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {brands
+                            .filter(brand => 
+                              brand.name.toLowerCase().includes(formData.brand.toLowerCase())
+                            )
+                            .map((brand) => (
+                              <CommandItem
+                                key={brand.code}
+                                value={brand.name}
+                                onSelect={() => handleBrandChange(brand.code)}
+                              >
+                                {brand.name}
+                                <Check
+                                  className={cn(
+                                    "ml-auto h-4 w-4",
+                                    selectedBrandCode === brand.code ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="model">Modelo do Veículo *</Label>
-              <Input
-                id="model"
-                value={formData.model}
-                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                placeholder="Ex: FH540, Sprinter 515"
-              />
+              <Popover open={openModel} onOpenChange={setOpenModel}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openModel}
+                    className="w-full justify-between"
+                    disabled={!selectedBrandCode && !formData.brand || loadingModels}
+                  >
+                    {formData.model || 
+                      (!formData.brand ? "Selecione uma marca primeiro" :
+                      loadingModels ? "Carregando..." :
+                      "Selecione ou digite o modelo")}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Pesquisar ou criar modelo..." 
+                      className="h-9"
+                      value={formData.model}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, model: value });
+                        setSelectedModelCode("");
+                      }}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <div className="py-6 text-center text-sm">
+                          <p className="mb-2">Modelo não encontrado na FIPE</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (formData.model.trim()) {
+                                setOpenModel(false);
+                                setFormData({ ...formData, model_year: '' });
+                              }
+                            }}
+                          >
+                            Criar "{formData.model}" manualmente
+                          </Button>
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {models
+                          .filter(model => 
+                            model.name.toLowerCase().includes(formData.model.toLowerCase())
+                          )
+                          .map((model) => (
+                            <CommandItem
+                              key={model.code}
+                              value={model.name}
+                              onSelect={() => handleModelChange(model.code)}
+                            >
+                              {model.name}
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  selectedModelCode === model.code ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="model_year">Ano do Modelo</Label>
-              <Input
-                id="model_year"
-                value={formData.model_year}
-                onChange={(e) => setFormData({ ...formData, model_year: e.target.value })}
-                placeholder="Ex: 2023, 2024"
-              />
+              <Popover open={openYear} onOpenChange={setOpenYear}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openYear}
+                    className="w-full justify-between"
+                    disabled={!selectedModelCode && !formData.model || loadingYears}
+                  >
+                    {formData.model_year ? 
+                      (years.find(y => y.code === formData.model_year)?.name || formData.model_year) :
+                      (!formData.model ? "Selecione um modelo primeiro" :
+                      loadingYears ? "Carregando..." :
+                      "Selecione ou digite o ano (opcional)")}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Pesquisar ou criar ano..." 
+                      className="h-9"
+                      value={formData.model_year}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, model_year: value });
+                      }}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <div className="py-6 text-center text-sm">
+                          <p className="mb-2">Ano não encontrado na FIPE</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (formData.model_year.trim() && /^\d{4}$/.test(formData.model_year)) {
+                                setOpenYear(false);
+                              }
+                            }}
+                          >
+                            Criar "{formData.model_year}" manualmente
+                          </Button>
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {years
+                          .filter(year => 
+                            year.name.toLowerCase().includes(formData.model_year.toLowerCase())
+                          )
+                          .map((year) => (
+                            <CommandItem
+                              key={year.code}
+                              value={year.name}
+                              onSelect={() => handleYearChange(year.code)}
+                            >
+                              {year.name}
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  formData.model_year === year.code ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">

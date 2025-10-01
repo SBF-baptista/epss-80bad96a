@@ -128,26 +128,56 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Pesquisar marca..." className="h-9" />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Pesquisar ou criar marca..." 
+                    className="h-9"
+                    value={selectedBrandName}
+                    onValueChange={(value) => {
+                      setSelectedBrandName(value);
+                      setSelectedBrandCode("");
+                    }}
+                  />
                   <CommandList>
-                    <CommandEmpty>Nenhuma marca encontrada.</CommandEmpty>
-                    <CommandGroup>
-                      {brands.map((brand) => (
-                        <CommandItem
-                          key={brand.code}
-                          value={brand.name}
-                          onSelect={() => handleBrandChange(brand.code)}
+                    <CommandEmpty>
+                      <div className="py-6 text-center text-sm">
+                        <p className="mb-2">Marca não encontrada na FIPE</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedBrandName.trim()) {
+                              setOpenBrand(false);
+                              setSelectedModelCode("");
+                              setSelectedModelName("");
+                              setSelectedYear("");
+                            }
+                          }}
                         >
-                          {brand.name}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              selectedBrandCode === brand.code ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
+                          Criar "{selectedBrandName}" manualmente
+                        </Button>
+                      </div>
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {brands
+                        .filter(brand => 
+                          brand.name.toLowerCase().includes(selectedBrandName.toLowerCase())
+                        )
+                        .map((brand) => (
+                          <CommandItem
+                            key={brand.code}
+                            value={brand.name}
+                            onSelect={() => handleBrandChange(brand.code)}
+                          >
+                            {brand.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedBrandCode === brand.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -176,26 +206,54 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Pesquisar modelo..." className="h-9" />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Pesquisar ou criar modelo..." 
+                    className="h-9"
+                    value={selectedModelName}
+                    onValueChange={(value) => {
+                      setSelectedModelName(value);
+                      setSelectedModelCode("");
+                    }}
+                  />
                   <CommandList>
-                    <CommandEmpty>Nenhum modelo encontrado.</CommandEmpty>
-                    <CommandGroup>
-                      {models.map((model) => (
-                        <CommandItem
-                          key={model.code}
-                          value={model.name}
-                          onSelect={() => handleModelChange(model.code)}
+                    <CommandEmpty>
+                      <div className="py-6 text-center text-sm">
+                        <p className="mb-2">Modelo não encontrado na FIPE</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedModelName.trim()) {
+                              setOpenModel(false);
+                              setSelectedYear("");
+                            }
+                          }}
                         >
-                          {model.name}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              selectedModelCode === model.code ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
+                          Criar "{selectedModelName}" manualmente
+                        </Button>
+                      </div>
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {models
+                        .filter(model => 
+                          model.name.toLowerCase().includes(selectedModelName.toLowerCase())
+                        )
+                        .map((model) => (
+                          <CommandItem
+                            key={model.code}
+                            value={model.name}
+                            onSelect={() => handleModelChange(model.code)}
+                          >
+                            {model.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedModelCode === model.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -224,26 +282,52 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Pesquisar ano..." className="h-9" />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Pesquisar ou criar ano..." 
+                    className="h-9"
+                    value={selectedYear}
+                    onValueChange={(value) => {
+                      setSelectedYear(value);
+                    }}
+                  />
                   <CommandList>
-                    <CommandEmpty>Nenhum ano encontrado.</CommandEmpty>
-                    <CommandGroup>
-                      {years.map((year) => (
-                        <CommandItem
-                          key={year.code}
-                          value={year.name}
-                          onSelect={() => handleYearChange(year.code)}
+                    <CommandEmpty>
+                      <div className="py-6 text-center text-sm">
+                        <p className="mb-2">Ano não encontrado na FIPE</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedYear.trim() && /^\d{4}$/.test(selectedYear)) {
+                              setOpenYear(false);
+                            }
+                          }}
                         >
-                          {year.name}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              selectedYear === year.code ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
+                          Criar "{selectedYear}" manualmente
+                        </Button>
+                      </div>
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {years
+                        .filter(year => 
+                          year.name.toLowerCase().includes(selectedYear.toLowerCase())
+                        )
+                        .map((year) => (
+                          <CommandItem
+                            key={year.code}
+                            value={year.name}
+                            onSelect={() => handleYearChange(year.code)}
+                          >
+                            {year.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedYear === year.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
                     </CommandGroup>
                   </CommandList>
                 </Command>
