@@ -76,6 +76,18 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
   const accessories = kit?.accessories || [];
   const supplies = kit?.supplies || [];
 
+  // Debug logs
+  console.log('OrderModal - Kit data:', {
+    kitId: kit?.id,
+    kitName: kit?.name,
+    equipment: equipment,
+    accessories: accessories,
+    supplies: supplies,
+    hasEquipment: equipment.length > 0,
+    hasAccessories: accessories.length > 0,
+    hasSupplies: supplies.length > 0,
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
