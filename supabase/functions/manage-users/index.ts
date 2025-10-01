@@ -116,6 +116,32 @@ const handler = async (req: Request): Promise<Response> => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid email format' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+      
+      // Validate password length
+      if (password.length < 8) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Password must be at least 8 characters long' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+      
+      // Validate role
+      const validRoles = ['admin', 'installer', 'order_manager'];
+      if (!validRoles.includes(role)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid role specified' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
 
       // Create user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -239,8 +265,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       if (resetPassword) {
-        // Generate temporary password
-        const tempPassword = Math.random().toString(36).slice(-12);
+        // Generate cryptographically secure temporary password
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        const tempPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 12);
         
         const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
           userId,

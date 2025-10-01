@@ -34,12 +34,11 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
   const { toast } = useToast()
 
   const generatePassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
-    let result = ''
-    for (let i = 0; i < 12; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    setPassword(result)
+    // Generate a cryptographically secure random password
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    const password = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 12);
+    setPassword(password);
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
