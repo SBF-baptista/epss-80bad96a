@@ -72,10 +72,10 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     }
   };
 
-  // Get equipment, accessories and supplies from schedule's kit
+  // Get equipment from kit, accessories and supplies from schedule
   const equipment = schedule?.kit?.equipment || [];
-  const accessories = schedule?.kit?.accessories || [];
-  const supplies = schedule?.kit?.supplies || [];
+  const scheduleAccessories = schedule?.accessories || [];
+  const scheduleSupplies = schedule?.supplies || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -148,25 +148,15 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
             )}
 
             {/* Acessórios */}
-            {accessories.length > 0 && (
+            {scheduleAccessories.length > 0 && (
               <div>
                 <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Acessórios ({accessories.reduce((sum, acc) => sum + acc.quantity, 0)} unidades)
+                  Acessórios ({scheduleAccessories.length} itens)
                 </h3>
                 <div className="space-y-2">
-                  {accessories.map((accessory, index) => (
+                  {scheduleAccessories.map((accessory, index) => (
                     <div key={index} className="p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-foreground">{accessory.item_name}</p>
-                          {accessory.description && (
-                            <p className="text-sm text-muted-foreground">{accessory.description}</p>
-                          )}
-                        </div>
-                        <Badge variant="secondary" className="font-semibold">
-                          {accessory.quantity}x
-                        </Badge>
-                      </div>
+                      <p className="font-medium text-foreground">{accessory}</p>
                     </div>
                   ))}
                 </div>
@@ -174,25 +164,15 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
             )}
 
             {/* Insumos */}
-            {supplies.length > 0 && (
+            {scheduleSupplies.length > 0 && (
               <div>
                 <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Insumos ({supplies.reduce((sum, sup) => sum + sup.quantity, 0)} unidades)
+                  Insumos ({scheduleSupplies.length} itens)
                 </h3>
                 <div className="space-y-2">
-                  {supplies.map((supply, index) => (
+                  {scheduleSupplies.map((supply, index) => (
                     <div key={index} className="p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-foreground">{supply.item_name}</p>
-                          {supply.description && (
-                            <p className="text-sm text-muted-foreground">{supply.description}</p>
-                          )}
-                        </div>
-                        <Badge variant="secondary" className="font-semibold">
-                          {supply.quantity}x
-                        </Badge>
-                      </div>
+                      <p className="font-medium text-foreground">{supply}</p>
                     </div>
                   ))}
                 </div>

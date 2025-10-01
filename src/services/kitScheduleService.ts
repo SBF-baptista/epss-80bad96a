@@ -11,6 +11,8 @@ export interface KitSchedule {
   created_by?: string;
   created_at?: string;
   updated_at?: string;
+  accessories?: string[];
+  supplies?: string[];
 }
 
 export interface KitScheduleWithDetails extends KitSchedule {
@@ -66,6 +68,8 @@ export interface KitScheduleWithDetails extends KitSchedule {
   vehicle_brand?: string;
   vehicle_model?: string;
   vehicle_year?: number;
+  accessories?: string[];
+  supplies?: string[];
 }
 
 export interface CreateKitScheduleData {
@@ -90,6 +94,8 @@ export interface CreateKitScheduleData {
   vehicle_brand?: string;
   vehicle_model?: string;
   vehicle_year?: number;
+  accessories?: string[];
+  supplies?: string[];
 }
 
 // Create a new kit schedule
@@ -112,7 +118,9 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
 
   return {
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+    accessories: schedule.accessories as string[] || [],
+    supplies: schedule.supplies as string[] || []
   };
 };
 
@@ -132,7 +140,9 @@ export const updateKitSchedule = async (id: string, data: Partial<CreateKitSched
 
   return {
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+    accessories: schedule.accessories as string[] || [],
+    supplies: schedule.supplies as string[] || []
   };
 };
 
@@ -181,6 +191,8 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
       ...schedule,
       status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
       homologation_card: schedule.kit?.homologation_card || undefined,
+      accessories: (schedule.accessories as string[]) || [],
+      supplies: (schedule.supplies as string[]) || [],
       kit: schedule.kit ? {
         ...schedule.kit,
         equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
@@ -227,7 +239,9 @@ export const getSchedulesByTechnician = async (technicianId: string): Promise<Ki
   return schedules?.map(schedule => ({
     ...schedule,
     status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    homologation_card: schedule.kit?.homologation_card || undefined
+    homologation_card: schedule.kit?.homologation_card || undefined,
+    accessories: (schedule.accessories as string[]) || [],
+    supplies: (schedule.supplies as string[]) || []
   })) || [];
 };
 
@@ -268,7 +282,9 @@ export const getSchedulesByDateRange = async (startDate: string, endDate: string
   return schedules?.map(schedule => ({
     ...schedule,
     status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    homologation_card: schedule.kit?.homologation_card || undefined
+    homologation_card: schedule.kit?.homologation_card || undefined,
+    accessories: (schedule.accessories as string[]) || [],
+    supplies: (schedule.supplies as string[]) || []
   })) || [];
 };
 
