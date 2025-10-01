@@ -1,31 +1,27 @@
 
-import { useState, useRef, useEffect } from "react";
-import KanbanColumn from "./KanbanColumn";
-import OrderModal from "./OrderModal";
-import ProductionScannerModal from "./ProductionScannerModal";
-import ShipmentPreparationModal from "./ShipmentPreparationModal";
-import { Order, updateOrderStatus } from "@/services/orderService";
+import { useState, useRef } from "react";
+import InstallationKanbanColumn from "./InstallationKanbanColumn";
+import InstallationOrderModal from "./InstallationOrderModal";
+import { InstallationOrder } from "@/types/installationOrder";
+import { updateInstallationOrderStatus } from "@/services/installationOrderService";
 import { useToast } from "@/hooks/use-toast";
 
 interface KanbanBoardProps {
-  orders: Order[];
+  orders: InstallationOrder[];
   onOrderUpdate: () => void;
 }
 
 const columns = [
-  { id: "novos", title: "Pedidos", color: "border-blue-300 bg-blue-50/30" },
-  { id: "producao", title: "Em Produção", color: "border-yellow-300 bg-yellow-50/30" },
-  { id: "aguardando", title: "Aguardando Envio", color: "border-orange-300 bg-orange-50/30" },
-  { id: "enviado", title: "Enviado", color: "border-green-300 bg-green-50/30" },
-  { id: "standby", title: "Em Stand-by", color: "border-red-300 bg-red-50/30" }
+  { id: "scheduled", title: "Agendados", color: "border-blue-300 bg-blue-50/30" },
+  { id: "in_progress", title: "Em Andamento", color: "border-yellow-300 bg-yellow-50/30" },
+  { id: "awaiting_shipment", title: "Aguardando Envio", color: "border-orange-300 bg-orange-50/30" },
+  { id: "shipped", title: "Enviado", color: "border-green-300 bg-green-50/30" },
 ];
 
 const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
   const { toast } = useToast();
-  const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [scannerOrder, setScannerOrder] = useState<Order | null>(null);
-  const [shipmentOrder, setShipmentOrder] = useState<Order | null>(null);
+  const [draggedOrder, setDraggedOrder] = useState<InstallationOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<InstallationOrder | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +47,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
     }
   };
 
-  const handleDragStart = (order: Order) => {
+  const handleDragStart = (order: InstallationOrder) => {
     setDraggedOrder(order);
   };
 
@@ -62,11 +58,11 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
   const handleDrop = async (columnId: string) => {
     if (draggedOrder && draggedOrder.status !== columnId) {
       try {
-        await updateOrderStatus(draggedOrder.id, columnId);
+        await updateInstallationOrderStatus(draggedOrder.id, columnId as InstallationOrder['status']);
         onOrderUpdate();
         toast({
           title: "Status atualizado",
-          description: `Pedido ${draggedOrder.number} movido para ${columns.find(c => c.id === columnId)?.title}`
+          description: `Pedido de ${draggedOrder.customerName} movido para ${columns.find(c => c.id === columnId)?.title}`
         });
       } catch (error) {
         console.error("Error updating order status:", error);
@@ -80,15 +76,6 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
     setDraggedOrder(null);
   };
 
-  const handleScanClick = (order: Order) => {
-    setScannerOrder(order);
-  };
-
-  const handleShipmentClick = (order: Order) => {
-    console.log('Shipment button clicked for order:', order);
-    setShipmentOrder(order);
-  };
-
   const getOrdersByStatus = (status: string) => {
     return orders.filter(order => order.status === status);
   };
@@ -96,9 +83,9 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
   return (
     <>
       {/* Desktop and Tablet: Grid layout */}
-      <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {columns.map(column => (
-          <KanbanColumn
+          <InstallationKanbanColumn
             key={column.id}
             title={column.title}
             orders={getOrdersByStatus(column.id)}
@@ -107,8 +94,6 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
             onDrop={() => handleDrop(column.id)}
             onOrderClick={setSelectedOrder}
             onDragStart={handleDragStart}
-            onScanClick={column.id === "producao" ? handleScanClick : undefined}
-            onShipmentClick={column.id === "aguardando" || column.id === "enviado" ? handleShipmentClick : undefined}
           />
         ))}
       </div>
@@ -122,7 +107,7 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
         >
           {columns.map(column => (
             <div key={column.id} className="flex-shrink-0 w-80 snap-start">
-              <KanbanColumn
+              <InstallationKanbanColumn
                 title={column.title}
                 orders={getOrdersByStatus(column.id)}
                 color={column.color}
@@ -130,8 +115,6 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
                 onDrop={() => handleDrop(column.id)}
                 onOrderClick={setSelectedOrder}
                 onDragStart={handleDragStart}
-                onScanClick={column.id === "producao" ? handleScanClick : undefined}
-                onShipmentClick={column.id === "aguardando" || column.id === "enviado" ? handleShipmentClick : undefined}
               />
             </div>
           ))}
@@ -155,28 +138,10 @@ const KanbanBoard = ({ orders, onOrderUpdate }: KanbanBoardProps) => {
       </div>
 
       {selectedOrder && (
-        <OrderModal
+        <InstallationOrderModal
           order={selectedOrder}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          onUpdate={onOrderUpdate}
-        />
-      )}
-
-      {scannerOrder && (
-        <ProductionScannerModal
-          order={scannerOrder}
-          isOpen={!!scannerOrder}
-          onClose={() => setScannerOrder(null)}
-          onUpdate={onOrderUpdate}
-        />
-      )}
-
-      {shipmentOrder && (
-        <ShipmentPreparationModal
-          order={shipmentOrder}
-          isOpen={!!shipmentOrder}
-          onClose={() => setShipmentOrder(null)}
           onUpdate={onOrderUpdate}
         />
       )}
