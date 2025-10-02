@@ -3,9 +3,12 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
+import ProductionScannerModal from "@/components/ProductionScannerModal";
+import ShipmentPreparationModal from "@/components/ShipmentPreparationModal";
 import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { Order } from "@/services/orderService";
 
 const Kanban = () => {
   const [filters, setFilters] = useState({
@@ -13,6 +16,9 @@ const Kanban = () => {
     model: "",
     configurationType: ""
   });
+  
+  const [selectedOrderForScanner, setSelectedOrderForScanner] = useState<Order | null>(null);
+  const [selectedOrderForShipment, setSelectedOrderForShipment] = useState<Order | null>(null);
 
   const { data: schedules = [], isLoading, refetch } = useQuery({
     queryKey: ['kit-schedules'],
@@ -93,8 +99,28 @@ const Kanban = () => {
           schedules={filteredSchedules}
           kits={kits}
           onOrderUpdate={refetch}
+          onScanClick={setSelectedOrderForScanner}
+          onShipmentClick={setSelectedOrderForShipment}
         />
       </div>
+
+      {/* Production Scanner Modal */}
+      <ProductionScannerModal
+        order={selectedOrderForScanner}
+        isOpen={!!selectedOrderForScanner}
+        onClose={() => setSelectedOrderForScanner(null)}
+        onUpdate={refetch}
+      />
+
+      {/* Shipment Preparation Modal */}
+      {selectedOrderForShipment && (
+        <ShipmentPreparationModal
+          order={selectedOrderForShipment}
+          isOpen={!!selectedOrderForShipment}
+          onClose={() => setSelectedOrderForShipment(null)}
+          onUpdate={refetch}
+        />
+      )}
     </div>
   );
 };

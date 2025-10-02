@@ -11,6 +11,8 @@ interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
   kits: HomologationKit[];
   onOrderUpdate: () => void;
+  onScanClick?: (order: Order) => void;
+  onShipmentClick?: (order: Order) => void;
 }
 
 const columns = [
@@ -20,7 +22,7 @@ const columns = [
   { id: "shipped", title: "Enviado", color: "border-green-300 bg-green-50/30" },
 ];
 
-const KanbanBoard = ({ schedules, kits, onOrderUpdate }: KanbanBoardProps) => {
+const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentClick }: KanbanBoardProps) => {
   const { toast } = useToast();
   const [draggedSchedule, setDraggedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
@@ -166,6 +168,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate }: KanbanBoardProps) => {
               if (schedule) setSelectedSchedule(schedule);
             }}
             onDragStart={handleDragStart}
+            onScanClick={onScanClick}
+            onShipmentClick={onShipmentClick}
           />
         ))}
       </div>
@@ -190,6 +194,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate }: KanbanBoardProps) => {
                   if (schedule) setSelectedSchedule(schedule);
                 }}
                 onDragStart={handleDragStart}
+                onScanClick={onScanClick}
+                onShipmentClick={onShipmentClick}
               />
             </div>
           ))}
