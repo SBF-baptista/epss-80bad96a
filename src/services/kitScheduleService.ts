@@ -125,7 +125,7 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
 };
 
 // Update an existing kit schedule
-export const updateKitSchedule = async (id: string, data: Partial<CreateKitScheduleData>): Promise<KitSchedule> => {
+export const updateKitSchedule = async (id: string, data: Partial<CreateKitScheduleData> & { status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' }): Promise<KitSchedule> => {
   const { data: schedule, error } = await supabase
     .from('kit_schedules')
     .update(data)

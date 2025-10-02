@@ -105,6 +105,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate }: KanbanBoardProps) => {
         
         const newStatus = statusMap[columnId] || 'scheduled';
         await updateKitSchedule(draggedSchedule.id!, { 
+          status: newStatus,
           kit_id: draggedSchedule.kit_id,
           technician_id: draggedSchedule.technician_id,
           scheduled_date: draggedSchedule.scheduled_date,
@@ -120,7 +121,6 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate }: KanbanBoardProps) => {
           installation_address_postal_code: draggedSchedule.installation_address_postal_code || '',
         });
         
-        // Update status separately via a direct query if needed
         onOrderUpdate();
         toast({
           title: "Status atualizado",
