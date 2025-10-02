@@ -1,10 +1,11 @@
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
 import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 const Kanban = () => {
   const [filters, setFilters] = useState({
@@ -16,7 +17,7 @@ const Kanban = () => {
   const { data: schedules = [], isLoading, refetch } = useQuery({
     queryKey: ['kit-schedules'],
     queryFn: getKitSchedules,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -30,6 +31,10 @@ const Kanban = () => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Setup realtime subscription for automatic synchronization
+  useRealtimeSubscription('kit_schedules', 'kit-schedules');
+  useRealtimeSubscription('homologation_kits', 'homologation-kits');
 
   const filteredSchedules = schedules.filter(schedule => {
     const matchesBrand = !filters.brand || 

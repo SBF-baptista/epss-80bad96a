@@ -116,6 +116,9 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                     {order.vehicles[0].year && (
                       <p className="text-sm text-muted-foreground">Ano: {order.vehicles[0].year}</p>
                     )}
+                    {schedule?.vehicle_plate && (
+                      <p className="text-sm text-muted-foreground">Placa: <span className="font-semibold">{schedule.vehicle_plate}</span></p>
+                    )}
                   </div>
                 </div>
               </div>
