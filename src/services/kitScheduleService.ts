@@ -11,6 +11,8 @@ export interface KitSchedule {
   created_by?: string;
   created_at?: string;
   updated_at?: string;
+  accessories?: string[];
+  supplies?: string[];
 }
 
 export interface KitScheduleWithDetails extends KitSchedule {
@@ -19,6 +21,24 @@ export interface KitScheduleWithDetails extends KitSchedule {
     name: string;
     description?: string;
     homologation_card_id?: string;
+    equipment?: Array<{
+      id: string;
+      item_name: string;
+      quantity: number;
+      description?: string;
+    }>;
+    accessories?: Array<{
+      id: string;
+      item_name: string;
+      quantity: number;
+      description?: string;
+    }>;
+    supplies?: Array<{
+      id: string;
+      item_name: string;
+      quantity: number;
+      description?: string;
+    }>;
   };
   technician: {
     id: string;
@@ -48,6 +68,8 @@ export interface KitScheduleWithDetails extends KitSchedule {
   vehicle_brand?: string;
   vehicle_model?: string;
   vehicle_year?: number;
+  accessories?: string[];
+  supplies?: string[];
 }
 
 export interface CreateKitScheduleData {
@@ -72,6 +94,8 @@ export interface CreateKitScheduleData {
   vehicle_brand?: string;
   vehicle_model?: string;
   vehicle_year?: number;
+  accessories?: string[];
+  supplies?: string[];
 }
 
 // Create a new kit schedule
@@ -94,7 +118,9 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
 
   return {
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+    accessories: schedule.accessories as string[] || [],
+    supplies: schedule.supplies as string[] || []
   };
 };
 
@@ -114,8 +140,119 @@ export const updateKitSchedule = async (id: string, data: Partial<CreateKitSched
 
   return {
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+    accessories: schedule.accessories as string[] || [],
+    supplies: schedule.supplies as string[] || []
   };
+};
+
+// Get schedules by customer (name or id)
+export const getSchedulesByCustomer = async (customerName?: string, customerId?: string): Promise<KitScheduleWithDetails[]> => {
+  let query = supabase
+    .from('kit_schedules')
+    .select(`
+      *,
+      kit:homologation_kits!kit_id (
+        id,
+        name,
+        description,
+        homologation_card_id,
+        kit_items:homologation_kit_accessories(
+          id,
+          item_name,
+          quantity,
+          description,
+          item_type
+        ),
+        homologation_card:homologation_cards(
+          id,
+          brand,
+          model,
+          status
+        )
+      ),
+      technician:technicians!technician_id (
+        id,
+        name,
+        address_city,
+        address_state
+      )
+    `);
+
+  if (customerId) {
+    query = query.eq('customer_id', customerId);
+  } else if (customerName) {
+    query = query.eq('customer_name', customerName);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching schedules by customer:', error);
+    throw new Error(error.message || 'Erro ao buscar agendamentos do cliente');
+  }
+
+  const schedulesWithDetails = (data || []).map((schedule) => {
+    const kitItems = schedule.kit?.kit_items || [];
+    
+    // Get accessories and supplies from both sources:
+    // 1. From kit_items (homologation_kit_accessories) - detailed items with quantities
+    // 2. From schedule fields (accessories/supplies) - simple arrays from scheduling
+    const kitAccessories = kitItems.filter((item: any) => item.item_type === 'accessory');
+    const kitSupplies = kitItems.filter((item: any) => item.item_type === 'supply');
+    
+    // Convert schedule arrays to item format if they exist
+    const scheduleAccessories = Array.isArray(schedule.accessories) 
+      ? (schedule.accessories as string[]).map((name, i) => ({
+          id: `sched-acc-${schedule.id}-${i}`,
+          item_name: name,
+          quantity: 1,
+          item_type: 'accessory',
+          description: undefined
+        }))
+      : [];
+    
+    const scheduleSupplies = Array.isArray(schedule.supplies)
+      ? (schedule.supplies as string[]).map((name, i) => ({
+          id: `sched-sup-${schedule.id}-${i}`,
+          item_name: name,
+          quantity: 1,
+          item_type: 'supply',
+          description: undefined
+        }))
+      : [];
+
+    // Merge both sources, prioritizing kit items but adding schedule items if they don't exist
+    const mergedAccessories = [...kitAccessories];
+    scheduleAccessories.forEach(schedAcc => {
+      if (!mergedAccessories.find(kitAcc => kitAcc.item_name === schedAcc.item_name)) {
+        mergedAccessories.push(schedAcc);
+      }
+    });
+
+    const mergedSupplies = [...kitSupplies];
+    scheduleSupplies.forEach(schedSup => {
+      if (!mergedSupplies.find(kitSup => kitSup.item_name === schedSup.item_name)) {
+        mergedSupplies.push(schedSup);
+      }
+    });
+
+    return {
+      ...schedule,
+      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+      homologation_card: schedule.kit?.homologation_card || undefined,
+      accessories: (schedule.accessories as string[]) || [],
+      supplies: (schedule.supplies as string[]) || [],
+      kit: schedule.kit ? {
+        ...schedule.kit,
+        equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
+        accessories: mergedAccessories,
+        supplies: mergedSupplies,
+      } : undefined
+    } as KitScheduleWithDetails;
+  });
+
+  return schedulesWithDetails;
 };
 
 // Get all kit schedules with details
@@ -129,6 +266,13 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
         name,
         description,
         homologation_card_id,
+        kit_items:homologation_kit_accessories(
+          id,
+          item_name,
+          quantity,
+          description,
+          item_type
+        ),
         homologation_card:homologation_cards(
           id,
           brand,
@@ -150,11 +294,63 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
     throw new Error(error.message || 'Erro ao carregar agendamentos');
   }
 
-  return schedules?.map(schedule => ({
-    ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    homologation_card: schedule.kit?.homologation_card || undefined
-  })) || [];
+  return schedules?.map(schedule => {
+    const kitItems = schedule.kit?.kit_items || [];
+    
+    // Get accessories and supplies from both sources
+    const kitAccessories = kitItems.filter((item: any) => item.item_type === 'accessory');
+    const kitSupplies = kitItems.filter((item: any) => item.item_type === 'supply');
+    
+    // Convert schedule arrays to item format if they exist
+    const scheduleAccessories = Array.isArray(schedule.accessories) 
+      ? (schedule.accessories as string[]).map((name, i) => ({
+          id: `sched-acc-${schedule.id}-${i}`,
+          item_name: name,
+          quantity: 1,
+          item_type: 'accessory',
+          description: undefined
+        }))
+      : [];
+    
+    const scheduleSupplies = Array.isArray(schedule.supplies)
+      ? (schedule.supplies as string[]).map((name, i) => ({
+          id: `sched-sup-${schedule.id}-${i}`,
+          item_name: name,
+          quantity: 1,
+          item_type: 'supply',
+          description: undefined
+        }))
+      : [];
+
+    // Merge both sources
+    const mergedAccessories = [...kitAccessories];
+    scheduleAccessories.forEach(schedAcc => {
+      if (!mergedAccessories.find(kitAcc => kitAcc.item_name === schedAcc.item_name)) {
+        mergedAccessories.push(schedAcc);
+      }
+    });
+
+    const mergedSupplies = [...kitSupplies];
+    scheduleSupplies.forEach(schedSup => {
+      if (!mergedSupplies.find(kitSup => kitSup.item_name === schedSup.item_name)) {
+        mergedSupplies.push(schedSup);
+      }
+    });
+
+    return {
+      ...schedule,
+      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+      homologation_card: schedule.kit?.homologation_card || undefined,
+      accessories: (schedule.accessories as string[]) || [],
+      supplies: (schedule.supplies as string[]) || [],
+      kit: schedule.kit ? {
+        ...schedule.kit,
+        equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
+        accessories: mergedAccessories,
+        supplies: mergedSupplies,
+      } : undefined
+    };
+  }) || [];
 };
 
 // Get schedules by technician
@@ -193,7 +389,9 @@ export const getSchedulesByTechnician = async (technicianId: string): Promise<Ki
   return schedules?.map(schedule => ({
     ...schedule,
     status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    homologation_card: schedule.kit?.homologation_card || undefined
+    homologation_card: schedule.kit?.homologation_card || undefined,
+    accessories: (schedule.accessories as string[]) || [],
+    supplies: (schedule.supplies as string[]) || []
   })) || [];
 };
 
@@ -234,7 +432,9 @@ export const getSchedulesByDateRange = async (startDate: string, endDate: string
   return schedules?.map(schedule => ({
     ...schedule,
     status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    homologation_card: schedule.kit?.homologation_card || undefined
+    homologation_card: schedule.kit?.homologation_card || undefined,
+    accessories: (schedule.accessories as string[]) || [],
+    supplies: (schedule.supplies as string[]) || []
   })) || [];
 };
 
