@@ -132,7 +132,10 @@ export const KitScheduleModal = ({
         installation_address_city: selectedCustomer.address_city,
         installation_address_state: selectedCustomer.address_state,
         installation_address_postal_code: selectedCustomer.address_postal_code,
-        installation_address_complement: selectedCustomer.address_complement
+        installation_address_complement: selectedCustomer.address_complement,
+        // Persist customer-level items to the schedule (per placa)
+        accessories: selectedCustomer.accessories || [],
+        supplies: selectedCustomer.modules || []
       });
 
       toast({

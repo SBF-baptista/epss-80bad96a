@@ -348,7 +348,10 @@ export const ScheduleModal = ({
             vehicle_plate: vehicleSchedule.plate,
             vehicle_brand: vehicleSchedule.brand,
             vehicle_model: vehicleSchedule.model,
-            vehicle_year: vehicleSchedule.year
+            vehicle_year: vehicleSchedule.year,
+            // Persist per-placa items
+            accessories: vehicleSchedule.accessories || [],
+            supplies: vehicleSchedule.modules || []
           });
           schedulesCreated++;
         }
