@@ -6,7 +6,7 @@ export interface KitSchedule {
   technician_id: string;
   scheduled_date: string;
   installation_time?: string;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped';
   notes?: string;
   created_by?: string;
   created_at?: string;
@@ -118,14 +118,14 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
 
   return {
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    accessories: schedule.accessories as string[] || [],
-    supplies: schedule.supplies as string[] || []
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped',
+    accessories: (schedule as any).accessories as string[] || [],
+    supplies: (schedule as any).supplies as string[] || []
   };
 };
 
 // Update an existing kit schedule
-export const updateKitSchedule = async (id: string, data: Partial<CreateKitScheduleData> & { status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' }): Promise<KitSchedule> => {
+export const updateKitSchedule = async (id: string, data: Partial<CreateKitScheduleData> & { status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped' }): Promise<KitSchedule> => {
   const { data: schedule, error } = await supabase
     .from('kit_schedules')
     .update(data)
@@ -140,9 +140,9 @@ export const updateKitSchedule = async (id: string, data: Partial<CreateKitSched
 
   return {
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-    accessories: schedule.accessories as string[] || [],
-    supplies: schedule.supplies as string[] || []
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped',
+    accessories: (schedule as any).accessories as string[] || [],
+    supplies: (schedule as any).supplies as string[] || []
   };
 };
 
@@ -202,8 +202,8 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
     const kitSupplies = kitItems.filter((item: any) => item.item_type === 'supply');
     
     // Convert schedule arrays to item format if they exist
-    const scheduleAccessories = Array.isArray(schedule.accessories) 
-      ? (schedule.accessories as string[]).map((name, i) => ({
+    const scheduleAccessories = Array.isArray((schedule as any).accessories) 
+      ? ((schedule as any).accessories as string[]).map((name, i) => ({
           id: `sched-acc-${schedule.id}-${i}`,
           item_name: name,
           quantity: 1,
@@ -212,8 +212,8 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
         }))
       : [];
     
-    const scheduleSupplies = Array.isArray(schedule.supplies)
-      ? (schedule.supplies as string[]).map((name, i) => ({
+    const scheduleSupplies = Array.isArray((schedule as any).supplies)
+      ? ((schedule as any).supplies as string[]).map((name, i) => ({
           id: `sched-sup-${schedule.id}-${i}`,
           item_name: name,
           quantity: 1,
@@ -239,10 +239,10 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
 
     return {
       ...schedule,
-      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped',
       homologation_card: schedule.kit?.homologation_card || undefined,
-      accessories: (schedule.accessories as string[]) || [],
-      supplies: (schedule.supplies as string[]) || [],
+      accessories: ((schedule as any).accessories as string[]) || [],
+      supplies: ((schedule as any).supplies as string[]) || [],
       kit: schedule.kit ? {
         ...schedule.kit,
         equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
@@ -302,8 +302,8 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
     const kitSupplies = kitItems.filter((item: any) => item.item_type === 'supply');
     
     // Convert schedule arrays to item format if they exist
-    const scheduleAccessories = Array.isArray(schedule.accessories) 
-      ? (schedule.accessories as string[]).map((name, i) => ({
+    const scheduleAccessories = Array.isArray((schedule as any).accessories) 
+      ? ((schedule as any).accessories as string[]).map((name, i) => ({
           id: `sched-acc-${schedule.id}-${i}`,
           item_name: name,
           quantity: 1,
@@ -312,8 +312,8 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
         }))
       : [];
     
-    const scheduleSupplies = Array.isArray(schedule.supplies)
-      ? (schedule.supplies as string[]).map((name, i) => ({
+    const scheduleSupplies = Array.isArray((schedule as any).supplies)
+      ? ((schedule as any).supplies as string[]).map((name, i) => ({
           id: `sched-sup-${schedule.id}-${i}`,
           item_name: name,
           quantity: 1,
@@ -339,10 +339,10 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
 
     return {
       ...schedule,
-      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped',
       homologation_card: schedule.kit?.homologation_card || undefined,
-      accessories: (schedule.accessories as string[]) || [],
-      supplies: (schedule.supplies as string[]) || [],
+      accessories: ((schedule as any).accessories as string[]) || [],
+      supplies: ((schedule as any).supplies as string[]) || [],
       kit: schedule.kit ? {
         ...schedule.kit,
         equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
@@ -388,10 +388,10 @@ export const getSchedulesByTechnician = async (technicianId: string): Promise<Ki
 
   return schedules?.map(schedule => ({
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped',
     homologation_card: schedule.kit?.homologation_card || undefined,
-    accessories: (schedule.accessories as string[]) || [],
-    supplies: (schedule.supplies as string[]) || []
+    accessories: ((schedule as any).accessories as string[]) || [],
+    supplies: ((schedule as any).supplies as string[]) || []
   })) || [];
 };
 
@@ -431,10 +431,10 @@ export const getSchedulesByDateRange = async (startDate: string, endDate: string
 
   return schedules?.map(schedule => ({
     ...schedule,
-    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+    status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped',
     homologation_card: schedule.kit?.homologation_card || undefined,
-    accessories: (schedule.accessories as string[]) || [],
-    supplies: (schedule.supplies as string[]) || []
+    accessories: ((schedule as any).accessories as string[]) || [],
+    supplies: ((schedule as any).supplies as string[]) || []
   })) || [];
 };
 

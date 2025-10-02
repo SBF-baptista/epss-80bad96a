@@ -96,11 +96,11 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate }: KanbanBoardProps) => {
   const handleDrop = async (columnId: string) => {
     if (draggedSchedule && draggedSchedule.status !== columnId) {
       try {
-        const statusMap: Record<string, 'scheduled' | 'in_progress' | 'completed' | 'cancelled'> = {
+        const statusMap: Record<string, 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'shipped'> = {
           'scheduled': 'scheduled',
           'in_progress': 'in_progress',
           'completed': 'completed',
-          'shipped': 'completed',
+          'shipped': 'shipped',
         };
         
         const newStatus = statusMap[columnId] || 'scheduled';
