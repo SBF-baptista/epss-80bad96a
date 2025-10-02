@@ -1,11 +1,13 @@
 
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
-import { getKitSchedules } from "@/services/kitScheduleService";
-import { fetchHomologationKits } from "@/services/homologationKitService";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import NewOrderModal from "@/components/NewOrderModal";
+import AutoOrderTestPanel from "@/components/AutoOrderTestPanel";
+import { fetchOrders } from "@/services/orderService";
+import { Button } from "@/components/ui/button";
+import { Plus, TestTube } from "lucide-react";
 
 const Kanban = () => {
   const [filters, setFilters] = useState({
@@ -13,38 +15,27 @@ const Kanban = () => {
     model: "",
     configurationType: ""
   });
+  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
-  const { data: schedules = [], isLoading, refetch } = useQuery({
-    queryKey: ['kit-schedules'],
-    queryFn: getKitSchedules,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 60,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+  const { data: orders = [], isLoading, refetch } = useQuery({
+    queryKey: ['orders'],
+    queryFn: fetchOrders,
   });
 
-  const { data: kits = [] } = useQuery({
-    queryKey: ['homologation-kits'],
-    queryFn: () => fetchHomologationKits(),
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 60,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
-
-  // Setup realtime subscription for automatic synchronization
-  useRealtimeSubscription('kit_schedules', 'kit-schedules');
-  useRealtimeSubscription('homologation_kits', 'homologation-kits');
-
-  const filteredSchedules = schedules.filter(schedule => {
+  const filteredOrders = orders.filter(order => {
     const matchesBrand = !filters.brand || 
-      schedule.vehicle_brand?.toLowerCase().includes(filters.brand.toLowerCase());
+      order.vehicles.some(vehicle => 
+        vehicle.brand.toLowerCase().includes(filters.brand.toLowerCase())
+      );
     
     const matchesModel = !filters.model || 
-      schedule.vehicle_model?.toLowerCase().includes(filters.model.toLowerCase());
+      order.vehicles.some(vehicle => 
+        vehicle.model.toLowerCase().includes(filters.model.toLowerCase())
+      );
     
     const matchesConfig = !filters.configurationType || 
-      schedule.kit?.name?.toLowerCase().includes(filters.configurationType.toLowerCase());
+      order.configurationType.toLowerCase().includes(filters.configurationType.toLowerCase());
     
     return matchesBrand && matchesModel && matchesConfig;
   });
@@ -81,18 +72,47 @@ const Kanban = () => {
       <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">Setup Flow Kanban - Gestão de Pedidos</h2>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              onClick={() => setShowTestPanel(!showTestPanel)}
+              variant="outline"
+              className="flex items-center gap-2 flex-1 sm:flex-none text-sm"
+            >
+              <TestTube className="h-4 w-4" />
+              {showTestPanel ? "Ocultar" : "Testes"}
+            </Button>
+            <Button 
+              onClick={() => setShowNewOrderModal(true)}
+              className="flex items-center gap-2 flex-1 sm:flex-none text-sm"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Pedido
+            </Button>
+          </div>
         </div>
+
+        {showTestPanel && (
+          <AutoOrderTestPanel />
+        )}
 
         <FilterBar 
           filters={filters}
           onFiltersChange={setFilters}
-          orders={[]}
+          orders={filteredOrders}
         />
 
         <KanbanBoard 
-          schedules={filteredSchedules}
-          kits={kits}
+          orders={filteredOrders} 
           onOrderUpdate={refetch}
+        />
+
+        <NewOrderModal
+          isOpen={showNewOrderModal}
+          onClose={() => setShowNewOrderModal(false)}
+          onOrderCreated={() => {
+            setShowNewOrderModal(false);
+            refetch();
+          }}
         />
       </div>
     </div>

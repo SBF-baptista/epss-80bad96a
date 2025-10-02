@@ -65,13 +65,8 @@ const GroupedOrderCard = ({
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-gray-900 text-sm md:text-base truncate">
-                {groupedOrder.company_name || 'Cliente'}
+                {groupedOrder.company_name}
               </h4>
-              {groupedOrder.orders[0]?.technicianName && (
-                <p className="text-xs text-gray-600 mt-1">
-                  Técnico: {groupedOrder.orders[0].technicianName}
-                </p>
-              )}
               <Badge variant="secondary" className="text-xs mt-1">
                 {groupedOrder.orders.length} pedido{groupedOrder.orders.length > 1 ? 's' : ''}
               </Badge>

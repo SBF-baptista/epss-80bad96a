@@ -33,5 +33,4 @@ export interface Order {
   shipment_address_complement?: string
   shipment_prepared_at?: string
   trackingCode?: string
-  technicianName?: string
 }

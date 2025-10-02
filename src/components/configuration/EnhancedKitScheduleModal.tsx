@@ -126,10 +126,7 @@ export const EnhancedKitScheduleModal = ({
         return;
       }
 
-      // Get first vehicle from customer vehicles
-      const firstVehicle = selectedCustomer.vehicles?.[0];
-      
-      // Create the schedule with customer and vehicle data
+      // Create the schedule with customer data
       await createKitSchedule({
         kit_id: kit.id!,
         technician_id: data.technician_id,
@@ -147,13 +144,7 @@ export const EnhancedKitScheduleModal = ({
         installation_address_city: selectedCustomer.address_city,
         installation_address_state: selectedCustomer.address_state,
         installation_address_postal_code: selectedCustomer.address_postal_code,
-        installation_address_complement: selectedCustomer.address_complement,
-        vehicle_plate: firstVehicle?.plate,
-        vehicle_brand: firstVehicle?.brand,
-        vehicle_model: firstVehicle?.model,
-        vehicle_year: firstVehicle?.year,
-        accessories: mockData?.accessories || [],
-        supplies: mockData?.modules || []
+        installation_address_complement: selectedCustomer.address_complement
       });
 
       toast({

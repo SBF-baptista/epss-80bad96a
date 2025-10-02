@@ -69,16 +69,9 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
       <CardContent className="p-4">
         <div className="space-y-3">
           <div className="flex justify-between items-start">
-            <div>
-              <h4 className="font-semibold text-gray-900">
-                {order.company_name || 'Cliente'}
-              </h4>
-              {order.technicianName && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Técnico: {order.technicianName}
-                </p>
-              )}
-            </div>
+            <h4 className="font-semibold text-gray-900">
+              {order.company_name ? `${order.company_name} (${order.number})` : `Pedido de instalação ${order.number}`}
+            </h4>
             <div className="flex items-center gap-2">
               {order.priority && (
                 <Badge className={`text-xs ${getPriorityColor(order.priority)}`}>
