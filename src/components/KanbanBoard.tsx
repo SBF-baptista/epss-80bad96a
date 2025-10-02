@@ -25,7 +25,7 @@ const columns = [
 
 const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentClick }: KanbanBoardProps) => {
   const { toast } = useToast();
-  const [draggedSchedule, setDraggedSchedule] = useState<KitScheduleWithDetails | null>(null);
+  const [draggedSchedules, setDraggedSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -91,10 +91,10 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   };
 
   const handleDragStart = (order: Order) => {
-    const schedule = schedules.find(s => s.id === order.id);
-    if (schedule) {
-      setDraggedSchedule(schedule);
-    }
+    // Find all schedules with the same customer_name (same group)
+    const customerName = order.company_name;
+    const groupSchedules = schedules.filter(s => s.customer_name === customerName);
+    setDraggedSchedules(groupSchedules);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -102,7 +102,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   };
 
   const handleDrop = async (columnId: string) => {
-    if (draggedSchedule && draggedSchedule.status !== columnId) {
+    if (draggedSchedules.length > 0) {
       try {
         const statusMap: Record<string, 'scheduled' | 'in_progress' | 'completed' | 'cancelled'> = {
           'scheduled': 'scheduled',
@@ -113,26 +113,28 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         
         const newStatus = statusMap[columnId] || 'scheduled';
         
+        // Update all schedules in the group
+        const scheduleIds = draggedSchedules.map(s => s.id);
         await supabase
           .from('kit_schedules')
           .update({ status: newStatus })
-          .eq('id', draggedSchedule.id);
+          .in('id', scheduleIds);
         
         onOrderUpdate();
         toast({
           title: "Status atualizado",
-          description: `Pedido movido para ${columns.find(c => c.id === columnId)?.title}`
+          description: `${draggedSchedules.length} pedido${draggedSchedules.length > 1 ? 's movidos' : ' movido'} para ${columns.find(c => c.id === columnId)?.title}`
         });
       } catch (error) {
         console.error("Error updating schedule status:", error);
         toast({
           title: "Erro",
-          description: "Erro ao atualizar status do pedido",
+          description: "Erro ao atualizar status dos pedidos",
           variant: "destructive"
         });
       }
     }
-    setDraggedSchedule(null);
+    setDraggedSchedules([]);
   };
 
   const getOrdersByStatus = (status: string) => {
