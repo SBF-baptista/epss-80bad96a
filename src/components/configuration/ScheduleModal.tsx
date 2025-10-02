@@ -106,6 +106,7 @@ export const ScheduleModal = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
   const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
   const [homologationStatus, setHomologationStatus] = useState<Map<string, boolean>>(new Map());
+  const [scheduleConflicts, setScheduleConflicts] = useState<Map<string, string>>(new Map());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -231,12 +232,60 @@ export const ScheduleModal = ({
     })();
   }, [selectedCustomer, homologationStatuses, form, toast]);
 
-  const updateVehicleSchedule = (plate: string, field: keyof VehicleScheduleData, value: any) => {
+  const updateVehicleSchedule = async (plate: string, field: keyof VehicleScheduleData, value: any) => {
     const updatedSchedules = vehicleSchedules.map(schedule => 
       schedule.plate === plate ? { ...schedule, [field]: value } : schedule
     );
     setVehicleSchedules(updatedSchedules);
     form.setValue('vehicles', updatedSchedules);
+
+    // Check for conflicts when technician, date or time changes
+    if (field === 'technician_ids' || field === 'scheduled_date' || field === 'installation_time') {
+      const schedule = updatedSchedules.find(s => s.plate === plate);
+      if (schedule && schedule.technician_ids.length > 0 && schedule.scheduled_date) {
+        await checkVehicleConflicts(schedule);
+      }
+    }
+  };
+
+  const checkVehicleConflicts = async (schedule: VehicleScheduleData) => {
+    const conflictKey = schedule.plate;
+    
+    if (schedule.technician_ids.length === 0 || !schedule.scheduled_date) {
+      setScheduleConflicts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(conflictKey);
+        return newMap;
+      });
+      return;
+    }
+
+    for (const technicianId of schedule.technician_ids) {
+      const hasConflict = await checkScheduleConflict(
+        technicianId,
+        schedule.scheduled_date.toISOString().split('T')[0],
+        schedule.installation_time || undefined
+      );
+
+      if (hasConflict) {
+        const technician = technicians.find(t => t.id === technicianId);
+        const conflictMsg = `⚠️ ${technician?.name || 'Este técnico'} já possui uma instalação agendada neste horário`;
+        
+        setScheduleConflicts(prev => {
+          const newMap = new Map(prev);
+          newMap.set(conflictKey, conflictMsg);
+          return newMap;
+        });
+        return;
+      }
+    }
+
+    // No conflicts found
+    setScheduleConflicts(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(conflictKey);
+      return newMap;
+    });
   };
 
 
@@ -291,6 +340,24 @@ export const ScheduleModal = ({
       let schedulesSkipped = 0;
       const skippedVehicles: string[] = [];
 
+      // Check for any remaining conflicts before submitting
+      const conflictingPlates: string[] = [];
+      for (const vehicleSchedule of vehicleSchedules) {
+        if (scheduleConflicts.has(vehicleSchedule.plate)) {
+          conflictingPlates.push(vehicleSchedule.plate);
+        }
+      }
+
+      if (conflictingPlates.length > 0) {
+        toast({
+          title: "Conflito de horário detectado",
+          description: `Por favor, resolva os conflitos de horário para: ${conflictingPlates.join(', ')}. Escolha outro horário ou técnico.`,
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Process each vehicle schedule
       for (const vehicleSchedule of vehicleSchedules) {
         // Check if this vehicle is ready for scheduling (all items homologated)
@@ -304,25 +371,6 @@ export const ScheduleModal = ({
             console.log(`Skipping vehicle ${vehicleSchedule.plate} - not all items are homologated`);
           }
           continue;
-        }
-        // Check for conflicts for each technician
-        for (const technicianId of vehicleSchedule.technician_ids) {
-          const hasConflict = await checkScheduleConflict(
-            technicianId,
-            vehicleSchedule.scheduled_date.toISOString().split('T')[0],
-            vehicleSchedule.installation_time || undefined
-          );
-
-          if (hasConflict) {
-            const technician = technicians.find(t => t.id === technicianId);
-            toast({
-              title: "Conflito de horário",
-              description: `O técnico ${technician?.name} já possui um agendamento no dia ${format(vehicleSchedule.scheduled_date, 'dd/MM/yyyy')} para o veículo ${vehicleSchedule.plate}.`,
-              variant: "destructive"
-            });
-            setIsSubmitting(false);
-            return;
-          }
         }
 
         // Create schedule for each technician
@@ -407,6 +455,7 @@ export const ScheduleModal = ({
     setSelectedCustomer(null);
     setVehicleSchedules([]);
     setHomologationStatus(new Map());
+    setScheduleConflicts(new Map());
     onClose();
   };
 
@@ -580,10 +629,16 @@ export const ScheduleModal = ({
                         <tbody>
                           {vehicleSchedules.map((vehicleSchedule, index) => {
                             const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicleSchedule.plate}`);
+                            const hasConflict = scheduleConflicts.has(vehicleSchedule.plate);
                             return (
                             <tr key={vehicleSchedule.plate} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}>
                               <td className="px-4 py-3">
-                                {vehicleReady ? (
+                                {hasConflict ? (
+                                  <Badge className="bg-red-100 text-red-800 border-red-300">
+                                    <X className="w-3 h-3 mr-1" />
+                                    Conflito
+                                  </Badge>
+                                ) : vehicleReady ? (
                                   <Badge className="bg-green-100 text-green-800 border-green-300">
                                     <Check className="w-3 h-3 mr-1" />
                                     Pronto
@@ -660,29 +715,39 @@ export const ScheduleModal = ({
                                 </div>
                               </td>
                                <td className="px-4 py-3">
-                                 <Select 
-                                   value={vehicleSchedule.technician_ids[0] || ''} 
-                                   onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [value])}
-                                   disabled={!vehicleReady}
-                                 >
-                                   <SelectTrigger className="w-[180px]">
-                                     <SelectValue placeholder={vehicleReady ? "Selecionar" : "Aguardando homologação"} />
-                                   </SelectTrigger>
-                                   <SelectContent>
-                                     {technicians.map((technician) => (
-                                       <SelectItem key={technician.id} value={technician.id!}>
-                                         <div className="flex flex-col">
-                                           <span>{technician.name}</span>
-                                           {technician.address_city && technician.address_state && (
-                                             <span className="text-xs text-muted-foreground">
-                                               {technician.address_city} - {technician.address_state}
-                                             </span>
-                                           )}
-                                         </div>
-                                       </SelectItem>
-                                     ))}
-                                   </SelectContent>
-                                 </Select>
+                                 <div className="space-y-1">
+                                   <Select 
+                                     value={vehicleSchedule.technician_ids[0] || ''} 
+                                     onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [value])}
+                                     disabled={!vehicleReady}
+                                   >
+                                     <SelectTrigger className={cn(
+                                       "w-[180px]",
+                                       hasConflict && "border-red-500"
+                                     )}>
+                                       <SelectValue placeholder={vehicleReady ? "Selecionar" : "Aguardando homologação"} />
+                                     </SelectTrigger>
+                                     <SelectContent>
+                                       {technicians.map((technician) => (
+                                         <SelectItem key={technician.id} value={technician.id!}>
+                                           <div className="flex flex-col">
+                                             <span>{technician.name}</span>
+                                             {technician.address_city && technician.address_state && (
+                                               <span className="text-xs text-muted-foreground">
+                                                 {technician.address_city} - {technician.address_state}
+                                               </span>
+                                             )}
+                                           </div>
+                                         </SelectItem>
+                                       ))}
+                                     </SelectContent>
+                                   </Select>
+                                   {hasConflict && (
+                                     <p className="text-xs text-red-600 font-medium">
+                                       {scheduleConflicts.get(vehicleSchedule.plate)}
+                                     </p>
+                                   )}
+                                 </div>
                                </td>
                                <td className="px-4 py-3">
                                  <Popover>
