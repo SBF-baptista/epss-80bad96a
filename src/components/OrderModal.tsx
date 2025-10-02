@@ -233,30 +233,71 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                       byTechnician[techName].push(sched);
                     });
 
-                    return Object.entries(byTechnician).map(([techName, schedules]) => (
-                      <div key={techName} className="bg-muted/30 p-4 rounded-lg border">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <User className="h-5 w-5 text-primary" />
-                            <h4 className="font-semibold text-base text-foreground">
-                              {techName}
-                            </h4>
-                            <Badge variant="outline">
-                              {schedules.length} {schedules.length === 1 ? 'placa' : 'placas'}
-                            </Badge>
+                    return Object.entries(byTechnician).map(([techName, schedules]) => {
+                      // Calculate consolidated items for this technician
+                      const techTotals: Record<string, number> = {};
+                      
+                      schedules.forEach((sched) => {
+                        // Equipment/Trackers
+                        (sched.kit?.equipment || []).forEach((item: any) => {
+                          techTotals[item.item_name] = (techTotals[item.item_name] || 0) + item.quantity;
+                        });
+                        
+                        // Accessories
+                        if (Array.isArray(sched.accessories)) {
+                          sched.accessories.forEach((name: string) => {
+                            techTotals[name] = (techTotals[name] || 0) + 1;
+                          });
+                        }
+                        
+                        // Supplies
+                        if (Array.isArray(sched.supplies)) {
+                          sched.supplies.forEach((name: string) => {
+                            techTotals[name] = (techTotals[name] || 0) + 1;
+                          });
+                        }
+                      });
+
+                      const sortedTechItems = Object.entries(techTotals).sort(([a], [b]) => a.localeCompare(b));
+
+                      return (
+                        <div key={techName} className="bg-muted/30 p-4 rounded-lg border space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <User className="h-5 w-5 text-primary" />
+                              <h4 className="font-semibold text-base text-foreground">
+                                {techName}
+                              </h4>
+                              <Badge variant="outline">
+                                {schedules.length} {schedules.length === 1 ? 'placa' : 'placas'}
+                              </Badge>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedTechnician({ name: techName, schedules })}
+                              className="gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Exibir detalhes
+                            </Button>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedTechnician({ name: techName, schedules })}
-                            className="gap-2"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Ver Detalhes
-                          </Button>
+                          
+                          {/* Consolidated items list for this technician */}
+                          {sortedTechItems.length > 0 && (
+                            <div className="pl-7 space-y-1">
+                              {sortedTechItems.map(([itemName, quantity]) => (
+                                <div key={itemName} className="flex items-center gap-2 text-sm">
+                                  <span className="text-muted-foreground">•</span>
+                                  <span className="text-foreground">{itemName}</span>
+                                  <Badge variant="secondary" className="text-xs">{quantity}x</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
               </>
@@ -460,7 +501,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
               {selectedTechnician?.name}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Consolidação de itens para todas as placas atribuídas
+              Veículos atribuídos a este técnico
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -487,53 +528,6 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Consolidated Items */}
-              <div>
-                <h4 className="font-semibold text-sm text-primary mb-3">
-                  Itens Consolidados
-                </h4>
-                {(() => {
-                  const consolidatedItems: Record<string, number> = {};
-                  
-                  selectedTechnician?.schedules.forEach((sched) => {
-                    // Equipment/Trackers
-                    (sched.kit?.equipment || []).forEach((item: any) => {
-                      consolidatedItems[item.item_name] = (consolidatedItems[item.item_name] || 0) + item.quantity;
-                    });
-                    
-                    // Accessories
-                    if (Array.isArray(sched.accessories)) {
-                      sched.accessories.forEach((name: string) => {
-                        consolidatedItems[name] = (consolidatedItems[name] || 0) + 1;
-                      });
-                    }
-                    
-                    // Supplies
-                    if (Array.isArray(sched.supplies)) {
-                      sched.supplies.forEach((name: string) => {
-                        consolidatedItems[name] = (consolidatedItems[name] || 0) + 1;
-                      });
-                    }
-                  });
-
-                  const sortedItems = Object.entries(consolidatedItems).sort(([a], [b]) => a.localeCompare(b));
-
-                  return sortedItems.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {sortedItems.map(([itemName, quantity]) => (
-                        <div key={itemName} className="flex items-center justify-between p-3 bg-card border rounded-lg">
-                          <span className="font-medium text-sm text-foreground">• {itemName}</span>
-                          <Badge variant="secondary" className="ml-2">{quantity}x</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhum item encontrado</p>
-                  );
-                })()}
-              </div>
             </div>
           </ScrollArea>
 
