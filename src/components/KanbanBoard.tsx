@@ -2,10 +2,11 @@
 import { useState, useRef } from "react";
 import KanbanColumn from "./KanbanColumn";
 import OrderModal from "./OrderModal";
-import { KitScheduleWithDetails, updateKitSchedule } from "@/services/kitScheduleService";
+import { KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -111,23 +112,12 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         };
         
         const newStatus = statusMap[columnId] || 'scheduled';
-        await updateKitSchedule(draggedSchedule.id!, { 
-          kit_id: draggedSchedule.kit_id,
-          technician_id: draggedSchedule.technician_id,
-          scheduled_date: draggedSchedule.scheduled_date,
-          customer_name: draggedSchedule.customer_name || '',
-          customer_document_number: draggedSchedule.customer_document_number || '',
-          customer_phone: draggedSchedule.customer_phone || '',
-          customer_email: draggedSchedule.customer_email || '',
-          installation_address_street: draggedSchedule.installation_address_street || '',
-          installation_address_number: draggedSchedule.installation_address_number || '',
-          installation_address_neighborhood: draggedSchedule.installation_address_neighborhood || '',
-          installation_address_city: draggedSchedule.installation_address_city || '',
-          installation_address_state: draggedSchedule.installation_address_state || '',
-          installation_address_postal_code: draggedSchedule.installation_address_postal_code || '',
-        });
         
-        // Update status separately via a direct query if needed
+        await supabase
+          .from('kit_schedules')
+          .update({ status: newStatus })
+          .eq('id', draggedSchedule.id);
+        
         onOrderUpdate();
         toast({
           title: "Status atualizado",
