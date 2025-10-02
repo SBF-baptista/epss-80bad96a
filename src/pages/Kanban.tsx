@@ -16,11 +16,19 @@ const Kanban = () => {
   const { data: schedules = [], isLoading, refetch } = useQuery({
     queryKey: ['kit-schedules'],
     queryFn: getKitSchedules,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const { data: kits = [] } = useQuery({
     queryKey: ['homologation-kits'],
     queryFn: () => fetchHomologationKits(),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const filteredSchedules = schedules.filter(schedule => {
