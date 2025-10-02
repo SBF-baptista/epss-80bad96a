@@ -156,7 +156,20 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
         id,
         name,
         description,
-        homologation_card_id
+        homologation_card_id,
+        kit_items:homologation_kit_accessories(
+          id,
+          item_name,
+          quantity,
+          description,
+          item_type
+        ),
+        homologation_card:homologation_cards(
+          id,
+          brand,
+          model,
+          status
+        )
       ),
       technician:technicians!technician_id (
         id,
@@ -179,27 +192,22 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
     throw new Error(error.message || 'Erro ao buscar agendamentos do cliente');
   }
 
-  // Fetch equipment for each kit
-  const schedulesWithDetails = await Promise.all((data || []).map(async (schedule) => {
-    const { data: equipmentData } = await supabase
-      .from('homologation_kit_accessories')
-      .select('*')
-      .eq('kit_id', schedule.kit.id)
-      .eq('item_type', 'equipment');
-
+  const schedulesWithDetails = (data || []).map((schedule) => {
+    const kitItems = schedule.kit?.kit_items || [];
     return {
       ...schedule,
       status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-      kit: {
+      homologation_card: schedule.kit?.homologation_card || undefined,
+      accessories: (schedule.accessories as string[]) || [],
+      supplies: (schedule.supplies as string[]) || [],
+      kit: schedule.kit ? {
         ...schedule.kit,
-        equipment: equipmentData || [],
-        accessories: [],
-        supplies: []
-      },
-      accessories: schedule.accessories as string[] || [],
-      supplies: schedule.supplies as string[] || []
-    };
-  }));
+        equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
+        accessories: kitItems.filter((item: any) => item.item_type === 'accessory'),
+        supplies: kitItems.filter((item: any) => item.item_type === 'supply'),
+      } : undefined
+    } as KitScheduleWithDetails;
+  });
 
   return schedulesWithDetails;
 };

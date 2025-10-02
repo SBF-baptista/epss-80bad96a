@@ -159,8 +159,12 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                 
                 {allSchedules.map((sched, idx) => {
                   const equipment = sched.kit?.equipment || [];
-                  const schedAccessories = sched.accessories || [];
-                  const schedSupplies = sched.supplies || [];
+                  const accessoriesItems = (sched.kit?.accessories && sched.kit.accessories.length > 0)
+                    ? (sched.kit.accessories as any[])
+                    : (Array.isArray(sched.accessories) ? (sched.accessories as any[]).map((name: string, i: number) => ({ id: `${sched.id}-acc-${i}` as string, item_name: name, quantity: 1 })) : []);
+                  const suppliesItems = (sched.kit?.supplies && sched.kit.supplies.length > 0)
+                    ? (sched.kit.supplies as any[])
+                    : (Array.isArray(sched.supplies) ? (sched.supplies as any[]).map((name: string, i: number) => ({ id: `${sched.id}-sup-${i}` as string, item_name: name, quantity: 1 })) : []);
                   
                   return (
                     <div key={sched.id || idx} className="p-4 bg-card border-2 border-primary/20 rounded-lg space-y-4">
@@ -238,32 +242,44 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                       )}
 
                       {/* Accessories */}
-                      {schedAccessories.length > 0 && (
+                      {accessoriesItems.length > 0 && (
                         <div>
                           <h4 className="font-semibold text-sm mb-2 text-primary">
-                            Acessórios ({schedAccessories.length} itens)
+                            Acessórios ({accessoriesItems.reduce((sum, a) => sum + (a.quantity || 0), 0)} unidades)
                           </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {schedAccessories.map((accessory, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {accessory}
-                              </Badge>
+                          <div className="space-y-2">
+                            {accessoriesItems.map((item, index) => (
+                              <div key={item.id || index} className="p-2 bg-muted/30 rounded border text-sm">
+                                <div className="flex justify-between items-center">
+                                  <p className="font-medium text-foreground">{item.item_name}</p>
+                                  <Badge variant="secondary" className="text-xs">{item.quantity}x</Badge>
+                                </div>
+                                {item.description && (
+                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </div>
                       )}
 
                       {/* Supplies */}
-                      {schedSupplies.length > 0 && (
+                      {suppliesItems.length > 0 && (
                         <div>
                           <h4 className="font-semibold text-sm mb-2 text-primary">
-                            Insumos ({schedSupplies.length} itens)
+                            Insumos ({suppliesItems.reduce((sum, s) => sum + (s.quantity || 0), 0)} unidades)
                           </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {schedSupplies.map((supply, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {supply}
-                              </Badge>
+                          <div className="space-y-2">
+                            {suppliesItems.map((item, index) => (
+                              <div key={item.id || index} className="p-2 bg-muted/30 rounded border text-sm">
+                                <div className="flex justify-between items-center">
+                                  <p className="font-medium text-foreground">{item.item_name}</p>
+                                  <Badge variant="secondary" className="text-xs">{item.quantity}x</Badge>
+                                </div>
+                                {item.description && (
+                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </div>
