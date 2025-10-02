@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,10 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Order } from "@/services/orderService";
-import { KitScheduleWithDetails } from "@/services/kitScheduleService";
+import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
+import { Calendar, User, MapPin } from "lucide-react";
 
 interface OrderModalProps {
   order: Order | null;
@@ -23,6 +25,31 @@ interface OrderModalProps {
 }
 
 const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) => {
+  const [allSchedules, setAllSchedules] = useState<KitScheduleWithDetails[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchAllSchedules = async () => {
+      if (!schedule || !isOpen) return;
+      
+      setLoading(true);
+      try {
+        const schedules = await getSchedulesByCustomer(
+          schedule.customer_name,
+          schedule.customer_id
+        );
+        setAllSchedules(schedules);
+      } catch (error) {
+        console.error("Error fetching customer schedules:", error);
+        setAllSchedules([schedule]); // Fallback to single schedule
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllSchedules();
+  }, [schedule, isOpen]);
+
   if (!order) return null;
 
   const getStatusLabel = (status: string) => {
@@ -72,10 +99,13 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     }
   };
 
-  // Get equipment from kit, accessories and supplies from schedule
-  const equipment = schedule?.kit?.equipment || [];
-  const scheduleAccessories = schedule?.accessories || [];
-  const scheduleSupplies = schedule?.supplies || [];
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -93,96 +123,163 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
 
         <ScrollArea className="max-h-[70vh] pr-4">
           <div className="space-y-6">
-          {/* Status */}
-          <div className="flex items-center space-x-3">
-            <Badge className={getStatusColor(order.status)}>
-              {getStatusLabel(order.status)}
-            </Badge>
-          </div>
+            {/* Status */}
+            <div className="flex items-center space-x-3">
+              <Badge className={getStatusColor(order.status)}>
+                {getStatusLabel(order.status)}
+              </Badge>
+            </div>
 
-          <Separator />
+            <Separator />
 
-          {/* Configuração de Items */}
-          <div className="space-y-6">
-            {/* Veículos */}
-            {order.vehicles.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-lg mb-4 text-primary">Veículo</h3>
-                <div className="p-4 bg-muted/50 rounded-lg border">
-                  <div className="space-y-2">
-                    <p className="font-medium text-foreground text-base">
-                      {order.vehicles[0].brand} {order.vehicles[0].model}
-                    </p>
-                    {order.vehicles[0].year && (
-                      <p className="text-sm text-muted-foreground">Ano: {order.vehicles[0].year}</p>
-                    )}
-                    {schedule?.vehicle_plate && (
-                      <p className="text-sm text-muted-foreground">Placa: <span className="font-semibold">{schedule.vehicle_plate}</span></p>
-                    )}
-                  </div>
-                </div>
+            {/* Customer Info */}
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              <h3 className="font-semibold text-base mb-2 text-primary">Cliente</h3>
+              <p className="font-medium text-foreground">{order.company_name}</p>
+              {schedule?.customer_phone && (
+                <p className="text-sm text-muted-foreground mt-1">Tel: {schedule.customer_phone}</p>
+              )}
+              {schedule?.customer_email && (
+                <p className="text-sm text-muted-foreground">Email: {schedule.customer_email}</p>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* All Vehicles/Plates Section */}
+            {loading ? (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground">Carregando placas...</p>
               </div>
-            )}
-
-            {/* Rastreadores */}
-            {equipment.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Rastreadores ({equipment.reduce((sum, eq) => sum + eq.quantity, 0)} unidades)
+            ) : (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg text-primary">
+                  Veículos Agendados ({allSchedules.length} {allSchedules.length === 1 ? 'placa' : 'placas'})
                 </h3>
-                <div className="space-y-2">
-                  {equipment.map((item, index) => (
-                    <div key={index} className="p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-foreground">{item.item_name}</p>
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                
+                {allSchedules.map((sched, idx) => {
+                  const equipment = sched.kit?.equipment || [];
+                  const schedAccessories = sched.accessories || [];
+                  const schedSupplies = sched.supplies || [];
+                  
+                  return (
+                    <div key={sched.id || idx} className="p-4 bg-card border-2 border-primary/20 rounded-lg space-y-4">
+                      {/* Vehicle Header */}
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            {sched.vehicle_plate && (
+                              <Badge variant="outline" className="text-base font-bold px-3 py-1">
+                                {sched.vehicle_plate}
+                              </Badge>
+                            )}
+                            <Badge variant="secondary">Placa {idx + 1}</Badge>
+                          </div>
+                          <p className="font-semibold text-foreground text-lg">
+                            {sched.vehicle_brand} {sched.vehicle_model}
+                          </p>
+                          {sched.vehicle_year && (
+                            <p className="text-sm text-muted-foreground">Ano: {sched.vehicle_year}</p>
                           )}
                         </div>
-                        <Badge variant="secondary" className="font-semibold">
-                          {item.quantity}x
-                        </Badge>
                       </div>
+
+                      {/* Installation Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          <span className="text-muted-foreground">Data:</span>
+                          <span className="font-medium">{formatDate(sched.scheduled_date)}</span>
+                        </div>
+                        {sched.technician && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <User className="h-4 w-4 text-primary" />
+                            <span className="text-muted-foreground">Técnico:</span>
+                            <span className="font-medium">{sched.technician.name}</span>
+                          </div>
+                        )}
+                        {sched.installation_address_city && (
+                          <div className="flex items-center gap-2 text-sm md:col-span-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <span className="text-muted-foreground">Local:</span>
+                            <span className="font-medium">
+                              {sched.installation_address_city}, {sched.installation_address_state}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <Separator />
+
+                      {/* Equipment/Trackers */}
+                      {equipment.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm mb-2 text-primary">
+                            Rastreadores ({equipment.reduce((sum, eq) => sum + eq.quantity, 0)} unidades)
+                          </h4>
+                          <div className="space-y-2">
+                            {equipment.map((item, index) => (
+                              <div key={index} className="p-2 bg-muted/30 rounded border text-sm">
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <p className="font-medium text-foreground">{item.item_name}</p>
+                                    {item.description && (
+                                      <p className="text-xs text-muted-foreground">{item.description}</p>
+                                    )}
+                                  </div>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {item.quantity}x
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Accessories */}
+                      {schedAccessories.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm mb-2 text-primary">
+                            Acessórios ({schedAccessories.length} itens)
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {schedAccessories.map((accessory, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {accessory}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Supplies */}
+                      {schedSupplies.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm mb-2 text-primary">
+                            Insumos ({schedSupplies.length} itens)
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {schedSupplies.map((supply, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {supply}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {sched.notes && (
+                        <div className="mt-2 p-2 bg-muted/20 rounded text-sm">
+                          <p className="text-muted-foreground">{sched.notes}</p>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             )}
-
-            {/* Acessórios */}
-            {scheduleAccessories.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Acessórios ({scheduleAccessories.length} itens)
-                </h3>
-                <div className="space-y-2">
-                  {scheduleAccessories.map((accessory, index) => (
-                    <div key={index} className="p-3 bg-muted/50 rounded-lg border">
-                      <p className="font-medium text-foreground">{accessory}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Insumos */}
-            {scheduleSupplies.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Insumos ({scheduleSupplies.length} itens)
-                </h3>
-                <div className="space-y-2">
-                  {scheduleSupplies.map((supply, index) => (
-                    <div key={index} className="p-3 bg-muted/50 rounded-lg border">
-                      <p className="font-medium text-foreground">{supply}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
           </div>
         </ScrollArea>
       </DialogContent>

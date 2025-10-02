@@ -146,6 +146,64 @@ export const updateKitSchedule = async (id: string, data: Partial<CreateKitSched
   };
 };
 
+// Get schedules by customer (name or id)
+export const getSchedulesByCustomer = async (customerName?: string, customerId?: string): Promise<KitScheduleWithDetails[]> => {
+  let query = supabase
+    .from('kit_schedules')
+    .select(`
+      *,
+      kit:homologation_kits!kit_id (
+        id,
+        name,
+        description,
+        homologation_card_id
+      ),
+      technician:technicians!technician_id (
+        id,
+        name,
+        address_city,
+        address_state
+      )
+    `);
+
+  if (customerId) {
+    query = query.eq('customer_id', customerId);
+  } else if (customerName) {
+    query = query.eq('customer_name', customerName);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching schedules by customer:', error);
+    throw new Error(error.message || 'Erro ao buscar agendamentos do cliente');
+  }
+
+  // Fetch equipment for each kit
+  const schedulesWithDetails = await Promise.all((data || []).map(async (schedule) => {
+    const { data: equipmentData } = await supabase
+      .from('homologation_kit_accessories')
+      .select('*')
+      .eq('kit_id', schedule.kit.id)
+      .eq('item_type', 'equipment');
+
+    return {
+      ...schedule,
+      status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+      kit: {
+        ...schedule.kit,
+        equipment: equipmentData || [],
+        accessories: [],
+        supplies: []
+      },
+      accessories: schedule.accessories as string[] || [],
+      supplies: schedule.supplies as string[] || []
+    };
+  }));
+
+  return schedulesWithDetails;
+};
+
 // Get all kit schedules with details
 export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
   const { data: schedules, error } = await supabase
