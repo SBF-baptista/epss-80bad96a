@@ -166,12 +166,28 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                     ? (sched.kit.supplies as any[])
                     : (Array.isArray(sched.supplies) ? (sched.supplies as any[]).map((name: string, i: number) => ({ id: `${sched.id}-sup-${i}` as string, item_name: name, quantity: 1 })) : []);
                   
+                  const getStatusBadge = (status: string) => {
+                    switch (status) {
+                      case 'completed':
+                        return <Badge className="bg-green-500 text-white">✓ Pronto</Badge>;
+                      case 'in_progress':
+                        return <Badge className="bg-yellow-500 text-white">Em Andamento</Badge>;
+                      case 'scheduled':
+                        return <Badge variant="secondary">Agendado</Badge>;
+                      case 'cancelled':
+                        return <Badge variant="destructive">Cancelado</Badge>;
+                      default:
+                        return <Badge variant="outline">{status}</Badge>;
+                    }
+                  };
+                  
                   return (
                     <div key={sched.id || idx} className="p-4 bg-card border-2 border-primary/20 rounded-lg space-y-4">
                       {/* Vehicle Header */}
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {getStatusBadge(sched.status || 'scheduled')}
                             {sched.vehicle_plate && (
                               <Badge variant="outline" className="text-base font-bold px-3 py-1">
                                 {sched.vehicle_plate}
@@ -182,9 +198,16 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                           <p className="font-semibold text-foreground text-lg">
                             {sched.vehicle_brand} {sched.vehicle_model}
                           </p>
-                          {sched.vehicle_year && (
-                            <p className="text-sm text-muted-foreground">Ano: {sched.vehicle_year}</p>
-                          )}
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            {sched.vehicle_year && (
+                              <span>Ano: {sched.vehicle_year}</span>
+                            )}
+                            {schedule?.customer_id && (
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                                Contrato: {schedule.customer_id.slice(0, 8).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -247,15 +270,12 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                           <h4 className="font-semibold text-sm mb-2 text-primary">
                             Acessórios ({accessoriesItems.reduce((sum, a) => sum + (a.quantity || 0), 0)} unidades)
                           </h4>
-                          <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
                             {accessoriesItems.map((item, index) => (
-                              <div key={item.id || index} className="p-2 bg-muted/30 rounded border text-sm">
-                                <div className="flex justify-between items-center">
-                                  <p className="font-medium text-foreground">{item.item_name}</p>
-                                  <Badge variant="secondary" className="text-xs">{item.quantity}x</Badge>
-                                </div>
-                                {item.description && (
-                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                              <div key={item.id || index} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-md text-sm border border-primary/20">
+                                <span className="font-medium">✓ {item.item_name}</span>
+                                {item.quantity > 1 && (
+                                  <Badge variant="secondary" className="text-xs h-5">{item.quantity}x</Badge>
                                 )}
                               </div>
                             ))}
@@ -269,15 +289,12 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                           <h4 className="font-semibold text-sm mb-2 text-primary">
                             Insumos ({suppliesItems.reduce((sum, s) => sum + (s.quantity || 0), 0)} unidades)
                           </h4>
-                          <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
                             {suppliesItems.map((item, index) => (
-                              <div key={item.id || index} className="p-2 bg-muted/30 rounded border text-sm">
-                                <div className="flex justify-between items-center">
-                                  <p className="font-medium text-foreground">{item.item_name}</p>
-                                  <Badge variant="secondary" className="text-xs">{item.quantity}x</Badge>
-                                </div>
-                                {item.description && (
-                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                              <div key={item.id || index} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 text-secondary-foreground rounded-md text-sm border border-secondary/20">
+                                <span className="font-medium">✓ {item.item_name}</span>
+                                {item.quantity > 1 && (
+                                  <Badge variant="secondary" className="text-xs h-5">{item.quantity}x</Badge>
                                 )}
                               </div>
                             ))}
