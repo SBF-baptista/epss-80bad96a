@@ -194,49 +194,6 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
 
   const schedulesWithDetails = (data || []).map((schedule) => {
     const kitItems = schedule.kit?.kit_items || [];
-    
-    // Get accessories and supplies from both sources:
-    // 1. From kit_items (homologation_kit_accessories) - detailed items with quantities
-    // 2. From schedule fields (accessories/supplies) - simple arrays from scheduling
-    const kitAccessories = kitItems.filter((item: any) => item.item_type === 'accessory');
-    const kitSupplies = kitItems.filter((item: any) => item.item_type === 'supply');
-    
-    // Convert schedule arrays to item format if they exist
-    const scheduleAccessories = Array.isArray(schedule.accessories) 
-      ? (schedule.accessories as string[]).map((name, i) => ({
-          id: `sched-acc-${schedule.id}-${i}`,
-          item_name: name,
-          quantity: 1,
-          item_type: 'accessory',
-          description: undefined
-        }))
-      : [];
-    
-    const scheduleSupplies = Array.isArray(schedule.supplies)
-      ? (schedule.supplies as string[]).map((name, i) => ({
-          id: `sched-sup-${schedule.id}-${i}`,
-          item_name: name,
-          quantity: 1,
-          item_type: 'supply',
-          description: undefined
-        }))
-      : [];
-
-    // Merge both sources, prioritizing kit items but adding schedule items if they don't exist
-    const mergedAccessories = [...kitAccessories];
-    scheduleAccessories.forEach(schedAcc => {
-      if (!mergedAccessories.find(kitAcc => kitAcc.item_name === schedAcc.item_name)) {
-        mergedAccessories.push(schedAcc);
-      }
-    });
-
-    const mergedSupplies = [...kitSupplies];
-    scheduleSupplies.forEach(schedSup => {
-      if (!mergedSupplies.find(kitSup => kitSup.item_name === schedSup.item_name)) {
-        mergedSupplies.push(schedSup);
-      }
-    });
-
     return {
       ...schedule,
       status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
@@ -246,8 +203,8 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
       kit: schedule.kit ? {
         ...schedule.kit,
         equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
-        accessories: mergedAccessories,
-        supplies: mergedSupplies,
+        accessories: kitItems.filter((item: any) => item.item_type === 'accessory'),
+        supplies: kitItems.filter((item: any) => item.item_type === 'supply'),
       } : undefined
     } as KitScheduleWithDetails;
   });
@@ -296,47 +253,6 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
 
   return schedules?.map(schedule => {
     const kitItems = schedule.kit?.kit_items || [];
-    
-    // Get accessories and supplies from both sources
-    const kitAccessories = kitItems.filter((item: any) => item.item_type === 'accessory');
-    const kitSupplies = kitItems.filter((item: any) => item.item_type === 'supply');
-    
-    // Convert schedule arrays to item format if they exist
-    const scheduleAccessories = Array.isArray(schedule.accessories) 
-      ? (schedule.accessories as string[]).map((name, i) => ({
-          id: `sched-acc-${schedule.id}-${i}`,
-          item_name: name,
-          quantity: 1,
-          item_type: 'accessory',
-          description: undefined
-        }))
-      : [];
-    
-    const scheduleSupplies = Array.isArray(schedule.supplies)
-      ? (schedule.supplies as string[]).map((name, i) => ({
-          id: `sched-sup-${schedule.id}-${i}`,
-          item_name: name,
-          quantity: 1,
-          item_type: 'supply',
-          description: undefined
-        }))
-      : [];
-
-    // Merge both sources
-    const mergedAccessories = [...kitAccessories];
-    scheduleAccessories.forEach(schedAcc => {
-      if (!mergedAccessories.find(kitAcc => kitAcc.item_name === schedAcc.item_name)) {
-        mergedAccessories.push(schedAcc);
-      }
-    });
-
-    const mergedSupplies = [...kitSupplies];
-    scheduleSupplies.forEach(schedSup => {
-      if (!mergedSupplies.find(kitSup => kitSup.item_name === schedSup.item_name)) {
-        mergedSupplies.push(schedSup);
-      }
-    });
-
     return {
       ...schedule,
       status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
@@ -346,8 +262,8 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
       kit: schedule.kit ? {
         ...schedule.kit,
         equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
-        accessories: mergedAccessories,
-        supplies: mergedSupplies,
+        accessories: kitItems.filter((item: any) => item.item_type === 'accessory'),
+        supplies: kitItems.filter((item: any) => item.item_type === 'supply'),
       } : undefined
     };
   }) || [];
