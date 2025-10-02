@@ -33,6 +33,17 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const convertScheduleToOrder = (schedule: KitScheduleWithDetails): Order => {
     const kit = kits.find(k => k.id === schedule.kit_id);
     
+    // Get accessories from kit or from schedule fields
+    const accessoriesList = kit?.accessories?.length 
+      ? kit.accessories.map((acc) => ({
+          name: acc.item_name,
+          quantity: acc.quantity,
+        }))
+      : schedule.accessories?.map((name) => ({
+          name: name,
+          quantity: 1,
+        })) || [];
+    
     return {
       id: schedule.id || '',
       number: schedule.id?.slice(0, 8) || '',
@@ -48,14 +59,11 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         quantity: 1,
         year: schedule.vehicle_year?.toString(),
       }] : [],
-      trackers: kit?.equipment.map((eq) => ({
+      trackers: kit?.equipment?.map((eq) => ({
         model: eq.item_name,
         quantity: eq.quantity,
       })) || [],
-      accessories: kit?.accessories.map((acc) => ({
-        name: acc.item_name,
-        quantity: acc.quantity,
-      })) || [],
+      accessories: accessoriesList,
       technicianName: schedule.technician?.name,
     };
   };

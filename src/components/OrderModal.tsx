@@ -158,13 +158,29 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                 </h3>
                 
                 {allSchedules.map((sched, idx) => {
+                  // Get equipment, accessories, and supplies from kit or from schedule fields
                   const equipment = sched.kit?.equipment || [];
-                  const accessoriesItems = (sched.kit?.accessories && sched.kit.accessories.length > 0)
-                    ? (sched.kit.accessories as any[])
-                    : (Array.isArray(sched.accessories) ? (sched.accessories as any[]).map((name: string, i: number) => ({ id: `${sched.id}-acc-${i}` as string, item_name: name, quantity: 1 })) : []);
-                  const suppliesItems = (sched.kit?.supplies && sched.kit.supplies.length > 0)
-                    ? (sched.kit.supplies as any[])
-                    : (Array.isArray(sched.supplies) ? (sched.supplies as any[]).map((name: string, i: number) => ({ id: `${sched.id}-sup-${i}` as string, item_name: name, quantity: 1 })) : []);
+                  
+                  // Prioritize kit accessories/supplies, fallback to schedule arrays
+                  const accessoriesItems = sched.kit?.accessories && sched.kit.accessories.length > 0
+                    ? sched.kit.accessories
+                    : (Array.isArray(sched.accessories) && sched.accessories.length > 0
+                        ? sched.accessories.map((name: string, i: number) => ({ 
+                            id: `${sched.id}-acc-${i}`, 
+                            item_name: name, 
+                            quantity: 1 
+                          }))
+                        : []);
+                  
+                  const suppliesItems = sched.kit?.supplies && sched.kit.supplies.length > 0
+                    ? sched.kit.supplies
+                    : (Array.isArray(sched.supplies) && sched.supplies.length > 0
+                        ? sched.supplies.map((name: string, i: number) => ({ 
+                            id: `${sched.id}-sup-${i}`, 
+                            item_name: name, 
+                            quantity: 1 
+                          }))
+                        : []);
                   
                   const getStatusBadge = (status: string) => {
                     switch (status) {
