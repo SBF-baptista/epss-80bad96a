@@ -28,12 +28,11 @@ const KanbanColumn = ({
   onScanClick,
   onShipmentClick
 }: KanbanColumnProps) => {
-  // Group orders by company
+  // Group orders by company - only orders that are in this column (already filtered)
   const groupedOrders = groupOrdersByCompany(orders);
   
   const handleGroupClick = (groupedOrder: GroupedOrder) => {
-    // For now, click on the first order in the group
-    // You can modify this to show a modal with all orders if needed
+    // Click on the first order in the group
     onOrderClick(groupedOrder.orders[0]);
   };
 

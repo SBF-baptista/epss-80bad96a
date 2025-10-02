@@ -38,7 +38,9 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
           schedule.customer_name,
           schedule.customer_id
         );
-        setAllSchedules(schedules);
+        // Filter schedules to only show those with the same status as the clicked schedule
+        const filteredSchedules = schedules.filter(s => s.status === schedule.status);
+        setAllSchedules(filteredSchedules);
       } catch (error) {
         console.error("Error fetching customer schedules:", error);
         setAllSchedules([schedule]); // Fallback to single schedule
