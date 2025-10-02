@@ -325,6 +325,163 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                 })}
               </div>
             )}
+
+            {/* Consolidated Totals Section */}
+            {allSchedules.length > 0 && (
+              <>
+                <Separator className="my-6" />
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg text-primary">
+                    Totais Consolidados
+                  </h3>
+                  <div className="bg-muted/30 p-4 rounded-lg border">
+                    {(() => {
+                      const totals: Record<string, number> = {};
+                      
+                      allSchedules.forEach((sched) => {
+                        // Equipment/Trackers
+                        (sched.kit?.equipment || []).forEach((item: any) => {
+                          totals[item.item_name] = (totals[item.item_name] || 0) + item.quantity;
+                        });
+                        
+                        // Accessories
+                        if (Array.isArray(sched.accessories)) {
+                          sched.accessories.forEach((name: string) => {
+                            totals[name] = (totals[name] || 0) + 1;
+                          });
+                        }
+                        
+                        // Supplies
+                        if (Array.isArray(sched.supplies)) {
+                          sched.supplies.forEach((name: string) => {
+                            totals[name] = (totals[name] || 0) + 1;
+                          });
+                        }
+                      });
+
+                      const sortedItems = Object.entries(totals).sort(([a], [b]) => a.localeCompare(b));
+
+                      return sortedItems.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {sortedItems.map(([itemName, quantity]) => (
+                            <div key={itemName} className="flex items-center justify-between p-3 bg-card border rounded-lg">
+                              <span className="font-medium text-sm text-foreground">{itemName}</span>
+                              <Badge variant="secondary" className="ml-2">{quantity}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nenhum item encontrado</p>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* By Technician Section */}
+            {allSchedules.length > 0 && (
+              <>
+                <Separator className="my-6" />
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg text-primary">
+                    Detalhamento por Técnico
+                  </h3>
+                  {(() => {
+                    // Group schedules by technician
+                    const byTechnician: Record<string, typeof allSchedules> = {};
+                    
+                    allSchedules.forEach((sched) => {
+                      const techName = sched.technician?.name || 'Sem técnico atribuído';
+                      if (!byTechnician[techName]) {
+                        byTechnician[techName] = [];
+                      }
+                      byTechnician[techName].push(sched);
+                    });
+
+                    return Object.entries(byTechnician).map(([techName, schedules]) => (
+                      <div key={techName} className="bg-muted/30 p-4 rounded-lg border space-y-3">
+                        <h4 className="font-semibold text-base text-foreground flex items-center gap-2">
+                          <User className="h-5 w-5 text-primary" />
+                          {techName}
+                          <Badge variant="outline" className="ml-auto">
+                            {schedules.length} {schedules.length === 1 ? 'placa' : 'placas'}
+                          </Badge>
+                        </h4>
+                        
+                        <div className="space-y-3 pl-7">
+                          {schedules.map((sched, idx) => {
+                            const equipment = sched.kit?.equipment || [];
+                            const accessories = Array.isArray(sched.accessories) ? sched.accessories : [];
+                            const supplies = Array.isArray(sched.supplies) ? sched.supplies : [];
+                            
+                            const totalAccessories = accessories.length;
+                            const totalSupplies = supplies.length;
+                            const totalEquipment = equipment.reduce((sum: number, eq: any) => sum + eq.quantity, 0);
+
+                            return (
+                              <div key={sched.id || idx} className="bg-card p-3 rounded-lg border border-primary/10">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    {sched.vehicle_plate && (
+                                      <Badge variant="outline" className="font-bold mb-1">
+                                        {sched.vehicle_plate}
+                                      </Badge>
+                                    )}
+                                    <p className="text-sm font-medium text-foreground">
+                                      {sched.vehicle_brand} {sched.vehicle_model}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2 flex-wrap justify-end text-xs">
+                                    {totalEquipment > 0 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        {totalEquipment} rastreador{totalEquipment !== 1 ? 'es' : ''}
+                                      </Badge>
+                                    )}
+                                    {totalAccessories > 0 && (
+                                      <Badge className="bg-primary/10 text-primary text-xs">
+                                        {totalAccessories} acessório{totalAccessories !== 1 ? 's' : ''}
+                                      </Badge>
+                                    )}
+                                    {totalSupplies > 0 && (
+                                      <Badge className="bg-secondary/10 text-secondary-foreground text-xs">
+                                        {totalSupplies} insumo{totalSupplies !== 1 ? 's' : ''}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Items list */}
+                                <div className="text-xs text-muted-foreground space-y-1 mt-2">
+                                  {equipment.map((item: any, i: number) => (
+                                    <div key={i} className="flex justify-between">
+                                      <span>• {item.item_name}</span>
+                                      <span className="font-medium">{item.quantity}x</span>
+                                    </div>
+                                  ))}
+                                  {accessories.map((name: string, i: number) => (
+                                    <div key={`acc-${i}`} className="flex justify-between">
+                                      <span>• {name}</span>
+                                      <span className="font-medium">1x</span>
+                                    </div>
+                                  ))}
+                                  {supplies.map((name: string, i: number) => (
+                                    <div key={`sup-${i}`} className="flex justify-between">
+                                      <span>• {name}</span>
+                                      <span className="font-medium">1x</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>
