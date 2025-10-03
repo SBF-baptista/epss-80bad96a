@@ -23,6 +23,7 @@ import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import SmartRedirect from "@/components/SmartRedirect";
+import "@/utils/testSegsaleEndpoint";
 
 const queryClient = new QueryClient({
   defaultOptions: {
