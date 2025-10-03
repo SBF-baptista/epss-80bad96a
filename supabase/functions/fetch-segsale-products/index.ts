@@ -59,12 +59,17 @@ Deno.serve(async (req) => {
 
     if (!segsaleResponse.ok) {
       const errorText = await segsaleResponse.text()
-      console.error('Segsale API error:', errorText)
+      console.error('Segsale API error - Status:', segsaleResponse.status)
+      console.error('Segsale API error - StatusText:', segsaleResponse.statusText)
+      console.error('Segsale API error - Response:', errorText)
+      console.error('Segsale API URL:', segsaleUrl)
       return new Response(
         JSON.stringify({ 
           error: 'Failed to fetch from Segsale API',
           status: segsaleResponse.status,
-          details: errorText
+          statusText: segsaleResponse.statusText,
+          details: errorText,
+          url: segsaleUrl
         }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
