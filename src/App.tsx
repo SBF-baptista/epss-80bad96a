@@ -23,7 +23,7 @@ import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import SmartRedirect from "@/components/SmartRedirect";
-import "@/utils/testSegsaleEndpoint";
+import SegsaleTest from "./pages/SegsaleTest";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -161,9 +161,10 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['admin']}>
                   <UserManagement />
                 </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
+          </ProtectedRoute>
+        } />
+        <Route path="/segsale-test" element={<SegsaleTest />} />
+        <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
