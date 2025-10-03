@@ -1,1 +1,4 @@
 project_id = "eeidevcyxpnorbgcskdf"
+
+[functions.fetch-segsale-products]
+verify_jwt = false

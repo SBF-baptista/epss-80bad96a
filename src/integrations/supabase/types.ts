@@ -849,6 +849,36 @@ export type Database = {
           },
         ]
       }
+      segsale_sales: {
+        Row: {
+          company_name: string
+          created_at: string
+          fetched_at: string
+          id: string
+          id_resumo_venda: number
+          usage_type: string
+          vehicles: Json
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          id_resumo_venda: number
+          usage_type: string
+          vehicles: Json
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          id_resumo_venda?: number
+          usage_type?: string
+          vehicles?: Json
+        }
+        Relationships: []
+      }
       shipment_recipients: {
         Row: {
           city: string
