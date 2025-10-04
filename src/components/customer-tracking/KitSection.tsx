@@ -53,25 +53,33 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
       case "scheduled":
         return {
           status: "scheduled",
-          label: "🟡 Aguardando agendamento",
-          color: "bg-yellow-500",
-          description: "Kit pronto para agendamento com técnico",
-          progress: 50
-        };
-      case "assigned":
-        return {
-          status: "assigned",
-          label: "🟢 Atribuído a técnico",
+          label: "📋 Pedidos",
           color: "bg-blue-500",
-          description: `Agendado com ${kitData.technician_name || 'técnico'}`,
-          progress: 75
+          description: "Pedido criado",
+          progress: 25
+        };
+      case "in_progress":
+        return {
+          status: "in_progress",
+          label: "🔧 Em Produção",
+          color: "bg-yellow-500",
+          description: "Kit em produção",
+          progress: 50
         };
       case "completed":
         return {
           status: "completed",
-          label: "✅ Instalado / Concluído",
+          label: "📦 Aguardando Envio",
+          color: "bg-orange-500",
+          description: "Pronto para envio",
+          progress: 75
+        };
+      case "shipped":
+        return {
+          status: "shipped",
+          label: "✅ Enviado",
           color: "bg-green-500",
-          description: "Instalação concluída com sucesso",
+          description: "Enviado ao cliente",
           progress: 100
         };
       default:
