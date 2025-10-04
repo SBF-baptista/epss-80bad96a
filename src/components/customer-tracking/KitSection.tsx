@@ -27,7 +27,6 @@ interface KitSectionProps {
 
 export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [showKitDetails, setShowKitDetails] = useState(false);
 
   const getStatusInfo = () => {
     // First check homologation status if kit exists
@@ -189,22 +188,11 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
 
           {kitData.kit && statusInfo.status !== "homologation" && (
             <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="text-sm font-medium text-gray-900">Itens do Kit:</h5>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowKitDetails(!showKitDetails)}
-                >
-                  {showKitDetails ? "Ocultar Detalhes" : "Ver Detalhes"}
-                </Button>
-              </div>
-              {showKitDetails && (
-                <KitItemsList 
-                  kit={kitData.kit}
-                  showHomologationStatus={false}
-                />
-              )}
+              <h5 className="text-sm font-medium text-gray-900 mb-2">Itens do Kit:</h5>
+              <KitItemsList 
+                kit={kitData.kit}
+                showHomologationStatus={false}
+              />
             </div>
           )}
 
