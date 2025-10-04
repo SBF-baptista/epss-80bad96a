@@ -59,7 +59,7 @@ export const KitStatusTimeline = ({ status }: KitStatusTimelineProps) => {
                 ${stepStatus === "completed" 
                   ? "bg-green-500 border-green-500 text-white" 
                   : stepStatus === "active"
-                  ? "bg-blue-500 border-blue-500 text-white"
+                  ? step.id === "shipped" ? "bg-green-500 border-green-500 text-white" : "bg-blue-500 border-blue-500 text-white"
                   : "bg-gray-200 border-gray-300 text-gray-500"
                 }
               `}>
