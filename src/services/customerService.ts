@@ -542,3 +542,139 @@ export const createSingleCustomerForTesting = async (): Promise<void> => {
 
   console.log('Cliente de teste criado');
 };
+
+// Função para criar cliente de teste com acessórios e insumos aleatórios
+export const createTestCustomerWithAccessoriesAndSupplies = async (): Promise<Customer> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) {
+    throw new Error('Usuário não autenticado');
+  }
+
+  const allAccessories = [
+    'Bloqueador de Motor',
+    'Sensor de Combustível',
+    'Botão de Pânico',
+    'Microfone Espião',
+    'Sirene Bi-Tonal',
+    'Antena Externa',
+    'Bateria Backup',
+    'Sensor de Porta',
+    'Sensor de Temperatura',
+    'Chicote Automotivo'
+  ];
+
+  const allSupplies = [
+    'Cabo de Alimentação',
+    'Fita Isolante',
+    'Braçadeira de Nylon',
+    'Conectores',
+    'Terminal de Crimpagem',
+    'Silicone Automotivo',
+    'Espaguete Termo-Retrátil',
+    'Parafusos e Porcas',
+    'Abraçadeiras Metálicas'
+  ];
+
+  const allModules = ['GPS', 'GSM', 'Bluetooth', 'WiFi', 'RFID', 'Camera'];
+
+  const randomAccessories = allAccessories
+    .sort(() => 0.5 - Math.random())
+    .slice(0, Math.floor(Math.random() * 5) + 3);
+
+  const randomModules = allModules
+    .sort(() => 0.5 - Math.random())
+    .slice(0, Math.floor(Math.random() * 3) + 2);
+
+  const generateRandomCPF = (): string => {
+    const numbers = Array.from({length: 9}, () => Math.floor(Math.random() * 10));
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += numbers[i] * (10 - i);
+    }
+    let firstDigit = 11 - (sum % 11);
+    if (firstDigit >= 10) firstDigit = 0;
+    numbers.push(firstDigit);
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += numbers[i] * (11 - i);
+    }
+    let secondDigit = 11 - (sum % 11);
+    if (secondDigit >= 10) secondDigit = 0;
+    numbers.push(secondDigit);
+    return numbers.join('');
+  };
+
+  const generateRandomPhone = (): string => {
+    const areaCodes = ['11', '21', '31', '41', '51'];
+    const areaCode = areaCodes[Math.floor(Math.random() * areaCodes.length)];
+    const number = '9' + Math.floor(Math.random() * 90000000 + 10000000);
+    return areaCode + number;
+  };
+
+  const generateRandomPlate = (): string => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+    return letters[Math.floor(Math.random() * letters.length)] +
+           letters[Math.floor(Math.random() * letters.length)] +
+           letters[Math.floor(Math.random() * letters.length)] +
+           digits[Math.floor(Math.random() * digits.length)] +
+           letters[Math.floor(Math.random() * letters.length)] +
+           digits[Math.floor(Math.random() * digits.length)] +
+           digits[Math.floor(Math.random() * digits.length)];
+  };
+
+  const firstNames = ['Carlos', 'Fernanda', 'Roberto', 'Juliana', 'Marcos', 'Patricia'];
+  const lastNames = ['Oliveira', 'Pereira', 'Costa', 'Almeida', 'Martins', 'Ferreira'];
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  
+  const vehicleBrands = ['TOYOTA', 'FORD', 'CHEVROLET', 'VOLKSWAGEN'];
+  const vehicleModels = {
+    'TOYOTA': ['COROLLA', 'HILUX', 'ETIOS'],
+    'FORD': ['KA', 'RANGER', 'FOCUS'],
+    'CHEVROLET': ['ONIX', 'S10', 'CRUZE'],
+    'VOLKSWAGEN': ['GOL', 'AMAROK', 'POLO']
+  };
+
+  const vehicles: VehicleInfo[] = [];
+  const numVehicles = Math.floor(Math.random() * 2) + 1;
+  
+  for (let i = 0; i < numVehicles; i++) {
+    const brand = vehicleBrands[Math.floor(Math.random() * vehicleBrands.length)];
+    const modelList = vehicleModels[brand];
+    const model = modelList[Math.floor(Math.random() * modelList.length)];
+    
+    vehicles.push({
+      brand,
+      model,
+      year: 2019 + Math.floor(Math.random() * 5),
+      plate: generateRandomPlate()
+    });
+  }
+
+  const customerData: CreateCustomerData = {
+    name: `${firstName} ${lastName}`,
+    document_number: generateRandomCPF(),
+    document_type: 'cpf',
+    phone: generateRandomPhone(),
+    email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@email.com`,
+    address_street: `Rua ${lastName}`,
+    address_number: (Math.floor(Math.random() * 999) + 1).toString(),
+    address_neighborhood: 'Centro',
+    address_city: 'São Paulo',
+    address_state: 'SP',
+    address_postal_code: '01000-000',
+    company_name: `${lastName} Transportes Ltda`,
+    package_name: 'Pacote Premium Rastreamento',
+    total_value: Math.floor(Math.random() * 30000) + 10000,
+    contract_number: `CTR-${Math.floor(Math.random() * 90000) + 10000}`,
+    sales_representative: 'Ana Costa',
+    vehicles,
+    accessories: randomAccessories,
+    modules: randomModules
+  };
+
+  const customer = await createCustomer(customerData);
+  console.log(`Cliente de teste criado: ${customer.name}`);
+  return customer;
+};
