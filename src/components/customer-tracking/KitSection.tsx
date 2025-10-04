@@ -144,14 +144,16 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <div>
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progresso da instalação</span>
-              <span>{statusInfo.progress}%</span>
+          {kitData.status === 'shipped' && (
+            <div>
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Progresso da instalação</span>
+                <span>{statusInfo.progress}%</span>
+              </div>
+              <Progress value={statusInfo.progress} className="h-2" />
+              <p className="text-xs text-gray-500 mt-1">{statusInfo.description}</p>
             </div>
-            <Progress value={statusInfo.progress} className="h-2" />
-            <p className="text-xs text-gray-500 mt-1">{statusInfo.description}</p>
-          </div>
+          )}
 
           <KitStatusTimeline status={statusInfo.status} />
 
