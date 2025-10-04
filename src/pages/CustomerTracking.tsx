@@ -8,8 +8,6 @@ import { fetchHomologationKits, HomologationKit } from "@/services/homologationK
 import { checkMultipleKitsHomologation } from "@/services/kitHomologationService";
 import Navigation from "@/components/Navigation";
 import { Loader2 } from "lucide-react";
-import { createTestCustomerWithAccessoriesAndSupplies } from "@/services/customerService";
-import { Button } from "@/components/ui/button";
 
 interface CustomerKitData {
   id: string;
@@ -34,28 +32,6 @@ const CustomerTracking = () => {
   const [kitHomologationStatus, setKitHomologationStatus] = useState<Map<string, any>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isCreatingTestCustomer, setIsCreatingTestCustomer] = useState(false);
-
-  const handleCreateTestCustomer = async () => {
-    try {
-      setIsCreatingTestCustomer(true);
-      await createTestCustomerWithAccessoriesAndSupplies();
-      toast({
-        title: "Sucesso",
-        description: "Cliente de teste criado com acessórios e insumos!",
-      });
-      await loadData();
-    } catch (error) {
-      console.error('Error creating test customer:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar cliente de teste",
-        variant: "destructive"
-      });
-    } finally {
-      setIsCreatingTestCustomer(false);
-    }
-  };
 
   const loadData = async () => {
     try {
@@ -156,28 +132,10 @@ const CustomerTracking = () => {
         <Navigation />
       </div>
 
-      <div className="mb-4 flex gap-4 items-center">
-        <div className="flex-1">
-          <CustomerTrackingFilters
-            onSearch={handleSearch}
-            searchTerm={searchTerm}
-          />
-        </div>
-        <Button 
-          onClick={handleCreateTestCustomer}
-          disabled={isCreatingTestCustomer}
-          variant="outline"
-        >
-          {isCreatingTestCustomer ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Criando...
-            </>
-          ) : (
-            "Criar Cliente de Teste"
-          )}
-        </Button>
-      </div>
+      <CustomerTrackingFilters
+        onSearch={handleSearch}
+        searchTerm={searchTerm}
+      />
 
       <div className="space-y-6">
         {filteredCustomers.length === 0 ? (
