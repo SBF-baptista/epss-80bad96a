@@ -7,33 +7,33 @@ interface KitStatusTimelineProps {
 export const KitStatusTimeline = ({ status }: KitStatusTimelineProps) => {
   const steps = [
     {
-      id: "homologation",
-      label: "Homologação",
-      icon: Package,
-      description: "Validação dos itens do kit"
-    },
-    {
       id: "scheduled",
-      label: "Disponível para técnico",
-      icon: Clock,
-      description: "Aguardando atribuição"
+      label: "Pedidos",
+      icon: Package,
+      description: "Pedido criado"
     },
     {
-      id: "assigned",
-      label: "Agendado",
-      icon: User,
-      description: "Técnico atribuído"
+      id: "in_progress",
+      label: "Em Produção",
+      icon: Clock,
+      description: "Em andamento"
     },
     {
       id: "completed",
-      label: "Concluído",
+      label: "Aguardando Envio",
+      icon: User,
+      description: "Pronto para envio"
+    },
+    {
+      id: "shipped",
+      label: "Enviado",
       icon: CheckCircle,
-      description: "Instalação finalizada"
+      description: "Entregue ao cliente"
     }
   ];
 
   const getStepStatus = (stepId: string) => {
-    const statusOrder = ["homologation", "scheduled", "assigned", "completed"];
+    const statusOrder = ["scheduled", "in_progress", "completed", "shipped"];
     const currentIndex = statusOrder.indexOf(status);
     const stepIndex = statusOrder.indexOf(stepId);
 

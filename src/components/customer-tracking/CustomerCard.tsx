@@ -47,16 +47,19 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
     }
 
     const statuses = customerKits.map(kit => kit.status);
+    const hasShipped = statuses.includes('shipped');
     const hasCompleted = statuses.includes('completed');
-    const hasInProgress = statuses.includes('scheduled') || statuses.includes('in_progress');
-    const hasPending = statuses.includes('pending');
+    const hasInProgress = statuses.includes('in_progress');
+    const hasScheduled = statuses.includes('scheduled');
 
-    if (hasCompleted && customerKits.length === statuses.filter(s => s === 'completed').length) {
-      return <Badge className="bg-green-500 hover:bg-green-600">✅ Todos concluídos</Badge>;
+    if (hasShipped && customerKits.length === statuses.filter(s => s === 'shipped').length) {
+      return <Badge className="bg-green-500 hover:bg-green-600">✅ Todos enviados</Badge>;
+    } else if (hasCompleted) {
+      return <Badge className="bg-orange-500 hover:bg-orange-600">📦 Aguardando envio</Badge>;
     } else if (hasInProgress) {
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600">🟡 Em andamento</Badge>;
-    } else if (hasPending) {
-      return <Badge className="bg-red-500 hover:bg-red-600">🔴 Pendente</Badge>;
+      return <Badge className="bg-yellow-500 hover:bg-yellow-600">🔧 Em produção</Badge>;
+    } else if (hasScheduled) {
+      return <Badge className="bg-blue-500 hover:bg-blue-600">📋 Pedidos</Badge>;
     }
 
     return <Badge variant="outline">Status indefinido</Badge>;
