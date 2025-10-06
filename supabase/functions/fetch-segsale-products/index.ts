@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const segsaleResponse = await fetch(segsaleUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${segsaleToken}`,
+        'Token': segsaleToken,
         'Content-Type': 'application/json'
       }
     })
