@@ -486,6 +486,8 @@ export type Database = {
           created_homologation_id: string | null
           created_order_id: string | null
           id: string
+          id_contrato_pendente: number | null
+          id_resumo_venda: number | null
           processed: boolean
           processing_notes: string | null
           quantity: number | null
@@ -501,6 +503,8 @@ export type Database = {
           created_homologation_id?: string | null
           created_order_id?: string | null
           id?: string
+          id_contrato_pendente?: number | null
+          id_resumo_venda?: number | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null
@@ -516,6 +520,8 @@ export type Database = {
           created_homologation_id?: string | null
           created_order_id?: string | null
           id?: string
+          id_contrato_pendente?: number | null
+          id_resumo_venda?: number | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null
