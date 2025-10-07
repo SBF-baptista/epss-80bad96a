@@ -10,7 +10,7 @@ import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import type { HomologationStatus } from '@/services/kitHomologationService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
-import { getCustomers, createCustomersWithSalesData } from '@/services/customerService';
+import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
 import { RescheduleModal } from '../customer-tracking/RescheduleModal';
 
