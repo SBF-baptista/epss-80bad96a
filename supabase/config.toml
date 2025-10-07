@@ -2,3 +2,6 @@ project_id = "eeidevcyxpnorbgcskdf"
 
 [functions.fetch-segsale-products]
 verify_jwt = false
+
+[functions.receive-vehicle]
+verify_jwt = false
