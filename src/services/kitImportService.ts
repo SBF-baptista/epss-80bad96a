@@ -16,16 +16,16 @@ export interface ImportValidationResult {
 
 /**
  * Parse a line like "Acessórios 2: NOME DO ITEM" or "Insumo 1: NOME"
- * Returns { quantity, itemName }
+ * Note: The number does NOT represent quantity, quantity is always 1
+ * Returns { itemName }
  */
-function parseItemLine(line: string): { quantity: number; itemName: string } | null {
+function parseItemLine(line: string): { itemName: string } | null {
   // Match patterns like "Acessórios 1:", "Insumo 4:", etc
   const match = line.match(/^(Acessórios?|Insumos?)\s+(\d+)\s*:\s*(.+)$/i);
   
   if (match) {
-    const quantity = parseInt(match[2]);
     const itemName = match[3].trim();
-    return { quantity, itemName };
+    return { itemName };
   }
   
   return null;
@@ -111,7 +111,7 @@ export function parseKitsTxtFile(content: string): ImportValidationResult {
           accessories.push({
             item_name: parsed.itemName,
             item_type: 'accessory',
-            quantity: parsed.quantity,
+            quantity: 1,
             description: '',
             notes: '',
           });
@@ -128,7 +128,7 @@ export function parseKitsTxtFile(content: string): ImportValidationResult {
           supplies.push({
             item_name: parsed.itemName,
             item_type: 'supply',
-            quantity: parsed.quantity,
+            quantity: 1,
             description: '',
             notes: '',
           });
