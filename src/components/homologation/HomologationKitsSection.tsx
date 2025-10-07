@@ -21,7 +21,8 @@ import {
   Copy,
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  FileUp
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +31,7 @@ import { fetchHomologationKits, createHomologationKit, updateHomologationKit, de
 import { SelectOrCreateInput } from '@/components/kit-items';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { supabase } from '@/integrations/supabase/client';
+import KitImportModal from './KitImportModal';
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
@@ -62,6 +64,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Load kits on component mount
   useEffect(() => {
@@ -549,12 +552,22 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                 </div>
               )}
               
-              {/* Add Kit Button */}
+              {/* Add Kit and Import Buttons */}
               {!isCreating && (
-                <Button onClick={() => setIsCreating(true)} className="shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Kit
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsImportModalOpen(true)} 
+                    className="shrink-0"
+                  >
+                    <FileUp className="h-4 w-4 mr-2" />
+                    Importar TXT
+                  </Button>
+                  <Button onClick={() => setIsCreating(true)} className="shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Kit
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -949,6 +962,14 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
           </>
         )}
       </CardContent>
+
+      {/* Import Modal */}
+      <KitImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        onKitsImported={loadKits}
+        homologationCardId={homologationCardId}
+      />
     </Card>
   );
 };
