@@ -65,6 +65,16 @@ export async function processVehicleGroups(
             usage_type: normalizedUsageType,
             quantity: quantity || 1,
             company_name: group.company_name,
+            cpf: group.cpf || null,
+            phone: group.phone || null,
+            id_resumo_venda: group.id_resumo_venda || null,
+            id_contrato_pendente: group.id_contrato_pendente || null,
+            address_city: group.address?.city || null,
+            address_district: group.address?.district || null,
+            address_street: group.address?.street || null,
+            address_number: group.address?.number || null,
+            address_zip_code: group.address?.zip_code || null,
+            address_complement: group.address?.complement || null,
             received_at: timestamp
           })
           .select()

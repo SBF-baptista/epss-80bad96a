@@ -19,9 +19,21 @@ export interface AccessoryData {
 
 export interface VehicleGroup {
   company_name: string
+  cpf?: string
+  phone?: string
   usage_type: string
+  id_resumo_venda?: number
+  id_contrato_pendente?: number
   vehicles: VehicleData[]
   accessories?: AccessoryData[]
+  address?: {
+    city?: string
+    district?: string
+    street?: string
+    number?: string
+    zip_code?: string
+    complement?: string
+  }
 }
 
 export interface ProcessingResult {

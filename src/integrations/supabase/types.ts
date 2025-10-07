@@ -480,14 +480,22 @@ export type Database = {
       }
       incoming_vehicles: {
         Row: {
+          address_city: string | null
+          address_complement: string | null
+          address_district: string | null
+          address_number: string | null
+          address_street: string | null
+          address_zip_code: string | null
           brand: string
           company_name: string | null
+          cpf: string | null
           created_at: string
           created_homologation_id: string | null
           created_order_id: string | null
           id: string
           id_contrato_pendente: number | null
           id_resumo_venda: number | null
+          phone: string | null
           processed: boolean
           processing_notes: string | null
           quantity: number | null
@@ -497,14 +505,22 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_district?: string | null
+          address_number?: string | null
+          address_street?: string | null
+          address_zip_code?: string | null
           brand: string
           company_name?: string | null
+          cpf?: string | null
           created_at?: string
           created_homologation_id?: string | null
           created_order_id?: string | null
           id?: string
           id_contrato_pendente?: number | null
           id_resumo_venda?: number | null
+          phone?: string | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null
@@ -514,14 +530,22 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_district?: string | null
+          address_number?: string | null
+          address_street?: string | null
+          address_zip_code?: string | null
           brand?: string
           company_name?: string | null
+          cpf?: string | null
           created_at?: string
           created_homologation_id?: string | null
           created_order_id?: string | null
           id?: string
           id_contrato_pendente?: number | null
           id_resumo_venda?: number | null
+          phone?: string | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null

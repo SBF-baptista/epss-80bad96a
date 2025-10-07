@@ -67,6 +67,24 @@ export function validateRequestBody(requestBody: any, timestamp: string, request
       )
     }
 
+    // Validate optional address structure if present
+    if (group.address !== undefined && typeof group.address !== 'object') {
+      console.log(`[${timestamp}][${requestId}] VALIDATION ERROR - Invalid address structure in group ${i}:`, group.address)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid address structure', 
+          message: `Address in group ${i} must be an object`,
+          request_id: requestId,
+          group_index: i,
+          address_type: typeof group.address
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     // Validate usage_type with new accepted values
     const validUsageTypes = [
       'particular', 
