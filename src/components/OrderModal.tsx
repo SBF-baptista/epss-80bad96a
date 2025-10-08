@@ -178,17 +178,33 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                           totals[item.item_name] = (totals[item.item_name] || 0) + item.quantity;
                         });
                         
-                        // Accessories
+                        // Accessories - Parse "NAME (qty: X)" format
                         if (Array.isArray(sched.accessories)) {
-                          sched.accessories.forEach((name: string) => {
-                            totals[name] = (totals[name] || 0) + 1;
+                          sched.accessories.forEach((accessoryStr: string) => {
+                            const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                            if (match) {
+                              const itemName = match[1].trim();
+                              const quantity = parseInt(match[2], 10);
+                              totals[itemName] = (totals[itemName] || 0) + quantity;
+                            } else {
+                              // Fallback if format doesn't match
+                              totals[accessoryStr] = (totals[accessoryStr] || 0) + 1;
+                            }
                           });
                         }
                         
-                        // Supplies
+                        // Supplies - Parse "NAME (qty: X)" format
                         if (Array.isArray(sched.supplies)) {
-                          sched.supplies.forEach((name: string) => {
-                            totals[name] = (totals[name] || 0) + 1;
+                          sched.supplies.forEach((supplyStr: string) => {
+                            const match = supplyStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                            if (match) {
+                              const itemName = match[1].trim();
+                              const quantity = parseInt(match[2], 10);
+                              totals[itemName] = (totals[itemName] || 0) + quantity;
+                            } else {
+                              // Fallback if format doesn't match
+                              totals[supplyStr] = (totals[supplyStr] || 0) + 1;
+                            }
                           });
                         }
                       });
@@ -243,17 +259,33 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                           techTotals[item.item_name] = (techTotals[item.item_name] || 0) + item.quantity;
                         });
                         
-                        // Accessories
+                        // Accessories - Parse "NAME (qty: X)" format
                         if (Array.isArray(sched.accessories)) {
-                          sched.accessories.forEach((name: string) => {
-                            techTotals[name] = (techTotals[name] || 0) + 1;
+                          sched.accessories.forEach((accessoryStr: string) => {
+                            const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                            if (match) {
+                              const itemName = match[1].trim();
+                              const quantity = parseInt(match[2], 10);
+                              techTotals[itemName] = (techTotals[itemName] || 0) + quantity;
+                            } else {
+                              // Fallback if format doesn't match
+                              techTotals[accessoryStr] = (techTotals[accessoryStr] || 0) + 1;
+                            }
                           });
                         }
                         
-                        // Supplies
+                        // Supplies - Parse "NAME (qty: X)" format
                         if (Array.isArray(sched.supplies)) {
-                          sched.supplies.forEach((name: string) => {
-                            techTotals[name] = (techTotals[name] || 0) + 1;
+                          sched.supplies.forEach((supplyStr: string) => {
+                            const match = supplyStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                            if (match) {
+                              const itemName = match[1].trim();
+                              const quantity = parseInt(match[2], 10);
+                              techTotals[itemName] = (techTotals[itemName] || 0) + quantity;
+                            } else {
+                              // Fallback if format doesn't match
+                              techTotals[supplyStr] = (techTotals[supplyStr] || 0) + 1;
+                            }
                           });
                         }
                       });
