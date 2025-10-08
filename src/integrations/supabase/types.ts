@@ -177,6 +177,7 @@ export type Database = {
           document_type: string
           email: string
           id: string
+          id_resumo_venda: number | null
           modules: string[] | null
           name: string
           package_name: string | null
@@ -203,6 +204,7 @@ export type Database = {
           document_type: string
           email: string
           id?: string
+          id_resumo_venda?: number | null
           modules?: string[] | null
           name: string
           package_name?: string | null
@@ -229,6 +231,7 @@ export type Database = {
           document_type?: string
           email?: string
           id?: string
+          id_resumo_venda?: number | null
           modules?: string[] | null
           name?: string
           package_name?: string | null
