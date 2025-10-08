@@ -34,8 +34,9 @@ export async function processVehicleGroups(
       }
     }
 
-    // Collect accessories for this group
+    // Collect accessories for this group (will be inserted once per group, not per vehicle)
     const groupAccessories = group.accessories || []
+    let groupAccessoriesProcessed = false
 
     // Process each vehicle in the group
     for (let vehicleIndex = 0; vehicleIndex < group.vehicles.length; vehicleIndex++) {
@@ -142,7 +143,15 @@ export async function processVehicleGroups(
           try {
             const orderNumber = await generateAutoOrderNumber(supabase)
             console.log(`[${timestamp}][${requestId}] Generated order number: ${orderNumber}`)
-            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name, groupAccessories.map(acc => ({ accessory_name: acc.accessory_name, quantity: acc.quantity || 1 })))
+            // Only pass group accessories for the first vehicle in the group to avoid duplicates
+            const accessoriesToPass = (!groupAccessoriesProcessed && groupAccessories.length > 0) 
+              ? groupAccessories.map(acc => ({ accessory_name: acc.accessory_name, quantity: acc.quantity || 1 }))
+              : []
+            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name, accessoriesToPass)
+            if (accessoriesToPass.length > 0) {
+              groupAccessoriesProcessed = true
+              console.log(`[${timestamp}][${requestId}] Processed ${accessoriesToPass.length} group accessories with this order`)
+            }
             processingNotes = `Automation rule found. Created automatic order: ${orderNumber} (quantity: ${quantity || 1})`
             
             // Update incoming vehicle record with order info
