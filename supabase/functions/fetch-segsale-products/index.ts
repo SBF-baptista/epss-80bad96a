@@ -100,13 +100,52 @@ Deno.serve(async (req) => {
       }
     }
 
+    // After storing, forward data to receive-vehicle for processing
+    const vehicleGroups = (salesData as any[]).map((sale) => ({
+      company_name: sale.company_name,
+      cpf: sale.cpf ?? null,
+      phone: sale.phone ?? null,
+      usage_type: sale.usage_type,
+      id_resumo_venda: parseInt(idResumoVenda),
+      id_contrato_pendente: sale.id_contrato_pendente ?? null,
+      vehicles: sale.vehicles,
+      accessories: sale.accessories ?? [],
+      address: sale.address ?? undefined,
+    }))
+
+    const apiKey = Deno.env.get('VEHICLE_API_KEY')
+    let processing: any = { forwarded: false }
+
+    if (apiKey && vehicleGroups.length > 0) {
+      console.log(`Forwarding ${vehicleGroups.length} group(s) to receive-vehicle...`)
+      const { data: rvData, error: rvError } = await supabase.functions.invoke('receive-vehicle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: vehicleGroups,
+      })
+
+      if (rvError) {
+        console.error('Error invoking receive-vehicle:', rvError)
+        processing = { forwarded: true, success: false, error: rvError.message }
+      } else {
+        console.log('receive-vehicle processed successfully')
+        processing = { forwarded: true, success: true, result: rvData }
+      }
+    } else {
+      console.log('Skipping forwarding to receive-vehicle (missing API key or empty data)')
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Fetched and stored ${storedSales.length} sales from Segsale`,
         id_resumo_venda: idResumoVenda,
         sales: salesData,
-        stored_count: storedSales.length
+        stored_count: storedSales.length,
+        processing,
       }),
       { 
         status: 200,
