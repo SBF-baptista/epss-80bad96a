@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Image, Link, Package, Trash2, User, MapPin } from "lucide-react";
+import { Image, Link, Package, Trash2 } from "lucide-react";
 import { HomologationCard, softDeleteHomologationCard } from "@/services/homologationService";
 import ConfigurationSelector from "./ConfigurationSelector";
 import { useQuery } from "@tanstack/react-query";
@@ -220,63 +220,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
               </div>
             )}
           </div>
-
-          {/* Customer Information */}
-          {incomingVehicle && (
-            <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md">
-              <h5 className="text-xs font-semibold text-purple-800 mb-1.5 flex items-center gap-1">
-                <User className="h-3 w-3" />
-                Cliente
-              </h5>
-              <div className="space-y-0.5 text-xs">
-                <div className="flex justify-between gap-2">
-                  <span className="text-purple-600 font-medium">Nome:</span>
-                  <span className="text-purple-900 font-semibold truncate">{incomingVehicle.company_name || 'Não informado'}</span>
-                </div>
-                {incomingVehicle.cpf && (
-                  <div className="flex justify-between gap-2">
-                    <span className="text-purple-600 font-medium">CPF/CNPJ:</span>
-                    <span className="text-purple-900">{incomingVehicle.cpf}</span>
-                  </div>
-                )}
-                {incomingVehicle.phone && (
-                  <div className="flex justify-between gap-2">
-                    <span className="text-purple-600 font-medium">Telefone:</span>
-                    <span className="text-purple-900">{incomingVehicle.phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Address Information */}
-          {incomingVehicle && (incomingVehicle.address_street || incomingVehicle.address_city) && (
-            <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
-              <h5 className="text-xs font-semibold text-amber-800 mb-1.5 flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                Endereço
-              </h5>
-              <div className="space-y-0.5 text-xs">
-                {incomingVehicle.address_street && (
-                  <div className="text-amber-900">
-                    <span className="font-medium">{incomingVehicle.address_street}</span>
-                    {incomingVehicle.address_number && <span>, {incomingVehicle.address_number}</span>}
-                  </div>
-                )}
-                {incomingVehicle.address_district && (
-                  <div className="text-amber-900">
-                    <span>{incomingVehicle.address_district}</span>
-                  </div>
-                )}
-                {incomingVehicle.address_city && (
-                  <div className="text-amber-900 font-medium">
-                    <span>{incomingVehicle.address_city}</span>
-                    {incomingVehicle.address_zip_code && <span> - CEP: {incomingVehicle.address_zip_code}</span>}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Vehicle Accessories */}
           {vehicleAccessories.length > 0 && (
