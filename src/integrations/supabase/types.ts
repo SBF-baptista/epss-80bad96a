@@ -1075,6 +1075,14 @@ export type Database = {
       }
     }
     Functions: {
+      backfill_schedules_from_homologations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          card_id: string
+          created_customer: boolean
+          created_schedule: boolean
+        }[]
+      }
       create_automatic_order_atomic: {
         Args: {
           p_company_name?: string
