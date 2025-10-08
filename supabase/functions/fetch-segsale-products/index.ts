@@ -135,6 +135,29 @@ Deno.serve(async (req) => {
         storedSales.push(data)
         console.log(`Stored sale for ${sale.company_name} - ${sale.usage_type}`)
       }
+
+      // Store contract items (accessories) in accessories table
+      if ((sale as any).contract_items && Array.isArray((sale as any).contract_items)) {
+        const contractItems = (sale as any).contract_items
+        console.log(`📦 Storing ${contractItems.length} accessories for ${sale.company_name}`)
+        
+        for (const item of contractItems) {
+          const { error: accessoryError } = await supabase
+            .from('accessories')
+            .insert({
+              accessory_name: item.accessory_name,
+              quantity: item.quantity || 1,
+              company_name: sale.company_name,
+              usage_type: sale.usage_type,
+            })
+
+          if (accessoryError) {
+            console.error(`Error storing accessory ${item.accessory_name}:`, accessoryError)
+          } else {
+            console.log(`✅ Stored accessory: ${item.accessory_name} (qty: ${item.quantity})`)
+          }
+        }
+      }
     }
 
     // After storing, forward data to receive-vehicle for processing
