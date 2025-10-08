@@ -16,6 +16,7 @@ import {
 } from "@/components/homologation";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import HomologationFilters from "@/components/homologation/HomologationFilters";
+import { SegsaleFetchPanel } from "@/components/homologation/SegsaleFetchPanel";
 
 const Homologation = () => {
   const [filters, setFilters] = useState<HomologationFiltersType>({
@@ -52,6 +53,8 @@ const Homologation = () => {
       <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">
         <div className="w-full max-w-7xl mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
           <HomologationHeader />
+          
+          <SegsaleFetchPanel />
           
           <HomologationMetrics 
             cards={filteredCards} 
