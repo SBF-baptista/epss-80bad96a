@@ -162,6 +162,89 @@ export const updateHomologationStatus = async (
     console.error('Error updating homologation status:', error);
     throw error;
   }
+
+  // When a card is approved/homologated, automatically create a kit if it doesn't exist
+  if (status === 'homologado') {
+    try {
+      // Check if kit already exists for this card
+      const { data: existingKits } = await supabase
+        .from('homologation_kits')
+        .select('id')
+        .eq('homologation_card_id', cardId)
+        .limit(1);
+
+      if (existingKits && existingKits.length > 0) {
+        console.log('Kit already exists for this homologation card');
+        return;
+      }
+
+      // Get card details and related incoming vehicle
+      const { data: card } = await supabase
+        .from('homologation_cards')
+        .select('*, incoming_vehicle:incoming_vehicles(*)')
+        .eq('id', cardId)
+        .single();
+
+      if (!card || !card.incoming_vehicle) {
+        console.log('No incoming vehicle found for this card');
+        return;
+      }
+
+      const incomingVehicle = Array.isArray(card.incoming_vehicle) 
+        ? card.incoming_vehicle[0] 
+        : card.incoming_vehicle;
+
+      // Get accessories for this company
+      const { data: accessories } = await supabase
+        .from('accessories')
+        .select('*')
+        .eq('company_name', incomingVehicle.company_name);
+
+      // Create kit with accessories
+      const kitName = `Kit ${card.brand} ${card.model} ${card.year || ''}`.trim();
+      
+      const { data: newKit, error: kitError } = await supabase
+        .from('homologation_kits')
+        .insert({
+          homologation_card_id: cardId,
+          name: kitName,
+          description: `Kit criado automaticamente para ${incomingVehicle.company_name} - ${incomingVehicle.usage_type || ''}`,
+        })
+        .select()
+        .single();
+
+      if (kitError || !newKit) {
+        console.error('Error creating automatic kit:', kitError);
+        return;
+      }
+
+      // Add accessories to kit if any exist
+      if (accessories && accessories.length > 0) {
+        const kitAccessories = accessories.map(acc => ({
+          kit_id: newKit.id,
+          item_name: acc.accessory_name,
+          item_type: 'accessory',
+          quantity: acc.quantity,
+          description: `Importado do Segsale - ${incomingVehicle.usage_type || ''}`,
+        }));
+
+        const { error: accessoriesError } = await supabase
+          .from('homologation_kit_accessories')
+          .insert(kitAccessories);
+
+        if (accessoriesError) {
+          console.error('Error adding accessories to kit:', accessoriesError);
+        } else {
+          console.log(`✅ Kit criado automaticamente: ${kitName} com ${accessories.length} acessórios`);
+        }
+      } else {
+        console.log(`✅ Kit criado automaticamente: ${kitName} (sem acessórios)`);
+      }
+    } catch (error) {
+      console.error('Error creating automatic kit:', error);
+      // Don't throw - we don't want to block the status update if kit creation fails
+    }
+  }
 };
 
 export const createHomologationCard = async (
