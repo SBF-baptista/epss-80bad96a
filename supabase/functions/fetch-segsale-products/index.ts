@@ -118,20 +118,30 @@ Deno.serve(async (req) => {
 
     if (apiKey && vehicleGroups.length > 0) {
       console.log(`Forwarding ${vehicleGroups.length} group(s) to receive-vehicle...`)
-      const { data: rvData, error: rvError } = await supabase.functions.invoke('receive-vehicle', {
+      console.log('Payload being sent:', JSON.stringify(vehicleGroups, null, 2))
+      
+      // Use direct fetch instead of supabase.functions.invoke to properly send body
+      const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
+      const receiveVehicleResponse = await fetch(receiveVehicleUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
         },
-        body: vehicleGroups,
+        body: JSON.stringify(vehicleGroups),
       })
 
-      if (rvError) {
-        console.error('Error invoking receive-vehicle:', rvError)
-        processing = { forwarded: true, success: false, error: rvError.message }
+      if (!receiveVehicleResponse.ok) {
+        const errorText = await receiveVehicleResponse.text()
+        console.error('Error calling receive-vehicle:', receiveVehicleResponse.status, errorText)
+        processing = { 
+          forwarded: true, 
+          success: false, 
+          error: `HTTP ${receiveVehicleResponse.status}: ${errorText}` 
+        }
       } else {
-        console.log('receive-vehicle processed successfully')
+        const rvData = await receiveVehicleResponse.json()
+        console.log('receive-vehicle processed successfully:', rvData)
         processing = { forwarded: true, success: true, result: rvData }
       }
     } else {
