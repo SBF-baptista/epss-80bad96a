@@ -78,9 +78,46 @@ Deno.serve(async (req) => {
     const salesData: SegsaleSale[] = await segsaleResponse.json()
     console.log(`Received ${salesData.length} sales from Segsale`)
 
+    // Fetch contract items for each sale that has id_contrato_pendente
+    const enrichedSalesData = []
+    for (const sale of salesData) {
+      const enrichedSale = { ...sale }
+      
+      // Check if sale has id_contrato_pendente to fetch contract items
+      if ((sale as any).id_contrato_pendente) {
+        const idContratoPendente = (sale as any).id_contrato_pendente
+        console.log(`Fetching contract items for id_contrato_pendente: ${idContratoPendente}`)
+        
+        try {
+          const contractItemsUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/itens-produtos?id=${idContratoPendente}`
+          const contractResponse = await fetch(contractItemsUrl, {
+            method: 'GET',
+            headers: {
+              'Token': segsaleToken,
+              'Content-Type': 'application/json'
+            }
+          })
+
+          if (contractResponse.ok) {
+            const contractItems = await contractResponse.json()
+            console.log(`✅ Contract items fetched for contract ${idContratoPendente}:`, JSON.stringify(contractItems, null, 2))
+            
+            // Add contract items to the sale
+            enrichedSale.contract_items = contractItems
+          } else {
+            console.error(`Failed to fetch contract items for ${idContratoPendente}: ${contractResponse.status}`)
+          }
+        } catch (err) {
+          console.error(`Error fetching contract items for ${idContratoPendente}:`, err)
+        }
+      }
+      
+      enrichedSalesData.push(enrichedSale)
+    }
+
     // Store each sale in the database
     const storedSales = []
-    for (const sale of salesData) {
+    for (const sale of enrichedSalesData) {
       const { data, error } = await supabase
         .from('segsale_sales')
         .insert({
@@ -101,7 +138,7 @@ Deno.serve(async (req) => {
     }
 
     // After storing, forward data to receive-vehicle for processing
-    const vehicleGroups = (salesData as any[]).map((sale) => ({
+    const vehicleGroups = (enrichedSalesData as any[]).map((sale) => ({
       company_name: sale.company_name,
       cpf: sale.cpf ?? null,
       phone: sale.phone ?? null,
@@ -110,6 +147,7 @@ Deno.serve(async (req) => {
       id_contrato_pendente: sale.id_contrato_pendente ?? null,
       vehicles: sale.vehicles,
       accessories: sale.accessories ?? [],
+      contract_items: sale.contract_items ?? null,
       address: sale.address ?? undefined,
     }))
 
@@ -153,7 +191,7 @@ Deno.serve(async (req) => {
         success: true,
         message: `Fetched and stored ${storedSales.length} sales from Segsale`,
         id_resumo_venda: idResumoVenda,
-        sales: salesData,
+        sales: enrichedSalesData,
         stored_count: storedSales.length,
         processing,
       }),

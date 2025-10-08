@@ -26,8 +26,16 @@ export const SegsaleFetchPanel = () => {
       }
 
       const result = await response.json();
+      console.log('📦 Resposta Segsale completa:', result);
 
       if (result.success) {
+        // Log contract items if available
+        result.sales?.forEach((sale: any) => {
+          if (sale.contract_items) {
+            console.log(`✅ Itens do Contrato ${sale.id_contrato_pendente}:`, sale.contract_items);
+          }
+        });
+
         toast.success(
           `Busca concluída: ${result.stored_count} venda(s) armazenada(s)`,
           {
@@ -36,6 +44,15 @@ export const SegsaleFetchPanel = () => {
               : 'Aguardando processamento manual'
           }
         );
+
+        // Show additional info about contract items
+        const salesWithContracts = result.sales?.filter((s: any) => s.contract_items)?.length || 0;
+        if (salesWithContracts > 0) {
+          toast.info(
+            `${salesWithContracts} contrato(s) com itens encontrado(s)`,
+            { description: 'Veja o console do navegador para detalhes completos' }
+          );
+        }
       } else {
         toast.error("Erro ao buscar dados", {
           description: result.error || "Erro desconhecido"
