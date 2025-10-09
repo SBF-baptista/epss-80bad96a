@@ -177,11 +177,11 @@ export type Database = {
           document_type: string
           email: string
           id: string
-          id_resumo_venda: number | null
           modules: string[] | null
           name: string
           package_name: string | null
           phone: string
+          sale_summary_id: number | null
           sales_representative: string | null
           show_in_planning: boolean
           total_value: number | null
@@ -205,11 +205,11 @@ export type Database = {
           document_type: string
           email: string
           id?: string
-          id_resumo_venda?: number | null
           modules?: string[] | null
           name: string
           package_name?: string | null
           phone: string
+          sale_summary_id?: number | null
           sales_representative?: string | null
           show_in_planning?: boolean
           total_value?: number | null
@@ -233,11 +233,11 @@ export type Database = {
           document_type?: string
           email?: string
           id?: string
-          id_resumo_venda?: number | null
           modules?: string[] | null
           name?: string
           package_name?: string | null
           phone?: string
+          sale_summary_id?: number | null
           sales_representative?: string | null
           show_in_planning?: boolean
           total_value?: number | null

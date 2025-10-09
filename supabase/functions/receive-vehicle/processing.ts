@@ -57,7 +57,7 @@ export async function processVehicleGroups(
         if (normalizedUsageType === 'copiloto 2 cameras') normalizedUsageType = 'copiloto_2_cameras'
         if (normalizedUsageType === 'copiloto 4 cameras') normalizedUsageType = 'copiloto_4_cameras'
         
-        const { data: incomingVehicle, error: insertError } = await supabase
+        let { data: incomingVehicle, error: insertError } = await supabase
           .from('incoming_vehicles')
           .insert({
             vehicle: vehicle.trim(),
