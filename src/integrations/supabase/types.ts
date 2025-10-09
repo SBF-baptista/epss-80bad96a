@@ -608,7 +608,7 @@ export type Database = {
           installation_address_state: string | null
           installation_address_street: string | null
           installation_time: string | null
-          kit_id: string
+          kit_id: string | null
           notes: string | null
           scheduled_date: string
           status: string
@@ -638,7 +638,7 @@ export type Database = {
           installation_address_state?: string | null
           installation_address_street?: string | null
           installation_time?: string | null
-          kit_id: string
+          kit_id?: string | null
           notes?: string | null
           scheduled_date: string
           status?: string
@@ -668,7 +668,7 @@ export type Database = {
           installation_address_state?: string | null
           installation_address_street?: string | null
           installation_time?: string | null
-          kit_id?: string
+          kit_id?: string | null
           notes?: string | null
           scheduled_date?: string
           status?: string
