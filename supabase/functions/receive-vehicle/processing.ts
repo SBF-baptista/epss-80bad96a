@@ -47,9 +47,6 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
       try {
-        // Store incoming vehicle data
-        console.log(`[${timestamp}][${requestId}] Storing incoming vehicle data...`)
-        
         // Normalize usage_type to database enum format
         let normalizedUsageType = group.usage_type.toLowerCase()
         if (normalizedUsageType === 'telemetria gps') normalizedUsageType = 'telemetria_gps'
@@ -57,44 +54,79 @@ export async function processVehicleGroups(
         if (normalizedUsageType === 'copiloto 2 cameras') normalizedUsageType = 'copiloto_2_cameras'
         if (normalizedUsageType === 'copiloto 4 cameras') normalizedUsageType = 'copiloto_4_cameras'
         
-        const { data: incomingVehicle, error: insertError } = await supabase
+        // ===== ANTI-DUPLICATE VALIDATION =====
+        // Check if a similar vehicle already exists (same brand, model, company within last 24 hours)
+        console.log(`[${timestamp}][${requestId}] Checking for duplicate vehicles...`)
+        
+        const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        const { data: existingVehicles, error: checkError } = await supabase
           .from('incoming_vehicles')
-          .insert({
-            vehicle: vehicle.trim(),
-            brand: brand.trim(),
-            year: year || null,
-            usage_type: normalizedUsageType,
-            quantity: quantity || 1,
-            company_name: group.company_name,
-            cpf: group.cpf || null,
-            phone: group.phone || null,
-            id_resumo_venda: group.id_resumo_venda || null,
-            id_contrato_pendente: group.id_contrato_pendente || null,
-            address_city: group.address?.city || null,
-            address_district: group.address?.district || null,
-            address_street: group.address?.street || null,
-            address_number: group.address?.number || null,
-            address_zip_code: group.address?.zip_code || null,
-            address_complement: group.address?.complement || null,
-            received_at: timestamp
-          })
-          .select()
-          .single()
+          .select('*')
+          .eq('brand', brand.trim())
+          .eq('vehicle', vehicle.trim())
+          .eq('company_name', group.company_name)
+          .gte('received_at', dayAgo)
+          .order('received_at', { ascending: false })
+          .limit(1)
 
-        if (insertError) {
-          console.error(`[${timestamp}][${requestId}] ERROR - Failed to store incoming vehicle:`, insertError)
-          groupResult.vehicles_processed.push({
-            vehicle: `${brand} ${vehicle}`,
-            status: 'error',
-            error: 'Failed to store vehicle data',
-            quantity: quantity || 1,
-            incoming_vehicle_id: ''
-          })
-          groupResult.processing_summary.errors++
-          continue
+        if (checkError) {
+          console.error(`[${timestamp}][${requestId}] ERROR - Failed to check for duplicates:`, checkError)
+          // Continue with insertion if check fails (fail-safe approach)
         }
 
-        console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
+        let incomingVehicle
+        let isDuplicate = false
+
+        if (existingVehicles && existingVehicles.length > 0) {
+          // Duplicate found - use existing record instead of creating new one
+          incomingVehicle = existingVehicles[0]
+          isDuplicate = true
+          console.log(`[${timestamp}][${requestId}] ⚠️ DUPLICATE PREVENTED - Using existing vehicle ID: ${incomingVehicle.id}`)
+          console.log(`[${timestamp}][${requestId}] Existing vehicle created at: ${incomingVehicle.received_at}`)
+        } else {
+          // No duplicate found - proceed with insertion
+          console.log(`[${timestamp}][${requestId}] No duplicate found, storing new incoming vehicle data...`)
+          
+          const { data: newVehicle, error: insertError } = await supabase
+            .from('incoming_vehicles')
+            .insert({
+              vehicle: vehicle.trim(),
+              brand: brand.trim(),
+              year: year || null,
+              usage_type: normalizedUsageType,
+              quantity: quantity || 1,
+              company_name: group.company_name,
+              cpf: group.cpf || null,
+              phone: group.phone || null,
+              id_resumo_venda: group.id_resumo_venda || null,
+              id_contrato_pendente: group.id_contrato_pendente || null,
+              address_city: group.address?.city || null,
+              address_district: group.address?.district || null,
+              address_street: group.address?.street || null,
+              address_number: group.address?.number || null,
+              address_zip_code: group.address?.zip_code || null,
+              address_complement: group.address?.complement || null,
+              received_at: timestamp
+            })
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error(`[${timestamp}][${requestId}] ERROR - Failed to store incoming vehicle:`, insertError)
+            groupResult.vehicles_processed.push({
+              vehicle: `${brand} ${vehicle}`,
+              status: 'error',
+              error: 'Failed to store vehicle data',
+              quantity: quantity || 1,
+              incoming_vehicle_id: ''
+            })
+            groupResult.processing_summary.errors++
+            continue
+          }
+
+          incomingVehicle = newVehicle
+          console.log(`[${timestamp}][${requestId}] Successfully stored NEW incoming vehicle with ID: ${incomingVehicle.id}`)
+        }
 
         // Process vehicle-specific accessories if they exist
         if (vehicleData.accessories && Array.isArray(vehicleData.accessories) && vehicleData.accessories.length > 0) {
