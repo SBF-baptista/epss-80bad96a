@@ -1120,6 +1120,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      relink_homologations_to_segsale_incoming: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "installer" | "order_manager"
