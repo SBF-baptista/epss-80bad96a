@@ -191,9 +191,14 @@ export async function processVehicleGroups(
           
           try {
             const homologationInfo = await createHomologationCard(supabase, { vehicle, brand, year }, incomingVehicle.id)
-            processingNotes = homologationInfo.created 
-              ? `No automation rule found. Created new homologation card linked to incoming vehicle. (quantity: ${quantity || 1})`
-              : `No automation rule found. Linked to existing homologation card. (quantity: ${quantity || 1})`
+            
+            if (homologationInfo.already_homologated) {
+              processingNotes = `Vehicle already homologated. Kit schedule created automatically for planning. (quantity: ${quantity || 1})`
+            } else if (homologationInfo.created) {
+              processingNotes = `No automation rule found. Created new homologation card linked to incoming vehicle. (quantity: ${quantity || 1})`
+            } else {
+              processingNotes = `No automation rule found. Linked to existing homologation card. (quantity: ${quantity || 1})`
+            }
             
             // Update incoming vehicle record with homologation info
             await supabase
