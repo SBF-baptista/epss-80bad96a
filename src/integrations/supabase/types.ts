@@ -504,11 +504,14 @@ export type Database = {
           id: string
           id_contrato_pendente: number | null
           id_resumo_venda: number | null
+          pending_contract_id: number | null
           phone: string | null
+          plate: string | null
           processed: boolean
           processing_notes: string | null
           quantity: number | null
           received_at: string
+          sale_summary_id: number | null
           usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle: string
           year: number | null
@@ -532,11 +535,14 @@ export type Database = {
           id?: string
           id_contrato_pendente?: number | null
           id_resumo_venda?: number | null
+          pending_contract_id?: number | null
           phone?: string | null
+          plate?: string | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null
           received_at?: string
+          sale_summary_id?: number | null
           usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle: string
           year?: number | null
@@ -560,11 +566,14 @@ export type Database = {
           id?: string
           id_contrato_pendente?: number | null
           id_resumo_venda?: number | null
+          pending_contract_id?: number | null
           phone?: string | null
+          plate?: string | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null
           received_at?: string
+          sale_summary_id?: number | null
           usage_type?: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle?: string
           year?: number | null

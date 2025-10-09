@@ -43,11 +43,11 @@ export const SegsaleFetchPanel = () => {
         });
 
         toast.success(
-          `Busca concluída: ${result.stored_count} venda(s) armazenada(s)`,
+          `Busca concluída: ${result.sales?.length || 0} venda(s) encontrada(s)`,
           {
             description: result.processing?.forwarded 
               ? `Processamento: ${result.processing.success ? 'Sucesso' : 'Erro'}`
-              : 'Aguardando processamento manual'
+              : 'Acessórios armazenados com sucesso'
           }
         );
       } else {

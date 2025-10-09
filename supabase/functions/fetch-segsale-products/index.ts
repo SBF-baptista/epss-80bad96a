@@ -115,28 +115,9 @@ Deno.serve(async (req) => {
       enrichedSalesData.push(enrichedSale)
     }
 
-    // Store each sale in the database
-    const storedSales = []
+    // Store contract items (accessories) in accessories table
+    console.log(`Processing ${enrichedSalesData.length} sales...`)
     for (const sale of enrichedSalesData) {
-      const { data, error } = await supabase
-        .from('segsale_sales')
-        .insert({
-          id_resumo_venda: parseInt(idResumoVenda),
-          company_name: sale.company_name,
-          usage_type: sale.usage_type,
-          vehicles: sale.vehicles
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error storing sale:', error)
-      } else {
-        storedSales.push(data)
-        console.log(`Stored sale for ${sale.company_name} - ${sale.usage_type}`)
-      }
-
-      // Store contract items (accessories) in accessories table
       if ((sale as any).contract_items && Array.isArray((sale as any).contract_items)) {
         const contractItems = (sale as any).contract_items
         console.log(`📦 Storing ${contractItems.length} accessories for ${sale.company_name}`)
@@ -166,7 +147,7 @@ Deno.serve(async (req) => {
       cpf: sale.cpf ?? null,
       phone: sale.phone ?? null,
       usage_type: sale.usage_type,
-      // Map from English to Portuguese field names
+      // Use the English field names from the API
       id_resumo_venda: sale.sale_summary_id ?? parseInt(idResumoVenda),
       id_contrato_pendente: sale.pending_contract_id ?? null,
       vehicles: sale.vehicles,
@@ -213,10 +194,9 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Fetched and stored ${storedSales.length} sales from Segsale`,
+        message: `Fetched ${enrichedSalesData.length} sales from Segsale`,
         id_resumo_venda: idResumoVenda,
         sales: enrichedSalesData,
-        stored_count: storedSales.length,
         processing,
       }),
       { 
