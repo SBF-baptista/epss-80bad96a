@@ -10,7 +10,7 @@ async function createKitScheduleForHomologation(supabase: any, homologationCard:
       .eq('id', incomingVehicleId)
       .single()
 
-    if (!incomingVehicle || !incomingVehicle.id_resumo_venda) {
+    if (!incomingVehicle || !incomingVehicle.sale_summary_id) {
       console.log('No Segsale data found, skipping kit schedule creation')
       return
     }
@@ -88,7 +88,7 @@ async function createKitScheduleForHomologation(supabase: any, homologationCard:
           address_postal_code: incomingVehicle.address_zip_code || '00000-000',
           address_complement: incomingVehicle.address_complement,
           company_name: incomingVehicle.company_name,
-          id_resumo_venda: incomingVehicle.id_resumo_venda,
+          sale_summary_id: incomingVehicle.sale_summary_id,
           vehicles: [{
             brand: homologationCard.brand,
             model: homologationCard.model,
@@ -138,7 +138,7 @@ async function createKitScheduleForHomologation(supabase: any, homologationCard:
         vehicle_year: incomingVehicle.year || homologationCard.year,
         vehicle_plate: 'Placa pendente',
         accessories: accessoriesList,
-        notes: `Agendamento automático Segsale #${incomingVehicle.id_resumo_venda} - ${homologationCard.brand} ${homologationCard.model}`
+        notes: `Agendamento automático Segsale #${incomingVehicle.sale_summary_id} - ${homologationCard.brand} ${homologationCard.model}`
       })
 
     if (scheduleError) {

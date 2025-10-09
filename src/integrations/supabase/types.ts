@@ -502,8 +502,6 @@ export type Database = {
             | Database["public"]["Enums"]["homologation_status"]
             | null
           id: string
-          id_contrato_pendente: number | null
-          id_resumo_venda: number | null
           pending_contract_id: number | null
           phone: string | null
           plate: string | null
@@ -533,8 +531,6 @@ export type Database = {
             | Database["public"]["Enums"]["homologation_status"]
             | null
           id?: string
-          id_contrato_pendente?: number | null
-          id_resumo_venda?: number | null
           pending_contract_id?: number | null
           phone?: string | null
           plate?: string | null
@@ -564,8 +560,6 @@ export type Database = {
             | Database["public"]["Enums"]["homologation_status"]
             | null
           id?: string
-          id_contrato_pendente?: number | null
-          id_resumo_venda?: number | null
           pending_contract_id?: number | null
           phone?: string | null
           plate?: string | null

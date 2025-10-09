@@ -22,8 +22,8 @@ export interface VehicleGroup {
   cpf?: string
   phone?: string
   usage_type: string
-  id_resumo_venda?: number
-  id_contrato_pendente?: number
+  sale_summary_id?: number
+  pending_contract_id?: number
   vehicles: VehicleData[]
   accessories?: AccessoryData[]
   address?: {

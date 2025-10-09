@@ -38,7 +38,7 @@ export const SegsaleFetchPanel = () => {
         // Log contract items if available
         result.sales?.forEach((sale: any) => {
           if (sale.contract_items) {
-            console.log(`✅ Itens do Contrato ${sale.id_contrato_pendente}:`, sale.contract_items);
+            console.log(`✅ Itens do Contrato ${sale.pending_contract_id}:`, sale.contract_items);
           }
         });
 
@@ -92,7 +92,7 @@ export const SegsaleFetchPanel = () => {
           <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">Resultado da Busca</h3>
-              <Badge variant="outline">ID: {resultData.id_resumo_venda}</Badge>
+              <Badge variant="outline">ID: {resultData.sale_summary_id}</Badge>
             </div>
             
             <Separator />
@@ -116,9 +116,9 @@ export const SegsaleFetchPanel = () => {
                       <span className="font-medium">Telefone:</span> {sale.phone}
                     </div>
                   )}
-                  {sale.id_contrato_pendente && (
+                  {sale.pending_contract_id && (
                     <div>
-                      <span className="font-medium">ID Contrato:</span> {sale.id_contrato_pendente}
+                      <span className="font-medium">ID Contrato:</span> {sale.pending_contract_id}
                     </div>
                   )}
                 </div>

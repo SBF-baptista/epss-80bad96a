@@ -83,13 +83,13 @@ Deno.serve(async (req) => {
     for (const sale of salesData) {
       const enrichedSale = { ...sale }
       
-      // Check if sale has id_contrato_pendente to fetch contract items
-      if ((sale as any).id_contrato_pendente) {
-        const idContratoPendente = (sale as any).id_contrato_pendente
-        console.log(`Fetching contract items for id_contrato_pendente: ${idContratoPendente}`)
+      // Check if sale has pending_contract_id to fetch contract items
+      if ((sale as any).pending_contract_id) {
+        const pendingContractId = (sale as any).pending_contract_id
+        console.log(`Fetching contract items for pending_contract_id: ${pendingContractId}`)
         
         try {
-          const contractItemsUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/itens-produtos?id=${idContratoPendente}`
+          const contractItemsUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/itens-produtos?id=${pendingContractId}`
           const contractResponse = await fetch(contractItemsUrl, {
             method: 'GET',
             headers: {
@@ -100,15 +100,15 @@ Deno.serve(async (req) => {
 
           if (contractResponse.ok) {
             const contractItems = await contractResponse.json()
-            console.log(`✅ Contract items fetched for contract ${idContratoPendente}:`, JSON.stringify(contractItems, null, 2))
+            console.log(`✅ Contract items fetched for contract ${pendingContractId}:`, JSON.stringify(contractItems, null, 2))
             
             // Add contract items to the sale
             enrichedSale.contract_items = contractItems
           } else {
-            console.error(`Failed to fetch contract items for ${idContratoPendente}: ${contractResponse.status}`)
+            console.error(`Failed to fetch contract items for ${pendingContractId}: ${contractResponse.status}`)
           }
         } catch (err) {
-          console.error(`Error fetching contract items for ${idContratoPendente}:`, err)
+          console.error(`Error fetching contract items for ${pendingContractId}:`, err)
         }
       }
       
@@ -148,8 +148,8 @@ Deno.serve(async (req) => {
       phone: sale.phone ?? null,
       usage_type: sale.usage_type,
       // Use the English field names from the API
-      id_resumo_venda: sale.sale_summary_id ?? parseInt(idResumoVenda),
-      id_contrato_pendente: sale.pending_contract_id ?? null,
+      sale_summary_id: sale.sale_summary_id ?? parseInt(idResumoVenda),
+      pending_contract_id: sale.pending_contract_id ?? null,
       vehicles: sale.vehicles,
       accessories: sale.accessories ?? [],
       contract_items: sale.contract_items ?? null,
@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: `Fetched ${enrichedSalesData.length} sales from Segsale`,
-        id_resumo_venda: idResumoVenda,
+        sale_summary_id: idResumoVenda,
         sales: enrichedSalesData,
         processing,
       }),
