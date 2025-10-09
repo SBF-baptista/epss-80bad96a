@@ -82,16 +82,49 @@ export async function processVehicleGroups(
           .single()
 
         if (insertError) {
-          console.error(`[${timestamp}][${requestId}] ERROR - Failed to store incoming vehicle:`, insertError)
-          groupResult.vehicles_processed.push({
-            vehicle: `${brand} ${vehicle}`,
-            status: 'error',
-            error: 'Failed to store vehicle data',
-            quantity: quantity || 1,
-            incoming_vehicle_id: ''
-          })
-          groupResult.processing_summary.errors++
-          continue
+          // Handle duplicate key violations (vehicle already exists)
+          if (insertError.code === '23505') {
+            console.log(`[${timestamp}][${requestId}] Vehicle already exists, fetching existing record...`)
+            
+            // Try to find the existing incoming_vehicle
+            const { data: existingVehicle, error: selectError } = await supabase
+              .from('incoming_vehicles')
+              .select('*')
+              .eq('brand', brand.trim())
+              .eq('vehicle', vehicle.trim())
+              .eq('sale_summary_id', group.sale_summary_id || null)
+              .order('received_at', { ascending: false })
+              .limit(1)
+              .single()
+            
+            if (selectError || !existingVehicle) {
+              console.error(`[${timestamp}][${requestId}] ERROR - Could not find existing vehicle after duplicate error:`, selectError)
+              groupResult.vehicles_processed.push({
+                vehicle: `${brand} ${vehicle}`,
+                status: 'error',
+                error: 'Duplicate vehicle but could not retrieve existing record',
+                quantity: quantity || 1,
+                incoming_vehicle_id: ''
+              })
+              groupResult.processing_summary.errors++
+              continue
+            }
+            
+            console.log(`[${timestamp}][${requestId}] Found existing incoming vehicle with ID: ${existingVehicle.id}, reprocessing...`)
+            // Use the existing vehicle and continue the flow
+            incomingVehicle = existingVehicle
+          } else {
+            console.error(`[${timestamp}][${requestId}] ERROR - Failed to store incoming vehicle:`, insertError)
+            groupResult.vehicles_processed.push({
+              vehicle: `${brand} ${vehicle}`,
+              status: 'error',
+              error: 'Failed to store vehicle data',
+              quantity: quantity || 1,
+              incoming_vehicle_id: ''
+            })
+            groupResult.processing_summary.errors++
+            continue
+          }
         }
 
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)

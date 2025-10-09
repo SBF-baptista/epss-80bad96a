@@ -156,11 +156,15 @@ export async function createHomologationCard(supabase: any, vehicleData: any, in
   console.log(`Creating homologation card for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
   
   try {
+    // Normalize brand and model to uppercase for consistent comparison
+    const BRAND = vehicleData.brand?.trim().toUpperCase()
+    const MODEL = vehicleData.vehicle?.trim().toUpperCase()
+    
     const { data: existingCard } = await supabase
       .from('homologation_cards')
       .select('id, status, brand, model, year')
-      .eq('brand', vehicleData.brand)
-      .eq('model', vehicleData.vehicle)
+      .eq('brand', BRAND)
+      .eq('model', MODEL)
       .limit(1)
       .single()
 
@@ -190,8 +194,8 @@ export async function createHomologationCard(supabase: any, vehicleData: any, in
     const { data: newCard, error: cardError } = await supabase
       .from('homologation_cards')
       .insert({
-        brand: vehicleData.brand,
-        model: vehicleData.vehicle,
+        brand: BRAND,
+        model: MODEL,
         year: vehicleData.year || null,
         status: 'homologar',
         incoming_vehicle_id: incomingVehicleId,

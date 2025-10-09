@@ -179,7 +179,13 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get('VEHICLE_API_KEY')
     let processing: any = { forwarded: false }
 
-    if (apiKey && vehicleGroups.length > 0) {
+    // Only forward if we have groups with vehicles
+    if (!apiKey) {
+      console.log('Skipping forwarding to receive-vehicle (missing API key)')
+    } else if (vehicleGroups.length === 0) {
+      console.log('Skipping forwarding to receive-vehicle (no vehicle groups to process)')
+      processing = { forwarded: false, message: 'No vehicle groups to process' }
+    } else {
       console.log(`Forwarding ${vehicleGroups.length} group(s) to receive-vehicle...`)
       console.log('Payload being sent:', JSON.stringify(vehicleGroups, null, 2))
       
@@ -207,8 +213,6 @@ Deno.serve(async (req) => {
         console.log('receive-vehicle processed successfully:', rvData)
         processing = { forwarded: true, success: true, result: rvData }
       }
-    } else {
-      console.log('Skipping forwarding to receive-vehicle (missing API key or empty data)')
     }
 
     return new Response(
