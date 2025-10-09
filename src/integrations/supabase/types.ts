@@ -505,7 +505,6 @@ export type Database = {
           id_contrato_pendente: number | null
           id_resumo_venda: number | null
           phone: string | null
-          plate: string | null
           processed: boolean
           processing_notes: string | null
           quantity: number | null
@@ -534,7 +533,6 @@ export type Database = {
           id_contrato_pendente?: number | null
           id_resumo_venda?: number | null
           phone?: string | null
-          plate?: string | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null
@@ -563,7 +561,6 @@ export type Database = {
           id_contrato_pendente?: number | null
           id_resumo_venda?: number | null
           phone?: string | null
-          plate?: string | null
           processed?: boolean
           processing_notes?: string | null
           quantity?: number | null

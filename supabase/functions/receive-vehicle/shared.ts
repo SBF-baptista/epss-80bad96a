@@ -7,7 +7,6 @@ export const corsHeaders = {
 export interface VehicleData {
   vehicle: string
   brand: string
-  plate?: string
   year?: number
   quantity?: number
   accessories?: AccessoryData[]
@@ -23,8 +22,8 @@ export interface VehicleGroup {
   cpf?: string
   phone?: string
   usage_type: string
-  sale_summary_id?: number
-  pending_contract_id?: number
+  id_resumo_venda?: number
+  id_contrato_pendente?: number
   vehicles: VehicleData[]
   accessories?: AccessoryData[]
   address?: {
