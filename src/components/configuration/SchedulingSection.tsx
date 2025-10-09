@@ -13,6 +13,7 @@ import type { Customer, VehicleInfo } from '@/services/customerService';
 import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
 import { RescheduleModal } from '../customer-tracking/RescheduleModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SchedulingSectionProps {
   kits: HomologationKit[];
@@ -40,13 +41,36 @@ export const SchedulingSection = ({
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
 
   useEffect(() => {
-    // Remover criação automática de clientes - sistema agora inicia vazio
     loadCustomers();
-  }, []); // Array vazio para executar apenas uma vez
+  }, []);
 
   useEffect(() => {
     loadCustomers();
   }, [searchTerm]);
+
+  // Real-time subscription for customers table
+  useEffect(() => {
+    const channel = supabase
+      .channel('planning-customers-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'customers',
+          filter: 'show_in_planning=eq.true'
+        },
+        (payload) => {
+          console.log('Customer changed in Planning:', payload);
+          loadCustomers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const loadCustomers = async () => {
     try {
