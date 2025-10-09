@@ -183,6 +183,7 @@ export type Database = {
           package_name: string | null
           phone: string
           sales_representative: string | null
+          show_in_planning: boolean
           total_value: number | null
           updated_at: string
           vehicles: Json | null
@@ -210,6 +211,7 @@ export type Database = {
           package_name?: string | null
           phone: string
           sales_representative?: string | null
+          show_in_planning?: boolean
           total_value?: number | null
           updated_at?: string
           vehicles?: Json | null
@@ -237,6 +239,7 @@ export type Database = {
           package_name?: string | null
           phone?: string
           sales_representative?: string | null
+          show_in_planning?: boolean
           total_value?: number | null
           updated_at?: string
           vehicles?: Json | null

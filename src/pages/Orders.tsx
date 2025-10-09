@@ -21,10 +21,16 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [configFilter, setConfigFilter] = useState("");
 
-  const { data: orders = [], isLoading, refetch } = useQuery({
+  const { data: allOrders = [], isLoading, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: fetchOrders,
   });
+
+  // Filter out Segsale automatic orders (those starting with 'AUTO-' and having company_name)
+  // Only show manually created orders in Orders page
+  const orders = allOrders.filter(order => 
+    !order.number.startsWith('AUTO-') || !order.company_name
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {

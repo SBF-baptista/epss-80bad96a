@@ -185,7 +185,7 @@ export const createCustomer = async (data: CreateCustomerData): Promise<Customer
 };
 
 export const getCustomers = async (search?: string): Promise<Customer[]> => {
-  let query = supabase.from('customers').select('*');
+  let query = supabase.from('customers').select('*').eq('show_in_planning', true);
   
   if (search && search.trim()) {
     query = query.or(`name.ilike.%${search}%,document_number.ilike.%${search}%,email.ilike.%${search}%`);

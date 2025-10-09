@@ -213,6 +213,7 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
 };
 
 // Get all kit schedules with details
+// Only return schedules that were manually created (not from Segsale auto-flow)
 export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
   const { data: schedules, error } = await supabase
     .from('kit_schedules')
