@@ -100,10 +100,30 @@ Deno.serve(async (req) => {
 
           if (contractResponse.ok) {
             const contractItems = await contractResponse.json()
-            console.log(`✅ Contract items fetched for contract ${pendingContractId}:`, JSON.stringify(contractItems, null, 2))
             
-            // Add contract items to the sale
-            enrichedSale.contract_items = contractItems
+            // If API returns null/empty, try to get from database
+            if (!contractItems || (Array.isArray(contractItems) && contractItems.length === 0)) {
+              console.log(`⚠️ API returned null/empty for contract ${pendingContractId}, fetching from database...`)
+              
+              const saleSummaryId = (sale as any).sale_summary_id || parseInt(idResumoVenda)
+              const { data: dbAccessories, error: dbError } = await supabase
+                .from('accessories')
+                .select('accessory_name, quantity')
+                .eq('company_name', sale.company_name)
+                .order('created_at', { ascending: false })
+              
+              if (dbError) {
+                console.error(`Error fetching accessories from DB for ${sale.company_name}:`, dbError)
+              } else if (dbAccessories && dbAccessories.length > 0) {
+                console.log(`✅ Found ${dbAccessories.length} accessories in DB for ${sale.company_name}`)
+                enrichedSale.contract_items = dbAccessories
+              } else {
+                console.log(`ℹ️ No accessories found in DB for ${sale.company_name}`)
+              }
+            } else {
+              console.log(`✅ Contract items fetched from API for contract ${pendingContractId}:`, JSON.stringify(contractItems, null, 2))
+              enrichedSale.contract_items = contractItems
+            }
           } else {
             console.error(`Failed to fetch contract items for ${pendingContractId}: ${contractResponse.status}`)
           }
