@@ -166,8 +166,9 @@ Deno.serve(async (req) => {
       cpf: sale.cpf ?? null,
       phone: sale.phone ?? null,
       usage_type: sale.usage_type,
-      id_resumo_venda: parseInt(idResumoVenda),
-      id_contrato_pendente: sale.id_contrato_pendente ?? null,
+      // Map from English to Portuguese field names
+      id_resumo_venda: sale.sale_summary_id ?? parseInt(idResumoVenda),
+      id_contrato_pendente: sale.pending_contract_id ?? null,
       vehicles: sale.vehicles,
       accessories: sale.accessories ?? [],
       contract_items: sale.contract_items ?? null,
