@@ -162,15 +162,15 @@ export const ScheduleModal = ({
       return;
     }
 
-    // 1) Initialize schedules immediately to render UI without delay (only for unscheduled vehicles)
+    // Initialize schedules with EMPTY dates - manual input required
     const initialSchedules = unscheduledVehicles.map((vehicle, index) => ({
       plate: vehicle.plate,
       brand: vehicle.brand,
       model: vehicle.model,
       year: vehicle.year,
       technician_ids: [],
-      scheduled_date: null,
-      installation_time: '',
+      scheduled_date: null, // Must be filled manually
+      installation_time: '', // Must be filled manually
       notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
       contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
       // clone arrays to avoid shared references
