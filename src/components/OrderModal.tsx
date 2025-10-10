@@ -44,6 +44,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     accessory_name: string;
     quantity: number;
   }>>([]);
+  const [scheduleAccessoriesMap, setScheduleAccessoriesMap] = useState<Record<string, { accessory_name: string; quantity: number }[]>>({});
 
   useEffect(() => {
     const fetchAllSchedules = async () => {
@@ -69,29 +70,67 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     fetchAllSchedules();
   }, [schedule, isOpen]);
 
-  // Fetch contract accessories from database
+  // Fetch accessories per vehicle (by customer -> incoming_vehicles -> accessories)
   useEffect(() => {
-    const fetchContractAccessories = async () => {
-      if (!order?.id || !isOpen) return;
-
+    const fetchAccessoriesPerVehicle = async () => {
+      if (!isOpen || !schedule) return;
       try {
-        const { data, error } = await supabase
-          .from('accessories')
-          .select('accessory_name, quantity')
-          .eq('pedido_id', order.id);
+        // Get sale_summary_id from customer
+        const { data: customer, error: custErr } = await supabase
+          .from('customers')
+          .select('sale_summary_id')
+          .eq('id', schedule.customer_id)
+          .maybeSingle();
+        if (custErr) throw custErr;
+        if (!customer?.sale_summary_id) return;
 
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          setContractAccessories(data);
-        }
+        // Fetch all incoming vehicles for this sale_summary_id once
+        const { data: vehicles, error: vehErr } = await supabase
+          .from('incoming_vehicles')
+          .select('id, brand, vehicle, received_at')
+          .eq('sale_summary_id', customer.sale_summary_id)
+          .order('received_at', { ascending: false });
+        if (vehErr) throw vehErr;
+
+        const normalize = (s?: string | null) => (s || '').toUpperCase().trim();
+        const firstToken = (s?: string | null) => (s || '').split(' ')[0]?.toUpperCase() || '';
+
+        const resultsMap: Record<string, { accessory_name: string; quantity: number }[]> = {};
+
+        await Promise.all((allSchedules.length ? allSchedules : [schedule]).map(async (sched) => {
+          const matchingVehicleIds = (vehicles || [])
+            .filter(v => (
+              normalize(v.brand) === normalize(sched.vehicle_brand)
+            ) && (
+              normalize(v.vehicle) === normalize(sched.vehicle_model) ||
+              normalize(v.vehicle).includes(firstToken(sched.vehicle_model)) ||
+              normalize(sched.vehicle_model).includes(firstToken(v.vehicle))
+            ))
+            .slice(0, 5) // limit for performance
+            .map(v => v.id);
+
+          if (matchingVehicleIds.length === 0) {
+            resultsMap[sched.id] = [];
+            return;
+          }
+
+          const { data: acc, error: accErr } = await supabase
+            .from('accessories')
+            .select('accessory_name, quantity, vehicle_id')
+            .in('vehicle_id', matchingVehicleIds as string[]);
+          if (accErr) throw accErr;
+
+          resultsMap[sched.id] = (acc || []).map(a => ({ accessory_name: a.accessory_name, quantity: a.quantity }));
+        }));
+
+        setScheduleAccessoriesMap(resultsMap);
       } catch (error) {
-        console.error("Error fetching contract accessories:", error);
+        console.error('Error fetching vehicle accessories:', error);
       }
     };
 
-    fetchContractAccessories();
-  }, [order?.id, isOpen]);
+    fetchAccessoriesPerVehicle();
+  }, [isOpen, schedule, allSchedules]);
 
   if (!order) return null;
 
@@ -401,9 +440,10 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                       });
                     }
                     
-                    // 2. Contract accessories from database (fallback if not in schedule)
-                    if (contractAccessories.length > 0) {
-                      contractAccessories.forEach(acc => {
+                    // 2. Acessórios do veículo buscados no banco (por incoming_vehicles -> accessories)
+                    const dbAccessories = scheduleAccessoriesMap[sched.id] || [];
+                    if (dbAccessories.length > 0) {
+                      dbAccessories.forEach(acc => {
                         if (!mergedAccessories[acc.accessory_name]) {
                           mergedAccessories[acc.accessory_name] = acc.quantity;
                         }
