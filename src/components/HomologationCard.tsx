@@ -221,22 +221,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
             )}
           </div>
 
-          {/* Vehicle Accessories */}
-          {vehicleAccessories.length > 0 && (
-            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-              <h5 className="text-xs font-medium text-blue-800 mb-1">Acessórios do Veículo:</h5>
-              <div className="space-y-1">
-                {vehicleAccessories.map((accessory) => (
-                  <div key={accessory.id} className="flex justify-between items-center text-xs">
-                    <span className="text-blue-700 truncate">{accessory.accessory_name}</span>
-                    <Badge variant="outline" className="text-xs px-1 py-0">
-                      {accessory.quantity}x
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {card.notes && (
             <div className="mt-2 md:mt-3 p-2 bg-gray-50 border border-gray-200 rounded-md">
