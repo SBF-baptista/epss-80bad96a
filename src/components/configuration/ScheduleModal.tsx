@@ -50,6 +50,17 @@ import { fetchAccessoriesByVehicleIds, aggregateAccessories } from '@/services/v
 import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
 import { supabase } from '@/integrations/supabase/client';
 
+// Helper to normalize item names (remove quantity suffix, trim, uppercase)
+const normalizeName = (name: string): string => {
+  return name.replace(/\s*\(\d+x\)\s*$/i, '').trim().toUpperCase();
+};
+
+// Helper to extract quantity from formatted name like "ITEM (3x)"
+const extractQuantity = (formatted: string): number => {
+  const match = formatted.match(/\((\d+)x\)$/i);
+  return match ? parseInt(match[1], 10) : 1;
+};
+
 interface VehicleScheduleData {
   plate: string;
   brand: string;
@@ -260,8 +271,9 @@ export const ScheduleModal = ({
         
         await Promise.all(
           allItems.map(async (item) => {
-            const ok = await checkItemHomologation(item.name, item.type);
-            statusMap.set(`${item.name}:${item.type}`, ok);
+            const normalizedName = normalizeName(item.name);
+            const ok = await checkItemHomologation(normalizedName, item.type);
+            statusMap.set(`${normalizedName}:${item.type}`, ok);
           })
         );
         
@@ -298,18 +310,22 @@ export const ScheduleModal = ({
 
             vehicleSpecificAccessories = (vehicleAccessories || []).map(a => a.accessory_name);
 
-            // Check homologation for vehicle-specific accessories
+            // Check homologation for vehicle-specific accessories (normalized)
             await Promise.all(
               vehicleSpecificAccessories.map(async (accName) => {
-                const ok = await checkItemHomologation(accName, 'accessory');
-                statusMap.set(`${accName}:accessory`, ok);
+                const normalizedName = normalizeName(accName);
+                const ok = await checkItemHomologation(normalizedName, 'accessory');
+                statusMap.set(`${normalizedName}:accessory`, ok);
               })
             );
           }
 
-          // Combine customer and vehicle-specific items
-          const vehicleAccessories = [...(selectedCustomer.accessories || []), ...vehicleSpecificAccessories];
-          const vehicleModules = selectedCustomer.modules || [];
+          // Combine customer and vehicle-specific items (normalized for checking)
+          const vehicleAccessories = [
+            ...(selectedCustomer.accessories || []).map(normalizeName), 
+            ...vehicleSpecificAccessories.map(normalizeName)
+          ];
+          const vehicleModules = (selectedCustomer.modules || []).map(normalizeName);
           
           const allAccessoriesHomologated = vehicleAccessories.every(acc => 
             statusMap.get(`${acc}:accessory`) === true
@@ -754,9 +770,8 @@ export const ScheduleModal = ({
                                     
                                     if (formattedAccessories.length > 0) {
                                       return formattedAccessories.map((formatted, i) => {
-                                        const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
-                                        const accName = match ? match[1] : formatted;
-                                        const isHomologated = homologationStatus.get(`${accName}:accessory`);
+                                        const normalizedName = normalizeName(formatted);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
                                         return (
                                           <div key={i} className="flex items-center gap-1">
                                             {isHomologated ? (
@@ -775,7 +790,8 @@ export const ScheduleModal = ({
                                       });
                                     } else if (vehicleSchedule.accessories && vehicleSchedule.accessories.length > 0) {
                                       return vehicleSchedule.accessories.map((acc, i) => {
-                                        const isHomologated = homologationStatus.get(`${acc}:accessory`);
+                                        const normalizedName = normalizeName(acc);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
                                         return (
                                           <div key={i} className="flex items-center gap-1">
                                             {isHomologated ? (
@@ -802,7 +818,8 @@ export const ScheduleModal = ({
                                 <div className="flex flex-col gap-1 max-w-[180px]">
                                   {vehicleSchedule.modules.length > 0 ? (
                                     vehicleSchedule.modules.map((mod, i) => {
-                                      const isHomologated = homologationStatus.get(`${mod}:equipment`);
+                                      const normalizedName = normalizeName(mod);
+                                      const isHomologated = homologationStatus.get(`${normalizedName}:equipment`);
                                       return (
                                         <div key={i} className="flex items-center gap-1">
                                           {isHomologated ? (
@@ -909,52 +926,77 @@ export const ScheduleModal = ({
                                  </Select>
                                 </td>
                              </tr>
-                             {!vehicleReady && (
-                               <tr>
-                                 <td colSpan={10} className="px-4 py-2">
-                                   {(() => {
-                                     const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
-                                     const vehicleId = vehicleIdMap.get(vehicleKey);
-                                     const vehicleAccessories = vehicleId ? accessoriesByVehicleId.get(vehicleId) || [] : [];
-                                     
-                                     const nonHomologatedItems = [
-                                       ...vehicleAccessories
-                                         .map(formatted => {
-                                           const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
-                                           return match ? match[1] : formatted;
-                                         })
-                                         .filter(acc => !homologationStatus.get(`${acc}:accessory`)),
-                                       ...(vehicleSchedule.accessories || []).filter(acc => !homologationStatus.get(`${acc}:accessory`)),
-                                       ...(vehicleSchedule.modules || []).filter(mod => !homologationStatus.get(`${mod}:equipment`))
-                                     ];
+                              {!vehicleReady && (
+                                <tr>
+                                  <td colSpan={10} className="px-4 py-2">
+                                    {(() => {
+                                      const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
+                                      const vehicleId = vehicleIdMap.get(vehicleKey);
+                                      const vehicleAccessories = vehicleId ? accessoriesByVehicleId.get(vehicleId) || [] : [];
+                                      
+                                      // Use Map to aggregate quantities by normalized name
+                                      const nonHomologatedMap = new Map<string, number>();
 
-                                     // Remove duplicates
-                                     const uniqueNonHomologated = [...new Set(nonHomologatedItems)];
+                                      // Process vehicle-specific accessories (from accessories table)
+                                      vehicleAccessories.forEach(formatted => {
+                                        const normalizedName = normalizeName(formatted);
+                                        const quantity = extractQuantity(formatted);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
+                                        
+                                        if (!isHomologated) {
+                                          const currentQty = nonHomologatedMap.get(normalizedName) || 0;
+                                          nonHomologatedMap.set(normalizedName, currentQty + quantity);
+                                        }
+                                      });
 
-                                     if (uniqueNonHomologated.length > 0) {
-                                       return (
-                                         <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                                           <p className="text-xs font-medium text-red-800 mb-2">
-                                             ⚠️ Itens não homologados ({uniqueNonHomologated.length}):
-                                           </p>
-                                           <div className="flex flex-wrap gap-2">
-                                             {uniqueNonHomologated.map(item => (
-                                               <Badge key={item} variant="destructive" className="text-xs">
-                                                 {item}
-                                               </Badge>
-                                             ))}
-                                           </div>
-                                           <p className="text-xs text-red-700 mt-2">
-                                             Este veículo só poderá ser agendado após a homologação de todos os itens.
-                                           </p>
-                                         </div>
-                                       );
-                                     }
-                                     return null;
-                                   })()}
-                                 </td>
-                               </tr>
-                              )}
+                                      // Process customer accessories (only if not already in map from vehicle)
+                                      (vehicleSchedule.accessories || []).forEach(acc => {
+                                        const normalizedName = normalizeName(acc);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
+                                        
+                                        if (!isHomologated && !nonHomologatedMap.has(normalizedName)) {
+                                          nonHomologatedMap.set(normalizedName, 1);
+                                        }
+                                      });
+
+                                      // Process modules (equipment)
+                                      (vehicleSchedule.modules || []).forEach(mod => {
+                                        const normalizedName = normalizeName(mod);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:equipment`);
+                                        
+                                        if (!isHomologated && !nonHomologatedMap.has(normalizedName)) {
+                                          nonHomologatedMap.set(normalizedName, 1);
+                                        }
+                                      });
+
+                                      // Convert map to display array
+                                      const nonHomologatedItems = Array.from(nonHomologatedMap.entries())
+                                        .map(([name, qty]) => qty > 1 ? `${name} (${qty}x)` : name);
+
+                                      if (nonHomologatedItems.length > 0) {
+                                        return (
+                                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                                            <p className="text-xs font-medium text-red-800 mb-2">
+                                              ⚠️ Itens não homologados ({nonHomologatedItems.length}):
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                              {nonHomologatedItems.map(item => (
+                                                <Badge key={item} variant="destructive" className="text-xs">
+                                                  {item}
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                            <p className="text-xs text-red-700 mt-2">
+                                              Este veículo só poderá ser agendado após a homologação de todos os itens.
+                                            </p>
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+                                  </td>
+                                </tr>
+                               )}
                             </>
                             );
                           })}
