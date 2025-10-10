@@ -22,6 +22,7 @@ import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
 import { Calendar, User, MapPin, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrderModalProps {
   order: Order | null;
@@ -39,6 +40,10 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     name: string;
     schedules: KitScheduleWithDetails[];
   } | null>(null);
+  const [contractAccessories, setContractAccessories] = useState<Array<{
+    accessory_name: string;
+    quantity: number;
+  }>>([]);
 
   useEffect(() => {
     const fetchAllSchedules = async () => {
@@ -63,6 +68,30 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
 
     fetchAllSchedules();
   }, [schedule, isOpen]);
+
+  // Fetch contract accessories from database
+  useEffect(() => {
+    const fetchContractAccessories = async () => {
+      if (!order?.id || !isOpen) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('accessories')
+          .select('accessory_name, quantity')
+          .eq('pedido_id', order.id);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setContractAccessories(data);
+        }
+      } catch (error) {
+        console.error("Error fetching contract accessories:", error);
+      }
+    };
+
+    fetchContractAccessories();
+  }, [order?.id, isOpen]);
 
   if (!order) return null;
 
@@ -355,14 +384,47 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                     // Get equipment from kit
                     const equipment = sched.kit?.equipment || [];
                     
-                    // Get accessories and supplies directly from schedule fields (not from kit)
-                    const accessoriesItems = Array.isArray(sched.accessories) && sched.accessories.length > 0
-                      ? sched.accessories.map((name: string, i: number) => ({ 
-                          id: `${sched.id}-acc-${i}`, 
-                          item_name: name, 
-                          quantity: 1 
-                        }))
-                      : [];
+                    // Merge accessories from multiple sources
+                    const mergedAccessories: Record<string, number> = {};
+                    
+                    // 1. Schedule accessories (highest priority)
+                    if (Array.isArray(sched.accessories) && sched.accessories.length > 0) {
+                      sched.accessories.forEach((accessoryStr: string) => {
+                        const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                        if (match) {
+                          const itemName = match[1].trim();
+                          const quantity = parseInt(match[2], 10);
+                          mergedAccessories[itemName] = (mergedAccessories[itemName] || 0) + quantity;
+                        } else {
+                          mergedAccessories[accessoryStr] = (mergedAccessories[accessoryStr] || 0) + 1;
+                        }
+                      });
+                    }
+                    
+                    // 2. Contract accessories from database (fallback if not in schedule)
+                    if (contractAccessories.length > 0) {
+                      contractAccessories.forEach(acc => {
+                        if (!mergedAccessories[acc.accessory_name]) {
+                          mergedAccessories[acc.accessory_name] = acc.quantity;
+                        }
+                      });
+                    }
+                    
+                    // 3. Order accessories (if available, lowest priority)
+                    if (order.accessories && order.accessories.length > 0) {
+                      order.accessories.forEach((acc: any) => {
+                        const name = acc.name || acc.accessory_name;
+                        if (name && !mergedAccessories[name]) {
+                          mergedAccessories[name] = acc.quantity || 1;
+                        }
+                      });
+                    }
+                    
+                    const accessoriesItems = Object.entries(mergedAccessories).map(([name, quantity], i) => ({
+                      id: `${sched.id}-acc-${i}`,
+                      item_name: name,
+                      quantity
+                    }));
                     
                     const suppliesItems = Array.isArray(sched.supplies) && sched.supplies.length > 0
                       ? sched.supplies.map((name: string, i: number) => ({ 
