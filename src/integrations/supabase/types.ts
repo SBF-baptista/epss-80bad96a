@@ -80,6 +80,20 @@ export type Database = {
             referencedRelation: "workflow_chain"
             referencedColumns: ["incoming_vehicle_id"]
           },
+          {
+            foreignKeyName: "fk_accessories_vehicle"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_accessories_vehicle"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["incoming_vehicle_id"]
+          },
         ]
       }
       automation_rule_photos: {

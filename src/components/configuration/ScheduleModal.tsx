@@ -46,6 +46,7 @@ import { checkItemHomologation, type HomologationStatus } from '@/services/kitHo
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { fetchAccessoriesByPlates, VehicleAccessory } from '@/services/vehicleAccessoryService';
 
 interface VehicleScheduleData {
   plate: string;
@@ -107,6 +108,7 @@ export const ScheduleModal = ({
   const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
   const [homologationStatus, setHomologationStatus] = useState<Map<string, boolean>>(new Map());
   const [scheduleConflicts, setScheduleConflicts] = useState<Map<string, string>>(new Map());
+  const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, VehicleAccessory[]>>(new Map());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -181,6 +183,14 @@ export const ScheduleModal = ({
     console.log('Initial schedules created:', initialSchedules);
     setVehicleSchedules(initialSchedules);
     form.reset({ vehicles: initialSchedules });
+
+    // Fetch real accessories by plates
+    const plates = unscheduledVehicles.map(v => v.plate).filter((p): p is string => !!p && p !== 'Placa pendente');
+    if (plates.length > 0) {
+      fetchAccessoriesByPlates(plates)
+        .then(accessories => setAccessoriesByPlate(accessories))
+        .catch(error => console.error('Error fetching accessories by plates:', error));
+    }
 
     // 2) Fire-and-forget: check homologation in background and update icons
     (async () => {
@@ -662,30 +672,52 @@ export const ScheduleModal = ({
                                 <Badge variant="secondary">{vehicleSchedule.plate}</Badge>
                               </td>
                               <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
-                              <td className="px-4 py-3">
+              <td className="px-4 py-3">
                                 <div className="flex flex-col gap-1 max-w-[180px]">
-                                  {vehicleSchedule.accessories.length > 0 ? (
-                                    vehicleSchedule.accessories.map((acc, i) => {
-                                      const isHomologated = homologationStatus.get(`${acc}:accessory`);
-                                      return (
-                                        <div key={i} className="flex items-center gap-1">
-                                          {isHomologated ? (
-                                            <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                                          ) : (
-                                            <X className="h-3 w-3 text-red-600 flex-shrink-0" />
-                                          )}
-                                          <span className={cn(
-                                            "text-xs",
-                                            isHomologated ? "text-green-700" : "text-red-700"
-                                          )}>
-                                            {acc}
-                                          </span>
-                                        </div>
-                                      );
-                                    })
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">-</span>
-                                  )}
+                                  {(() => {
+                                    const realAccessories = accessoriesByPlate.get(vehicleSchedule.plate) || [];
+                                    if (realAccessories.length > 0) {
+                                      return realAccessories.map((acc, i) => {
+                                        const isHomologated = homologationStatus.get(`${acc.accessory_name}:accessory`);
+                                        return (
+                                          <div key={i} className="flex items-center gap-1">
+                                            {isHomologated ? (
+                                              <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                            ) : (
+                                              <X className="h-3 w-3 text-red-600 flex-shrink-0" />
+                                            )}
+                                            <span className={cn(
+                                              "text-xs",
+                                              isHomologated ? "text-green-700" : "text-red-700"
+                                            )}>
+                                              {acc.accessory_name} ({acc.quantity}x)
+                                            </span>
+                                          </div>
+                                        );
+                                      });
+                                    } else if (vehicleSchedule.accessories.length > 0) {
+                                      return vehicleSchedule.accessories.map((acc, i) => {
+                                        const isHomologated = homologationStatus.get(`${acc}:accessory`);
+                                        return (
+                                          <div key={i} className="flex items-center gap-1">
+                                            {isHomologated ? (
+                                              <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                            ) : (
+                                              <X className="h-3 w-3 text-red-600 flex-shrink-0" />
+                                            )}
+                                            <span className={cn(
+                                              "text-xs",
+                                              isHomologated ? "text-green-700" : "text-red-700"
+                                            )}>
+                                              {acc}
+                                            </span>
+                                          </div>
+                                        );
+                                      });
+                                    } else {
+                                      return <span className="text-xs text-muted-foreground">-</span>;
+                                    }
+                                  })()}
                                 </div>
                               </td>
                               <td className="px-4 py-3">

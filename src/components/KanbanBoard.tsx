@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import KanbanColumn from "./KanbanColumn";
 import OrderModal from "./OrderModal";
 import { KitScheduleWithDetails } from "@/services/kitScheduleService";
@@ -7,6 +7,7 @@ import { HomologationKit } from "@/types/homologationKit";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAccessoriesByPlates, VehicleAccessory } from "@/services/vehicleAccessoryService";
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -28,19 +29,46 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const [draggedSchedules, setDraggedSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
+  const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, VehicleAccessory[]>>(new Map());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Convert schedules to orders format for compatibility
+  // Fetch real accessories from database when schedules change
+  useEffect(() => {
+    const fetchAccessories = async () => {
+      const plates = schedules
+        .map(s => s.vehicle_plate)
+        .filter((plate): plate is string => !!plate && plate !== 'Placa pendente');
+      
+      if (plates.length > 0) {
+        try {
+          const accessories = await fetchAccessoriesByPlates(plates);
+          setAccessoriesByPlate(accessories);
+        } catch (error) {
+          console.error('Error fetching accessories by plates:', error);
+        }
+      }
+    };
+
+    fetchAccessories();
+  }, [schedules]);
+
   const convertScheduleToOrder = (schedule: KitScheduleWithDetails): Order => {
     const kit = kits.find(k => k.id === schedule.kit_id);
     
-    // Get accessories from schedule (stored per placa)
-    const accessoriesList = Array.isArray(schedule.accessories) && schedule.accessories.length > 0
-      ? schedule.accessories.map((name) => ({
-          name: name,
-          quantity: 1,
+    // Get real accessories from database by plate
+    const realAccessories = schedule.vehicle_plate ? accessoriesByPlate.get(schedule.vehicle_plate) || [] : [];
+    
+    const accessoriesList = realAccessories.length > 0
+      ? realAccessories.map(acc => ({
+          name: acc.accessory_name,
+          quantity: acc.quantity,
         }))
-      : [];
+      : (Array.isArray(schedule.accessories) && schedule.accessories.length > 0
+        ? schedule.accessories.map((name) => ({
+            name: name,
+            quantity: 1,
+          }))
+        : []);
     
     return {
       id: schedule.id || '',
