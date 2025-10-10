@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface KitSchedule {
   id?: string;
-  kit_id: string;
+  kit_id?: string | null;
   technician_id: string;
   scheduled_date: string;
   installation_time?: string;
@@ -13,6 +13,7 @@ export interface KitSchedule {
   updated_at?: string;
   accessories?: string[];
   supplies?: string[];
+  incoming_vehicle_id?: string;
 }
 
 export interface KitScheduleWithDetails extends KitSchedule {
@@ -74,7 +75,7 @@ export interface KitScheduleWithDetails extends KitSchedule {
 }
 
 export interface CreateKitScheduleData {
-  kit_id: string;
+  kit_id?: string | null;
   technician_id: string;
   scheduled_date: string;
   installation_time?: string;
@@ -97,6 +98,7 @@ export interface CreateKitScheduleData {
   vehicle_year?: number;
   accessories?: string[];
   supplies?: string[];
+  incoming_vehicle_id?: string;
 }
 
 // Create a new kit schedule

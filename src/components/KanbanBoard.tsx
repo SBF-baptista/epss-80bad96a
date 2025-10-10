@@ -7,7 +7,7 @@ import { HomologationKit } from "@/types/homologationKit";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAccessoriesByVehicleIds, aggregateAccessories } from "@/services/vehicleAccessoryService";
+import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessories } from "@/services/vehicleAccessoryService";
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -32,9 +32,12 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch real accessories from database by vehicle IDs
+  // Fetch real accessories from database by vehicle IDs and fallback to plates
   useEffect(() => {
     const fetchAccessories = async () => {
+      const formattedMap = new Map<string, string[]>();
+      
+      // First, try to fetch by incoming_vehicle_id
       const vehicleIds = schedules
         .map(s => s.incoming_vehicle_id)
         .filter((id): id is string => !!id);
@@ -42,17 +45,40 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       if (vehicleIds.length > 0) {
         try {
           const accessoriesMap = await fetchAccessoriesByVehicleIds(vehicleIds);
-          const formattedMap = new Map<string, string[]>();
           
           accessoriesMap.forEach((accessories, vehicleId) => {
             formattedMap.set(vehicleId, aggregateAccessories(accessories));
           });
-          
-          setAccessoriesByVehicleId(formattedMap);
         } catch (error) {
           console.error('Error fetching accessories by vehicle IDs:', error);
         }
       }
+      
+      // Fallback: fetch by plates for schedules without incoming_vehicle_id
+      const schedulesWithoutVehicleId = schedules.filter(s => !s.incoming_vehicle_id && s.vehicle_plate && s.vehicle_plate !== 'Placa pendente');
+      const plates = schedulesWithoutVehicleId.map(s => s.vehicle_plate!);
+      
+      if (plates.length > 0) {
+        try {
+          const accessoriesByPlate = await fetchAccessoriesByPlates(plates);
+          
+          // Map plate-based accessories to schedules
+          schedulesWithoutVehicleId.forEach(schedule => {
+            if (schedule.vehicle_plate) {
+              const accessories = accessoriesByPlate.get(schedule.vehicle_plate);
+              if (accessories) {
+                // Use a synthetic key since we don't have incoming_vehicle_id
+                const syntheticKey = `plate-${schedule.vehicle_plate}`;
+                formattedMap.set(syntheticKey, aggregateAccessories(accessories));
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Error fetching accessories by plates:', error);
+        }
+      }
+      
+      setAccessoriesByVehicleId(formattedMap);
     };
 
     fetchAccessories();
@@ -61,11 +87,18 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const convertScheduleToOrder = (schedule: KitScheduleWithDetails): Order => {
     const kit = kits.find(k => k.id === schedule.kit_id);
     
-    // Get real accessories from database by incoming_vehicle_id
-    const formattedAccessories = schedule.incoming_vehicle_id
+    // Priority 1: Get real accessories from database by incoming_vehicle_id
+    let formattedAccessories = schedule.incoming_vehicle_id
       ? accessoriesByVehicleId.get(schedule.incoming_vehicle_id) || []
       : [];
     
+    // Priority 2: Fallback to plate-based lookup if no incoming_vehicle_id
+    if (formattedAccessories.length === 0 && schedule.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente') {
+      const syntheticKey = `plate-${schedule.vehicle_plate}`;
+      formattedAccessories = accessoriesByVehicleId.get(syntheticKey) || [];
+    }
+    
+    // Priority 3: Use schedule.accessories as last resort
     const accessoriesList = formattedAccessories.length > 0
       ? formattedAccessories.map((formatted) => {
           const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);

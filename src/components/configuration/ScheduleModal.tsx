@@ -377,28 +377,8 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Resolve kit automatically: if none exists, create a default one
-      let selectedKit: HomologationKit | null = kits.length > 0 ? kits[0] : null;
-      if (!selectedKit) {
-        try {
-          selectedKit = await createHomologationKit({
-            name: `Kit Padrão - ${new Date().toISOString().slice(0, 10)}`,
-            description: 'Criado automaticamente para agendamento',
-            equipment: [],
-            accessories: [],
-            supplies: []
-          });
-        } catch (e) {
-          console.error('Falha ao criar kit padrão automaticamente:', e);
-          toast({
-            title: 'Erro ao criar kit padrão',
-            description: 'Não foi possível criar um kit automaticamente para o agendamento.',
-            variant: 'destructive'
-          });
-          setIsSubmitting(false);
-          return;
-        }
-      }
+      // Kit is now optional - use first available if exists, otherwise null
+      const selectedKit: HomologationKit | null = kits.length > 0 ? kits[0] : null;
 
       let schedulesCreated = 0;
       let schedulesSkipped = 0;
@@ -439,8 +419,12 @@ export const ScheduleModal = ({
 
         // Create schedule for each technician
         for (const technicianId of vehicleSchedule.technician_ids) {
+          // Resolve incoming_vehicle_id for this vehicle
+          const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
+          const incomingVehicleId = vehicleIdMap.get(vehicleKey);
+
           await createKitSchedule({
-            kit_id: selectedKit.id!,
+            kit_id: selectedKit?.id || null,
             technician_id: technicianId,
             scheduled_date: vehicleSchedule.scheduled_date.toISOString().split('T')[0],
             installation_time: vehicleSchedule.installation_time || undefined,
@@ -461,6 +445,7 @@ export const ScheduleModal = ({
             vehicle_brand: vehicleSchedule.brand,
             vehicle_model: vehicleSchedule.model,
             vehicle_year: vehicleSchedule.year,
+            incoming_vehicle_id: incomingVehicleId || undefined,
             // Persist per-placa items
             accessories: vehicleSchedule.accessories || [],
             supplies: vehicleSchedule.modules || []

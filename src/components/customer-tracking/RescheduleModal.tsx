@@ -38,7 +38,7 @@ interface VehicleScheduleData {
 interface RescheduleModalProps {
   schedule: {
     id: string;
-    kit_id: string;
+    kit_id?: string | null;
     technician_id: string;
     scheduled_date: string;
     installation_time?: string;
@@ -182,14 +182,14 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
 
       if (error) throw error;
 
-      // Insert updated schedules
+      // Insert updated schedules with 'scheduled' status
       const schedulesToInsert = vehicles.map(vehicle => ({
         customer_id: schedule.customer_id || schedule.id,
-        kit_id: schedule.kit_id,
+        kit_id: schedule.kit_id || null,
         technician_id: vehicle.technician_id,
         scheduled_date: vehicle.scheduled_date,
         installation_time: vehicle.installation_time || null,
-        status: 'assigned',
+        status: 'scheduled',
         vehicle_plate: vehicle.vehicle_plate,
         vehicle_brand: vehicle.vehicle_brand,
         vehicle_model: vehicle.vehicle_model,
