@@ -85,7 +85,8 @@ export async function processVehicleGroups(
         if (insertError) {
           // Handle duplicate key violations (vehicle already exists)
           if (insertError.code === '23505') {
-            console.log(`[${timestamp}][${requestId}] Vehicle already exists, fetching existing record...`)
+            console.log(`[${timestamp}][${requestId}] ⚠️ WARNING: Vehicle already exists - this is a DUPLICATE API CALL!`)
+            console.log(`[${timestamp}][${requestId}] Accessories will use UPSERT to prevent duplication`)
             
             // Try to find the existing incoming_vehicle
             const { data: existingVehicle, error: selectError } = await supabase
@@ -140,13 +141,16 @@ export async function processVehicleGroups(
               
               const { error: itemError } = await supabase
                 .from('accessories')
-                .insert({
+                .upsert({
                   vehicle_id: incomingVehicle.id,
                   company_name: group.company_name,
                   usage_type: normalizedUsageType,
                   accessory_name: item.accessory_name.trim(),
                   quantity: item.quantity || 1,
                   received_at: timestamp
+                }, {
+                  onConflict: 'vehicle_id,accessory_name',
+                  ignoreDuplicates: false
                 })
 
               if (itemError) {
@@ -170,13 +174,16 @@ export async function processVehicleGroups(
               
               const { error: accessoryError } = await supabase
                 .from('accessories')
-                .insert({
+                .upsert({
                   vehicle_id: incomingVehicle.id,
                   company_name: group.company_name,
                   usage_type: normalizedUsageType,
                   accessory_name: accessory.accessory_name.trim(),
                   quantity: accessory.quantity || 1,
                   received_at: timestamp
+                }, {
+                  onConflict: 'vehicle_id,accessory_name',
+                  ignoreDuplicates: false
                 })
 
               if (accessoryError) {
@@ -352,7 +359,7 @@ export async function processVehicleGroups(
             
             const { data: accessory, error: accessoryError } = await supabase
               .from('accessories')
-              .insert({
+              .upsert({
                 incoming_vehicle_group_id: primaryHomologationId,
                 vehicle_id: primaryVehicleId,
                 company_name: group.company_name,
@@ -360,6 +367,9 @@ export async function processVehicleGroups(
                 accessory_name: accessory_name.trim(),
                 quantity: quantity || 1,
                 received_at: timestamp
+              }, {
+                onConflict: 'vehicle_id,accessory_name',
+                ignoreDuplicates: false
               })
               .select()
               .single()
