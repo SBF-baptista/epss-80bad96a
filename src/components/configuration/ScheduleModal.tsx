@@ -46,7 +46,7 @@ import { checkItemHomologation, type HomologationStatus } from '@/services/kitHo
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchAccessoriesByPlates, VehicleAccessory } from '@/services/vehicleAccessoryService';
+import { fetchAccessoriesByPlates, VehicleAccessory, fetchAccessoriesForUnknownVehicle } from '@/services/vehicleAccessoryService';
 
 interface VehicleScheduleData {
   plate: string;
@@ -190,6 +190,38 @@ export const ScheduleModal = ({
       fetchAccessoriesByPlates(plates)
         .then(accessories => setAccessoriesByPlate(accessories))
         .catch(error => console.error('Error fetching accessories by plates:', error));
+    }
+
+    // Fallback: fetch accessories for vehicles without a known plate ("Placa pendente")
+    const unknowns = unscheduledVehicles.filter(v => !v.plate || v.plate === 'Placa pendente');
+    if (unknowns.length > 0 && selectedCustomer) {
+      (async () => {
+        try {
+          const results = await Promise.all(
+            unknowns.map(v => fetchAccessoriesForUnknownVehicle(selectedCustomer.company_name, v.brand, v.model))
+          );
+
+          setVehicleSchedules(prev => {
+            const updated = prev.map(s => {
+              if (s.plate === 'Placa pendente') {
+                const idx = unknowns.findIndex(u => u.brand === s.brand && u.model === s.model);
+                if (idx !== -1) {
+                  const real = results[idx] || [];
+                  if (real.length > 0) {
+                    const formatted = real.map(a => `${a.accessory_name} (${a.quantity}x)`);
+                    return { ...s, accessories: formatted };
+                  }
+                }
+              }
+              return s;
+            });
+            form.setValue('vehicles', updated);
+            return updated;
+          });
+        } catch (e) {
+          console.error('Error fetching accessories for unknown plate vehicles:', e);
+        }
+      })();
     }
 
     // 2) Fire-and-forget: check homologation in background and update icons

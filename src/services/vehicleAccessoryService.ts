@@ -123,3 +123,52 @@ export const fetchAccessoriesByPlates = async (plates: string[]): Promise<Map<st
     throw error;
   }
 };
+
+export const fetchAccessoriesForUnknownVehicle = async (
+  companyName: string | null | undefined,
+  brand: string,
+  model: string
+): Promise<VehicleAccessory[]> => {
+  try {
+    const firstToken = model?.split(' ')?.[0] || model;
+    let ivQuery = supabase
+      .from('incoming_vehicles')
+      .select('id, brand, vehicle, company_name, received_at')
+      .eq('brand', brand)
+      .ilike('vehicle', `%${firstToken}%`);
+
+    if (companyName) {
+      ivQuery = ivQuery.eq('company_name', companyName);
+    }
+
+    const { data: vehicles, error: ivError } = await ivQuery
+      .order('received_at', { ascending: false })
+      .limit(1);
+
+    if (ivError) {
+      console.error('Error finding incoming vehicle for unknown plate:', ivError);
+      throw ivError;
+    }
+
+    if (!vehicles || vehicles.length === 0) {
+      return [];
+    }
+
+    const vehicleId = vehicles[0].id as string;
+    const { data: accessories, error: accError } = await supabase
+      .from('accessories')
+      .select('*')
+      .eq('vehicle_id', vehicleId)
+      .order('accessory_name');
+
+    if (accError) {
+      console.error('Error fetching accessories for unknown plate vehicle:', accError);
+      throw accError;
+    }
+
+    return accessories || [];
+  } catch (error) {
+    console.error('Error in fetchAccessoriesForUnknownVehicle:', error);
+    return [];
+  }
+};
