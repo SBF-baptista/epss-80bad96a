@@ -64,6 +64,7 @@ export interface KitScheduleWithDetails extends KitSchedule {
   installation_address_state?: string;
   installation_address_postal_code?: string;
   installation_address_complement?: string;
+  incoming_vehicle_id?: string;
   vehicle_plate?: string;
   vehicle_brand?: string;
   vehicle_model?: string;

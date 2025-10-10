@@ -124,51 +124,52 @@ export const fetchAccessoriesByPlates = async (plates: string[]): Promise<Map<st
   }
 };
 
-export const fetchAccessoriesForUnknownVehicle = async (
-  companyName: string | null | undefined,
-  brand: string,
-  model: string
-): Promise<VehicleAccessory[]> => {
+export const fetchAccessoriesByVehicleIds = async (vehicleIds: string[]): Promise<Map<string, VehicleAccessory[]>> => {
   try {
-    const firstToken = model?.split(' ')?.[0] || model;
-    let ivQuery = supabase
-      .from('incoming_vehicles')
-      .select('id, brand, vehicle, company_name, received_at')
-      .eq('brand', brand)
-      .ilike('vehicle', `%${firstToken}%`);
-
-    if (companyName) {
-      ivQuery = ivQuery.eq('company_name', companyName);
+    if (!vehicleIds || vehicleIds.length === 0) {
+      return new Map();
     }
 
-    const { data: vehicles, error: ivError } = await ivQuery
-      .order('received_at', { ascending: false })
-      .limit(1);
-
-    if (ivError) {
-      console.error('Error finding incoming vehicle for unknown plate:', ivError);
-      throw ivError;
-    }
-
-    if (!vehicles || vehicles.length === 0) {
-      return [];
-    }
-
-    const vehicleId = vehicles[0].id as string;
-    const { data: accessories, error: accError } = await supabase
+    const { data: accessories, error } = await supabase
       .from('accessories')
       .select('*')
-      .eq('vehicle_id', vehicleId)
+      .in('vehicle_id', vehicleIds)
       .order('accessory_name');
 
-    if (accError) {
-      console.error('Error fetching accessories for unknown plate vehicle:', accError);
-      throw accError;
+    if (error) {
+      console.error('Error fetching accessories by vehicle IDs:', error);
+      throw error;
     }
 
-    return accessories || [];
+    const accessoriesByVehicleId = new Map<string, VehicleAccessory[]>();
+    
+    if (accessories) {
+      accessories.forEach((accessory) => {
+        if (accessory.vehicle_id) {
+          if (!accessoriesByVehicleId.has(accessory.vehicle_id)) {
+            accessoriesByVehicleId.set(accessory.vehicle_id, []);
+          }
+          accessoriesByVehicleId.get(accessory.vehicle_id)!.push(accessory);
+        }
+      });
+    }
+
+    return accessoriesByVehicleId;
   } catch (error) {
-    console.error('Error in fetchAccessoriesForUnknownVehicle:', error);
-    return [];
+    console.error('Error in fetchAccessoriesByVehicleIds:', error);
+    throw error;
   }
+};
+
+export const aggregateAccessories = (accessories: VehicleAccessory[]): string[] => {
+  const aggregated = new Map<string, number>();
+  
+  accessories.forEach(acc => {
+    const current = aggregated.get(acc.accessory_name) || 0;
+    aggregated.set(acc.accessory_name, current + acc.quantity);
+  });
+
+  return Array.from(aggregated.entries())
+    .map(([name, qty]) => `${name} (${qty}x)`)
+    .sort();
 };

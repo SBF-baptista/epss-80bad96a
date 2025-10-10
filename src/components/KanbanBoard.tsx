@@ -7,7 +7,7 @@ import { HomologationKit } from "@/types/homologationKit";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAccessoriesByPlates, VehicleAccessory } from "@/services/vehicleAccessoryService";
+import { fetchAccessoriesByVehicleIds, aggregateAccessories } from "@/services/vehicleAccessoryService";
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -29,22 +29,28 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const [draggedSchedules, setDraggedSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
-  const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, VehicleAccessory[]>>(new Map());
+  const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch real accessories from database when schedules change
+  // Fetch real accessories from database by vehicle IDs
   useEffect(() => {
     const fetchAccessories = async () => {
-      const plates = schedules
-        .map(s => s.vehicle_plate)
-        .filter((plate): plate is string => !!plate && plate !== 'Placa pendente');
+      const vehicleIds = schedules
+        .map(s => s.incoming_vehicle_id)
+        .filter((id): id is string => !!id);
       
-      if (plates.length > 0) {
+      if (vehicleIds.length > 0) {
         try {
-          const accessories = await fetchAccessoriesByPlates(plates);
-          setAccessoriesByPlate(accessories);
+          const accessoriesMap = await fetchAccessoriesByVehicleIds(vehicleIds);
+          const formattedMap = new Map<string, string[]>();
+          
+          accessoriesMap.forEach((accessories, vehicleId) => {
+            formattedMap.set(vehicleId, aggregateAccessories(accessories));
+          });
+          
+          setAccessoriesByVehicleId(formattedMap);
         } catch (error) {
-          console.error('Error fetching accessories by plates:', error);
+          console.error('Error fetching accessories by vehicle IDs:', error);
         }
       }
     };
@@ -55,19 +61,20 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const convertScheduleToOrder = (schedule: KitScheduleWithDetails): Order => {
     const kit = kits.find(k => k.id === schedule.kit_id);
     
-    // Get real accessories from database by plate
-    const realAccessories = schedule.vehicle_plate ? accessoriesByPlate.get(schedule.vehicle_plate) || [] : [];
+    // Get real accessories from database by incoming_vehicle_id
+    const formattedAccessories = schedule.incoming_vehicle_id
+      ? accessoriesByVehicleId.get(schedule.incoming_vehicle_id) || []
+      : [];
     
-    const accessoriesList = realAccessories.length > 0
-      ? realAccessories.map(acc => ({
-          name: acc.accessory_name,
-          quantity: acc.quantity,
-        }))
+    const accessoriesList = formattedAccessories.length > 0
+      ? formattedAccessories.map((formatted) => {
+          const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
+          return match
+            ? { name: match[1], quantity: parseInt(match[2]) }
+            : { name: formatted, quantity: 1 };
+        })
       : (Array.isArray(schedule.accessories) && schedule.accessories.length > 0
-        ? schedule.accessories.map((name) => ({
-            name: name,
-            quantity: 1,
-          }))
+        ? schedule.accessories.map((name) => ({ name, quantity: 1 }))
         : []);
     
     return {

@@ -46,7 +46,8 @@ import { checkItemHomologation, type HomologationStatus } from '@/services/kitHo
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchAccessoriesByPlates, VehicleAccessory, fetchAccessoriesForUnknownVehicle } from '@/services/vehicleAccessoryService';
+import { fetchAccessoriesByVehicleIds, aggregateAccessories } from '@/services/vehicleAccessoryService';
+import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
 
 interface VehicleScheduleData {
   plate: string;
@@ -108,7 +109,8 @@ export const ScheduleModal = ({
   const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
   const [homologationStatus, setHomologationStatus] = useState<Map<string, boolean>>(new Map());
   const [scheduleConflicts, setScheduleConflicts] = useState<Map<string, string>>(new Map());
-  const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, VehicleAccessory[]>>(new Map());
+  const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
+  const [vehicleIdMap, setVehicleIdMap] = useState<Map<string, string>>(new Map());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -184,42 +186,62 @@ export const ScheduleModal = ({
     setVehicleSchedules(initialSchedules);
     form.reset({ vehicles: initialSchedules });
 
-    // Fetch real accessories by plates
-    const plates = unscheduledVehicles.map(v => v.plate).filter((p): p is string => !!p && p !== 'Placa pendente');
-    if (plates.length > 0) {
-      fetchAccessoriesByPlates(plates)
-        .then(accessories => setAccessoriesByPlate(accessories))
-        .catch(error => console.error('Error fetching accessories by plates:', error));
-    }
-
-    // Fallback: fetch accessories for vehicles without a known plate ("Placa pendente")
-    const unknowns = unscheduledVehicles.filter(v => !v.plate || v.plate === 'Placa pendente');
-    if (unknowns.length > 0 && selectedCustomer) {
+    // ID-first: Resolve incoming_vehicle_id for each vehicle and fetch accessories
+    if (selectedCustomer) {
       (async () => {
         try {
-          const results = await Promise.all(
-            unknowns.map(v => fetchAccessoriesForUnknownVehicle(selectedCustomer.company_name, v.brand, v.model))
-          );
+          const vehicleIdMapping = new Map<string, string>();
+          const resolvedIds: string[] = [];
 
-          setVehicleSchedules(prev => {
-            const updated = prev.map(s => {
-              if (s.plate === 'Placa pendente') {
-                const idx = unknowns.findIndex(u => u.brand === s.brand && u.model === s.model);
-                if (idx !== -1) {
-                  const real = results[idx] || [];
-                  if (real.length > 0) {
-                    const formatted = real.map(a => `${a.accessory_name} (${a.quantity}x)`);
-                    return { ...s, accessories: formatted };
-                  }
-                }
+          for (const v of unscheduledVehicles) {
+            const vehicleId = await resolveIncomingVehicleId(
+              selectedCustomer.company_name,
+              selectedCustomer.sale_summary_id,
+              {
+                plate: v.plate,
+                brand: v.brand,
+                model: v.model,
+                year: v.year
               }
-              return s;
+            );
+
+            if (vehicleId) {
+              const key = `${v.brand}-${v.model}-${v.plate || 'pending'}`;
+              vehicleIdMapping.set(key, vehicleId);
+              resolvedIds.push(vehicleId);
+            }
+          }
+
+          setVehicleIdMap(vehicleIdMapping);
+
+          // Fetch accessories by resolved IDs
+          if (resolvedIds.length > 0) {
+            const accessoriesMap = await fetchAccessoriesByVehicleIds(resolvedIds);
+            const formattedMap = new Map<string, string[]>();
+
+            accessoriesMap.forEach((accessories, vehicleId) => {
+              formattedMap.set(vehicleId, aggregateAccessories(accessories));
             });
-            form.setValue('vehicles', updated);
-            return updated;
-          });
-        } catch (e) {
-          console.error('Error fetching accessories for unknown plate vehicles:', e);
+
+            setAccessoriesByVehicleId(formattedMap);
+
+            // Update vehicle schedules with accessories
+            setVehicleSchedules(prev => {
+              const updated = prev.map(s => {
+                const key = `${s.brand}-${s.model}-${s.plate || 'pending'}`;
+                const vehicleId = vehicleIdMapping.get(key);
+                if (vehicleId) {
+                  const accessories = formattedMap.get(vehicleId) || [];
+                  return { ...s, accessories };
+                }
+                return s;
+              });
+              form.setValue('vehicles', updated);
+              return updated;
+            });
+          }
+        } catch (error) {
+          console.error('Error loading accessories by vehicle IDs:', error);
         }
       })();
     }
@@ -707,10 +729,15 @@ export const ScheduleModal = ({
               <td className="px-4 py-3">
                                 <div className="flex flex-col gap-1 max-w-[180px]">
                                   {(() => {
-                                    const realAccessories = accessoriesByPlate.get(vehicleSchedule.plate) || [];
-                                    if (realAccessories.length > 0) {
-                                      return realAccessories.map((acc, i) => {
-                                        const isHomologated = homologationStatus.get(`${acc.accessory_name}:accessory`);
+                                    const key = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
+                                    const vehicleId = vehicleIdMap.get(key);
+                                    const formattedAccessories = vehicleId ? accessoriesByVehicleId.get(vehicleId) || [] : [];
+                                    
+                                    if (formattedAccessories.length > 0) {
+                                      return formattedAccessories.map((formatted, i) => {
+                                        const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
+                                        const accName = match ? match[1] : formatted;
+                                        const isHomologated = homologationStatus.get(`${accName}:accessory`);
                                         return (
                                           <div key={i} className="flex items-center gap-1">
                                             {isHomologated ? (
@@ -722,12 +749,12 @@ export const ScheduleModal = ({
                                               "text-xs",
                                               isHomologated ? "text-green-700" : "text-red-700"
                                             )}>
-                                              {acc.accessory_name} ({acc.quantity}x)
+                                              {formatted}
                                             </span>
                                           </div>
                                         );
                                       });
-                                    } else if (vehicleSchedule.accessories.length > 0) {
+                                    } else if (vehicleSchedule.accessories && vehicleSchedule.accessories.length > 0) {
                                       return vehicleSchedule.accessories.map((acc, i) => {
                                         const isHomologated = homologationStatus.get(`${acc}:accessory`);
                                         return (

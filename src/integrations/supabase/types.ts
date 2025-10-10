@@ -629,6 +629,7 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           id: string
+          incoming_vehicle_id: string | null
           installation_address_city: string | null
           installation_address_complement: string | null
           installation_address_neighborhood: string | null
@@ -659,6 +660,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          incoming_vehicle_id?: string | null
           installation_address_city?: string | null
           installation_address_complement?: string | null
           installation_address_neighborhood?: string | null
@@ -689,6 +691,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          incoming_vehicle_id?: string | null
           installation_address_city?: string | null
           installation_address_complement?: string | null
           installation_address_neighborhood?: string | null
@@ -716,6 +719,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kit_schedules_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kit_schedules_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["incoming_vehicle_id"]
           },
           {
             foreignKeyName: "kit_schedules_kit_id_fkey"

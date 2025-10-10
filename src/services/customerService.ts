@@ -35,6 +35,7 @@ export interface Customer {
   total_value?: number;
   contract_number?: string;
   sales_representative?: string;
+  sale_summary_id?: number;
   vehicles?: VehicleInfo[];
   accessories?: string[];
   modules?: string[];
