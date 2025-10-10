@@ -65,6 +65,7 @@ export async function processVehicleGroups(
             year: year || null,
             usage_type: normalizedUsageType,
             quantity: quantity || 1,
+            plate: vehicleData.plate || null,
             company_name: group.company_name,
             cpf: group.cpf || null,
             phone: group.phone || null,
