@@ -48,6 +48,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchAccessoriesByVehicleIds, aggregateAccessories } from '@/services/vehicleAccessoryService';
 import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VehicleScheduleData {
   plate: string;
@@ -251,7 +252,7 @@ export const ScheduleModal = ({
       try {
         const statusMap = new Map<string, boolean>();
         
-        // Check accessories and modules
+        // Check accessories and modules from customer
         const allItems = [
           ...(selectedCustomer.accessories || []).map(name => ({ name, type: 'accessory' })),
           ...(selectedCustomer.modules || []).map(name => ({ name, type: 'equipment' }))
@@ -265,7 +266,6 @@ export const ScheduleModal = ({
         );
         
         // Check overall homologation status for each unscheduled vehicle
-        // A vehicle is ready for scheduling if all its accessories and modules are homologated
         const scheduledPlates = existingSchedules
           .filter(s => s.customer_id === selectedCustomer.id && ['scheduled', 'in_progress'].includes(s.status))
           .map(s => s.vehicle_plate);
@@ -274,8 +274,41 @@ export const ScheduleModal = ({
           vehicle => !scheduledPlates.includes(vehicle.plate)
         ) || [];
         
+        // Check vehicle-specific accessories from the accessories table
         for (const vehicle of unscheduledVehicles) {
-          const vehicleAccessories = selectedCustomer.accessories || [];
+          // Resolve incoming_vehicle_id
+          const vehicleId = await resolveIncomingVehicleId(
+            selectedCustomer.company_name,
+            selectedCustomer.sale_summary_id,
+            {
+              plate: vehicle.plate,
+              brand: vehicle.brand,
+              model: vehicle.model,
+              year: vehicle.year
+            }
+          );
+
+          // Fetch vehicle-specific accessories from accessories table
+          let vehicleSpecificAccessories: string[] = [];
+          if (vehicleId) {
+            const { data: vehicleAccessories } = await supabase
+              .from('accessories')
+              .select('accessory_name')
+              .eq('vehicle_id', vehicleId);
+
+            vehicleSpecificAccessories = (vehicleAccessories || []).map(a => a.accessory_name);
+
+            // Check homologation for vehicle-specific accessories
+            await Promise.all(
+              vehicleSpecificAccessories.map(async (accName) => {
+                const ok = await checkItemHomologation(accName, 'accessory');
+                statusMap.set(`${accName}:accessory`, ok);
+              })
+            );
+          }
+
+          // Combine customer and vehicle-specific items
+          const vehicleAccessories = [...(selectedCustomer.accessories || []), ...vehicleSpecificAccessories];
           const vehicleModules = selectedCustomer.modules || [];
           
           const allAccessoriesHomologated = vehicleAccessories.every(acc => 
@@ -680,6 +713,7 @@ export const ScheduleModal = ({
                             const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicleSchedule.plate}`);
                             const hasConflict = scheduleConflicts.has(vehicleSchedule.plate);
                             return (
+                            <>
                             <tr key={vehicleSchedule.plate} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}>
                               <td className="px-4 py-3">
                                 {hasConflict ? (
@@ -873,12 +907,59 @@ export const ScheduleModal = ({
                                      ))}
                                    </SelectContent>
                                  </Select>
-                               </td>
-                            </tr>
-                          );
+                                </td>
+                             </tr>
+                             {!vehicleReady && (
+                               <tr>
+                                 <td colSpan={10} className="px-4 py-2">
+                                   {(() => {
+                                     const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
+                                     const vehicleId = vehicleIdMap.get(vehicleKey);
+                                     const vehicleAccessories = vehicleId ? accessoriesByVehicleId.get(vehicleId) || [] : [];
+                                     
+                                     const nonHomologatedItems = [
+                                       ...vehicleAccessories
+                                         .map(formatted => {
+                                           const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
+                                           return match ? match[1] : formatted;
+                                         })
+                                         .filter(acc => !homologationStatus.get(`${acc}:accessory`)),
+                                       ...(vehicleSchedule.accessories || []).filter(acc => !homologationStatus.get(`${acc}:accessory`)),
+                                       ...(vehicleSchedule.modules || []).filter(mod => !homologationStatus.get(`${mod}:equipment`))
+                                     ];
+
+                                     // Remove duplicates
+                                     const uniqueNonHomologated = [...new Set(nonHomologatedItems)];
+
+                                     if (uniqueNonHomologated.length > 0) {
+                                       return (
+                                         <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                                           <p className="text-xs font-medium text-red-800 mb-2">
+                                             ⚠️ Itens não homologados ({uniqueNonHomologated.length}):
+                                           </p>
+                                           <div className="flex flex-wrap gap-2">
+                                             {uniqueNonHomologated.map(item => (
+                                               <Badge key={item} variant="destructive" className="text-xs">
+                                                 {item}
+                                               </Badge>
+                                             ))}
+                                           </div>
+                                           <p className="text-xs text-red-700 mt-2">
+                                             Este veículo só poderá ser agendado após a homologação de todos os itens.
+                                           </p>
+                                         </div>
+                                       );
+                                     }
+                                     return null;
+                                   })()}
+                                 </td>
+                               </tr>
+                              )}
+                            </>
+                            );
                           })}
                         </tbody>
-                      </table>
+                        </table>
                     </div>
                   </div>
 

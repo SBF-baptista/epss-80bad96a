@@ -103,6 +103,38 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       }
     });
 
+    // Fetch accessories from the accessories table (from incoming_vehicles)
+    const { data: vehicleAccessories, error: accessoriesError } = await supabase
+      .from('accessories')
+      .select('vehicle_id, accessory_name, quantity, incoming_vehicle_group_id')
+      .not('vehicle_id', 'is', null);
+
+    if (accessoriesError) {
+      console.error('Error fetching vehicle accessories:', accessoriesError);
+      throw accessoriesError;
+    }
+
+    // Process vehicle accessories
+    vehicleAccessories?.forEach(accessory => {
+      const itemKey = `${accessory.accessory_name}|accessory`;
+      
+      if (!homologatedMap.has(itemKey)) {
+        const existing = pendingItemsMap.get(itemKey);
+        
+        if (existing) {
+          existing.totalQuantity += accessory.quantity;
+          existing.kits.add(accessory.vehicle_id); // Use vehicle_id as reference
+        } else {
+          pendingItemsMap.set(itemKey, {
+            item_name: accessory.accessory_name,
+            item_type: 'accessory' as ItemType,
+            totalQuantity: accessory.quantity,
+            kits: new Set([accessory.vehicle_id])
+          });
+        }
+      }
+    });
+
     // Also fetch accessories and modules from customers
     const { data: customers, error: customersError } = await supabase
       .from('customers')
