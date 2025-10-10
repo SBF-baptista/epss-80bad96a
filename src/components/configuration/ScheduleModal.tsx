@@ -169,11 +169,11 @@ export const ScheduleModal = ({
       model: vehicle.model,
       year: vehicle.year,
       technician_ids: [],
-      scheduled_date: null, // Must be filled manually
-      installation_time: '', // Must be filled manually
+      scheduled_date: null,
+      installation_time: '',
       notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
       contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
-      // clone arrays to avoid shared references
+      // Per-placa accessories & insumos from customer
       accessories: [...(selectedCustomer.accessories || [])],
       modules: [...(selectedCustomer.modules || [])]
     }));

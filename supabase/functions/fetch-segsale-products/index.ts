@@ -135,9 +135,9 @@ Deno.serve(async (req) => {
       enrichedSalesData.push(enrichedSale)
     }
 
-    // Contract items will be processed by receive-vehicle with proper vehicle_id linking
-    console.log(`Processing ${enrichedSalesData.length} sales...`)
-    console.log(`Contract items will be forwarded to receive-vehicle for proper vehicle linking`)
+    // Forward all contract_items to receive-vehicle for centralized vehicle_id linking
+    console.log(`Forwarding ${enrichedSalesData.length} sales to receive-vehicle...`)
+    console.log(`Contract items will be processed by receive-vehicle with proper vehicle_id linking`)
 
     // After storing, forward data to receive-vehicle for processing
     const vehicleGroups = (enrichedSalesData as any[]).map((sale) => ({

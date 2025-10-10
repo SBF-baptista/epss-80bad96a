@@ -131,10 +131,10 @@ export async function processVehicleGroups(
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
         // Process contract_items (from Segsale) if this is the first vehicle in the group
-        if (vehicleIndex === 0 && group.contract_items && Array.isArray(group.contract_items) && group.contract_items.length > 0) {
-          console.log(`[${timestamp}][${requestId}] Processing ${group.contract_items.length} contract items for primary vehicle...`)
+        if (vehicleIndex === 0 && (group as any).contract_items && Array.isArray((group as any).contract_items) && (group as any).contract_items.length > 0) {
+          console.log(`[${timestamp}][${requestId}] Processing ${(group as any).contract_items.length} contract items for primary vehicle...`)
           
-          for (const item of group.contract_items) {
+          for (const item of (group as any).contract_items) {
             try {
               console.log(`[${timestamp}][${requestId}] Storing contract item: ${item.accessory_name} (quantity: ${item.quantity || 1})`)
               
@@ -353,8 +353,8 @@ export async function processVehicleGroups(
             const { data: accessory, error: accessoryError } = await supabase
               .from('accessories')
               .insert({
-                incoming_vehicle_group_id: primaryHomologationId, // Use homologation ID as group identifier
-                vehicle_id: primaryVehicleId, // Link to the primary vehicle
+                incoming_vehicle_group_id: primaryHomologationId,
+                vehicle_id: primaryVehicleId,
                 company_name: group.company_name,
                 usage_type: group.usage_type,
                 accessory_name: accessory_name.trim(),

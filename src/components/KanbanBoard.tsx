@@ -34,7 +34,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const convertScheduleToOrder = (schedule: KitScheduleWithDetails): Order => {
     const kit = kits.find(k => k.id === schedule.kit_id);
     
-    // Get accessories and supplies directly from schedule fields (not from kit)
+    // Get accessories from schedule (stored per placa)
     const accessoriesList = Array.isArray(schedule.accessories) && schedule.accessories.length > 0
       ? schedule.accessories.map((name) => ({
           name: name,
