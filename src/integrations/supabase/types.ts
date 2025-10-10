@@ -1124,6 +1124,15 @@ export type Database = {
       }
     }
     Functions: {
+      backfill_planning_customers: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          customer_created: boolean
+          customer_id: string
+          incoming_vehicle_id: string
+          sale_summary_id: number
+        }[]
+      }
       backfill_schedules_from_homologations: {
         Args: Record<PropertyKey, never>
         Returns: {
