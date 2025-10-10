@@ -130,6 +130,36 @@ export async function processVehicleGroups(
 
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
+        // Process contract_items (from Segsale) if this is the first vehicle in the group
+        if (vehicleIndex === 0 && group.contract_items && Array.isArray(group.contract_items) && group.contract_items.length > 0) {
+          console.log(`[${timestamp}][${requestId}] Processing ${group.contract_items.length} contract items for primary vehicle...`)
+          
+          for (const item of group.contract_items) {
+            try {
+              console.log(`[${timestamp}][${requestId}] Storing contract item: ${item.accessory_name} (quantity: ${item.quantity || 1})`)
+              
+              const { error: itemError } = await supabase
+                .from('accessories')
+                .insert({
+                  vehicle_id: incomingVehicle.id,
+                  company_name: group.company_name,
+                  usage_type: normalizedUsageType,
+                  accessory_name: item.accessory_name.trim(),
+                  quantity: item.quantity || 1,
+                  received_at: timestamp
+                })
+
+              if (itemError) {
+                console.error(`[${timestamp}][${requestId}] ERROR - Failed to store contract item:`, itemError)
+              } else {
+                console.log(`[${timestamp}][${requestId}] Successfully stored contract item: ${item.accessory_name}`)
+              }
+            } catch (error) {
+              console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing contract item:`, error)
+            }
+          }
+        }
+
         // Process vehicle-specific accessories if they exist
         if (vehicleData.accessories && Array.isArray(vehicleData.accessories) && vehicleData.accessories.length > 0) {
           console.log(`[${timestamp}][${requestId}] Processing ${vehicleData.accessories.length} vehicle-specific accessories...`)
@@ -181,7 +211,7 @@ export async function processVehicleGroups(
             const accessoriesToPass = (!groupAccessoriesProcessed && groupAccessories.length > 0) 
               ? groupAccessories.map(acc => ({ accessory_name: acc.accessory_name, quantity: acc.quantity || 1 }))
               : []
-            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name, accessoriesToPass)
+            const orderInfo = await createAutomaticOrder(supabase, { vehicle, brand, year, quantity: quantity || 1 }, orderNumber, group.company_name, accessoriesToPass, incomingVehicle.id)
             if (accessoriesToPass.length > 0) {
               groupAccessoriesProcessed = true
               console.log(`[${timestamp}][${requestId}] Processed ${accessoriesToPass.length} group accessories with this order`)
@@ -300,9 +330,14 @@ export async function processVehicleGroups(
         .filter(v => v.homologation_id)
         .map(v => v.homologation_id)
       
-      if (homologationIds.length > 0) {
-        // Link accessories to the first homologation card in the group
+      const incomingVehicleIds = groupResult.vehicles_processed
+        .filter(v => v.incoming_vehicle_id)
+        .map(v => v.incoming_vehicle_id)
+      
+      if (homologationIds.length > 0 && incomingVehicleIds.length > 0) {
+        // Link accessories to the first homologation card and vehicle in the group
         const primaryHomologationId = homologationIds[0]
+        const primaryVehicleId = incomingVehicleIds[0]
         
         for (let accessoryIndex = 0; accessoryIndex < group.accessories.length; accessoryIndex++) {
           const accessoryData = group.accessories[accessoryIndex]
@@ -319,6 +354,7 @@ export async function processVehicleGroups(
               .from('accessories')
               .insert({
                 incoming_vehicle_group_id: primaryHomologationId, // Use homologation ID as group identifier
+                vehicle_id: primaryVehicleId, // Link to the primary vehicle
                 company_name: group.company_name,
                 usage_type: group.usage_type,
                 accessory_name: accessory_name.trim(),

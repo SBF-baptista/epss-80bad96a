@@ -135,31 +135,9 @@ Deno.serve(async (req) => {
       enrichedSalesData.push(enrichedSale)
     }
 
-    // Store contract items (accessories) in accessories table
+    // Contract items will be processed by receive-vehicle with proper vehicle_id linking
     console.log(`Processing ${enrichedSalesData.length} sales...`)
-    for (const sale of enrichedSalesData) {
-      if ((sale as any).contract_items && Array.isArray((sale as any).contract_items)) {
-        const contractItems = (sale as any).contract_items
-        console.log(`📦 Storing ${contractItems.length} accessories for ${sale.company_name}`)
-        
-        for (const item of contractItems) {
-          const { error: accessoryError } = await supabase
-            .from('accessories')
-            .insert({
-              accessory_name: item.accessory_name,
-              quantity: item.quantity || 1,
-              company_name: sale.company_name,
-              usage_type: sale.usage_type,
-            })
-
-          if (accessoryError) {
-            console.error(`Error storing accessory ${item.accessory_name}:`, accessoryError)
-          } else {
-            console.log(`✅ Stored accessory: ${item.accessory_name} (qty: ${item.quantity})`)
-          }
-        }
-      }
-    }
+    console.log(`Contract items will be forwarded to receive-vehicle for proper vehicle linking`)
 
     // After storing, forward data to receive-vehicle for processing
     const vehicleGroups = (enrichedSalesData as any[]).map((sale) => ({

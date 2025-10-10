@@ -80,7 +80,7 @@ async function generateAutoOrderNumberFallback(supabase: any, maxRetries: number
 }
 
 // Function to create automatic order using atomic database function
-export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string, companyName?: string, accessories?: Array<{accessory_name: string, quantity: number}>) {
+export async function createAutomaticOrder(supabase: any, vehicleData: any, orderNumber: string, companyName?: string, accessories?: Array<{accessory_name: string, quantity: number}>, incomingVehicleId?: string) {
   const timestamp = new Date().toISOString()
   console.log(`[${timestamp}] Creating automatic order for vehicle: ${vehicleData.brand} ${vehicleData.vehicle}`)
   console.log(`[${timestamp}] Vehicle data:`, JSON.stringify(vehicleData, null, 2))
@@ -117,6 +117,7 @@ export async function createAutomaticOrder(supabase: any, vehicleData: any, orde
       
       const accessoryInserts = accessories.map(accessory => ({
         pedido_id: orderResult.order_id,
+        vehicle_id: incomingVehicleId || null,
         accessory_name: accessory.accessory_name,
         quantity: accessory.quantity,
         received_at: new Date().toISOString()
