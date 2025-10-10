@@ -98,7 +98,10 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       formattedAccessories = accessoriesByVehicleId.get(syntheticKey) || [];
     }
     
-    // Priority 3: Use schedule.accessories as last resort
+    // Detect corrupted arrays (duplicated data) - ignore if > 10 items
+    const isCorruptedArray = Array.isArray(schedule.accessories) && schedule.accessories.length > 10;
+    
+    // Priority 3: Use schedule.accessories only if not corrupted
     const accessoriesList = formattedAccessories.length > 0
       ? formattedAccessories.map((formatted) => {
           const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
@@ -106,7 +109,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             ? { name: match[1], quantity: parseInt(match[2]) }
             : { name: formatted, quantity: 1 };
         })
-      : (Array.isArray(schedule.accessories) && schedule.accessories.length > 0
+      : (!isCorruptedArray && Array.isArray(schedule.accessories) && schedule.accessories.length > 0
         ? schedule.accessories.map((name) => ({ name, quantity: 1 }))
         : []);
     

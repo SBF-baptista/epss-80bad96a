@@ -33,6 +33,7 @@ interface VehicleScheduleData {
   scheduled_date: string;
   installation_time: string;
   contract_number: string;
+  incoming_vehicle_id?: string | null;
 }
 
 interface RescheduleModalProps {
@@ -84,7 +85,7 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
       // Load all schedules for this customer
       const { data: schedules, error } = await supabase
         .from('kit_schedules')
-        .select('*')
+        .select('*, incoming_vehicle_id')
         .eq('customer_id', schedule.customer_id || schedule.id);
 
       if (error) throw error;
@@ -101,7 +102,8 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
           technician_id: s.technician_id || '',
           scheduled_date: s.scheduled_date ? s.scheduled_date.split('T')[0] : '',
           installation_time: s.installation_time || '',
-          contract_number: ''
+          contract_number: '',
+          incoming_vehicle_id: s.incoming_vehicle_id || null
         }));
         setVehicles(vehicleData);
       }
@@ -193,7 +195,10 @@ export const RescheduleModal = ({ schedule, isOpen, onClose, onUpdate }: Resched
         vehicle_plate: vehicle.vehicle_plate,
         vehicle_brand: vehicle.vehicle_brand,
         vehicle_model: vehicle.vehicle_model,
-        vehicle_year: vehicle.vehicle_year ? parseInt(vehicle.vehicle_year) : null
+        vehicle_year: vehicle.vehicle_year ? parseInt(vehicle.vehicle_year) : null,
+        incoming_vehicle_id: vehicle.incoming_vehicle_id || null,
+        accessories: [] as string[],
+        supplies: [] as string[]
       }));
 
       const { error: insertError } = await supabase
