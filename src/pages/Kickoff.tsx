@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Users, Truck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, Users, Truck, Edit, CheckCircle2, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,12 +14,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 
 const Kickoff = () => {
-  const { data: kickoffData, isLoading } = useQuery({
+  const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
+  const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const { data: kickoffData, isLoading, refetch } = useQuery({
     queryKey: ['kickoff-data'],
     queryFn: getKickoffData,
   });
+
+  const handleEditKickoff = (saleSummaryId: number, companyName: string) => {
+    setSelectedSaleSummaryId(saleSummaryId);
+    setSelectedCompanyName(companyName);
+    setModalOpen(true);
+  };
 
   // Agrupar por usage_type para o resumo
   const usageTypeSummary = kickoffData?.usage_types.reduce((acc, item) => {
@@ -126,6 +139,8 @@ const Kickoff = () => {
                   <TableHead>Cliente</TableHead>
                   <TableHead className="text-right">Quantidade</TableHead>
                   <TableHead className="text-right">Veículos</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -140,6 +155,29 @@ const Kickoff = () => {
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {item.vehicle_count} {item.vehicle_count === 1 ? 'veículo' : 'veículos'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {item.needs_blocking && (
+                          <Badge variant="destructive" className="text-xs">
+                            Bloqueio
+                          </Badge>
+                        )}
+                        {item.has_kickoff_details ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditKickoff(item.sale_summary_id, item.company_name)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -173,6 +211,16 @@ const Kickoff = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {selectedSaleSummaryId && (
+        <KickoffDetailsModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          saleSummaryId={selectedSaleSummaryId}
+          companyName={selectedCompanyName}
+          onSuccess={() => refetch()}
+        />
       )}
     </div>
   );

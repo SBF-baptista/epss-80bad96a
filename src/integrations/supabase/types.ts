@@ -187,12 +187,29 @@ export type Database = {
           contract_number: string | null
           created_at: string
           created_by: string | null
+          decision_maker_email: string | null
+          decision_maker_name: string | null
+          decision_maker_phone: string | null
+          decision_maker_role: string | null
           document_number: string
           document_type: string
           email: string
+          has_installation_particularity: boolean | null
           id: string
+          influencer_email: string | null
+          influencer_name: string | null
+          influencer_phone: string | null
+          influencer_role: string | null
+          installation_locations: Json | null
+          installation_particularity_details: string | null
+          kickoff_notes: string | null
           modules: string[] | null
           name: string
+          needs_blocking: boolean | null
+          operations_contact_email: string | null
+          operations_contact_name: string | null
+          operations_contact_phone: string | null
+          operations_contact_role: string | null
           package_name: string | null
           phone: string
           sale_summary_id: number | null
@@ -215,12 +232,29 @@ export type Database = {
           contract_number?: string | null
           created_at?: string
           created_by?: string | null
+          decision_maker_email?: string | null
+          decision_maker_name?: string | null
+          decision_maker_phone?: string | null
+          decision_maker_role?: string | null
           document_number: string
           document_type: string
           email: string
+          has_installation_particularity?: boolean | null
           id?: string
+          influencer_email?: string | null
+          influencer_name?: string | null
+          influencer_phone?: string | null
+          influencer_role?: string | null
+          installation_locations?: Json | null
+          installation_particularity_details?: string | null
+          kickoff_notes?: string | null
           modules?: string[] | null
           name: string
+          needs_blocking?: boolean | null
+          operations_contact_email?: string | null
+          operations_contact_name?: string | null
+          operations_contact_phone?: string | null
+          operations_contact_role?: string | null
           package_name?: string | null
           phone: string
           sale_summary_id?: number | null
@@ -243,12 +277,29 @@ export type Database = {
           contract_number?: string | null
           created_at?: string
           created_by?: string | null
+          decision_maker_email?: string | null
+          decision_maker_name?: string | null
+          decision_maker_phone?: string | null
+          decision_maker_role?: string | null
           document_number?: string
           document_type?: string
           email?: string
+          has_installation_particularity?: boolean | null
           id?: string
+          influencer_email?: string | null
+          influencer_name?: string | null
+          influencer_phone?: string | null
+          influencer_role?: string | null
+          installation_locations?: Json | null
+          installation_particularity_details?: string | null
+          kickoff_notes?: string | null
           modules?: string[] | null
           name?: string
+          needs_blocking?: boolean | null
+          operations_contact_email?: string | null
+          operations_contact_name?: string | null
+          operations_contact_phone?: string | null
+          operations_contact_role?: string | null
           package_name?: string | null
           phone?: string
           sale_summary_id?: number | null
