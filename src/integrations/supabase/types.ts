@@ -184,6 +184,7 @@ export type Database = {
           address_state: string
           address_street: string
           company_name: string | null
+          contacts: Json | null
           contract_number: string | null
           created_at: string
           created_by: string | null
@@ -205,7 +206,10 @@ export type Database = {
           kickoff_notes: string | null
           modules: string[] | null
           name: string
+          needs_accelerator_blocking: boolean | null
           needs_blocking: boolean | null
+          needs_engine_blocking: boolean | null
+          needs_fuel_blocking: boolean | null
           operations_contact_email: string | null
           operations_contact_name: string | null
           operations_contact_phone: string | null
@@ -229,6 +233,7 @@ export type Database = {
           address_state: string
           address_street: string
           company_name?: string | null
+          contacts?: Json | null
           contract_number?: string | null
           created_at?: string
           created_by?: string | null
@@ -250,7 +255,10 @@ export type Database = {
           kickoff_notes?: string | null
           modules?: string[] | null
           name: string
+          needs_accelerator_blocking?: boolean | null
           needs_blocking?: boolean | null
+          needs_engine_blocking?: boolean | null
+          needs_fuel_blocking?: boolean | null
           operations_contact_email?: string | null
           operations_contact_name?: string | null
           operations_contact_phone?: string | null
@@ -274,6 +282,7 @@ export type Database = {
           address_state?: string
           address_street?: string
           company_name?: string | null
+          contacts?: Json | null
           contract_number?: string | null
           created_at?: string
           created_by?: string | null
@@ -295,7 +304,10 @@ export type Database = {
           kickoff_notes?: string | null
           modules?: string[] | null
           name?: string
+          needs_accelerator_blocking?: boolean | null
           needs_blocking?: boolean | null
+          needs_engine_blocking?: boolean | null
+          needs_fuel_blocking?: boolean | null
           operations_contact_email?: string | null
           operations_contact_name?: string | null
           operations_contact_phone?: string | null

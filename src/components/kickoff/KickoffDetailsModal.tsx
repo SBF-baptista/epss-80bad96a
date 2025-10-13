@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2 } from "lucide-react";
@@ -18,9 +19,16 @@ interface KickoffDetailsModalProps {
 }
 
 interface InstallationLocation {
-  address: string;
   city: string;
   state: string;
+}
+
+interface Contact {
+  type: 'decisor' | 'influenciador' | 'operacoes';
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
 }
 
 export const KickoffDetailsModal = ({
@@ -32,34 +40,34 @@ export const KickoffDetailsModal = ({
 }: KickoffDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [needsBlocking, setNeedsBlocking] = useState(false);
+  const [needsEngineBlocking, setNeedsEngineBlocking] = useState(false);
+  const [needsFuelBlocking, setNeedsFuelBlocking] = useState(false);
+  const [needsAcceleratorBlocking, setNeedsAcceleratorBlocking] = useState(false);
   const [hasParticularity, setHasParticularity] = useState(false);
   
-  // Decision maker
-  const [decisionMakerName, setDecisionMakerName] = useState("");
-  const [decisionMakerRole, setDecisionMakerRole] = useState("");
-  const [decisionMakerEmail, setDecisionMakerEmail] = useState("");
-  const [decisionMakerPhone, setDecisionMakerPhone] = useState("");
-  
-  // Influencer
-  const [influencerName, setInfluencerName] = useState("");
-  const [influencerRole, setInfluencerRole] = useState("");
-  const [influencerEmail, setInfluencerEmail] = useState("");
-  const [influencerPhone, setInfluencerPhone] = useState("");
-  
-  // Operations
-  const [operationsName, setOperationsName] = useState("");
-  const [operationsRole, setOperationsRole] = useState("");
-  const [operationsEmail, setOperationsEmail] = useState("");
-  const [operationsPhone, setOperationsPhone] = useState("");
-  
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [installationLocations, setInstallationLocations] = useState<InstallationLocation[]>([
-    { address: "", city: "", state: "" }
+    { city: "", state: "" }
   ]);
   const [particularityDetails, setParticularityDetails] = useState("");
   const [notes, setNotes] = useState("");
 
+  const addContact = () => {
+    setContacts([...contacts, { type: 'decisor', name: "", role: "", email: "", phone: "" }]);
+  };
+
+  const removeContact = (index: number) => {
+    setContacts(contacts.filter((_, i) => i !== index));
+  };
+
+  const updateContact = (index: number, field: keyof Contact, value: string) => {
+    const updated = [...contacts];
+    updated[index][field] = value as any;
+    setContacts(updated);
+  };
+
   const addLocation = () => {
-    setInstallationLocations([...installationLocations, { address: "", city: "", state: "" }]);
+    setInstallationLocations([...installationLocations, { city: "", state: "" }]);
   };
 
   const removeLocation = (index: number) => {
@@ -81,19 +89,11 @@ export const KickoffDetailsModal = ({
         .from("customers")
         .update({
           needs_blocking: needsBlocking,
-          decision_maker_name: decisionMakerName || null,
-          decision_maker_role: decisionMakerRole || null,
-          decision_maker_email: decisionMakerEmail || null,
-          decision_maker_phone: decisionMakerPhone || null,
-          influencer_name: influencerName || null,
-          influencer_role: influencerRole || null,
-          influencer_email: influencerEmail || null,
-          influencer_phone: influencerPhone || null,
-          operations_contact_name: operationsName || null,
-          operations_contact_role: operationsRole || null,
-          operations_contact_email: operationsEmail || null,
-          operations_contact_phone: operationsPhone || null,
-          installation_locations: installationLocations.filter(loc => loc.address || loc.city) as any,
+          needs_engine_blocking: needsBlocking ? needsEngineBlocking : false,
+          needs_fuel_blocking: needsBlocking ? needsFuelBlocking : false,
+          needs_accelerator_blocking: needsBlocking ? needsAcceleratorBlocking : false,
+          contacts: contacts.filter(c => c.name) as any,
+          installation_locations: installationLocations.filter(loc => loc.city) as any,
           has_installation_particularity: hasParticularity,
           installation_particularity_details: hasParticularity ? particularityDetails : null,
           kickoff_notes: notes || null,
@@ -122,133 +122,113 @@ export const KickoffDetailsModal = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Checklist Bloqueio */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="needs-blocking"
-              checked={needsBlocking}
-              onCheckedChange={(checked) => setNeedsBlocking(checked as boolean)}
-            />
-            <Label htmlFor="needs-blocking">Necessita de bloqueio</Label>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="needs-blocking"
+                checked={needsBlocking}
+                onCheckedChange={(checked) => setNeedsBlocking(checked as boolean)}
+              />
+              <Label htmlFor="needs-blocking">Necessita de bloqueio</Label>
+            </div>
+            
+            {needsBlocking && (
+              <div className="ml-6 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="engine-blocking"
+                    checked={needsEngineBlocking}
+                    onCheckedChange={(checked) => setNeedsEngineBlocking(checked as boolean)}
+                  />
+                  <Label htmlFor="engine-blocking">Bloqueio de partida</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="fuel-blocking"
+                    checked={needsFuelBlocking}
+                    onCheckedChange={(checked) => setNeedsFuelBlocking(checked as boolean)}
+                  />
+                  <Label htmlFor="fuel-blocking">Bloqueio de combustível</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="accelerator-blocking"
+                    checked={needsAcceleratorBlocking}
+                    onCheckedChange={(checked) => setNeedsAcceleratorBlocking(checked as boolean)}
+                  />
+                  <Label htmlFor="accelerator-blocking">Bloqueio de acelerador</Label>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Decisor */}
+          {/* Contatos */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm">Decisor</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="decision-name">Nome</Label>
-                <Input
-                  id="decision-name"
-                  value={decisionMakerName}
-                  onChange={(e) => setDecisionMakerName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="decision-role">Função</Label>
-                <Input
-                  id="decision-role"
-                  value={decisionMakerRole}
-                  onChange={(e) => setDecisionMakerRole(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="decision-email">E-mail</Label>
-                <Input
-                  id="decision-email"
-                  type="email"
-                  value={decisionMakerEmail}
-                  onChange={(e) => setDecisionMakerEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="decision-phone">Telefone</Label>
-                <Input
-                  id="decision-phone"
-                  value={decisionMakerPhone}
-                  onChange={(e) => setDecisionMakerPhone(e.target.value)}
-                />
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Contatos</h3>
+              <Button type="button" variant="outline" size="sm" onClick={addContact}>
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar Contato
+              </Button>
             </div>
-          </div>
-
-          {/* Influenciador */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm">Influenciador</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="influencer-name">Nome</Label>
-                <Input
-                  id="influencer-name"
-                  value={influencerName}
-                  onChange={(e) => setInfluencerName(e.target.value)}
-                />
+            {contacts.map((contact, index) => (
+              <div key={index} className="border rounded-lg p-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <Select
+                    value={contact.type}
+                    onValueChange={(value) => updateContact(index, "type", value)}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="decisor">Decisor</SelectItem>
+                      <SelectItem value="influenciador">Influenciador</SelectItem>
+                      <SelectItem value="operacoes">Operações</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeContact(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>Nome</Label>
+                    <Input
+                      value={contact.name}
+                      onChange={(e) => updateContact(index, "name", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Função</Label>
+                    <Input
+                      value={contact.role}
+                      onChange={(e) => updateContact(index, "role", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>E-mail</Label>
+                    <Input
+                      type="email"
+                      value={contact.email}
+                      onChange={(e) => updateContact(index, "email", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Telefone</Label>
+                    <Input
+                      value={contact.phone}
+                      onChange={(e) => updateContact(index, "phone", e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="influencer-role">Função</Label>
-                <Input
-                  id="influencer-role"
-                  value={influencerRole}
-                  onChange={(e) => setInfluencerRole(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="influencer-email">E-mail</Label>
-                <Input
-                  id="influencer-email"
-                  type="email"
-                  value={influencerEmail}
-                  onChange={(e) => setInfluencerEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="influencer-phone">Telefone</Label>
-                <Input
-                  id="influencer-phone"
-                  value={influencerPhone}
-                  onChange={(e) => setInfluencerPhone(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Operações */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm">Operações (Ponto Focal)</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="operations-name">Nome</Label>
-                <Input
-                  id="operations-name"
-                  value={operationsName}
-                  onChange={(e) => setOperationsName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="operations-role">Função</Label>
-                <Input
-                  id="operations-role"
-                  value={operationsRole}
-                  onChange={(e) => setOperationsRole(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="operations-email">E-mail</Label>
-                <Input
-                  id="operations-email"
-                  type="email"
-                  value={operationsEmail}
-                  onChange={(e) => setOperationsEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="operations-phone">Telefone</Label>
-                <Input
-                  id="operations-phone"
-                  value={operationsPhone}
-                  onChange={(e) => setOperationsPhone(e.target.value)}
-                />
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Locais de Instalação */}
@@ -275,15 +255,7 @@ export const KickoffDetailsModal = ({
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-3">
-                    <Label>Endereço</Label>
-                    <Input
-                      value={location.address}
-                      onChange={(e) => updateLocation(index, "address", e.target.value)}
-                      placeholder="Rua, número, bairro"
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label>Cidade</Label>
                     <Input
@@ -297,6 +269,7 @@ export const KickoffDetailsModal = ({
                       value={location.state}
                       onChange={(e) => updateLocation(index, "state", e.target.value)}
                       maxLength={2}
+                      placeholder="SP"
                     />
                   </div>
                 </div>

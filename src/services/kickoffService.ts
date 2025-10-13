@@ -32,7 +32,7 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
   // Buscar customers para pegar informações de kickoff
   const { data: customers } = await supabase
     .from('customers')
-    .select('sale_summary_id, needs_blocking, decision_maker_name')
+    .select('sale_summary_id, needs_blocking, contacts')
     .not('sale_summary_id', 'is', null);
 
   if (!vehicles || vehicles.length === 0) {
@@ -74,7 +74,7 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
         vehicle_count: 1,
         sale_summary_id: vehicle.sale_summary_id!,
         needs_blocking: customer?.needs_blocking,
-        has_kickoff_details: !!customer?.decision_maker_name,
+        has_kickoff_details: Array.isArray(customer?.contacts) && customer.contacts.length > 0,
       });
     }
   });
