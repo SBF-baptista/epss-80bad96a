@@ -19,6 +19,7 @@ import Planning from "./pages/Planning";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
+import Kickoff from "./pages/Kickoff";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -161,6 +162,15 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['admin']}>
                   <UserManagement />
                 </RoleProtectedRoute>
+          </ProtectedRoute>
+        } />
+        <Route path="/kickoff" element={
+          <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+              <Layout>
+                <Kickoff />
+              </Layout>
+            </RoleProtectedRoute>
           </ProtectedRoute>
         } />
         <Route path="/segsale-test" element={<SegsaleTest />} />

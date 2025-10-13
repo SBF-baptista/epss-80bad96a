@@ -15,7 +15,8 @@ import {
   ChevronRight,
   ChevronDown,
   Calendar,
-  UserCheck
+  UserCheck,
+  Rocket
 } from "lucide-react";
 import {
   Sidebar,
@@ -93,6 +94,13 @@ const navigationGroups = {
 
 // Itens individuais (não agrupados)
 const singleNavigationItems = [
+  { 
+    to: "/kickoff", 
+    label: "Kickoff", 
+    icon: Rocket,
+    description: "Kickoff e planejamento de projetos",
+    roles: ["admin", "installer"]
+  },
   { 
     to: "/customer-tracking", 
     label: "Acompanhamento de Clientes", 

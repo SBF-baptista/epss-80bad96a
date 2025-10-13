@@ -70,7 +70,6 @@ interface VehicleScheduleData {
   scheduled_date: Date | null;
   installation_time: string;
   notes: string;
-  contract_number: string;
   accessories: string[];
   modules: string[];
 }
@@ -188,7 +187,6 @@ export const ScheduleModal = ({
       scheduled_date: null,
       installation_time: '',
       notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
-      contract_number: `${selectedCustomer.contract_number || 'CONT'}-${String(index + 1).padStart(3, '0')}`,
       // Per-placa accessories & insumos from customer
       accessories: [...(selectedCustomer.accessories || [])],
       modules: [...(selectedCustomer.modules || [])]
@@ -713,7 +711,6 @@ export const ScheduleModal = ({
                         <thead className="bg-muted">
                           <tr>
                             <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Contrato (Placa)</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
@@ -747,12 +744,7 @@ export const ScheduleModal = ({
                                     <X className="w-3 h-3 mr-1" />
                                     Pendente
                                   </Badge>
-                                )}
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge variant="outline" className="font-mono text-xs">
-                                  {vehicleSchedule.contract_number}
-                                </Badge>
+                                 )}
                               </td>
                               <td className="px-4 py-3 text-sm">
                                 {vehicleSchedule.brand} {vehicleSchedule.model}
