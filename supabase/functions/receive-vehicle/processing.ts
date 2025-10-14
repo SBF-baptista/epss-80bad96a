@@ -141,7 +141,7 @@ export async function processVehicleGroups(
           
           for (const item of (group as any).contract_items) {
             try {
-              console.log(`[${timestamp}][${requestId}] Storing contract item: ${item.accessory_name} (quantity: ${item.quantity || 1})`)
+              console.log(`[${timestamp}][${requestId}] Storing contract item: ${item.name} (${item.categories})`)
               
               const { error: itemError } = await supabase
                 .from('accessories')
@@ -149,18 +149,19 @@ export async function processVehicleGroups(
                   vehicle_id: incomingVehicle.id,
                   company_name: group.company_name,
                   usage_type: normalizedUsageType,
-                  accessory_name: item.accessory_name.trim(),
+                  name: item.name.trim(),
+                  categories: item.categories,
                   quantity: item.quantity || 1,
                   received_at: timestamp
                 }, {
-                  onConflict: 'vehicle_id,accessory_name',
+                  onConflict: 'vehicle_id,name',
                   ignoreDuplicates: false
                 })
 
               if (itemError) {
                 console.error(`[${timestamp}][${requestId}] ERROR - Failed to store contract item:`, itemError)
               } else {
-                console.log(`[${timestamp}][${requestId}] Successfully stored contract item: ${item.accessory_name}`)
+                console.log(`[${timestamp}][${requestId}] Successfully stored contract item: ${item.name} (${item.categories})`)
               }
             } catch (error) {
               console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing contract item:`, error)
