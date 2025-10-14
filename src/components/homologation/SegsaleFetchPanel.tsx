@@ -145,7 +145,7 @@ export const SegsaleFetchPanel = () => {
                     <div className="grid grid-cols-1 gap-2">
                       {sale.contract_items.map((item: any, iIdx: number) => (
                         <div key={iIdx} className="flex justify-between items-center p-2 bg-background rounded border text-sm">
-                          <span>{item.accessory_name}</span>
+                          <span>{item.name}</span>
                           <Badge variant="secondary">Qtd: {item.quantity}</Badge>
                         </div>
                       ))}

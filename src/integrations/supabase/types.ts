@@ -16,11 +16,12 @@ export type Database = {
     Tables: {
       accessories: {
         Row: {
-          accessory_name: string
+          categories: string | null
           company_name: string | null
           created_at: string
           id: string
           incoming_vehicle_group_id: string | null
+          name: string
           pedido_id: string | null
           quantity: number
           received_at: string
@@ -28,11 +29,12 @@ export type Database = {
           vehicle_id: string | null
         }
         Insert: {
-          accessory_name: string
+          categories?: string | null
           company_name?: string | null
           created_at?: string
           id?: string
           incoming_vehicle_group_id?: string | null
+          name: string
           pedido_id?: string | null
           quantity?: number
           received_at?: string
@@ -40,11 +42,12 @@ export type Database = {
           vehicle_id?: string | null
         }
         Update: {
-          accessory_name?: string
+          categories?: string | null
           company_name?: string | null
           created_at?: string
           id?: string
           incoming_vehicle_group_id?: string | null
+          name?: string
           pedido_id?: string | null
           quantity?: number
           received_at?: string

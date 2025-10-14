@@ -303,10 +303,10 @@ export const ScheduleModal = ({
           if (vehicleId) {
             const { data: vehicleAccessories } = await supabase
               .from('accessories')
-              .select('accessory_name')
+              .select('name')
               .eq('vehicle_id', vehicleId);
 
-            vehicleSpecificAccessories = (vehicleAccessories || []).map(a => a.accessory_name);
+            vehicleSpecificAccessories = (vehicleAccessories || []).map(a => a.name);
 
             // Check homologation for vehicle-specific accessories (normalized)
             await Promise.all(

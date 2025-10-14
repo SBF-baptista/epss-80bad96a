@@ -59,7 +59,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
             accessoriesByOrderId.set(orderId, [])
           }
           accessoriesByOrderId.get(orderId)!.push({
-            name: accessory.accessory_name,
+            name: accessory.name,
             quantity: accessory.quantity
           })
         }
@@ -75,7 +75,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
             accessoriesByOrderId.set(orderId, [])
           }
           accessoriesByOrderId.get(orderId)!.push({
-            name: accessory.accessory_name,
+            name: accessory.name,
             quantity: accessory.quantity
           })
         }

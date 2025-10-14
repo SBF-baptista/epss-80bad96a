@@ -41,10 +41,10 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     schedules: KitScheduleWithDetails[];
   } | null>(null);
   const [contractAccessories, setContractAccessories] = useState<Array<{
-    accessory_name: string;
+    name: string;
     quantity: number;
   }>>([]);
-  const [scheduleAccessoriesMap, setScheduleAccessoriesMap] = useState<Record<string, { accessory_name: string; quantity: number }[]>>({});
+  const [scheduleAccessoriesMap, setScheduleAccessoriesMap] = useState<Record<string, { name: string; quantity: number }[]>>({});
 
   useEffect(() => {
     const fetchAllSchedules = async () => {
@@ -95,7 +95,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
         const normalize = (s?: string | null) => (s || '').toUpperCase().trim();
         const firstToken = (s?: string | null) => (s || '').split(' ')[0]?.toUpperCase() || '';
 
-        const resultsMap: Record<string, { accessory_name: string; quantity: number }[]> = {};
+        const resultsMap: Record<string, { name: string; quantity: number }[]> = {};
 
         await Promise.all((allSchedules.length ? allSchedules : [schedule]).map(async (sched) => {
           const matchingVehicleIds = (vehicles || [])
@@ -116,11 +116,11 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
 
           const { data: acc, error: accErr } = await supabase
             .from('accessories')
-            .select('accessory_name, quantity, vehicle_id')
+            .select('name, quantity, vehicle_id')
             .in('vehicle_id', matchingVehicleIds as string[]);
           if (accErr) throw accErr;
 
-          resultsMap[sched.id] = (acc || []).map(a => ({ accessory_name: a.accessory_name, quantity: a.quantity }));
+          resultsMap[sched.id] = (acc || []).map(a => ({ name: a.name, quantity: a.quantity }));
         }));
 
         setScheduleAccessoriesMap(resultsMap);
@@ -444,8 +444,8 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                     const dbAccessories = scheduleAccessoriesMap[sched.id] || [];
                     if (dbAccessories.length > 0) {
                       dbAccessories.forEach(acc => {
-                        if (!mergedAccessories[acc.accessory_name]) {
-                          mergedAccessories[acc.accessory_name] = acc.quantity;
+                        if (!mergedAccessories[acc.name]) {
+                          mergedAccessories[acc.name] = acc.quantity;
                         }
                       });
                     }
@@ -453,7 +453,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                     // 3. Order accessories (if available, lowest priority)
                     if (order.accessories && order.accessories.length > 0) {
                       order.accessories.forEach((acc: any) => {
-                        const name = acc.name || acc.accessory_name;
+                        const name = acc.name;
                         if (name && !mergedAccessories[name]) {
                           mergedAccessories[name] = acc.quantity || 1;
                         }

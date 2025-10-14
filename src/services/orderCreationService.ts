@@ -82,7 +82,7 @@ export const createOrder = async (orderData: {
   if (orderData.accessories && orderData.accessories.length > 0) {
     const accessoryInserts = orderData.accessories.map(accessory => ({
       pedido_id: pedido.id,
-      accessory_name: accessory.name,
+      name: accessory.name,
       quantity: accessory.quantity,
       received_at: new Date().toISOString()
     }))

@@ -3,10 +3,11 @@ import { Badge } from "@/components/ui/badge";
 
 interface VehicleAccessory {
   id: string;
-  accessory_name: string;
+  name: string;
   quantity: number;
   company_name?: string;
   usage_type?: string;
+  categories?: string;
 }
 
 interface VehicleAccessoryDetailsProps {
@@ -30,7 +31,12 @@ const VehicleAccessoryDetails = ({ accessories, vehicleName }: VehicleAccessoryD
         <div className="space-y-2">
           {accessories.map((accessory) => (
             <div key={accessory.id} className="flex items-center justify-between py-1">
-              <span className="text-sm">{accessory.accessory_name}</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm">{accessory.name}</span>
+                {accessory.categories && (
+                  <span className="text-xs text-muted-foreground">{accessory.categories}</span>
+                )}
+              </div>
               <Badge variant="secondary" className="text-xs">
                 {accessory.quantity}x
               </Badge>

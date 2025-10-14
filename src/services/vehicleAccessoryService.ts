@@ -2,11 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface VehicleAccessory {
   id: string;
-  accessory_name: string;
+  name: string;
   quantity: number;
   company_name?: string;
   usage_type?: string;
   vehicle_id?: string;
+  categories?: string;
 }
 
 export const fetchVehicleAccessories = async (vehicleId: string): Promise<VehicleAccessory[]> => {
@@ -15,7 +16,7 @@ export const fetchVehicleAccessories = async (vehicleId: string): Promise<Vehicl
       .from('accessories')
       .select('*')
       .eq('vehicle_id', vehicleId)
-      .order('accessory_name');
+      .order('name');
 
     if (error) {
       console.error('Error fetching vehicle accessories:', error);
@@ -35,7 +36,7 @@ export const fetchAllVehicleAccessories = async (): Promise<Map<string, VehicleA
       .from('accessories')
       .select('*')
       .not('vehicle_id', 'is', null)
-      .order('accessory_name');
+      .order('name');
 
     if (error) {
       console.error('Error fetching all vehicle accessories:', error);
@@ -92,7 +93,7 @@ export const fetchAccessoriesByPlates = async (plates: string[]): Promise<Map<st
       .from('accessories')
       .select('*')
       .in('vehicle_id', vehicleIds)
-      .order('accessory_name');
+      .order('name');
 
     if (accessoriesError) {
       console.error('Error fetching accessories by vehicle_ids:', accessoriesError);
@@ -134,7 +135,7 @@ export const fetchAccessoriesByVehicleIds = async (vehicleIds: string[]): Promis
       .from('accessories')
       .select('*')
       .in('vehicle_id', vehicleIds)
-      .order('accessory_name');
+      .order('name');
 
     if (error) {
       console.error('Error fetching accessories by vehicle IDs:', error);
@@ -165,8 +166,8 @@ export const aggregateAccessories = (accessories: VehicleAccessory[]): string[] 
   const aggregated = new Map<string, number>();
   
   accessories.forEach(acc => {
-    const current = aggregated.get(acc.accessory_name) || 0;
-    aggregated.set(acc.accessory_name, current + acc.quantity);
+    const current = aggregated.get(acc.name) || 0;
+    aggregated.set(acc.name, current + acc.quantity);
   });
 
   return Array.from(aggregated.entries())
