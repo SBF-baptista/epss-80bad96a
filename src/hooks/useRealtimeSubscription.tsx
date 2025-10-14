@@ -10,6 +10,7 @@ import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
  * @param tableName - The Supabase table name to subscribe to
  * @param queryKey - The React Query key to invalidate on changes
  * @param filter - Optional filter configuration for postgres_changes
+ * @param onUpdate - Optional callback when changes occur
  */
 export const useRealtimeSubscription = (
   tableName: string,
@@ -17,7 +18,8 @@ export const useRealtimeSubscription = (
   filter?: {
     event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
     schema?: string;
-  }
+  },
+  onUpdate?: () => void
 ) => {
   const queryClient = useQueryClient();
 
@@ -39,6 +41,10 @@ export const useRealtimeSubscription = (
           // Invalidate and refetch when changes occur
           const key = Array.isArray(queryKey) ? queryKey : [queryKey];
           queryClient.invalidateQueries({ queryKey: key });
+          // Call optional callback
+          if (onUpdate) {
+            onUpdate();
+          }
         }
       )
       .subscribe();
@@ -47,5 +53,5 @@ export const useRealtimeSubscription = (
       console.log(`Cleaning up realtime subscription for ${tableName}`);
       supabase.removeChannel(channel);
     };
-  }, [tableName, queryKey, queryClient, filter?.event, filter?.schema]);
+  }, [tableName, queryKey, queryClient, filter?.event, filter?.schema, onUpdate]);
 };

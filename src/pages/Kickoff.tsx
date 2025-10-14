@@ -9,12 +9,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useToast } from "@/hooks/use-toast";
 
 const Kickoff = () => {
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
 
   const { data: kickoffData, isLoading, refetch } = useQuery({
     queryKey: ['kickoff-data'],
@@ -24,9 +26,16 @@ const Kickoff = () => {
     staleTime: 0,
   });
 
-  // Real-time subscriptions for automatic updates
-  useRealtimeSubscription('accessories', ['kickoff-data']);
-  useRealtimeSubscription('incoming_vehicles', ['kickoff-data']);
+  // Real-time subscriptions for automatic updates with toast notification
+  const handleRealtimeUpdate = () => {
+    toast({
+      title: "Dados atualizados",
+      description: "Novos dados do Segsale foram recebidos automaticamente.",
+    });
+  };
+
+  useRealtimeSubscription('accessories', ['kickoff-data'], undefined, handleRealtimeUpdate);
+  useRealtimeSubscription('incoming_vehicles', ['kickoff-data'], undefined, handleRealtimeUpdate);
 
   const handleEditKickoff = (saleSummaryId: number, companyName: string) => {
     setSelectedSaleSummaryId(saleSummaryId);
@@ -193,18 +202,87 @@ const Kickoff = () => {
                     <CollapsibleContent className="space-y-3 pt-3 border-t">
                       <div className="space-y-2">
                         <h4 className="text-sm font-semibold">Veículos:</h4>
-                        {client.usage_types.map((usage, idx) => (
-                          <div key={idx} className="text-xs bg-muted p-2 rounded">
-                            <div className="flex justify-between">
-                              <span>{usage.vehicle_brand} {usage.vehicle_model}</span>
-                              <span className="font-semibold">{usage.quantity}x</span>
+                        {client.usage_types.map((usage, idx) => {
+                          // Find corresponding vehicle with modules data
+                          const vehicleData = client.vehicles.find(v => 
+                            v.brand === usage.vehicle_brand && 
+                            v.model === usage.vehicle_model &&
+                            v.usage_type === usage.usage_type
+                          );
+
+                          // Separate modules from accessories based on categories
+                          const modules = vehicleData?.modules.filter(m => 
+                            m.categories?.toLowerCase().includes('modulo') || 
+                            m.categories?.toLowerCase().includes('módulo')
+                          ) || [];
+                          
+                          const accessories = vehicleData?.modules.filter(m => 
+                            !m.categories?.toLowerCase().includes('modulo') && 
+                            !m.categories?.toLowerCase().includes('módulo')
+                          ) || [];
+
+                          // Normalize module names (remove accents for display)
+                          const normalizedModuleNames = modules.map(m => 
+                            m.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                          );
+                          const uniqueModules = Array.from(new Set(normalizedModuleNames));
+                          const moduleCount = uniqueModules.length;
+                          const accessoryCount = accessories.length;
+
+                          return (
+                            <div key={idx} className="text-xs bg-muted p-2 rounded space-y-2">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium">{usage.vehicle_brand} {usage.vehicle_model}</div>
+                                  <div className="text-muted-foreground mt-1">
+                                    <Badge variant="outline" className="text-xs mr-1">{usage.usage_type}</Badge>
+                                    {usage.vehicle_year > 0 && <span>Ano: {usage.vehicle_year}</span>}
+                                  </div>
+                                </div>
+                                <span className="font-semibold">{usage.quantity}x</span>
+                              </div>
+                              
+                              {/* Display module and accessory counts */}
+                              {(moduleCount > 0 || accessoryCount > 0) && (
+                                <div className="flex gap-2 flex-wrap pt-1">
+                                  {moduleCount > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {moduleCount} {moduleCount === 1 ? 'Módulo' : 'Módulos'}
+                                    </Badge>
+                                  )}
+                                  {accessoryCount > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {accessoryCount} {accessoryCount === 1 ? 'Acessório' : 'Acessórios'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Display module names */}
+                              {moduleCount > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="font-medium">Módulos: </span>
+                                  {uniqueModules.join(", ")}
+                                </div>
+                              )}
+                              
+                              {/* Display accessory names */}
+                              {accessoryCount > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="font-medium">Acessórios: </span>
+                                  {accessories.map(a => a.name).join(", ")}
+                                </div>
+                              )}
+
+                              {/* Show kickoff completed status */}
+                              {vehicleData?.kickoff_completed && (
+                                <Badge variant="default" className="text-xs">
+                                  Kickoff Completo
+                                </Badge>
+                              )}
                             </div>
-                            <div className="text-muted-foreground mt-1">
-                              <Badge variant="outline" className="text-xs mr-1">{usage.usage_type}</Badge>
-                              {usage.vehicle_year > 0 && <span>Ano: {usage.vehicle_year}</span>}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       
                       <Button
