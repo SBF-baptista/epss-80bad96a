@@ -13,6 +13,7 @@ import { Loader2, Plus, Trash2, Truck } from "lucide-react";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
+import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
 
 interface KickoffDetailsModalProps {
   open: boolean;
@@ -190,6 +191,17 @@ export const KickoffDetailsModal = ({
 
       if (error) throw error;
 
+      // Mark ALL incoming_vehicles with this sale_summary_id as kickoff_completed
+      const { error: vehiclesError } = await supabase
+        .from("incoming_vehicles")
+        .update({ kickoff_completed: true })
+        .eq("sale_summary_id", saleSummaryId);
+
+      if (vehiclesError) {
+        console.error("Error marking vehicles as kickoff completed:", vehiclesError);
+        throw vehiclesError;
+      }
+
       // Process vehicles for homologation after kickoff completion
       console.log("Processing kickoff vehicles for homologation...");
       const processingResult = await processKickoffVehicles(saleSummaryId);
@@ -234,64 +246,7 @@ export const KickoffDetailsModal = ({
               <Truck className="h-5 w-5 text-muted-foreground" />
               <h3 className="font-semibold text-base">Veículos</h3>
             </div>
-            <div className="space-y-2">
-              {vehicles.map((vehicle, index) => (
-                <div key={vehicle.id} className="bg-muted p-3 rounded-lg space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
-                      <div className="flex gap-2 flex-wrap text-xs text-muted-foreground">
-                        <Badge variant="outline">Ano: {vehicle.year || 'Não informado'}</Badge>
-                        <Badge variant="outline">Placa: {vehicle.plate || 'Não informada'}</Badge>
-                        <Badge variant="secondary">{vehicle.usage_type}</Badge>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {vehicle.quantity}x
-                    </Badge>
-                  </div>
-                  {vehicle.modules && vehicle.modules.length > 0 && (() => {
-                    const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-                    const modulesList = vehicle.modules.filter(m => normalize(m.categories || '') === 'modulos');
-                    const accessoriesList = vehicle.modules.filter(m => normalize(m.categories || '') !== 'modulos');
-                    return (
-                      <div className="pt-2 border-t border-border space-y-2">
-                        {modulesList.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium mb-1">Módulos:</p>
-                            <div className="flex gap-1 flex-wrap">
-                              {modulesList.map((item, idx) => (
-                                <Badge key={`mod-${idx}`} variant="secondary" className="text-xs">
-                                  {item.name} ({item.quantity}x)
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {accessoriesList.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium mb-1">Acessórios:</p>
-                            <div className="flex gap-1 flex-wrap">
-                              {accessoriesList.map((item, idx) => (
-                                <Badge key={`acc-${idx}`} variant="outline" className="text-xs">
-                                  {item.name} ({item.quantity}x)
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {vehicle.kickoff_completed && (
-                    <Badge variant="default" className="text-xs">
-                      Kickoff Completo
-                    </Badge>
-                  )}
-                </div>
-              ))}
-            </div>
+            <KickoffVehiclesTable vehicles={vehicles} />
           </div>
 
           {/* Checklist Bloqueio */}
