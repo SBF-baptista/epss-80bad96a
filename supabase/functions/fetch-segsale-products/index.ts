@@ -148,7 +148,10 @@ Deno.serve(async (req) => {
       // Use the English field names from the API
       sale_summary_id: sale.sale_summary_id ?? parseInt(idResumoVenda),
       pending_contract_id: sale.pending_contract_id ?? null,
-      vehicles: sale.vehicles,
+      vehicles: sale.vehicles.map((v: SegsaleVehicle) => ({
+        ...v,
+        modules: v.modules || []
+      })),
       accessories: sale.accessories ?? [],
       contract_items: sale.contract_items ?? null,
       address: sale.address ?? undefined,

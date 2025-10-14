@@ -182,11 +182,12 @@ export async function processVehicleGroups(
                   vehicle_id: incomingVehicle.id,
                   company_name: group.company_name,
                   usage_type: normalizedUsageType,
-                  accessory_name: accessory.accessory_name.trim(),
+                  name: accessory.accessory_name.trim(),
+                  categories: 'Acessórios',
                   quantity: accessory.quantity || 1,
                   received_at: timestamp
                 }, {
-                  onConflict: 'vehicle_id,accessory_name',
+                  onConflict: 'vehicle_id,name',
                   ignoreDuplicates: false
                 })
 
@@ -197,6 +198,40 @@ export async function processVehicleGroups(
               }
             } catch (error) {
               console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing vehicle accessory:`, error)
+            }
+          }
+        }
+
+        // Process vehicle-specific modules if they exist
+        if (vehicleData.modules && Array.isArray(vehicleData.modules) && vehicleData.modules.length > 0) {
+          console.log(`[${timestamp}][${requestId}] Processing ${vehicleData.modules.length} vehicle modules...`)
+          
+          for (const moduleName of vehicleData.modules) {
+            try {
+              console.log(`[${timestamp}][${requestId}] Storing vehicle module: ${moduleName}`)
+              
+              const { error: moduleError } = await supabase
+                .from('accessories')
+                .upsert({
+                  vehicle_id: incomingVehicle.id,
+                  company_name: group.company_name,
+                  usage_type: normalizedUsageType,
+                  name: moduleName.trim(),
+                  categories: 'Módulos',
+                  quantity: 1,
+                  received_at: timestamp
+                }, {
+                  onConflict: 'vehicle_id,name',
+                  ignoreDuplicates: false
+                })
+
+              if (moduleError) {
+                console.error(`[${timestamp}][${requestId}] ERROR - Failed to store vehicle module:`, moduleError)
+              } else {
+                console.log(`[${timestamp}][${requestId}] Successfully stored vehicle module: ${moduleName}`)
+              }
+            } catch (error) {
+              console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing vehicle module:`, error)
             }
           }
         }

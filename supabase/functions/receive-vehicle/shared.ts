@@ -10,6 +10,7 @@ export interface VehicleData {
   year?: number
   quantity?: number
   accessories?: AccessoryData[]
+  modules?: string[]
 }
 
 export interface AccessoryData {
