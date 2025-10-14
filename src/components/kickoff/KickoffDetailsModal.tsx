@@ -175,10 +175,11 @@ export const KickoffDetailsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="kickoff-details-desc">
         <DialogHeader>
           <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
         </DialogHeader>
+        <p id="kickoff-details-desc" className="sr-only">Preencha os detalhes do kickoff do cliente {companyName}.</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Vehicles Section */}
@@ -203,18 +204,40 @@ export const KickoffDetailsModal = ({
                       {vehicle.quantity}x
                     </Badge>
                   </div>
-                  {vehicle.modules && vehicle.modules.length > 0 && (
-                    <div className="pt-2 border-t border-border">
-                      <p className="text-xs font-medium mb-1">Módulos:</p>
-                      <div className="flex gap-1 flex-wrap">
-                        {vehicle.modules.map((module, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {module.name} ({module.quantity}x)
-                          </Badge>
-                        ))}
+                  {vehicle.modules && vehicle.modules.length > 0 && (() => {
+                    const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+                    const modulesList = vehicle.modules.filter(m => normalize(m.categories || '') === 'modulos');
+                    const accessoriesList = vehicle.modules.filter(m => normalize(m.categories || '') !== 'modulos');
+                    return (
+                      <div className="pt-2 border-t border-border space-y-2">
+                        {modulesList.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium mb-1">Módulos:</p>
+                            <div className="flex gap-1 flex-wrap">
+                              {modulesList.map((item, idx) => (
+                                <Badge key={`mod-${idx}`} variant="secondary" className="text-xs">
+                                  {item.name} ({item.quantity}x)
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {accessoriesList.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium mb-1">Acessórios:</p>
+                            <div className="flex gap-1 flex-wrap">
+                              {accessoriesList.map((item, idx) => (
+                                <Badge key={`acc-${idx}`} variant="outline" className="text-xs">
+                                  {item.name} ({item.quantity}x)
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
+
                   {vehicle.kickoff_completed && (
                     <Badge variant="default" className="text-xs">
                       Kickoff Completo
