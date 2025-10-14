@@ -8,6 +8,7 @@ import { getKickoffData } from "@/services/kickoffService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 const Kickoff = () => {
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
@@ -18,7 +19,14 @@ const Kickoff = () => {
   const { data: kickoffData, isLoading, refetch } = useQuery({
     queryKey: ['kickoff-data'],
     queryFn: getKickoffData,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
+
+  // Real-time subscriptions for automatic updates
+  useRealtimeSubscription('accessories', ['kickoff-data']);
+  useRealtimeSubscription('incoming_vehicles', ['kickoff-data']);
 
   const handleEditKickoff = (saleSummaryId: number, companyName: string) => {
     setSelectedSaleSummaryId(saleSummaryId);

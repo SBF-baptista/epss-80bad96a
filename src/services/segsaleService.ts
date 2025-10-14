@@ -23,24 +23,10 @@ export interface SegsaleFetchResponse {
   stored_count: number;
 }
 
+// DEPRECATED: Use fetchSegsaleProductsDirect instead - this version doesn't pass parameters correctly
 export const fetchSegsaleProducts = async (idResumoVenda: number): Promise<SegsaleFetchResponse> => {
-  console.log(`Fetching Segsale products for ID: ${idResumoVenda}`);
-  
-  const { data, error } = await supabase.functions.invoke('fetch-segsale-products', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: null,
-    // Pass the parameter in the URL
-  });
-
-  if (error) {
-    console.error('Error calling Segsale fetch function:', error);
-    throw new Error(`Failed to fetch Segsale products: ${error.message}`);
-  }
-
-  return data as SegsaleFetchResponse;
+  console.warn('fetchSegsaleProducts is deprecated. Use fetchSegsaleProductsDirect instead.');
+  return fetchSegsaleProductsDirect(idResumoVenda);
 };
 
 // Alternative method using direct fetch with query params
