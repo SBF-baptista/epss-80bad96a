@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.segsale-webhook]
 verify_jwt = false
+
+[functions.poll-segsale]
+verify_jwt = false

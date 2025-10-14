@@ -657,6 +657,45 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_state: {
+        Row: {
+          created_at: string | null
+          error_count: number | null
+          id: string
+          integration_name: string
+          last_error: string | null
+          last_poll_at: string | null
+          last_processed_id: number | null
+          metadata: Json | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          integration_name: string
+          last_error?: string | null
+          last_poll_at?: string | null
+          last_processed_id?: number | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          integration_name?: string
+          last_error?: string | null
+          last_poll_at?: string | null
+          last_processed_id?: number | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       kit_item_options: {
         Row: {
           created_at: string
