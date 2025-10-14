@@ -101,7 +101,7 @@ const Kickoff = () => {
             ) : (
               <>
                 <div className="text-2xl font-bold">
-                  {kickoffData?.clients.reduce((sum, client) => {
+                  {kickoffData?.clients?.reduce((sum, client) => {
                     const uniqueTypes = new Set(client.usage_types.map(ut => ut.usage_type));
                     return sum + uniqueTypes.size;
                   }, 0) || 0}
