@@ -10,6 +10,12 @@ export interface KickoffUsageType {
   vehicle_year: number;
 }
 
+export interface KickoffModule {
+  name: string;
+  quantity: number;
+  categories: string;
+}
+
 export interface KickoffVehicle {
   id: string;
   brand: string;
@@ -19,6 +25,7 @@ export interface KickoffVehicle {
   usage_type: string;
   quantity: number;
   kickoff_completed: boolean;
+  modules: KickoffModule[];
 }
 
 export interface KickoffClient {
@@ -46,11 +53,18 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
     .select('id, usage_type, company_name, quantity, sale_summary_id, brand, vehicle, year, plate, kickoff_completed')
     .not('sale_summary_id', 'is', null)
     .order('company_name');
-
+  
   if (error) {
-    console.error('Error fetching kickoff data:', error);
+    console.error('Error fetching kickoff vehicles:', error);
     throw error;
   }
+
+  // Buscar módulos/acessórios dos veículos
+  const vehicleIds = vehicles?.map(v => v.id) || [];
+  const { data: accessories } = await supabase
+    .from('accessories')
+    .select('vehicle_id, name, quantity, categories')
+    .in('vehicle_id', vehicleIds);
 
   // Buscar customers para pegar informações de kickoff
   const { data: customers } = await supabase
@@ -70,6 +84,21 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
   const customerMap = new Map(
     customers?.map(c => [c.sale_summary_id, c]) || []
   );
+
+  // Criar mapa de módulos por vehicle_id
+  const modulesMap = new Map<string, KickoffModule[]>();
+  accessories?.forEach(acc => {
+    if (acc.vehicle_id) {
+      if (!modulesMap.has(acc.vehicle_id)) {
+        modulesMap.set(acc.vehicle_id, []);
+      }
+      modulesMap.get(acc.vehicle_id)!.push({
+        name: acc.name,
+        quantity: acc.quantity,
+        categories: acc.categories || 'Acessórios'
+      });
+    }
+  });
 
   // Agrupar por company_name (cliente único)
   const clientsMap = new Map<string, KickoffClient>();
@@ -131,7 +160,8 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
       plate: vehicle.plate || null,
       usage_type: vehicle.usage_type || 'Não especificado',
       quantity: quantity,
-      kickoff_completed: vehicle.kickoff_completed || false
+      kickoff_completed: vehicle.kickoff_completed || false,
+      modules: modulesMap.get(vehicle.id) || []
     });
   });
 

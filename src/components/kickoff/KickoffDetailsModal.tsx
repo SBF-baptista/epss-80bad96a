@@ -134,7 +134,6 @@ export const KickoffDetailsModal = ({
           needs_blocking: needsBlocking,
           needs_engine_blocking: needsBlocking ? needsEngineBlocking : false,
           needs_fuel_blocking: needsBlocking ? needsFuelBlocking : false,
-          needs_accelerator_blocking: needsBlocking ? needsAcceleratorBlocking : false,
           contacts: contacts.filter(c => c.name) as any,
           installation_locations: installationLocations.filter(loc => loc.city) as any,
           has_installation_particularity: hasParticularity,
@@ -190,7 +189,7 @@ export const KickoffDetailsModal = ({
             </div>
             <div className="space-y-2">
               {vehicles.map((vehicle, index) => (
-                <div key={vehicle.id} className="bg-muted p-3 rounded-lg space-y-1">
+                <div key={vehicle.id} className="bg-muted p-3 rounded-lg space-y-2">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
@@ -204,6 +203,18 @@ export const KickoffDetailsModal = ({
                       {vehicle.quantity}x
                     </Badge>
                   </div>
+                  {vehicle.modules && vehicle.modules.length > 0 && (
+                    <div className="pt-2 border-t border-border">
+                      <p className="text-xs font-medium mb-1">Módulos:</p>
+                      <div className="flex gap-1 flex-wrap">
+                        {vehicle.modules.map((module, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {module.name} ({module.quantity}x)
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {vehicle.kickoff_completed && (
                     <Badge variant="default" className="text-xs">
                       Kickoff Completo
@@ -242,14 +253,6 @@ export const KickoffDetailsModal = ({
                     onCheckedChange={(checked) => setNeedsFuelBlocking(checked as boolean)}
                   />
                   <Label htmlFor="fuel-blocking">Bloqueio de combustível</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="accelerator-blocking"
-                    checked={needsAcceleratorBlocking}
-                    onCheckedChange={(checked) => setNeedsAcceleratorBlocking(checked as boolean)}
-                  />
-                  <Label htmlFor="accelerator-blocking">Bloqueio de acelerador</Label>
                 </div>
               </div>
             )}
