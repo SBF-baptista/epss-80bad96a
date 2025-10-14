@@ -42,7 +42,8 @@ serve(async (req) => {
       );
     }
 
-    console.log(`📊 Last processed ID: ${integrationState.last_processed_id || 0}`);
+    const lastProcessedId = integrationState.last_processed_id || 0;
+    console.log(`📊 Last processed ID: ${lastProcessedId}`);
 
     // Get the SEGSALE_API_TOKEN
     const segsaleToken = Deno.env.get('SEGSALE_API_TOKEN');
@@ -54,62 +55,19 @@ serve(async (req) => {
       );
     }
 
-    // Fetch recent sales from Segsale API
-    // Note: This endpoint needs to be confirmed with Segsale API documentation
-    const segsaleApiUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/resumo-vendas-recentes`;
+    // Poll incrementally - try next 20 IDs from last processed
+    const startId = lastProcessedId + 1;
+    const endId = startId + 19; // Check 20 IDs per poll
     
-    console.log(`📞 Fetching recent sales from Segsale API...`);
-    
-    const segsaleResponse = await fetch(segsaleApiUrl, {
-      method: 'GET',
-      headers: {
-        'Token': segsaleToken,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!segsaleResponse.ok) {
-      const errorText = await segsaleResponse.text();
-      console.error(`❌ Segsale API error: ${segsaleResponse.status} ${segsaleResponse.statusText}`);
-      console.error(`   Response: ${errorText}`);
-      
-      // Update error count
-      await supabase
-        .from('integration_state')
-        .update({
-          error_count: (integrationState.error_count || 0) + 1,
-          last_error: `API ${segsaleResponse.status}: ${errorText}`,
-          updated_at: new Date().toISOString()
-        })
-        .eq('integration_name', 'segsale');
-
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to fetch from Segsale API',
-          status: segsaleResponse.status,
-          details: errorText
-        }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const sales = await segsaleResponse.json();
-    console.log(`✅ Fetched ${sales.length || 0} recent sales from Segsale`);
+    console.log(`🔍 Checking sale IDs from ${startId} to ${endId}...`);
 
     let processedCount = 0;
-    let newMaxId = integrationState.last_processed_id || 0;
+    let newMaxId = lastProcessedId;
     const errors = [];
+    let consecutiveNotFound = 0;
 
-    // Process each new sale
-    for (const sale of (sales || [])) {
-      const saleId = sale.idResumoVenda || sale.id;
-      
-      if (!saleId || saleId <= (integrationState.last_processed_id || 0)) {
-        continue; // Skip already processed
-      }
-
-      console.log(`🔄 Processing sale ID ${saleId}...`);
-
+    // Try each ID incrementally
+    for (let saleId = startId; saleId <= endId; saleId++) {
       try {
         // Call fetch-segsale-products for this sale
         const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${saleId}`;
@@ -124,14 +82,33 @@ serve(async (req) => {
         if (fetchResponse.ok) {
           console.log(`✅ Successfully processed sale ${saleId}`);
           processedCount++;
+          consecutiveNotFound = 0;
           
           if (saleId > newMaxId) {
             newMaxId = saleId;
           }
         } else {
           const errorData = await fetchResponse.json();
-          console.error(`❌ Failed to process sale ${saleId}:`, errorData);
-          errors.push({ saleId, error: errorData });
+          
+          // If 404, the sale doesn't exist - this is expected
+          if (fetchResponse.status === 404) {
+            consecutiveNotFound++;
+            console.log(`ℹ️ Sale ${saleId} not found (${consecutiveNotFound} consecutive)`);
+            
+            // If we find 5 consecutive non-existent sales, stop polling
+            if (consecutiveNotFound >= 5) {
+              console.log(`⏹️ Stopping poll after ${consecutiveNotFound} consecutive not found`);
+              // Still update the max ID to the last one we checked
+              if (saleId > newMaxId) {
+                newMaxId = saleId - consecutiveNotFound;
+              }
+              break;
+            }
+          } else {
+            // Other errors are real problems
+            console.error(`❌ Failed to process sale ${saleId}: ${fetchResponse.status}`, errorData);
+            errors.push({ saleId, error: errorData });
+          }
         }
       } catch (err) {
         console.error(`❌ Exception processing sale ${saleId}:`, err);
@@ -150,21 +127,21 @@ serve(async (req) => {
         metadata: {
           ...integrationState.metadata,
           last_successful_poll: new Date().toISOString(),
-          total_sales_fetched: (sales || []).length,
+          ids_checked: endId - startId + 1,
           new_sales_processed: processedCount
         },
         updated_at: new Date().toISOString()
       })
       .eq('integration_name', 'segsale');
 
-    console.log(`✅ Poll completed: ${processedCount} new sales processed`);
+    console.log(`✅ Poll completed: ${processedCount} new sales processed (checked IDs ${startId}-${endId})`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Processed ${processedCount} new sales`,
         last_processed_id: newMaxId,
-        total_fetched: (sales || []).length,
+        checked_range: `${startId}-${endId}`,
         errors: errors.length > 0 ? errors : undefined,
         timestamp
       }),
