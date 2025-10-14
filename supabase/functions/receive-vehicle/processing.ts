@@ -136,35 +136,49 @@ export async function processVehicleGroups(
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
         // Process contract_items (from Segsale) if this is the first vehicle in the group
-        if (vehicleIndex === 0 && (group as any).contract_items && Array.isArray((group as any).contract_items) && (group as any).contract_items.length > 0) {
-          console.log(`[${timestamp}][${requestId}] Processing ${(group as any).contract_items.length} contract items for primary vehicle...`)
+        if (vehicleIndex === 0 && (group as any).contract_items) {
+          const contractItems = (group as any).contract_items;
           
-          for (const item of (group as any).contract_items) {
-            try {
-              console.log(`[${timestamp}][${requestId}] Storing contract item: ${item.name} (${item.categories})`)
-              
-              const { error: itemError } = await supabase
-                .from('accessories')
-                .upsert({
-                  vehicle_id: incomingVehicle.id,
-                  company_name: group.company_name,
-                  usage_type: normalizedUsageType,
-                  name: item.name.trim(),
-                  categories: item.categories,
-                  quantity: item.quantity || 1,
-                  received_at: timestamp
-                }, {
-                  onConflict: 'vehicle_id,name',
-                  ignoreDuplicates: false
-                })
+          if (!Array.isArray(contractItems)) {
+            console.log(`[${timestamp}][${requestId}] ⚠️ contract_items is not an array, skipping`);
+          } else if (contractItems.length === 0) {
+            console.log(`[${timestamp}][${requestId}] ℹ️ contract_items array is empty`);
+          } else {
+            console.log(`[${timestamp}][${requestId}] Processing ${contractItems.length} contract items for primary vehicle...`);
+            
+            for (const item of contractItems) {
+              try {
+                // Validate item structure
+                if (!item.name || !item.categories) {
+                  console.error(`[${timestamp}][${requestId}] ⚠️ Invalid item structure (missing name or categories):`, JSON.stringify(item));
+                  continue;
+                }
+                
+                console.log(`[${timestamp}][${requestId}] Storing contract item: ${item.name} (${item.categories})`)
+                
+                const { error: itemError } = await supabase
+                  .from('accessories')
+                  .upsert({
+                    vehicle_id: incomingVehicle.id,
+                    company_name: group.company_name,
+                    usage_type: normalizedUsageType,
+                    name: item.name.trim(),
+                    categories: item.categories,
+                    quantity: item.quantity || 1,
+                    received_at: timestamp
+                  }, {
+                    onConflict: 'vehicle_id,name',
+                    ignoreDuplicates: false
+                  })
 
-              if (itemError) {
-                console.error(`[${timestamp}][${requestId}] ERROR - Failed to store contract item:`, itemError)
-              } else {
-                console.log(`[${timestamp}][${requestId}] Successfully stored contract item: ${item.name} (${item.categories})`)
+                if (itemError) {
+                  console.error(`[${timestamp}][${requestId}] ERROR - Failed to store contract item:`, itemError)
+                } else {
+                  console.log(`[${timestamp}][${requestId}] Successfully stored contract item: ${item.name} (${item.categories})`)
+                }
+              } catch (error) {
+                console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing contract item:`, error)
               }
-            } catch (error) {
-              console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing contract item:`, error)
             }
           }
         }

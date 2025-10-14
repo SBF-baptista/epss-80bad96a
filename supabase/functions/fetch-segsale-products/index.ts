@@ -148,19 +148,24 @@ Deno.serve(async (req) => {
       // Use the English field names from the API
       sale_summary_id: sale.sale_summary_id ?? parseInt(idResumoVenda),
       pending_contract_id: sale.pending_contract_id ?? null,
-      vehicles: sale.vehicles.map((v: SegsaleVehicle) => ({
-        plate: v.plate,
-        brand: v.brand,
-        vehicle: v.vehicle,
-        year: v.year,
-        // Distribute contract_items into modules and accessories based on categories
-        modules: sale.contract_items
-          ?.filter((item: any) => item.categories === 'Módulos')
-          .map((item: any) => item.name) || v.modules || [],
-        accessories: sale.contract_items
-          ?.filter((item: any) => item.categories === 'Acessórios')
-          .map((item: any) => ({ accessory_name: item.name, quantity: item.quantity || 1 })) || []
-      })),
+      vehicles: sale.vehicles.map((v: SegsaleVehicle) => {
+        // Ensure contract_items is always an array
+        const contractItems = Array.isArray(sale.contract_items) ? sale.contract_items : [];
+        
+        return {
+          plate: v.plate,
+          brand: v.brand,
+          vehicle: v.vehicle,
+          year: v.year,
+          // Distribute contract_items into modules and accessories based on categories
+          modules: contractItems
+            .filter((item: any) => item.categories === 'Módulos')
+            .map((item: any) => item.name),
+          accessories: contractItems
+            .filter((item: any) => item.categories === 'Acessórios')
+            .map((item: any) => ({ accessory_name: item.name, quantity: item.quantity || 1 }))
+        };
+      }),
       accessories: sale.accessories ?? [],
       contract_items: sale.contract_items ?? null,
       address: sale.address ?? undefined,

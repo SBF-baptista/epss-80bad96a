@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Truck } from "lucide-react";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
+import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 
 interface KickoffDetailsModalProps {
   open: boolean;
@@ -61,8 +62,53 @@ export const KickoffDetailsModal = ({
   useEffect(() => {
     if (open && saleSummaryId) {
       loadCustomerData();
+      checkAndBackfillAccessories();
     }
   }, [open, saleSummaryId]);
+
+  const checkAndBackfillAccessories = async () => {
+    try {
+      // 1. Get incoming_vehicles for this sale_summary_id
+      const { data: incomingVehicles } = await supabase
+        .from('incoming_vehicles')
+        .select('id')
+        .eq('sale_summary_id', saleSummaryId);
+
+      if (!incomingVehicles || incomingVehicles.length === 0) {
+        console.log(`No incoming vehicles found for sale_summary_id ${saleSummaryId}`);
+        return;
+      }
+
+      // 2. Check if accessories already exist for these vehicles
+      const { data: existingAccessories } = await supabase
+        .from('accessories')
+        .select('id')
+        .in('vehicle_id', incomingVehicles.map(v => v.id));
+
+      // 3. If no accessories found, import from Segsale
+      if (!existingAccessories || existingAccessories.length === 0) {
+        console.log(`No accessories found for sale_summary_id ${saleSummaryId}, importing from Segsale...`);
+        toast.info('Importando módulos e acessórios do Segsale...');
+        
+        try {
+          await fetchSegsaleProductsDirect(saleSummaryId);
+          toast.success('Módulos e acessórios importados com sucesso!');
+          
+          // Refetch kickoff data to update UI
+          setTimeout(() => {
+            onSuccess();
+          }, 1000);
+        } catch (error) {
+          console.error('Error importing from Segsale:', error);
+          toast.error('Erro ao importar dados do Segsale');
+        }
+      } else {
+        console.log(`Found ${existingAccessories.length} accessories for sale_summary_id ${saleSummaryId}`);
+      }
+    } catch (error) {
+      console.error('Error checking accessories:', error);
+    }
+  };
 
   const loadCustomerData = async () => {
     try {
