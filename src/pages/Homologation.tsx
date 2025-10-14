@@ -17,7 +17,6 @@ import {
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import HomologationFilters from "@/components/homologation/HomologationFilters";
 import { SegsaleFetchPanel } from "@/components/homologation/SegsaleFetchPanel";
-import { PollingStatusPanel } from "@/components/homologation/PollingStatusPanel";
 
 const Homologation = () => {
   const [filters, setFilters] = useState<HomologationFiltersType>({
@@ -55,12 +54,9 @@ const Homologation = () => {
         <div className="w-full max-w-7xl mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
           <HomologationHeader />
           
-          <div className="grid gap-6 md:grid-cols-2">
-            <SegsaleFetchPanel />
-            <PollingStatusPanel />
-          </div>
+          <SegsaleFetchPanel />
           
-          <HomologationMetrics 
+          <HomologationMetrics
             cards={filteredCards} 
             workflowData={workflowData} 
           />
