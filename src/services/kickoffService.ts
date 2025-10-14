@@ -10,6 +10,17 @@ export interface KickoffUsageType {
   vehicle_year: number;
 }
 
+export interface KickoffVehicle {
+  id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  plate: string | null;
+  usage_type: string;
+  quantity: number;
+  kickoff_completed: boolean;
+}
+
 export interface KickoffClient {
   sale_summary_id: number;
   company_name: string;
@@ -19,6 +30,7 @@ export interface KickoffClient {
   total_quantity: number;
   total_vehicles: number;
   usage_types: KickoffUsageType[];
+  vehicles: KickoffVehicle[];
 }
 
 export interface KickoffSummary {
@@ -31,7 +43,7 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
   // Buscar todos os incoming_vehicles do Segsale (com sale_summary_id)
   const { data: vehicles, error } = await supabase
     .from('incoming_vehicles')
-    .select('usage_type, company_name, quantity, sale_summary_id, brand, vehicle, year')
+    .select('id, usage_type, company_name, quantity, sale_summary_id, brand, vehicle, year, plate, kickoff_completed')
     .not('sale_summary_id', 'is', null)
     .order('company_name');
 
@@ -83,7 +95,8 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
         contacts: customerContacts,
         total_quantity: 0,
         total_vehicles: 0,
-        usage_types: []
+        usage_types: [],
+        vehicles: []
       });
     }
 
@@ -107,6 +120,18 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
       vehicle_brand: vehicle.brand || '',
       vehicle_model: vehicle.vehicle || '',
       vehicle_year: vehicle.year || 0
+    });
+    
+    // Add vehicle to the vehicles array
+    client.vehicles.push({
+      id: vehicle.id,
+      brand: vehicle.brand || '',
+      model: vehicle.vehicle || '',
+      year: vehicle.year || null,
+      plate: vehicle.plate || null,
+      usage_type: vehicle.usage_type || 'Não especificado',
+      quantity: quantity,
+      kickoff_completed: vehicle.kickoff_completed || false
     });
   });
 

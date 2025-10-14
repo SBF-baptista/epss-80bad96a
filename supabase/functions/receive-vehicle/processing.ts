@@ -57,6 +57,9 @@ export async function processVehicleGroups(
         if (normalizedUsageType === 'copiloto 2 cameras') normalizedUsageType = 'copiloto_2_cameras'
         if (normalizedUsageType === 'copiloto 4 cameras') normalizedUsageType = 'copiloto_4_cameras'
         
+        // Vehicles from Segsale should NOT be processed until kickoff is completed
+        const isFromSegsale = !!group.sale_summary_id
+        
         let { data: incomingVehicle, error: insertError } = await supabase
           .from('incoming_vehicles')
           .insert({
@@ -77,7 +80,8 @@ export async function processVehicleGroups(
             address_number: group.address?.number || null,
             address_zip_code: group.address?.zip_code || null,
             address_complement: group.address?.complement || null,
-            received_at: timestamp
+            received_at: timestamp,
+            kickoff_completed: false // Always start as false, will be marked true when kickoff is completed
           })
           .select()
           .single()
@@ -197,7 +201,34 @@ export async function processVehicleGroups(
           }
         }
 
-        // Check if automation rule exists for this vehicle
+        // If from Segsale, skip processing until kickoff is completed
+        if (isFromSegsale) {
+          console.log(`[${timestamp}][${requestId}] Vehicle from Segsale - waiting for kickoff completion`)
+          const processingNotes = `Vehicle received from Segsale. Waiting for kickoff completion before processing. (quantity: ${quantity || 1})`
+          
+          await supabase
+            .from('incoming_vehicles')
+            .update({
+              processing_notes: processingNotes,
+              homologation_status: 'homologar'
+            })
+            .eq('id', incomingVehicle.id)
+
+          const vehicleResult: ProcessingResult = {
+            vehicle: `${brand} ${vehicle}`,
+            quantity: quantity || 1,
+            incoming_vehicle_id: incomingVehicle.id,
+            status: 'pending_kickoff',
+            processing_notes: processingNotes
+          }
+          
+          groupResult.vehicles_processed.push(vehicleResult)
+          totalVehiclesProcessed++
+          console.log(`[${timestamp}][${requestId}] Vehicle marked as pending kickoff`)
+          continue
+        }
+        
+        // Check if automation rule exists for this vehicle (only for non-Segsale)
         console.log(`[${timestamp}][${requestId}] Checking if automation rule exists for vehicle...`)
         const automationRule = await checkAutomationRuleExists(supabase, brand, vehicle, year)
         

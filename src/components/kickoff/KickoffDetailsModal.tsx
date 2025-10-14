@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,15 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck } from "lucide-react";
+import { processKickoffVehicles } from "@/services/kickoffProcessingService";
+import type { KickoffVehicle } from "@/services/kickoffService";
 
 interface KickoffDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   saleSummaryId: number;
   companyName: string;
+  vehicles: KickoffVehicle[];
   onSuccess: () => void;
 }
 
@@ -36,6 +40,7 @@ export const KickoffDetailsModal = ({
   onOpenChange,
   saleSummaryId,
   companyName,
+  vehicles,
   onSuccess,
 }: KickoffDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
@@ -51,6 +56,43 @@ export const KickoffDetailsModal = ({
   ]);
   const [particularityDetails, setParticularityDetails] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Load existing customer data when modal opens
+  useEffect(() => {
+    if (open && saleSummaryId) {
+      loadCustomerData();
+    }
+  }, [open, saleSummaryId]);
+
+  const loadCustomerData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('sale_summary_id', saleSummaryId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setNeedsBlocking(data.needs_blocking || false);
+        setNeedsEngineBlocking(data.needs_engine_blocking || false);
+        setNeedsFuelBlocking(data.needs_fuel_blocking || false);
+        setNeedsAcceleratorBlocking(data.needs_accelerator_blocking || false);
+        setHasParticularity(data.has_installation_particularity || false);
+        setParticularityDetails(data.installation_particularity_details || "");
+        setNotes(data.kickoff_notes || "");
+        setContacts(Array.isArray(data.contacts) ? (data.contacts as unknown as Contact[]) : []);
+        setInstallationLocations(
+          Array.isArray(data.installation_locations) && data.installation_locations.length > 0
+            ? (data.installation_locations as unknown as InstallationLocation[])
+            : [{ city: "", state: "" }]
+        );
+      }
+    } catch (error) {
+      console.error("Error loading customer data:", error);
+    }
+  };
 
   const addContact = () => {
     setContacts([...contacts, { type: 'decisor', name: "", role: "", email: "", phone: "" }]);
@@ -85,6 +127,7 @@ export const KickoffDetailsModal = ({
     setLoading(true);
 
     try {
+      // Save customer kickoff details
       const { error } = await supabase
         .from("customers")
         .update({
@@ -102,7 +145,25 @@ export const KickoffDetailsModal = ({
 
       if (error) throw error;
 
-      toast.success("Detalhes do kickoff salvos com sucesso!");
+      // Process vehicles for homologation after kickoff completion
+      console.log("Processing kickoff vehicles for homologation...");
+      const processingResult = await processKickoffVehicles(saleSummaryId);
+      
+      if (!processingResult.success) {
+        console.error("Errors during vehicle processing:", processingResult.errors);
+        toast.error(`Kickoff salvo, mas houve erros ao processar veículos: ${processingResult.errors.join(', ')}`);
+      } else {
+        const messages = [];
+        if (processingResult.homologations_created > 0) {
+          messages.push(`${processingResult.homologations_created} homologação(ões) criada(s)`);
+        }
+        if (processingResult.already_homologated_count > 0) {
+          messages.push(`${processingResult.already_homologated_count} veículo(s) já homologado(s)`);
+        }
+        
+        toast.success(`Kickoff finalizado com sucesso! ${messages.join(', ')}`);
+      }
+
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -121,6 +182,38 @@ export const KickoffDetailsModal = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Vehicles Section */}
+          <div className="space-y-3 border-b pb-4">
+            <div className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold text-base">Veículos</h3>
+            </div>
+            <div className="space-y-2">
+              {vehicles.map((vehicle, index) => (
+                <div key={vehicle.id} className="bg-muted p-3 rounded-lg space-y-1">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
+                      <div className="flex gap-2 flex-wrap text-xs text-muted-foreground">
+                        {vehicle.year && <Badge variant="outline">Ano: {vehicle.year}</Badge>}
+                        {vehicle.plate && <Badge variant="outline">Placa: {vehicle.plate}</Badge>}
+                        <Badge variant="secondary">{vehicle.usage_type}</Badge>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {vehicle.quantity}x
+                    </Badge>
+                  </div>
+                  {vehicle.kickoff_completed && (
+                    <Badge variant="default" className="text-xs">
+                      Kickoff Completo
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Checklist Bloqueio */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
