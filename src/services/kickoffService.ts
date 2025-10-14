@@ -59,19 +59,23 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
     customers?.map(c => [c.sale_summary_id, c]) || []
   );
 
-  // Agrupar por cliente (sale_summary_id)
-  const clientsMap = new Map<number, KickoffClient>();
+  // Agrupar por company_name (cliente único)
+  const clientsMap = new Map<string, KickoffClient>();
   let totalVehicles = 0;
 
   vehicles.forEach(vehicle => {
-    const saleSummaryId = vehicle.sale_summary_id!;
     const quantity = vehicle.quantity || 1;
     totalVehicles += quantity;
+    
+    const companyKey = (vehicle.company_name || 'Não identificado').trim().toUpperCase();
+    const saleSummaryId = vehicle.sale_summary_id!;
 
-    if (!clientsMap.has(saleSummaryId)) {
+    if (!clientsMap.has(companyKey)) {
+      // Buscar customer data - preferir o que tem contatos
       const customer = customerMap.get(saleSummaryId);
       const customerContacts = Array.isArray(customer?.contacts) ? customer.contacts : [];
-      clientsMap.set(saleSummaryId, {
+      
+      clientsMap.set(companyKey, {
         sale_summary_id: saleSummaryId,
         company_name: vehicle.company_name || 'Não identificado',
         needs_blocking: customer?.needs_blocking || false,
@@ -83,7 +87,16 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
       });
     }
 
-    const client = clientsMap.get(saleSummaryId)!;
+    const client = clientsMap.get(companyKey)!;
+    
+    // Atualizar informações se encontrar um customer com mais dados
+    const customer = customerMap.get(saleSummaryId);
+    if (customer && Array.isArray(customer.contacts) && customer.contacts.length > 0 && client.contacts?.length === 0) {
+      client.contacts = customer.contacts;
+      client.has_kickoff_details = true;
+      client.needs_blocking = customer.needs_blocking || client.needs_blocking;
+    }
+    
     client.total_quantity += quantity;
     client.total_vehicles += 1;
     client.usage_types.push({
