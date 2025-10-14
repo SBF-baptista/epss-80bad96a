@@ -195,8 +195,8 @@ export const KickoffDetailsModal = ({
                     <div className="space-y-1">
                       <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
                       <div className="flex gap-2 flex-wrap text-xs text-muted-foreground">
-                        {vehicle.year && <Badge variant="outline">Ano: {vehicle.year}</Badge>}
-                        {vehicle.plate && <Badge variant="outline">Placa: {vehicle.plate}</Badge>}
+                        <Badge variant="outline">Ano: {vehicle.year || 'Não informado'}</Badge>
+                        <Badge variant="outline">Placa: {vehicle.plate || 'Não informada'}</Badge>
                         <Badge variant="secondary">{vehicle.usage_type}</Badge>
                       </div>
                     </div>
