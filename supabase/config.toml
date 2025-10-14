@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.receive-vehicle]
 verify_jwt = false
+
+[functions.segsale-webhook]
+verify_jwt = false
