@@ -167,7 +167,7 @@ export async function processVehicleGroups(
                     quantity: item.quantity || 1,
                     received_at: timestamp
                   }, {
-                    onConflict: 'vehicle_id,name',
+                    onConflict: 'vehicle_id,name,categories',
                     ignoreDuplicates: false
                   })
 
@@ -202,7 +202,7 @@ export async function processVehicleGroups(
                   quantity: accessory.quantity || 1,
                   received_at: timestamp
                 }, {
-                  onConflict: 'vehicle_id,name',
+                  onConflict: 'vehicle_id,name,categories',
                   ignoreDuplicates: false
                 })
 
@@ -236,7 +236,7 @@ export async function processVehicleGroups(
                   quantity: 1,
                   received_at: timestamp
                 }, {
-                  onConflict: 'vehicle_id,name',
+                  onConflict: 'vehicle_id,name,categories',
                   ignoreDuplicates: false
                 })
 

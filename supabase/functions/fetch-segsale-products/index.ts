@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
               const saleSummaryId = (sale as any).sale_summary_id || parseInt(idResumoVenda)
               const { data: dbAccessories, error: dbError } = await supabase
                 .from('accessories')
-                .select('accessory_name, quantity')
+                .select('name, quantity')
                 .eq('company_name', sale.company_name)
                 .order('created_at', { ascending: false })
               
