@@ -170,11 +170,11 @@ export async function processVehicleGroups(
 
         // Process vehicle-specific accessories if they exist
         if (vehicleData.accessories && Array.isArray(vehicleData.accessories) && vehicleData.accessories.length > 0) {
-          console.log(`[${timestamp}][${requestId}] Processing ${vehicleData.accessories.length} vehicle-specific accessories...`)
+          console.log(`[${timestamp}][${requestId}] Processing ${vehicleData.accessories.length} vehicle-specific accessories from array...`)
           
           for (const accessory of vehicleData.accessories) {
             try {
-              console.log(`[${timestamp}][${requestId}] Storing vehicle accessory: ${accessory.accessory_name} (quantity: ${accessory.quantity || 1})`)
+              console.log(`[${timestamp}][${requestId}] Storing vehicle accessory: ${accessory.accessory_name}`)
               
               const { error: accessoryError } = await supabase
                 .from('accessories')

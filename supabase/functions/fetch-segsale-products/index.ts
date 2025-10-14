@@ -149,8 +149,17 @@ Deno.serve(async (req) => {
       sale_summary_id: sale.sale_summary_id ?? parseInt(idResumoVenda),
       pending_contract_id: sale.pending_contract_id ?? null,
       vehicles: sale.vehicles.map((v: SegsaleVehicle) => ({
-        ...v,
-        modules: v.modules || []
+        plate: v.plate,
+        brand: v.brand,
+        vehicle: v.vehicle,
+        year: v.year,
+        // Distribute contract_items into modules and accessories based on categories
+        modules: sale.contract_items
+          ?.filter((item: any) => item.categories === 'Módulos')
+          .map((item: any) => item.name) || v.modules || [],
+        accessories: sale.contract_items
+          ?.filter((item: any) => item.categories === 'Acessórios')
+          .map((item: any) => ({ accessory_name: item.name, quantity: item.quantity || 1 })) || []
       })),
       accessories: sale.accessories ?? [],
       contract_items: sale.contract_items ?? null,
