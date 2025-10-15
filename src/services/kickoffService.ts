@@ -86,7 +86,7 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
     customers?.map(c => [c.sale_summary_id, c]) || []
   );
 
-  // Criar mapa de módulos por vehicle_id
+  // Criar mapa de módulos/acessórios por vehicle_id (incluir todos para visualização)
   const modulesMap = new Map<string, KickoffModule[]>();
   accessories?.forEach(acc => {
     if (acc.vehicle_id) {

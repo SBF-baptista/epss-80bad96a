@@ -81,8 +81,18 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
     });
 
     // Processar acessórios - add safety check
+    // IMPORTANTE: Módulos (categories='modulos') não precisam de homologação
     const accessories = kit.accessories || [];
     accessories.forEach(item => {
+      // Ignorar módulos - eles não passam por homologação
+      const itemDescription = (item.description || '').toLowerCase();
+      const isModule = itemDescription.includes('modulo') || itemDescription.includes('módulo');
+      if (isModule) {
+        // Módulos são automaticamente considerados OK
+        homologatedKitItems.accessories.push(item);
+        return;
+      }
+      
       const key = `${item.item_name}:accessory`;
       if (homologatedSet.has(key)) {
         homologatedKitItems.accessories.push(item);
@@ -168,8 +178,18 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
       });
 
       // Verificar acessórios - add safety check
+      // IMPORTANTE: Módulos (categories='modulos') não precisam de homologação
       const accessories = kit.accessories || [];
       accessories.forEach(item => {
+        // Ignorar módulos - eles não passam por homologação
+        const itemDescription = (item.description || '').toLowerCase();
+        const isModule = itemDescription.includes('modulo') || itemDescription.includes('módulo');
+        if (isModule) {
+          // Módulos são automaticamente considerados OK
+          homologatedKitItems.accessories.push(item);
+          return;
+        }
+        
         const key = `${item.item_name}:accessory`;
         if (homologatedSet.has(key)) {
           homologatedKitItems.accessories.push(item);
