@@ -92,9 +92,9 @@ serve(async (req) => {
     console.log(`✅ Authentication successful via: ${authMethod}`);
     console.log(`🔄 Processing idResumoVenda: ${idResumoVenda}`);
 
-    // Call fetch-segsale-products endpoint
+    // Call fetch-segsale-products endpoint (which fetches contract_items and forwards to receive-vehicle)
     const fetchUrl = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
-    console.log(`📞 Calling fetch-segsale-products: ${fetchUrl}`);
+    console.log(`📞 Calling fetch-segsale-products (includes contract items): ${fetchUrl}`);
 
     const fetchResponse = await fetch(fetchUrl, {
       method: 'GET',
