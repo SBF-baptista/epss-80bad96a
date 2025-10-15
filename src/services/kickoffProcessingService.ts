@@ -61,13 +61,13 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
           .eq('model', vehicle.vehicle)
           .eq('year', vehicle.year || 0)
           .eq('status', 'homologado')
+          .order('updated_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (homologationError) {
-          console.error('Error checking existing homologation:', homologationError);
-          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${homologationError.message}`);
-          // Continue to next vehicle even if this one failed
-          continue;
+          console.warn('Error checking existing homologation, defaulting to manual homologation:', homologationError);
+          // Proceed without auto-homologation; we'll create a new card with status 'homologar'
         }
 
         // Create homologation card for THIS vehicle (regardless of whether similar ones exist)
