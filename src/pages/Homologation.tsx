@@ -37,7 +37,17 @@ const Homologation = () => {
 
   // Filter cards based on active filters
   const filteredCards = useMemo(() => {
-    return filterHomologationCards(cards, filters);
+    const filtered = filterHomologationCards(cards, filters);
+    console.log('📊 Homologation Kanban Data:', {
+      totalCards: cards.length,
+      filteredCards: filtered.length,
+      activeFilters: filters,
+      cardsByStatus: cards.reduce((acc, card) => {
+        acc[card.status] = (acc[card.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    });
+    return filtered;
   }, [cards, filters]);
 
   const handleFiltersChange = (newFilters: HomologationFiltersType) => {
