@@ -45,14 +45,11 @@ const ConfigurationSelector = ({
   const loadConfigurations = async () => {
     try {
       const configs = await fetchAutomationConfigurations();
-      setConfigurations(configs);
+      setConfigurations(configs || []);
     } catch (error) {
       console.error("Error loading configurations:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar configurações",
-        variant: "destructive"
-      });
+      // Set empty array instead of showing error toast on initial load
+      setConfigurations([]);
     }
   };
 

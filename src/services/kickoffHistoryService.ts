@@ -21,6 +21,7 @@ export const getKickoffHistory = async (): Promise<KickoffHistoryRecord[]> => {
   const { data, error } = await supabase
     .from('kickoff_history')
     .select('*')
+    .order('company_name', { ascending: true })
     .order('approved_at', { ascending: false });
   
   if (error) {
@@ -28,5 +29,16 @@ export const getKickoffHistory = async (): Promise<KickoffHistoryRecord[]> => {
     throw error;
   }
 
-  return (data as KickoffHistoryRecord[]) || [];
+  // Group by company_name to show all kickoffs for the same client together
+  const groupedData = (data as KickoffHistoryRecord[] || []).reduce((acc, record) => {
+    const companyKey = record.company_name.trim().toUpperCase();
+    if (!acc[companyKey]) {
+      acc[companyKey] = [];
+    }
+    acc[companyKey].push(record);
+    return acc;
+  }, {} as Record<string, KickoffHistoryRecord[]>);
+
+  // Flatten back to array, maintaining grouping
+  return Object.values(groupedData).flat();
 };

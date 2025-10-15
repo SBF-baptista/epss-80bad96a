@@ -41,6 +41,21 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
     );
   }
 
+  // Group history by company name
+  const groupedHistory = history.reduce((acc, record) => {
+    const key = record.company_name.trim().toUpperCase();
+    if (!acc[key]) {
+      acc[key] = {
+        company_name: record.company_name,
+        records: []
+      };
+    }
+    acc[key].records.push(record);
+    return acc;
+  }, {} as Record<string, { company_name: string; records: KickoffHistoryRecord[] }>);
+
+  const companies = Object.values(groupedHistory);
+
   return (
     <>
       <div className="rounded-md border">
@@ -49,22 +64,27 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead>Cliente</TableHead>
-              <TableHead>Veículos</TableHead>
-              <TableHead>Data de Aprovação</TableHead>
-              <TableHead>Ações</TableHead>
+              <TableHead>Kickoffs Aprovados</TableHead>
+              <TableHead>Total de Veículos</TableHead>
+              <TableHead>Último Kickoff</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {history.map((record) => {
-              const isExpanded = expandedRows.has(record.id);
+            {companies.map((company) => {
+              const totalVehicles = company.records.reduce((sum, r) => sum + r.total_vehicles, 0);
+              const latestRecord = company.records.sort((a, b) => 
+                new Date(b.approved_at).getTime() - new Date(a.approved_at).getTime()
+              )[0];
+              const isExpanded = expandedRows.has(company.company_name);
+              
               return (
                 <>
-                  <TableRow key={record.id}>
+                  <TableRow key={company.company_name}>
                     <TableCell>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => toggleRow(record.id)}
+                        onClick={() => toggleRow(company.company_name)}
                       >
                         {isExpanded ? (
                           <ChevronDown className="h-4 w-4" />
@@ -74,80 +94,53 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
                       </Button>
                     </TableCell>
                     <TableCell className="font-medium">
-                      {record.company_name}
+                      {company.company_name}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {record.total_vehicles} veículo(s)
+                        {company.records.length} {company.records.length === 1 ? 'kickoff' : 'kickoffs'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(record.approved_at), "dd/MM/yyyy 'às' HH:mm", {
+                      <Badge variant="outline">
+                        {totalVehicles} veículo(s)
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(latestRecord.approved_at), "dd/MM/yyyy 'às' HH:mm", {
                         locale: ptBR,
                       })}
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedRecord(record)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalhes
-                      </Button>
-                    </TableCell>
                   </TableRow>
-                  {isExpanded && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="bg-muted/50">
-                        <div className="p-4 space-y-4">
-                          <div>
-                            <h4 className="font-semibold mb-2">Contatos:</h4>
-                            {Array.isArray(record.contacts) && record.contacts.length > 0 ? (
-                              <div className="space-y-2">
-                                {record.contacts.map((contact: any, idx: number) => (
-                                  <div key={idx} className="text-sm">
-                                    <Badge variant="secondary" className="mr-2">
-                                      {contact.type}
-                                    </Badge>
-                                    {contact.name} - {contact.role}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">
-                                Nenhum contato registrado
-                              </span>
-                            )}
+                  {isExpanded && company.records.map((record) => {
+                    return (
+                      <TableRow key={record.id} className="bg-muted/30">
+                        <TableCell></TableCell>
+                        <TableCell className="pl-8">
+                          <div className="text-sm text-muted-foreground">
+                            {format(new Date(record.approved_at), "dd/MM/yyyy 'às' HH:mm", {
+                              locale: ptBR,
+                            })}
                           </div>
-                          
-                          <div>
-                            <h4 className="font-semibold mb-2">Locais de Instalação:</h4>
-                            {Array.isArray(record.installation_locations) && record.installation_locations.length > 0 ? (
-                              <div className="flex gap-2 flex-wrap">
-                                {record.installation_locations.map((loc: any, idx: number) => (
-                                  <Badge key={idx} variant="outline">
-                                    {loc.city}/{loc.state}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">
-                                Nenhum local registrado
-                              </span>
-                            )}
-                          </div>
-
-                          {record.kickoff_notes && (
-                            <div>
-                              <h4 className="font-semibold mb-2">Observações:</h4>
-                              <p className="text-sm">{record.kickoff_notes}</p>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">
+                            {record.total_vehicles} veículo(s)
+                          </Badge>
+                        </TableCell>
+                        <TableCell colSpan={2}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedRecord(record)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalhes
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </>
               );
             })}

@@ -47,11 +47,12 @@ export interface KickoffSummary {
 }
 
 export const getKickoffData = async (): Promise<KickoffSummary> => {
-  // Buscar todos os incoming_vehicles do Segsale (com sale_summary_id)
+  // Buscar todos os incoming_vehicles do Segsale que não tenham kickoff completo
   const { data: vehicles, error } = await supabase
     .from('incoming_vehicles')
     .select('id, usage_type, company_name, quantity, sale_summary_id, brand, vehicle, year, plate, kickoff_completed')
     .not('sale_summary_id', 'is', null)
+    .eq('kickoff_completed', false)
     .order('company_name');
   
   if (error) {
