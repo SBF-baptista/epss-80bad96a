@@ -68,23 +68,22 @@ export const KickoffVehiclesTable = ({
                   {vehicle.year || <span className="text-muted-foreground">-</span>}
                 </TableCell>
                 <TableCell>
-                  <div className="space-y-2 max-w-[200px]">
+                  <div className="space-y-2 max-w-[250px]">
                     {modulesList.length > 0 ? (
-                      modulesList.map((module, idx) => (
-                        <div key={`mod-${idx}`} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${vehicle.id}-${module.name}`}
-                            checked={vehicleModules.has(module.name)}
-                            onCheckedChange={() => onModuleToggle(vehicle.id, module.name)}
-                          />
-                          <label
-                            htmlFor={`${vehicle.id}-${module.name}`}
-                            className="text-sm cursor-pointer"
-                          >
-                            {module.name} ({module.quantity}x)
-                          </label>
-                        </div>
-                      ))
+                      <div className="space-y-2">
+                        {modulesList.map((module, idx) => (
+                          <div key={`mod-${idx}`} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${vehicle.id}-${module.name}`}
+                              checked={vehicleModules.has(module.name)}
+                              onCheckedChange={() => onModuleToggle(vehicle.id, module.name)}
+                            />
+                            <Badge variant="outline" className="text-xs flex-1">
+                              {module.name} ({module.quantity}x)
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">Nenhum módulo</span>
                     )}

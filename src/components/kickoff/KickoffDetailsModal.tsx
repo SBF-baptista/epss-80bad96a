@@ -213,7 +213,7 @@ export const KickoffDetailsModal = ({
 
     try {
       // Save customer kickoff details
-      const { error } = await supabase
+      const { error: customerError } = await supabase
         .from("customers")
         .update({
           contacts: contacts.filter(c => c.name) as any,
@@ -224,12 +224,32 @@ export const KickoffDetailsModal = ({
         })
         .eq("sale_summary_id", saleSummaryId);
 
-      if (error) throw error;
+      if (customerError) throw customerError;
 
-      // Update each vehicle with its selected modules and blocking info
-      for (const vehicle of vehicles) {
+      // Prepare vehicles data for history
+      const vehiclesData = vehicles.map(vehicle => {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false };
+        
+        return {
+          id: vehicle.id,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          plate: vehicle.plate,
+          quantity: vehicle.quantity,
+          selected_modules: modules,
+          blocking_info: blocking,
+          accessories: vehicle.modules.filter(m => {
+            const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+            return normalize(m.categories || '') !== 'modulos';
+          })
+        };
+      });
+
+      // Update each vehicle with its selected modules and kickoff_completed
+      for (const vehicle of vehicles) {
+        const modules = Array.from(selectedModules.get(vehicle.id) || []);
         
         const { error: vehicleError } = await supabase
           .from("incoming_vehicles")
@@ -244,7 +264,26 @@ export const KickoffDetailsModal = ({
         }
       }
 
-      if (error) throw error;
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Save to kickoff history
+      const { error: historyError } = await supabase
+        .from("kickoff_history")
+        .insert({
+          sale_summary_id: saleSummaryId,
+          company_name: companyName,
+          total_vehicles: vehicles.length,
+          contacts: contacts.filter(c => c.name) as any,
+          installation_locations: installationLocations.filter(loc => loc.city) as any,
+          has_installation_particularity: hasParticularity,
+          installation_particularity_details: hasParticularity ? particularityDetails : null,
+          kickoff_notes: notes || null,
+          vehicles_data: vehiclesData as any,
+          approved_by: user?.id || null,
+        });
+
+      if (historyError) throw historyError;
 
 
       // Process vehicles for homologation after kickoff completion

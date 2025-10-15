@@ -2,12 +2,15 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Users, Truck, Edit, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, Users, Truck, Edit, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, History } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
+import { getKickoffHistory } from "@/services/kickoffHistoryService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
+import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,6 +29,14 @@ const Kickoff = () => {
     staleTime: 0,
   });
 
+  const { data: kickoffHistory, isLoading: historyLoading, refetch: refetchHistory } = useQuery({
+    queryKey: ['kickoff-history'],
+    queryFn: getKickoffHistory,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
+
   // Real-time subscriptions for automatic updates with toast notification
   const handleRealtimeUpdate = () => {
     toast({
@@ -36,6 +47,12 @@ const Kickoff = () => {
 
   useRealtimeSubscription('accessories', ['kickoff-data'], undefined, handleRealtimeUpdate);
   useRealtimeSubscription('incoming_vehicles', ['kickoff-data'], undefined, handleRealtimeUpdate);
+  useRealtimeSubscription('kickoff_history', ['kickoff-history'], undefined, () => {
+    toast({
+      title: "Histórico atualizado",
+      description: "Novo kickoff foi aprovado.",
+    });
+  });
 
   const handleEditKickoff = (saleSummaryId: number, companyName: string) => {
     setSelectedSaleSummaryId(saleSummaryId);
@@ -132,9 +149,21 @@ const Kickoff = () => {
         </Card>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Kickoff Cliente</h2>
-        {isLoading ? (
+      <Tabs defaultValue="pending" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="pending">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Pendentes
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            <History className="h-4 w-4 mr-2" />
+            Histórico de Aprovações
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="space-y-4">
+          <h2 className="text-2xl font-semibold">Kickoff Cliente</h2>
+          {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Skeleton className="h-32" />
             <Skeleton className="h-32" />
@@ -307,7 +336,17 @@ const Kickoff = () => {
             </CardContent>
           </Card>
         )}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-4">
+          <h2 className="text-2xl font-semibold">Histórico de Aprovações</h2>
+          {historyLoading ? (
+            <Skeleton className="h-32" />
+          ) : (
+            <KickoffHistoryTable history={kickoffHistory || []} />
+          )}
+        </TabsContent>
+      </Tabs>
 
       {selectedSaleSummaryId && (
         <KickoffDetailsModal
@@ -318,7 +357,10 @@ const Kickoff = () => {
           vehicles={
             kickoffData?.clients.find(c => c.sale_summary_id === selectedSaleSummaryId)?.vehicles || []
           }
-          onSuccess={() => refetch()}
+          onSuccess={() => {
+            refetch();
+            refetchHistory();
+          }}
         />
       )}
     </div>

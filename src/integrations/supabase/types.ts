@@ -696,6 +696,57 @@ export type Database = {
         }
         Relationships: []
       }
+      kickoff_history: {
+        Row: {
+          approved_at: string
+          approved_by: string | null
+          company_name: string
+          contacts: Json | null
+          created_at: string
+          has_installation_particularity: boolean | null
+          id: string
+          installation_locations: Json | null
+          installation_particularity_details: string | null
+          kickoff_notes: string | null
+          sale_summary_id: number
+          total_vehicles: number
+          updated_at: string
+          vehicles_data: Json
+        }
+        Insert: {
+          approved_at?: string
+          approved_by?: string | null
+          company_name: string
+          contacts?: Json | null
+          created_at?: string
+          has_installation_particularity?: boolean | null
+          id?: string
+          installation_locations?: Json | null
+          installation_particularity_details?: string | null
+          kickoff_notes?: string | null
+          sale_summary_id: number
+          total_vehicles?: number
+          updated_at?: string
+          vehicles_data?: Json
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string | null
+          company_name?: string
+          contacts?: Json | null
+          created_at?: string
+          has_installation_particularity?: boolean | null
+          id?: string
+          installation_locations?: Json | null
+          installation_particularity_details?: string | null
+          kickoff_notes?: string | null
+          sale_summary_id?: number
+          total_vehicles?: number
+          updated_at?: string
+          vehicles_data?: Json
+        }
+        Relationships: []
+      }
       kit_item_options: {
         Row: {
           created_at: string
