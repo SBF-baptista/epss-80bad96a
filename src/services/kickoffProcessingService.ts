@@ -24,17 +24,51 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
   };
 
   try {
-    // Get all vehicles for this sale_summary_id that haven't been processed
-    const { data: vehicles, error: vehiclesError } = await supabase
-      .from('incoming_vehicles')
-      .select('*')
-      .eq('sale_summary_id', saleSummaryId);
+    // Prefer the exact set selected in the latest kickoff (kickoff_history)
+    let vehicles: any[] | null = null;
 
-    if (vehiclesError) {
-      console.error('Error fetching vehicles for kickoff:', vehiclesError);
-      result.errors.push(`Failed to fetch vehicles: ${vehiclesError.message}`);
-      result.success = false;
-      return result;
+    const { data: kickoff, error: kickoffErr } = await supabase
+      .from('kickoff_history')
+      .select('vehicles_data')
+      .eq('sale_summary_id', saleSummaryId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (kickoffErr) {
+      console.warn('Error fetching kickoff_history:', kickoffErr);
+    }
+
+    if (kickoff?.vehicles_data && Array.isArray(kickoff.vehicles_data) && kickoff.vehicles_data.length > 0) {
+      const vehicleIds = kickoff.vehicles_data.map((v: any) => v.id).filter(Boolean);
+      const { data: byIds, error: byIdsErr } = await supabase
+        .from('incoming_vehicles')
+        .select('*')
+        .in('id', vehicleIds);
+
+      if (byIdsErr) {
+        console.error('Error fetching vehicles by IDs from kickoff_history:', byIdsErr);
+        result.errors.push(`Failed to fetch vehicles by kickoff set: ${byIdsErr.message}`);
+      } else {
+        vehicles = byIds || [];
+      }
+    }
+
+    // Fallback: fetch by sale_summary_id
+    if (!vehicles) {
+      const { data: bySale, error: vehiclesError } = await supabase
+        .from('incoming_vehicles')
+        .select('*')
+        .eq('sale_summary_id', saleSummaryId);
+
+      if (vehiclesError) {
+        console.error('Error fetching vehicles for kickoff by sale_summary_id:', vehiclesError);
+        result.errors.push(`Failed to fetch vehicles: ${vehiclesError.message}`);
+        result.success = false;
+        return result;
+      }
+
+      vehicles = bySale || [];
     }
 
     if (!vehicles || vehicles.length === 0) {
