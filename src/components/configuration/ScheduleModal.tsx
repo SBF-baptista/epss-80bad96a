@@ -324,9 +324,20 @@ export const ScheduleModal = ({
             ...vehicleSpecificAccessories.map(normalizeName)
           ];
           
-          const allAccessoriesHomologated = vehicleAccessories.every(acc => 
-            statusMap.get(`${acc}:accessory`) === true
-          );
+          // Se não há acessórios, considera pronto
+          const allAccessoriesHomologated = vehicleAccessories.length === 0 ? true : 
+            vehicleAccessories.every(acc => {
+              const status = statusMap.get(`${acc}:accessory`);
+              // Se ainda não foi verificado (undefined), considera não pronto
+              return status === true;
+            });
+          
+          console.log('🔍 Vehicle homologation check:', {
+            plate: vehicle.plate,
+            vehicleAccessories,
+            statusMapEntries: Array.from(statusMap.entries()),
+            allAccessoriesHomologated
+          });
           
           const vehicleReady = allAccessoriesHomologated;
           statusMap.set(`vehicle-ready:${vehicle.plate}`, vehicleReady);

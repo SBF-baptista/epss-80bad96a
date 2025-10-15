@@ -25,10 +25,11 @@ export async function checkItemHomologation(itemName: string, itemType: string):
       .select('id')
       .eq('item_name', itemName)
       .eq('item_type', itemType)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-      throw error;
+    if (error) {
+      console.error('Error checking item homologation:', error);
+      return false;
     }
 
     return !!data;
