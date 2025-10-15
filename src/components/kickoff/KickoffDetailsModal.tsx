@@ -247,20 +247,21 @@ export const KickoffDetailsModal = ({
         };
       });
 
-      // Update each vehicle with its selected modules and kickoff_completed
+      // Store selected modules info (will be processed by processKickoffVehicles)
       for (const vehicle of vehicles) {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         
-        const { error: vehicleError } = await supabase
-          .from("incoming_vehicles")
-          .update({
-            kickoff_completed: true,
-            processing_notes: modules.length > 0 ? `Módulos selecionados: ${modules.join(', ')}` : null,
-          })
-          .eq("id", vehicle.id);
+        if (modules.length > 0) {
+          const { error: vehicleError } = await supabase
+            .from("incoming_vehicles")
+            .update({
+              processing_notes: `Módulos selecionados: ${modules.join(', ')}`,
+            })
+            .eq("id", vehicle.id);
 
-        if (vehicleError) {
-          console.error(`Error updating vehicle ${vehicle.id}:`, vehicleError);
+          if (vehicleError) {
+            console.error(`Error updating vehicle ${vehicle.id} modules:`, vehicleError);
+          }
         }
       }
 
