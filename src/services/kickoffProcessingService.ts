@@ -29,7 +29,8 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
       .from('incoming_vehicles')
       .select('*')
       .eq('sale_summary_id', saleSummaryId)
-      .eq('kickoff_completed', false);
+      .is('created_homologation_id', null)
+      .or('kickoff_completed.is.false,kickoff_completed.is.null');
 
     if (vehiclesError) {
       console.error('Error fetching vehicles for kickoff:', vehiclesError);
