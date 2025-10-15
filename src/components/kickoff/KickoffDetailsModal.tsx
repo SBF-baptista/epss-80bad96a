@@ -46,10 +46,6 @@ export const KickoffDetailsModal = ({
   onSuccess,
 }: KickoffDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
-  const [needsBlocking, setNeedsBlocking] = useState(false);
-  const [needsEngineBlocking, setNeedsEngineBlocking] = useState(false);
-  const [needsFuelBlocking, setNeedsFuelBlocking] = useState(false);
-  const [needsAcceleratorBlocking, setNeedsAcceleratorBlocking] = useState(false);
   const [hasParticularity, setHasParticularity] = useState(false);
   
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -58,6 +54,18 @@ export const KickoffDetailsModal = ({
   ]);
   const [particularityDetails, setParticularityDetails] = useState("");
   const [notes, setNotes] = useState("");
+  
+  const [selectedModules, setSelectedModules] = useState<Map<string, Set<string>>>(
+    new Map(vehicles.map(v => {
+      const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+      const modulesList = v.modules.filter(m => normalize(m.categories || '') === 'modulos');
+      return [v.id, new Set(modulesList.map(m => m.name))];
+    }))
+  );
+  
+  const [vehicleBlocking, setVehicleBlocking] = useState<Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean }>>(
+    new Map(vehicles.map(v => [v.id, { needsBlocking: false, engineBlocking: false, fuelBlocking: false }]))
+  );
 
   // Load existing customer data when modal opens
   useEffect(() => {
@@ -122,10 +130,6 @@ export const KickoffDetailsModal = ({
       if (error) throw error;
 
       if (data) {
-        setNeedsBlocking(data.needs_blocking || false);
-        setNeedsEngineBlocking(data.needs_engine_blocking || false);
-        setNeedsFuelBlocking(data.needs_fuel_blocking || false);
-        setNeedsAcceleratorBlocking(data.needs_accelerator_blocking || false);
         setHasParticularity(data.has_installation_particularity || false);
         setParticularityDetails(data.installation_particularity_details || "");
         setNotes(data.kickoff_notes || "");
@@ -139,6 +143,40 @@ export const KickoffDetailsModal = ({
     } catch (error) {
       console.error("Error loading customer data:", error);
     }
+  };
+
+  const handleModuleToggle = (vehicleId: string, moduleName: string) => {
+    setSelectedModules(prev => {
+      const newMap = new Map(prev);
+      const vehicleModules = new Set(newMap.get(vehicleId) || []);
+      
+      if (vehicleModules.has(moduleName)) {
+        vehicleModules.delete(moduleName);
+      } else {
+        vehicleModules.add(moduleName);
+      }
+      
+      newMap.set(vehicleId, vehicleModules);
+      return newMap;
+    });
+  };
+
+  const handleBlockingToggle = (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => {
+    setVehicleBlocking(prev => {
+      const newMap = new Map(prev);
+      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false }) };
+      
+      vehicleBlock[field] = value;
+      
+      // If disabling needsBlocking, also disable sub-options
+      if (field === 'needsBlocking' && !value) {
+        vehicleBlock.engineBlocking = false;
+        vehicleBlock.fuelBlocking = false;
+      }
+      
+      newMap.set(vehicleId, vehicleBlock);
+      return newMap;
+    });
   };
 
   const addContact = () => {
@@ -178,9 +216,6 @@ export const KickoffDetailsModal = ({
       const { error } = await supabase
         .from("customers")
         .update({
-          needs_blocking: needsBlocking,
-          needs_engine_blocking: needsBlocking ? needsEngineBlocking : false,
-          needs_fuel_blocking: needsBlocking ? needsFuelBlocking : false,
           contacts: contacts.filter(c => c.name) as any,
           installation_locations: installationLocations.filter(loc => loc.city) as any,
           has_installation_particularity: hasParticularity,
@@ -191,16 +226,26 @@ export const KickoffDetailsModal = ({
 
       if (error) throw error;
 
-      // Mark ALL incoming_vehicles with this sale_summary_id as kickoff_completed
-      const { error: vehiclesError } = await supabase
-        .from("incoming_vehicles")
-        .update({ kickoff_completed: true })
-        .eq("sale_summary_id", saleSummaryId);
+      // Update each vehicle with its selected modules and blocking info
+      for (const vehicle of vehicles) {
+        const modules = Array.from(selectedModules.get(vehicle.id) || []);
+        const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false };
+        
+        const { error: vehicleError } = await supabase
+          .from("incoming_vehicles")
+          .update({
+            kickoff_completed: true,
+            processing_notes: modules.length > 0 ? `Módulos selecionados: ${modules.join(', ')}` : null,
+          })
+          .eq("id", vehicle.id);
 
-      if (vehiclesError) {
-        console.error("Error marking vehicles as kickoff completed:", vehiclesError);
-        throw vehiclesError;
+        if (vehicleError) {
+          console.error(`Error updating vehicle ${vehicle.id}:`, vehicleError);
+        }
       }
+
+      if (error) throw error;
+
 
       // Process vehicles for homologation after kickoff completion
       console.log("Processing kickoff vehicles for homologation...");
@@ -246,40 +291,13 @@ export const KickoffDetailsModal = ({
               <Truck className="h-5 w-5 text-muted-foreground" />
               <h3 className="font-semibold text-base">Veículos</h3>
             </div>
-            <KickoffVehiclesTable vehicles={vehicles} />
-          </div>
-
-          {/* Checklist Bloqueio */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="needs-blocking"
-                checked={needsBlocking}
-                onCheckedChange={(checked) => setNeedsBlocking(checked as boolean)}
-              />
-              <Label htmlFor="needs-blocking">Necessita de bloqueio</Label>
-            </div>
-            
-            {needsBlocking && (
-              <div className="ml-6 space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="engine-blocking"
-                    checked={needsEngineBlocking}
-                    onCheckedChange={(checked) => setNeedsEngineBlocking(checked as boolean)}
-                  />
-                  <Label htmlFor="engine-blocking">Bloqueio de partida</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="fuel-blocking"
-                    checked={needsFuelBlocking}
-                    onCheckedChange={(checked) => setNeedsFuelBlocking(checked as boolean)}
-                  />
-                  <Label htmlFor="fuel-blocking">Bloqueio de combustível</Label>
-                </div>
-              </div>
-            )}
+            <KickoffVehiclesTable 
+              vehicles={vehicles} 
+              selectedModules={selectedModules}
+              onModuleToggle={handleModuleToggle}
+              vehicleBlocking={vehicleBlocking}
+              onBlockingToggle={handleBlockingToggle}
+            />
           </div>
 
           {/* Contatos */}
