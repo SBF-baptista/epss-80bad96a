@@ -174,3 +174,17 @@ export const aggregateAccessories = (accessories: VehicleAccessory[]): string[] 
     .map(([name, qty]) => `${name} (${qty}x)`)
     .sort();
 };
+
+/**
+ * Filtra módulos e agrega apenas acessórios reais
+ * Módulos são identificados por categories='modulos'
+ */
+export const aggregateAccessoriesWithoutModules = (accessories: VehicleAccessory[]): string[] => {
+  // Filtrar módulos - só incluir acessórios reais
+  const realAccessories = accessories.filter(acc => {
+    const categories = (acc.categories || '').toLowerCase();
+    return categories !== 'modulos';
+  });
+  
+  return aggregateAccessories(realAccessories);
+};

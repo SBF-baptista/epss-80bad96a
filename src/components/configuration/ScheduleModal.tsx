@@ -46,7 +46,7 @@ import { checkItemHomologation, type HomologationStatus } from '@/services/kitHo
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchAccessoriesByVehicleIds, aggregateAccessories } from '@/services/vehicleAccessoryService';
+import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules } from '@/services/vehicleAccessoryService';
 import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -230,7 +230,7 @@ export const ScheduleModal = ({
             const formattedMap = new Map<string, string[]>();
 
             accessoriesMap.forEach((accessories, vehicleId) => {
-              formattedMap.set(vehicleId, aggregateAccessories(accessories));
+              formattedMap.set(vehicleId, aggregateAccessoriesWithoutModules(accessories));
             });
 
             setAccessoriesByVehicleId(formattedMap);
