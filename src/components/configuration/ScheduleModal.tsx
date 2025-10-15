@@ -46,13 +46,28 @@ import { checkItemHomologation, type HomologationStatus } from '@/services/kitHo
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules } from '@/services/vehicleAccessoryService';
+import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules, isModuleCategory } from '@/services/vehicleAccessoryService';
 import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
 import { supabase } from '@/integrations/supabase/client';
 
 // Helper to normalize item names (remove quantity suffix, trim, uppercase)
 const normalizeName = (name: string): string => {
   return name.replace(/\s*\(\d+x\)\s*$/i, '').trim().toUpperCase();
+};
+
+// Lista conhecida de módulos (não são acessórios físicos)
+const KNOWN_MODULES = [
+  'GESTÃO AGRÍCOLA',
+  'GESTÃO DE ENTREGAS E SERVIÇOS - DMS',
+  'GESTÃO DE PASSAGEIROS - FRETAMENTO',
+  'GESTÃO DE VIAGENS',
+  'RANKING DE CONDUTOR - GAMIFICAÇÃO'
+];
+
+// Helper para identificar se um item é um módulo
+const isModule = (itemName: string): boolean => {
+  const normalized = normalizeName(itemName);
+  return KNOWN_MODULES.includes(normalized);
 };
 
 // Helper to extract quantity from formatted name like "ITEM (3x)"
@@ -297,15 +312,18 @@ export const ScheduleModal = ({
             }
           );
 
-          // Fetch vehicle-specific accessories from accessories table
+          // Fetch vehicle-specific accessories from accessories table (excluindo módulos)
           let vehicleSpecificAccessories: string[] = [];
           if (vehicleId) {
             const { data: vehicleAccessories } = await supabase
               .from('accessories')
-              .select('name')
+              .select('name, categories')
               .eq('vehicle_id', vehicleId);
 
-            vehicleSpecificAccessories = (vehicleAccessories || []).map(a => a.name);
+            // Filtrar módulos usando categories E nome conhecido
+            vehicleSpecificAccessories = (vehicleAccessories || [])
+              .filter(a => !isModuleCategory(a.categories) && !isModule(a.name))
+              .map(a => a.name);
 
             // Check homologation for vehicle-specific accessories (normalized)
             await Promise.all(
@@ -318,9 +336,13 @@ export const ScheduleModal = ({
           }
 
           // Combine customer and vehicle-specific accessories (normalized for checking)
-          // Módulos não são mais considerados
+          // Filtrar módulos dos acessórios do cliente
+          const customerAccessoriesFiltered = (selectedCustomer.accessories || [])
+            .filter(acc => !isModule(acc))
+            .map(normalizeName);
+          
           const vehicleAccessories = [
-            ...(selectedCustomer.accessories || []).map(normalizeName), 
+            ...customerAccessoriesFiltered, 
             ...vehicleSpecificAccessories.map(normalizeName)
           ];
           
