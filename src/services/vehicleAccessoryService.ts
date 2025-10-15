@@ -162,6 +162,26 @@ export const fetchAccessoriesByVehicleIds = async (vehicleIds: string[]): Promis
   }
 };
 
+/**
+ * Normaliza string removendo diacríticos e convertendo para minúsculas
+ * Ex: "Módulos" -> "modulos"
+ */
+const normalizeCategory = (text: string): string => {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacríticos
+    .toLowerCase()
+    .trim();
+};
+
+/**
+ * Verifica se uma categoria representa módulos
+ */
+export const isModuleCategory = (category?: string): boolean => {
+  if (!category) return false;
+  return normalizeCategory(category) === 'modulos';
+};
+
 export const aggregateAccessories = (accessories: VehicleAccessory[]): string[] => {
   const aggregated = new Map<string, number>();
   
@@ -177,14 +197,11 @@ export const aggregateAccessories = (accessories: VehicleAccessory[]): string[] 
 
 /**
  * Filtra módulos e agrega apenas acessórios reais
- * Módulos são identificados por categories='modulos'
+ * Módulos são identificados por categories='modulos' ou 'Módulos'
  */
 export const aggregateAccessoriesWithoutModules = (accessories: VehicleAccessory[]): string[] => {
   // Filtrar módulos - só incluir acessórios reais
-  const realAccessories = accessories.filter(acc => {
-    const categories = (acc.categories || '').toLowerCase();
-    return categories !== 'modulos';
-  });
+  const realAccessories = accessories.filter(acc => !isModuleCategory(acc.categories));
   
   return aggregateAccessories(realAccessories);
 };

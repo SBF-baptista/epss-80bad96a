@@ -187,9 +187,9 @@ export const ScheduleModal = ({
       scheduled_date: null,
       installation_time: '',
       notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
-      // Per-placa accessories & insumos from customer
+      // Per-placa accessories from customer (módulos não são considerados)
       accessories: [...(selectedCustomer.accessories || [])],
-      modules: [...(selectedCustomer.modules || [])]
+      modules: [] // Módulos não são mais utilizados
     }));
 
     console.log('Initial schedules created:', initialSchedules);
@@ -261,10 +261,9 @@ export const ScheduleModal = ({
       try {
         const statusMap = new Map<string, boolean>();
         
-        // Check accessories and modules from customer
+        // Check accessories from customer (módulos não são mais considerados)
         const allItems = [
-          ...(selectedCustomer.accessories || []).map(name => ({ name, type: 'accessory' })),
-          ...(selectedCustomer.modules || []).map(name => ({ name, type: 'equipment' }))
+          ...(selectedCustomer.accessories || []).map(name => ({ name, type: 'accessory' }))
         ];
         
         await Promise.all(
@@ -318,21 +317,18 @@ export const ScheduleModal = ({
             );
           }
 
-          // Combine customer and vehicle-specific items (normalized for checking)
+          // Combine customer and vehicle-specific accessories (normalized for checking)
+          // Módulos não são mais considerados
           const vehicleAccessories = [
             ...(selectedCustomer.accessories || []).map(normalizeName), 
             ...vehicleSpecificAccessories.map(normalizeName)
           ];
-          const vehicleModules = (selectedCustomer.modules || []).map(normalizeName);
           
           const allAccessoriesHomologated = vehicleAccessories.every(acc => 
             statusMap.get(`${acc}:accessory`) === true
           );
-          const allModulesHomologated = vehicleModules.every(mod => 
-            statusMap.get(`${mod}:equipment`) === true
-          );
           
-          const vehicleReady = allAccessoriesHomologated && allModulesHomologated;
+          const vehicleReady = allAccessoriesHomologated;
           statusMap.set(`vehicle-ready:${vehicle.plate}`, vehicleReady);
         }
         
@@ -493,9 +489,9 @@ export const ScheduleModal = ({
             vehicle_model: vehicleSchedule.model,
             vehicle_year: vehicleSchedule.year,
             incoming_vehicle_id: incomingVehicleId || undefined,
-            // Persist per-placa items
+            // Persist per-placa items (módulos não são mais salvos)
             accessories: vehicleSchedule.accessories || [],
-            supplies: vehicleSchedule.modules || []
+            supplies: [] // Não salvar módulos
           });
           schedulesCreated++;
         }
@@ -715,7 +711,6 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Insumos</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Técnico *</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Data *</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Horário</th>
@@ -804,35 +799,8 @@ export const ScheduleModal = ({
                                       return <span className="text-xs text-muted-foreground">-</span>;
                                     }
                                   })()}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex flex-col gap-1 max-w-[180px]">
-                                  {vehicleSchedule.modules.length > 0 ? (
-                                    vehicleSchedule.modules.map((mod, i) => {
-                                      const normalizedName = normalizeName(mod);
-                                      const isHomologated = homologationStatus.get(`${normalizedName}:equipment`);
-                                      return (
-                                        <div key={i} className="flex items-center gap-1">
-                                          {isHomologated ? (
-                                            <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                                          ) : (
-                                            <X className="h-3 w-3 text-red-600 flex-shrink-0" />
-                                          )}
-                                          <span className={cn(
-                                            "text-xs",
-                                            isHomologated ? "text-green-700" : "text-red-700"
-                                          )}>
-                                            {mod}
-                                          </span>
-                                        </div>
-                                      );
-                                    })
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">-</span>
-                                  )}
-                                </div>
-                              </td>
+                                 </div>
+                               </td>
                                <td className="px-4 py-3">
                                  <div className="space-y-1">
                                    <Select 

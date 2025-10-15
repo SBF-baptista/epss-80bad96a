@@ -7,7 +7,7 @@ import { HomologationKit } from "@/types/homologationKit";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessories } from "@/services/vehicleAccessoryService";
+import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessoriesWithoutModules } from "@/services/vehicleAccessoryService";
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -47,7 +47,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
           const accessoriesMap = await fetchAccessoriesByVehicleIds(vehicleIds);
           
           accessoriesMap.forEach((accessories, vehicleId) => {
-            formattedMap.set(vehicleId, aggregateAccessories(accessories));
+            formattedMap.set(vehicleId, aggregateAccessoriesWithoutModules(accessories));
           });
         } catch (error) {
           console.error('Error fetching accessories by vehicle IDs:', error);
@@ -69,7 +69,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
               if (accessories) {
                 // Use a synthetic key since we don't have incoming_vehicle_id
                 const syntheticKey = `plate-${schedule.vehicle_plate}`;
-                formattedMap.set(syntheticKey, aggregateAccessories(accessories));
+                formattedMap.set(syntheticKey, aggregateAccessoriesWithoutModules(accessories));
               }
             }
           });

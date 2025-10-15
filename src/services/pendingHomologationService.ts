@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ItemType } from '@/types/homologationKit';
+import { isModuleCategory } from '@/services/vehicleAccessoryService';
 
 export interface PendingItem {
   item_name: string;
@@ -115,11 +116,10 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
     }
 
     // Process vehicle accessories
-    // IMPORTANTE: Filtrar módulos (categories='modulos') - eles não precisam de homologação
+    // IMPORTANTE: Filtrar módulos (categories='modulos' ou 'Módulos') - eles não precisam de homologação
     vehicleAccessories?.forEach(accessory => {
       // Ignorar módulos - eles não passam por homologação
-      const categories = (accessory.categories || '').toLowerCase();
-      if (categories === 'modulos') {
+      if (isModuleCategory(accessory.categories)) {
         return;
       }
       
@@ -142,17 +142,17 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       }
     });
 
-    // Also fetch accessories and modules from customers
+    // Also fetch accessories from customers (NOTA: módulos não são mais processados)
     const { data: customers, error: customersError } = await supabase
       .from('customers')
-      .select('id, name, accessories, modules, vehicles');
+      .select('id, name, accessories, vehicles');
 
     if (customersError) {
       console.error('Error fetching customers:', customersError);
       throw customersError;
     }
 
-    // Process customer accessories and modules
+    // Process customer accessories only (não processar módulos)
     const customerItemsMap = new Map<string, {
       item_name: string;
       item_type: ItemType;
@@ -172,7 +172,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         console.warn('Failed to parse vehicles for customer:', customer.id);
       }
 
-      // Process accessories
+      // Process accessories only
       const accessories = Array.isArray(customer.accessories) ? customer.accessories : [];
       accessories.forEach(acc => {
         const itemKey = `${acc}|accessory`;
@@ -185,26 +185,6 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
             customerItemsMap.set(itemKey, {
               item_name: acc,
               item_type: 'accessory',
-              customers: new Set([customer.id]),
-              vehiclesCount
-            });
-          }
-        }
-      });
-
-      // Process modules (equipment)
-      const modules = Array.isArray(customer.modules) ? customer.modules : [];
-      modules.forEach(mod => {
-        const itemKey = `${mod}|equipment`;
-        if (!homologatedMap.has(itemKey)) {
-          const existing = customerItemsMap.get(itemKey);
-          if (existing) {
-            existing.customers.add(customer.id);
-            existing.vehiclesCount += vehiclesCount;
-          } else {
-            customerItemsMap.set(itemKey, {
-              item_name: mod,
-              item_type: 'equipment',
               customers: new Set([customer.id]),
               vehiclesCount
             });
@@ -257,19 +237,14 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       }
     });
 
-    // Then, merge items from customers
+    // Then, merge items from customers (apenas acessórios)
     customerItemsMap.forEach((customerItem) => {
       const itemKey = `${customerItem.item_name}|${customerItem.item_type}`;
       
       // Check if this item is already in result from kits
       let existingItem: PendingItem | undefined;
-      switch (customerItem.item_type) {
-        case 'accessory':
-          existingItem = result.accessories.find(i => i.item_name === customerItem.item_name);
-          break;
-        case 'equipment':
-          existingItem = result.equipment.find(i => i.item_name === customerItem.item_name);
-          break;
+      if (customerItem.item_type === 'accessory') {
+        existingItem = result.accessories.find(i => i.item_name === customerItem.item_name);
       }
 
       const customersForItem = Array.from(customerItem.customers)
@@ -306,13 +281,9 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
           customers: customersForItem
         };
 
-        switch (customerItem.item_type) {
-          case 'accessory':
-            result.accessories.push(newItem);
-            break;
-          case 'equipment':
-            result.equipment.push(newItem);
-            break;
+        // Apenas acessórios são adicionados (sem equipment/módulos)
+        if (customerItem.item_type === 'accessory') {
+          result.accessories.push(newItem);
         }
       }
     });
