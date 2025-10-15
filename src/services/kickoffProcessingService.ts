@@ -45,10 +45,12 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
 
     console.log(`Processing ${vehicles.length} vehicles for kickoff completion`);
 
+    console.log(`Found ${vehicles.length} vehicles to process`);
+    
     // Process each vehicle - create individual homologation cards
     for (const vehicle of vehicles) {
       try {
-        console.log(`Processing vehicle ${vehicle.id}: ${vehicle.brand} ${vehicle.vehicle} (${vehicle.year})`);
+        console.log(`[${vehicles.indexOf(vehicle) + 1}/${vehicles.length}] Processing vehicle ${vehicle.id}: ${vehicle.brand} ${vehicle.vehicle} (${vehicle.year})`);
         
         // Check if there's already a homologated card for this vehicle type (not this specific vehicle)
         const { data: existingHomologation, error: homologationError } = await supabase
@@ -63,6 +65,7 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
         if (homologationError) {
           console.error('Error checking existing homologation:', homologationError);
           result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${homologationError.message}`);
+          // Continue to next vehicle even if this one failed
           continue;
         }
 
@@ -72,7 +75,7 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
           ? `Criado do kickoff para ${vehicle.company_name}. Homologação automática baseada em veículo similar (${existingHomologation.id}).`
           : `Criado do kickoff para ${vehicle.company_name}. Aguardando homologação.`;
         
-        console.log(`Creating ${homologationStatus} card for ${vehicle.brand} ${vehicle.vehicle}`);
+        console.log(`Creating ${homologationStatus} card for vehicle ${vehicle.id}`);
         
         const { data: newHomologation, error: createError } = await supabase
           .from('homologation_cards')
@@ -89,12 +92,15 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
           .single();
 
         if (createError) {
-          console.error('Error creating homologation card:', createError);
+          console.error(`Error creating homologation card for vehicle ${vehicle.id}:`, createError);
           result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${createError.message}`);
+          // Continue to next vehicle even if this one failed
           continue;
         }
 
-        // Update incoming_vehicle
+        console.log(`Successfully created homologation card ${newHomologation.id} for vehicle ${vehicle.id}`);
+
+        // Update incoming_vehicle - CRITICAL: Mark as completed
         const { error: updateError } = await supabase
           .from('incoming_vehicles')
           .update({
@@ -106,21 +112,29 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
           .eq('id', vehicle.id);
 
         if (updateError) {
-          console.error('Error updating vehicle:', updateError);
-          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${updateError.message}`);
+          console.error(`Error updating vehicle ${vehicle.id}:`, updateError);
+          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: Failed to mark as completed - ${updateError.message}`);
+          // Even if update fails, we still count it as processed since homologation was created
         } else {
-          if (existingHomologation) {
-            result.already_homologated_count++;
-          } else {
-            result.homologations_created++;
-          }
-          result.processed_count++;
+          console.log(`Successfully marked vehicle ${vehicle.id} as kickoff_completed`);
         }
+
+        // Count successes
+        if (existingHomologation) {
+          result.already_homologated_count++;
+        } else {
+          result.homologations_created++;
+        }
+        result.processed_count++;
+        
       } catch (error) {
-        console.error(`Error processing vehicle ${vehicle.id}:`, error);
+        console.error(`Unexpected error processing vehicle ${vehicle.id}:`, error);
         result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${(error as Error).message}`);
+        // Continue to next vehicle even if this one failed
       }
     }
+
+    console.log(`Kickoff processing complete: ${result.processed_count} processed, ${result.homologations_created} created, ${result.already_homologated_count} auto-homologated, ${result.errors.length} errors`);
 
     result.success = result.errors.length === 0;
     return result;
