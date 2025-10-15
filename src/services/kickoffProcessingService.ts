@@ -29,7 +29,6 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
       .from('incoming_vehicles')
       .select('*')
       .eq('sale_summary_id', saleSummaryId)
-      .is('created_homologation_id', null)
       .or('kickoff_completed.is.false,kickoff_completed.is.null');
 
     if (vehiclesError) {
@@ -53,6 +52,40 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
       try {
         console.log(`[${vehicles.indexOf(vehicle) + 1}/${vehicles.length}] Processing vehicle ${vehicle.id}: ${vehicle.brand} ${vehicle.vehicle} (${vehicle.year})`);
         
+        // If vehicle already linked to a homologation, just mark kickoff as completed and skip creation
+        if (vehicle.created_homologation_id) {
+          console.log(`Vehicle ${vehicle.id} already linked to homologation ${vehicle.created_homologation_id}, marking kickoff completed`);
+          const { data: linkedCard, error: linkedCardErr } = await supabase
+            .from('homologation_cards')
+            .select('id, status, configuration')
+            .eq('id', vehicle.created_homologation_id)
+            .maybeSingle();
+
+          const linkedStatus = linkedCard?.status || 'homologar';
+
+          const { error: updateExistingErr } = await supabase
+            .from('incoming_vehicles')
+            .update({
+              kickoff_completed: true,
+              homologation_status: linkedStatus,
+              processing_notes: `Kickoff completed. Linked to existing homologation card: ${vehicle.created_homologation_id}`
+            })
+            .eq('id', vehicle.id);
+
+          if (updateExistingErr) {
+            console.error(`Error updating vehicle ${vehicle.id}:`, updateExistingErr);
+            result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: Failed to mark as completed - ${updateExistingErr.message}`);
+          } else {
+            console.log(`Successfully marked vehicle ${vehicle.id} as kickoff_completed (existing homologation)`);
+          }
+
+          if (linkedStatus === 'homologado') {
+            result.already_homologated_count++;
+          }
+          result.processed_count++;
+          continue;
+        }
+
         // Check if there's already a homologated card for this vehicle type (not this specific vehicle)
         const { data: existingHomologation, error: homologationError } = await supabase
           .from('homologation_cards')
