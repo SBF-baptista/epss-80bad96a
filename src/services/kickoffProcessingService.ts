@@ -28,8 +28,7 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
     const { data: vehicles, error: vehiclesError } = await supabase
       .from('incoming_vehicles')
       .select('*')
-      .eq('sale_summary_id', saleSummaryId)
-      .or('kickoff_completed.is.false,kickoff_completed.is.null');
+      .eq('sale_summary_id', saleSummaryId);
 
     if (vehiclesError) {
       console.error('Error fetching vehicles for kickoff:', vehiclesError);
@@ -47,46 +46,52 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
 
     console.log(`Found ${vehicles.length} vehicles to process`);
     
-    // Process each vehicle - create individual homologation cards
+    // Process each vehicle - ensure individual cards per unit (quantity)
     for (const vehicle of vehicles) {
       try {
-        console.log(`[${vehicles.indexOf(vehicle) + 1}/${vehicles.length}] Processing vehicle ${vehicle.id}: ${vehicle.brand} ${vehicle.vehicle} (${vehicle.year})`);
-        
-        // If vehicle already linked to a homologation, just mark kickoff as completed and skip creation
-        if (vehicle.created_homologation_id) {
-          console.log(`Vehicle ${vehicle.id} already linked to homologation ${vehicle.created_homologation_id}, marking kickoff completed`);
-          const { data: linkedCard, error: linkedCardErr } = await supabase
+        const idx = vehicles.indexOf(vehicle) + 1;
+        console.log(`[${idx}/${vehicles.length}] Processing vehicle ${vehicle.id}: ${vehicle.brand} ${vehicle.vehicle} (${vehicle.year})`);
+
+        // 1) Load currently linked cards for this incoming_vehicle
+        const { data: linkedCards, error: linkedErr } = await supabase
+          .from('homologation_cards')
+          .select('id, status, configuration, incoming_vehicle_id')
+          .eq('incoming_vehicle_id', vehicle.id);
+
+        if (linkedErr) {
+          console.error(`Error fetching linked cards for vehicle ${vehicle.id}:`, linkedErr);
+          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: Failed to fetch linked cards - ${linkedErr.message}`);
+        }
+
+        let existingCards = linkedCards || [];
+
+        // 2) If there is a pre-linked card by created_homologation_id but not associated via incoming_vehicle_id, link it
+        if (vehicle.created_homologation_id && !existingCards.some(c => c.id === vehicle.created_homologation_id)) {
+          const { data: createdCard, error: createdCardErr } = await supabase
             .from('homologation_cards')
-            .select('id, status, configuration')
+            .select('id, status, configuration, incoming_vehicle_id')
             .eq('id', vehicle.created_homologation_id)
             .maybeSingle();
 
-          const linkedStatus = linkedCard?.status || 'homologar';
-
-          const { error: updateExistingErr } = await supabase
-            .from('incoming_vehicles')
-            .update({
-              kickoff_completed: true,
-              homologation_status: linkedStatus,
-              processing_notes: `Kickoff completed. Linked to existing homologation card: ${vehicle.created_homologation_id}`
-            })
-            .eq('id', vehicle.id);
-
-          if (updateExistingErr) {
-            console.error(`Error updating vehicle ${vehicle.id}:`, updateExistingErr);
-            result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: Failed to mark as completed - ${updateExistingErr.message}`);
-          } else {
-            console.log(`Successfully marked vehicle ${vehicle.id} as kickoff_completed (existing homologation)`);
+          if (createdCardErr) {
+            console.warn(`Could not fetch created_homologation_id ${vehicle.created_homologation_id}:`, createdCardErr);
+          } else if (createdCard) {
+            if (!createdCard.incoming_vehicle_id) {
+              const { error: linkErr } = await supabase
+                .from('homologation_cards')
+                .update({ incoming_vehicle_id: vehicle.id })
+                .eq('id', createdCard.id);
+              if (linkErr) {
+                console.warn(`Failed to link existing card ${createdCard.id} to vehicle ${vehicle.id}:`, linkErr);
+              } else {
+                createdCard.incoming_vehicle_id = vehicle.id;
+              }
+            }
+            existingCards.push(createdCard);
           }
-
-          if (linkedStatus === 'homologado') {
-            result.already_homologated_count++;
-          }
-          result.processed_count++;
-          continue;
         }
 
-        // Check if there's already a homologated card for this vehicle type (not this specific vehicle)
+        // 3) Try to find a homologated card for similar vehicle to auto-homologate
         const { data: existingHomologation, error: homologationError } = await supabase
           .from('homologation_cards')
           .select('id, status, configuration')
@@ -97,70 +102,83 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-
         if (homologationError) {
           console.warn('Error checking existing homologation, defaulting to manual homologation:', homologationError);
-          // Proceed without auto-homologation; we'll create a new card with status 'homologar'
         }
 
-        // Create homologation card for THIS vehicle (regardless of whether similar ones exist)
-        const homologationStatus = existingHomologation ? 'homologado' : 'homologar';
-        const homologationNotes = existingHomologation 
-          ? `Criado do kickoff para ${vehicle.company_name}. Homologação automática baseada em veículo similar (${existingHomologation.id}).`
-          : `Criado do kickoff para ${vehicle.company_name}. Aguardando homologação.`;
-        
-        console.log(`Creating ${homologationStatus} card for vehicle ${vehicle.id}`);
-        
-        const { data: newHomologation, error: createError } = await supabase
-          .from('homologation_cards')
-          .insert({
-            brand: vehicle.brand,
-            model: vehicle.vehicle,
-            year: vehicle.year || null,
-            status: homologationStatus,
-            incoming_vehicle_id: vehicle.id,
-            configuration: existingHomologation?.configuration || null,
-            notes: homologationNotes
-          })
-          .select()
-          .single();
+        // 4) Ensure there is one card per unit (quantity)
+        const qty = Math.max(vehicle.quantity || 1, 1);
+        const existingCount = existingCards.length;
+        const missingCount = Math.max(qty - existingCount, 0);
 
-        if (createError) {
-          console.error(`Error creating homologation card for vehicle ${vehicle.id}:`, createError);
-          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${createError.message}`);
-          // Continue to next vehicle even if this one failed
-          continue;
+        console.log(`Vehicle ${vehicle.id} has quantity=${qty}. Existing cards=${existingCount}. Missing to create=${missingCount}`);
+
+        let firstCardId: string | null = existingCards[0]?.id || vehicle.created_homologation_id || null;
+        const baseNotesAuto = `Criado do kickoff para ${vehicle.company_name}. Homologação automática baseada em veículo similar (${existingHomologation?.id}).`;
+        const baseNotesManual = `Criado do kickoff para ${vehicle.company_name}. Aguardando homologação.`;
+
+        for (let i = 0; i < missingCount; i++) {
+          const status = existingHomologation ? 'homologado' : 'homologar';
+          const notes = existingHomologation ? baseNotesAuto : baseNotesManual;
+
+          console.log(`Creating ${status} card (${i + 1}/${missingCount}) for vehicle ${vehicle.id}`);
+          const { data: newCard, error: createErr } = await supabase
+            .from('homologation_cards')
+            .insert({
+              brand: vehicle.brand,
+              model: vehicle.vehicle,
+              year: vehicle.year || null,
+              status,
+              incoming_vehicle_id: vehicle.id,
+              configuration: existingHomologation?.configuration || null,
+              notes,
+            })
+            .select()
+            .single();
+
+          if (createErr) {
+            console.error(`Error creating homologation card for vehicle ${vehicle.id}:`, createErr);
+            result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${createErr.message}`);
+            continue; // try to create remaining ones
+          }
+
+          console.log(`Successfully created homologation card ${newCard.id} for vehicle ${vehicle.id}`);
+          if (!firstCardId) firstCardId = newCard.id;
+          existingCards.push({ id: newCard.id, status: newCard.status, configuration: newCard.configuration, incoming_vehicle_id: vehicle.id } as any);
+
+          if (!existingHomologation) {
+            result.homologations_created++;
+          }
         }
 
-        console.log(`Successfully created homologation card ${newHomologation.id} for vehicle ${vehicle.id}`);
+        // 5) Determine overall status for the incoming vehicle based on its cards
+        const linkedStatus = existingCards.some(c => c.status === 'homologado')
+          ? 'homologado'
+          : (existingCards[0]?.status || 'homologar');
 
-        // Update incoming_vehicle - CRITICAL: Mark as completed
-        const { error: updateError } = await supabase
+        // 6) Mark incoming vehicle as kickoff completed and store linkage
+        const { error: updateErr } = await supabase
           .from('incoming_vehicles')
           .update({
             kickoff_completed: true,
-            created_homologation_id: newHomologation.id,
-            homologation_status: homologationStatus,
-            processing_notes: `Kickoff completed. Homologation card: ${newHomologation.id}`
+            created_homologation_id: firstCardId,
+            homologation_status: linkedStatus,
+            processing_notes: `Kickoff completed. ${missingCount > 0 ? `Created ${missingCount} card(s).` : 'Cards already existed.'}`,
           })
           .eq('id', vehicle.id);
 
-        if (updateError) {
-          console.error(`Error updating vehicle ${vehicle.id}:`, updateError);
-          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: Failed to mark as completed - ${updateError.message}`);
-          // Even if update fails, we still count it as processed since homologation was created
+        if (updateErr) {
+          console.error(`Error updating vehicle ${vehicle.id}:`, updateErr);
+          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: Failed to mark as completed - ${updateErr.message}`);
         } else {
-          console.log(`Successfully marked vehicle ${vehicle.id} as kickoff_completed`);
+          console.log(`Successfully marked vehicle ${vehicle.id} as kickoff_completed with status ${linkedStatus}`);
         }
 
-        // Count successes
-        if (existingHomologation) {
+        if (linkedStatus === 'homologado' || existingHomologation) {
           result.already_homologated_count++;
-        } else {
-          result.homologations_created++;
         }
         result.processed_count++;
-        
+
       } catch (error) {
         console.error(`Unexpected error processing vehicle ${vehicle.id}:`, error);
         result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${(error as Error).message}`);
