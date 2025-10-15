@@ -115,7 +115,14 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
     }
 
     // Process vehicle accessories
+    // IMPORTANTE: Filtrar módulos (categories='modulos') - eles não precisam de homologação
     vehicleAccessories?.forEach(accessory => {
+      // Ignorar módulos - eles não passam por homologação
+      const categories = (accessory.categories || '').toLowerCase();
+      if (categories === 'modulos') {
+        return;
+      }
+      
       const itemKey = `${accessory.name}|accessory`;
       
       if (!homologatedMap.has(itemKey)) {
