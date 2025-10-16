@@ -332,11 +332,13 @@ export const KickoffDetailsModal = ({
               <h3 className="font-semibold text-base">Veículos</h3>
             </div>
             <KickoffVehiclesTable 
-              vehicles={vehicles} 
+              vehicles={vehicles}
               selectedModules={selectedModules}
               onModuleToggle={handleModuleToggle}
               vehicleBlocking={vehicleBlocking}
               onBlockingToggle={handleBlockingToggle}
+              saleSummaryId={saleSummaryId}
+              onVehicleUpdate={onSuccess}
             />
           </div>
 

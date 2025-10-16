@@ -10,7 +10,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 import type { KickoffVehicle } from "@/services/kickoffService";
+import { EditVehicleModal } from "./EditVehicleModal";
 
 interface KickoffVehiclesTableProps {
   vehicles: KickoffVehicle[];
@@ -18,6 +21,8 @@ interface KickoffVehiclesTableProps {
   onModuleToggle: (vehicleId: string, moduleName: string) => void;
   vehicleBlocking: Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean }>;
   onBlockingToggle: (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => void;
+  saleSummaryId: number;
+  onVehicleUpdate: () => void;
 }
 
 export const KickoffVehiclesTable = ({ 
@@ -25,20 +30,50 @@ export const KickoffVehiclesTable = ({
   selectedModules,
   onModuleToggle,
   vehicleBlocking,
-  onBlockingToggle
+  onBlockingToggle,
+  saleSummaryId,
+  onVehicleUpdate
 }: KickoffVehiclesTableProps) => {
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<KickoffVehicle | null>(null);
+
+  const handleEditClick = (vehicle: KickoffVehicle) => {
+    setEditingVehicle(vehicle);
+    setEditingVehicleId(vehicle.id);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    onVehicleUpdate();
+  };
 
   return (
+    <>
+      {editingVehicle && (
+        <EditVehicleModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          vehicleId={editingVehicle.id}
+          currentBrand={editingVehicle.brand}
+          currentModel={editingVehicle.model}
+          currentYear={editingVehicle.year}
+          saleSummaryId={saleSummaryId}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Placa</TableHead>
-            <TableHead>Veículo</TableHead>
+            <TableHead>Marca</TableHead>
+            <TableHead>Modelo</TableHead>
             <TableHead>Ano</TableHead>
             <TableHead>Módulos</TableHead>
             <TableHead>Acessórios</TableHead>
             <TableHead>Bloqueio</TableHead>
+            <TableHead className="w-[80px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -55,14 +90,17 @@ export const KickoffVehiclesTable = ({
                   {vehicle.plate || <span className="text-muted-foreground">Não informada</span>}
                 </TableCell>
                 <TableCell>
-                  <div className="space-y-1">
-                    <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{vehicle.brand}</span>
                     {vehicle.quantity > 1 && (
                       <Badge variant="outline" className="text-xs">
                         {vehicle.quantity}x
                       </Badge>
                     )}
                   </div>
+                </TableCell>
+                <TableCell>
+                  <span className="font-medium">{vehicle.model}</span>
                 </TableCell>
                 <TableCell>
                   {vehicle.year || <span className="text-muted-foreground">-</span>}
@@ -142,11 +180,22 @@ export const KickoffVehiclesTable = ({
                     )}
                   </div>
                 </TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEditClick(vehicle)}
+                    title="Editar marca, modelo e ano"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
     </div>
+    </>
   );
 };
