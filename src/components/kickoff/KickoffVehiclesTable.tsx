@@ -182,6 +182,7 @@ export const KickoffVehiclesTable = ({
                 </TableCell>
                 <TableCell>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
                     onClick={() => handleEditClick(vehicle)}
