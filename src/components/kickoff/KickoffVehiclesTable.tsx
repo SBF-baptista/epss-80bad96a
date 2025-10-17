@@ -45,6 +45,9 @@ export const KickoffVehiclesTable = ({
   };
 
   const handleEditSuccess = () => {
+    setEditModalOpen(false);
+    setEditingVehicle(null);
+    setEditingVehicleId(null);
     onVehicleUpdate();
   };
 

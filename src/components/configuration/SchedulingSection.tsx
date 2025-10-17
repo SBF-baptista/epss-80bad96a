@@ -94,8 +94,8 @@ export const SchedulingSection = ({
     console.log('Selected vehicle:', vehicle);
     setSelectedCustomer(customer);
     setSelectedVehicle(vehicle || null);
-    // Open after state is set to avoid first-render blank UI
-    setTimeout(() => setIsScheduleModalOpen(true), 0);
+    // Open directly without intermediate tab
+    setIsScheduleModalOpen(true);
   };
 
   const handleRescheduleCustomer = (customer: Customer, schedule: any) => {

@@ -423,39 +423,47 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                     // Get equipment from kit
                     const equipment = sched.kit?.equipment || [];
                     
-                    // Merge accessories from multiple sources
+                    // Merge accessories from multiple sources, normalizing names to prevent duplicates
                     const mergedAccessories: Record<string, number> = {};
                     
-                    // 1. Schedule accessories (highest priority)
-                    if (Array.isArray(sched.accessories) && sched.accessories.length > 0) {
-                      sched.accessories.forEach((accessoryStr: string) => {
-                        const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
-                        if (match) {
-                          const itemName = match[1].trim();
-                          const quantity = parseInt(match[2], 10);
-                          mergedAccessories[itemName] = (mergedAccessories[itemName] || 0) + quantity;
-                        } else {
-                          mergedAccessories[accessoryStr] = (mergedAccessories[accessoryStr] || 0) + 1;
-                        }
-                      });
-                    }
+                    // Helper to normalize accessory names (uppercase, trim)
+                    const normalizeAccName = (name: string): string => {
+                      return name.replace(/\s*\(qty:\s*\d+\)\s*$/i, '').trim().toUpperCase();
+                    };
                     
-                    // 2. Acessórios do veículo buscados no banco (por incoming_vehicles -> accessories)
+                    // 1. DB accessories (highest priority - these come from the database)
                     const dbAccessories = scheduleAccessoriesMap[sched.id] || [];
                     if (dbAccessories.length > 0) {
                       dbAccessories.forEach(acc => {
-                        if (!mergedAccessories[acc.name]) {
-                          mergedAccessories[acc.name] = acc.quantity;
+                        const normalized = normalizeAccName(acc.name);
+                        mergedAccessories[normalized] = (mergedAccessories[normalized] || 0) + acc.quantity;
+                      });
+                    }
+                    
+                    // 2. Schedule accessories (only add if not already in DB accessories)
+                    if (Array.isArray(sched.accessories) && sched.accessories.length > 0) {
+                      sched.accessories.forEach((accessoryStr: string) => {
+                        const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                        const itemName = match ? match[1].trim() : accessoryStr;
+                        const quantity = match ? parseInt(match[2], 10) : 1;
+                        const normalized = normalizeAccName(itemName);
+                        
+                        // Only add if not already present
+                        if (!mergedAccessories[normalized]) {
+                          mergedAccessories[normalized] = quantity;
                         }
                       });
                     }
                     
-                    // 3. Order accessories (if available, lowest priority)
+                    // 3. Order accessories (lowest priority, only add if not already present)
                     if (order.accessories && order.accessories.length > 0) {
                       order.accessories.forEach((acc: any) => {
                         const name = acc.name;
-                        if (name && !mergedAccessories[name]) {
-                          mergedAccessories[name] = acc.quantity || 1;
+                        if (name) {
+                          const normalized = normalizeAccName(name);
+                          if (!mergedAccessories[normalized]) {
+                            mergedAccessories[normalized] = acc.quantity || 1;
+                          }
                         }
                       });
                     }
@@ -509,11 +517,6 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
                               {sched.vehicle_year && (
                                 <span>Ano: {sched.vehicle_year}</span>
-                              )}
-                              {schedule?.customer_id && (
-                                <span className="text-xs bg-muted px-2 py-0.5 rounded">
-                                  Contrato: {schedule.customer_id.slice(0, 8).toUpperCase()}
-                                </span>
                               )}
                             </div>
                           </div>
