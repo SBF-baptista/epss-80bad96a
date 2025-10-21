@@ -207,7 +207,7 @@ export function AppNavigation() {
                       >
                         <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                           <Icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="font-medium text-sm truncate">{item.label}</span>
+                          {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -225,7 +225,7 @@ export function AppNavigation() {
                       >
                         <div className="flex items-center gap-3">
                           <navigationGroups.homologation.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="font-medium text-sm">{navigationGroups.homologation.label}</span>
+                          {!isCollapsed && <span className="font-medium text-sm">{navigationGroups.homologation.label}</span>}
                         </div>
                         {!isCollapsed && (
                           homologationOpen ? 
@@ -248,7 +248,7 @@ export function AppNavigation() {
                             >
                               <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                                 <Icon className="h-4 w-4 flex-shrink-0" />
-                                <span className="font-medium text-sm truncate">{item.label}</span>
+                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                               </NavLink>
                             </SidebarMenuButton>
                           );
@@ -273,7 +273,7 @@ export function AppNavigation() {
                       >
                         <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                           <Icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="font-medium text-sm truncate">{item.label}</span>
+                          {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -291,7 +291,7 @@ export function AppNavigation() {
                       >
                         <div className="flex items-center gap-3">
                           <navigationGroups.orders.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="font-medium text-sm">{navigationGroups.orders.label}</span>
+                          {!isCollapsed && <span className="font-medium text-sm">{navigationGroups.orders.label}</span>}
                         </div>
                         {!isCollapsed && (
                           ordersOpen ? 
@@ -314,7 +314,7 @@ export function AppNavigation() {
                             >
                               <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                                 <Icon className="h-4 w-4 flex-shrink-0" />
-                                <span className="font-medium text-sm truncate">{item.label}</span>
+                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                               </NavLink>
                             </SidebarMenuButton>
                           );
@@ -339,7 +339,7 @@ export function AppNavigation() {
                       >
                         <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                           <Icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="font-medium text-sm truncate">{item.label}</span>
+                          {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -357,7 +357,7 @@ export function AppNavigation() {
                       >
                         <div className="flex items-center gap-3">
                           <navigationGroups.configuration.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="font-medium text-sm">{navigationGroups.configuration.label}</span>
+                          {!isCollapsed && <span className="font-medium text-sm">{navigationGroups.configuration.label}</span>}
                         </div>
                         {!isCollapsed && (
                           configurationOpen ? 
@@ -380,7 +380,7 @@ export function AppNavigation() {
                             >
                               <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                                 <Icon className="h-4 w-4 flex-shrink-0" />
-                                <span className="font-medium text-sm truncate">{item.label}</span>
+                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                               </NavLink>
                             </SidebarMenuButton>
                           );
@@ -417,7 +417,7 @@ export function AppNavigation() {
                   className="touch-manipulation tap-target text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <LogOut className="h-4 w-4 flex-shrink-0" />
-                  <span className="font-medium text-sm">Sair</span>
+                  {!isCollapsed && <span className="font-medium text-sm">Sair</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

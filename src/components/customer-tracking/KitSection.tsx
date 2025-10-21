@@ -175,7 +175,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
-          <KitStatusTimeline status={statusInfo.status} />
+          <KitStatusTimeline status={statusInfo.status} kitData={kitData} />
 
           {kitData.technician_name && (
             <div className="flex items-center gap-2 text-sm">

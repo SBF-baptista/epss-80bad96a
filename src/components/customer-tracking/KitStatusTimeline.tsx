@@ -2,9 +2,10 @@ import { CheckCircle, Clock, User, Package } from "lucide-react";
 
 interface KitStatusTimelineProps {
   status: string;
+  kitData?: any;
 }
 
-export const KitStatusTimeline = ({ status }: KitStatusTimelineProps) => {
+export const KitStatusTimeline = ({ status, kitData }: KitStatusTimelineProps) => {
   const steps = [
     {
       id: "scheduled",
@@ -42,6 +43,26 @@ export const KitStatusTimeline = ({ status }: KitStatusTimelineProps) => {
     return "pending";
   };
 
+  const getStepDate = (stepId: string) => {
+    if (!kitData) return null;
+    
+    const stepStatus = getStepStatus(stepId);
+    if (stepStatus === "pending") return null;
+    
+    // Para o status atual e completados, mostramos a data
+    if (stepId === "scheduled" && kitData.scheduled_date) {
+      return new Date(kitData.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
+    
+    // Para outros status, idealmente precisaríamos de um histórico de mudanças de status
+    // Como não temos isso, vamos mostrar apenas para o status atual
+    if (stepStatus === "active" && kitData.scheduled_date) {
+      return new Date(kitData.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
+    
+    return null;
+  };
+
   return (
     <div className="py-4">
       <div className="flex justify-between items-center relative">
@@ -76,6 +97,11 @@ export const KitStatusTimeline = ({ status }: KitStatusTimelineProps) => {
                 `}>
                   {step.label}
                 </div>
+                {getStepDate(step.id) && (
+                  <div className="text-xs text-blue-600 font-medium mt-1">
+                    Entrou em {getStepDate(step.id)}
+                  </div>
+                )}
                 <div className="text-xs text-gray-500 mt-1 max-w-20">
                   {step.description}
                 </div>
