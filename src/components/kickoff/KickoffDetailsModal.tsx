@@ -326,10 +326,10 @@ export const KickoffDetailsModal = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Vehicles Section */}
-          <div className="space-y-3 border-b pb-4">
-            <div className="flex items-center gap-2">
-              <Truck className="h-5 w-5 text-muted-foreground" />
-              <h3 className="font-semibold text-base">Veículos</h3>
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <Truck className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-lg">Veículos</h3>
             </div>
             <KickoffVehiclesTable 
               vehicles={vehicles}
@@ -343,9 +343,9 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Contatos */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">Contatos</h3>
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-lg">Contatos</h3>
               <Button type="button" variant="outline" size="sm" onClick={addContact}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Contato
@@ -412,9 +412,9 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Locais de Instalação */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">Locais de Instalação</h3>
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-lg">Locais de Instalação</h3>
               <Button type="button" variant="outline" size="sm" onClick={addLocation}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Local
@@ -458,7 +458,8 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Particularidade de Instalação */}
-          <div className="space-y-3">
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <h3 className="font-bold text-lg mb-3">Particularidades da Instalação</h3>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="has-particularity"
@@ -466,7 +467,7 @@ export const KickoffDetailsModal = ({
                 onCheckedChange={(checked) => setHasParticularity(checked as boolean)}
               />
               <Label htmlFor="has-particularity">
-                Particularidade de Instalação (Disponibilidade)
+                Disponibilidade para Instalação Especial
               </Label>
             </div>
             {hasParticularity && (
@@ -480,8 +481,8 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Observações */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Observações</Label>
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <h3 className="font-bold text-lg mb-3">Observações</h3>
             <Textarea
               id="notes"
               value={notes}

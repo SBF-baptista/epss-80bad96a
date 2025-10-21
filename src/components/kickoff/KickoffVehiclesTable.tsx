@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { EditVehicleModal } from "./EditVehicleModal";
+import { PlateValidationCheckbox } from "./PlateValidationCheckbox";
+import { FipeValidationAlert } from "./FipeValidationAlert";
+import { useFipeBrands } from "@/hooks/useFipeData";
 
 interface KickoffVehiclesTableProps {
   vehicles: KickoffVehicle[];
@@ -37,6 +40,70 @@ export const KickoffVehiclesTable = ({
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<KickoffVehicle | null>(null);
+  const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
+  const [invalidVehicles, setInvalidVehicles] = useState<Array<{ brand: string; model: string; year?: number }>>([]);
+  
+  const { brands } = useFipeBrands();
+
+  // Validate vehicles against FIPE on mount and when brands load
+  useEffect(() => {
+    if (brands.length > 0) {
+      validateVehiclesAgainstFipe();
+    }
+  }, [brands, vehicles]);
+
+  // Auto-check blocking flag if vehicle has "Bloqueio" accessory
+  useEffect(() => {
+    vehicles.forEach(vehicle => {
+      const hasBlockingAccessory = vehicle.modules.some(module => 
+        module.name.toUpperCase().includes("BLOQUEIO")
+      );
+      
+      if (hasBlockingAccessory) {
+        const currentBlocking = vehicleBlocking.get(vehicle.id) || { 
+          needsBlocking: false, 
+          engineBlocking: false, 
+          fuelBlocking: false 
+        };
+        
+        if (!currentBlocking.needsBlocking) {
+          onBlockingToggle(vehicle.id, 'needsBlocking', true);
+        }
+      }
+    });
+  }, [vehicles]);
+
+  const validateVehiclesAgainstFipe = () => {
+    const invalid: Array<{ brand: string; model: string; year?: number }> = [];
+    
+    vehicles.forEach(vehicle => {
+      const brandMatch = brands.find(
+        b => b.name.toUpperCase() === vehicle.brand.toUpperCase()
+      );
+      
+      if (!brandMatch) {
+        invalid.push({
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year
+        });
+      }
+    });
+    
+    setInvalidVehicles(invalid);
+  };
+
+  const handlePlateValidation = (vehicleId: string, validated: boolean) => {
+    setValidatedPlates(prev => {
+      const newSet = new Set(prev);
+      if (validated) {
+        newSet.add(vehicleId);
+      } else {
+        newSet.delete(vehicleId);
+      }
+      return newSet;
+    });
+  };
 
   const handleEditClick = (vehicle: KickoffVehicle) => {
     setEditingVehicle(vehicle);
@@ -65,7 +132,11 @@ export const KickoffVehiclesTable = ({
           onSuccess={handleEditSuccess}
         />
       )}
-    <div className="rounded-md border">
+    
+    <div className="space-y-4">
+      <FipeValidationAlert invalidVehicles={invalidVehicles} />
+      
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -87,10 +158,17 @@ export const KickoffVehiclesTable = ({
             const vehicleModules = selectedModules.get(vehicle.id) || new Set();
             const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false };
 
+            const isPlateValidated = validatedPlates.has(vehicle.id);
+            
             return (
               <TableRow key={vehicle.id}>
                 <TableCell className="font-medium">
-                  {vehicle.plate || <span className="text-muted-foreground">Não informada</span>}
+                  <PlateValidationCheckbox
+                    vehicleId={vehicle.id}
+                    plate={vehicle.plate || ""}
+                    isValidated={isPlateValidated}
+                    onToggle={handlePlateValidation}
+                  />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -190,6 +268,7 @@ export const KickoffVehiclesTable = ({
                     size="icon"
                     onClick={() => handleEditClick(vehicle)}
                     title="Editar marca, modelo e ano"
+                    disabled={isPlateValidated}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -199,6 +278,7 @@ export const KickoffVehiclesTable = ({
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
     </>
   );

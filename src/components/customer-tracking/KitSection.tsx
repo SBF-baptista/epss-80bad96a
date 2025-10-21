@@ -95,16 +95,29 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
 
   const statusInfo = getStatusInfo();
 
-  const getDaysInHomologation = () => {
-    if (kitData.kit?.created_at && statusInfo.status === "homologation") {
-      const createdDate = new Date(kitData.kit.created_at);
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - createdDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays;
+  const getDaysInStatus = () => {
+    // Use kit created_at for homologation, otherwise use scheduled date or now
+    let referenceDate: Date;
+    
+    if (statusInfo.status === "homologation" && kitData.kit?.created_at) {
+      referenceDate = new Date(kitData.kit.created_at);
+    } else if (kitData.scheduled_date) {
+      referenceDate = new Date(kitData.scheduled_date);
+    } else {
+      return { days: 0, entryDate: null };
     }
-    return 0;
+    
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - referenceDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return {
+      days: diffDays,
+      entryDate: referenceDate.toLocaleDateString('pt-BR')
+    };
   };
+
+  const statusDaysInfo = getDaysInStatus();
 
   const formatDateTime = (date: string, time?: string) => {
     const dateObj = new Date(date);
@@ -134,7 +147,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
                 {statusInfo.status === "homologation" && (
                   <Badge variant="outline" className="text-red-600 border-red-300">
                     <AlertCircle className="h-3 w-3 mr-1" />
-                    {getDaysInHomologation()} dias
+                    {statusDaysInfo.days} dias
                   </Badge>
                 )}
               </div>
@@ -164,6 +177,20 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
           )}
 
           <KitStatusTimeline status={statusInfo.status} />
+
+          {/* Status Date and Days Counter */}
+          {statusDaysInfo.entryDate && (
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Entrou em:</span>
+                <span>{statusDaysInfo.entryDate}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground ml-6">
+                <span>Há {statusDaysInfo.days} {statusDaysInfo.days === 1 ? 'dia' : 'dias'} nesse status</span>
+              </div>
+            </div>
+          )}
 
           {kitData.technician_name && (
             <div className="flex items-center gap-2 text-sm">
