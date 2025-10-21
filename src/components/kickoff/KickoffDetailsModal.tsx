@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck } from "lucide-react";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
@@ -415,10 +415,24 @@ export const KickoffDetailsModal = ({
             {/* Customer Info Card */}
             {customerInfo && (
               <div className="bg-muted/50 border rounded-lg p-4 mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
                     <p className="font-semibold mt-1">{customerInfo.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Serviços Contratados</Label>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {customerInfo.services.length > 0 ? (
+                        customerInfo.services.map((service, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {service}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Não informado</span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Cidade</Label>
@@ -446,10 +460,7 @@ export const KickoffDetailsModal = ({
           {/* Contatos */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">Contatos</h3>
-              </div>
+              <h3 className="font-bold text-lg">Contatos</h3>
               <Button type="button" variant="outline" size="sm" onClick={addContact}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Contato
@@ -518,10 +529,7 @@ export const KickoffDetailsModal = ({
           {/* Locais de Instalação */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">Locais de Instalação</h3>
-              </div>
+              <h3 className="font-bold text-lg">Locais de Instalação</h3>
               <Button type="button" variant="outline" size="sm" onClick={addLocation}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Local
@@ -566,10 +574,7 @@ export const KickoffDetailsModal = ({
 
           {/* Particularidade de Instalação */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-            <div className="flex items-center gap-2 mb-3">
-              <Settings className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-lg">Particularidades da Instalação</h3>
-            </div>
+            <h3 className="font-bold text-lg mb-3">Particularidades da Instalação</h3>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="has-particularity"
@@ -592,10 +597,7 @@ export const KickoffDetailsModal = ({
 
           {/* Observações */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-lg">Observações</h3>
-            </div>
+            <h3 className="font-bold text-lg mb-3">Observações</h3>
             <Textarea
               id="notes"
               value={notes}
