@@ -89,23 +89,35 @@ const navigationGroups = {
         roles: ["admin"]
       }
     ]
+  },
+  configuration: {
+    label: "Configuração",
+    icon: Settings,
+    roles: ["admin", "installer"],
+    items: [
+      { 
+        to: "/technicians", 
+        label: "Técnicos", 
+        icon: Users,
+        roles: ["admin", "installer"]
+      },
+      { 
+        to: "/users", 
+        label: "Usuários", 
+        icon: UserCog,
+        roles: ["admin"]
+      }
+    ]
   }
 };
 
-// Itens individuais (não agrupados)
+// Itens individuais (não agrupados) - na ordem do fluxo operacional
 const singleNavigationItems = [
   { 
     to: "/kickoff", 
     label: "Kickoff", 
     icon: Rocket,
     description: "Kickoff e planejamento de projetos",
-    roles: ["admin", "installer"]
-  },
-  { 
-    to: "/customer-tracking", 
-    label: "Acompanhamento de Clientes", 
-    icon: UserCheck,
-    description: "Acompanhar status dos clientes e kits",
     roles: ["admin", "installer"]
   },
   { 
@@ -116,18 +128,11 @@ const singleNavigationItems = [
     roles: ["admin", "installer"]
   },
   { 
-    to: "/technicians", 
-    label: "Técnicos", 
-    icon: Users,
-    description: "Gerenciamento de técnicos",
+    to: "/customer-tracking", 
+    label: "Acompanhamento de Clientes", 
+    icon: UserCheck,
+    description: "Acompanhar status dos clientes e kits",
     roles: ["admin", "installer"]
-  },
-  { 
-    to: "/users", 
-    label: "Usuários", 
-    icon: UserCog,
-    description: "Gerenciar usuários e permissões",
-    roles: ["admin"]
   },
 ];
 
@@ -141,6 +146,7 @@ export function AppNavigation() {
   // Estados para controlar abertura dos dropdowns
   const [homologationOpen, setHomologationOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
+  const [configurationOpen, setConfigurationOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
   
@@ -186,6 +192,28 @@ export function AppNavigation() {
           <SidebarGroupContent>
             <SidebarMenu>
               
+              {/* Item: Kickoff */}
+              {singleNavigationItems
+                .filter(item => item.to === "/kickoff" && canAccessItem(item.roles))
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(item.to)}
+                        tooltip={isCollapsed ? item.label : undefined}
+                        className="touch-manipulation tap-target"
+                      >
+                        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                          <Icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-medium text-sm truncate">{item.label}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+
               {/* Grupo Homologação */}
               {canAccessGroup(navigationGroups.homologation.roles) && (
                 <SidebarMenuItem>
@@ -229,6 +257,28 @@ export function AppNavigation() {
                   </Collapsible>
                 </SidebarMenuItem>
               )}
+
+              {/* Item: Planejamento */}
+              {singleNavigationItems
+                .filter(item => item.to === "/planning" && canAccessItem(item.roles))
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(item.to)}
+                        tooltip={isCollapsed ? item.label : undefined}
+                        className="touch-manipulation tap-target"
+                      >
+                        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                          <Icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-medium text-sm truncate">{item.label}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
 
               {/* Grupo Esteira de Pedidos */}
               {canAccessGroup(navigationGroups.orders.roles) && (
@@ -274,9 +324,9 @@ export function AppNavigation() {
                 </SidebarMenuItem>
               )}
 
-              {/* Itens individuais */}
+              {/* Item: Acompanhamento de Clientes */}
               {singleNavigationItems
-                .filter(item => canAccessItem(item.roles))
+                .filter(item => item.to === "/customer-tracking" && canAccessItem(item.roles))
                 .map((item) => {
                   const Icon = item.icon;
                   return (
@@ -295,6 +345,51 @@ export function AppNavigation() {
                     </SidebarMenuItem>
                   );
                 })}
+
+              {/* Grupo Configuração */}
+              {canAccessGroup(navigationGroups.configuration.roles) && (
+                <SidebarMenuItem>
+                  <Collapsible open={configurationOpen} onOpenChange={setConfigurationOpen}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton 
+                        className="w-full justify-between touch-manipulation tap-target"
+                        tooltip={isCollapsed ? navigationGroups.configuration.label : undefined}
+                      >
+                        <div className="flex items-center gap-3">
+                          <navigationGroups.configuration.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-medium text-sm">{navigationGroups.configuration.label}</span>
+                        </div>
+                        {!isCollapsed && (
+                          configurationOpen ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="ml-4">
+                      {navigationGroups.configuration.items
+                        .filter(item => canAccessItem(item.roles))
+                        .map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                <span className="font-medium text-sm truncate">{item.label}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+              )}
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
