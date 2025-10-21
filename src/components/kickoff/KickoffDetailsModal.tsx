@@ -47,6 +47,13 @@ export const KickoffDetailsModal = ({
 }: KickoffDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [hasParticularity, setHasParticularity] = useState(false);
+  const [kickoffCreatedAt, setKickoffCreatedAt] = useState<Date | null>(null);
+  const [customerInfo, setCustomerInfo] = useState<{
+    name: string;
+    services: string[];
+    city: string;
+    state: string;
+  } | null>(null);
   
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [installationLocations, setInstallationLocations] = useState<InstallationLocation[]>([
@@ -139,10 +146,40 @@ export const KickoffDetailsModal = ({
             ? (data.installation_locations as unknown as InstallationLocation[])
             : [{ city: "", state: "" }]
         );
+        
+        // Load customer info for display
+        const modules = Array.isArray(data.modules) ? data.modules : [];
+        setCustomerInfo({
+          name: data.company_name || data.name || "Cliente não identificado",
+          services: modules,
+          city: data.address_city || "Não informado",
+          state: data.address_state || "Não informado"
+        });
+      }
+      
+      // Load kickoff created date from first incoming vehicle
+      const { data: vehicleData } = await supabase
+        .from('incoming_vehicles')
+        .select('received_at')
+        .eq('sale_summary_id', saleSummaryId)
+        .order('received_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+        
+      if (vehicleData) {
+        setKickoffCreatedAt(new Date(vehicleData.received_at));
       }
     } catch (error) {
       console.error("Error loading customer data:", error);
     }
+  };
+
+  const calculateDaysSinceKickoff = (): number => {
+    if (!kickoffCreatedAt) return 0;
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - kickoffCreatedAt.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   const handleModuleToggle = (vehicleId: string, moduleName: string) => {
@@ -326,12 +363,54 @@ export const KickoffDetailsModal = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Vehicles Section */}
-          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-            <div className="flex items-center gap-2 mb-3">
-              <Truck className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-lg">Veículos</h3>
+          <div className="space-y-4 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Validação de Frota</h3>
+              </div>
+              {kickoffCreatedAt && (
+                <div className="text-sm text-muted-foreground">
+                  Kickoff em andamento há <span className="font-semibold text-foreground">{calculateDaysSinceKickoff()}</span> dias
+                </div>
+              )}
             </div>
-            <KickoffVehiclesTable 
+
+            {/* Customer Info Card */}
+            {customerInfo && (
+              <div className="bg-muted/50 border rounded-lg p-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
+                    <p className="font-semibold mt-1">{customerInfo.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Serviços Contratados</Label>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {customerInfo.services.length > 0 ? (
+                        customerInfo.services.map((service, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {service}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Não informado</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cidade</Label>
+                    <p className="font-semibold mt-1">{customerInfo.city}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Estado</Label>
+                    <p className="font-semibold mt-1">{customerInfo.state}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <KickoffVehiclesTable
               vehicles={vehicles}
               selectedModules={selectedModules}
               onModuleToggle={handleModuleToggle}

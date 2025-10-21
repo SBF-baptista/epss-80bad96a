@@ -148,6 +148,7 @@ export const KickoffVehiclesTable = ({
             <TableHead>Acessórios</TableHead>
             <TableHead>Bloqueio</TableHead>
             <TableHead className="w-[80px]">Ações</TableHead>
+            <TableHead className="w-[100px]">Validação</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -161,14 +162,11 @@ export const KickoffVehiclesTable = ({
             const isPlateValidated = validatedPlates.has(vehicle.id);
             
             return (
-              <TableRow key={vehicle.id}>
+              <TableRow key={vehicle.id} className={isPlateValidated ? "opacity-60" : ""}>
                 <TableCell className="font-medium">
-                  <PlateValidationCheckbox
-                    vehicleId={vehicle.id}
-                    plate={vehicle.plate || ""}
-                    isValidated={isPlateValidated}
-                    onToggle={handlePlateValidation}
-                  />
+                  <span className={isPlateValidated ? "text-green-600 font-semibold" : ""}>
+                    {vehicle.plate || "Não informada"}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -196,6 +194,7 @@ export const KickoffVehiclesTable = ({
                               id={`${vehicle.id}-${module.name}`}
                               checked={vehicleModules.has(module.name)}
                               onCheckedChange={() => onModuleToggle(vehicle.id, module.name)}
+                              disabled={isPlateValidated}
                             />
                             <Badge variant="outline" className="text-xs flex-1">
                               {module.name} ({module.quantity}x)
@@ -230,6 +229,7 @@ export const KickoffVehiclesTable = ({
                         id={`${vehicle.id}-blocking`}
                         checked={blocking.needsBlocking}
                         onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'needsBlocking', checked as boolean)}
+                        disabled={isPlateValidated}
                       />
                       <Label htmlFor={`${vehicle.id}-blocking`} className="text-sm cursor-pointer">
                         Necessita de bloqueio
@@ -242,6 +242,7 @@ export const KickoffVehiclesTable = ({
                             id={`${vehicle.id}-engine`}
                             checked={blocking.engineBlocking}
                             onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'engineBlocking', checked as boolean)}
+                            disabled={isPlateValidated}
                           />
                           <Label htmlFor={`${vehicle.id}-engine`} className="text-xs cursor-pointer">
                             Bloqueio de partida
@@ -252,6 +253,7 @@ export const KickoffVehiclesTable = ({
                             id={`${vehicle.id}-fuel`}
                             checked={blocking.fuelBlocking}
                             onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'fuelBlocking', checked as boolean)}
+                            disabled={isPlateValidated}
                           />
                           <Label htmlFor={`${vehicle.id}-fuel`} className="text-xs cursor-pointer">
                             Bloqueio de combustível
@@ -272,6 +274,14 @@ export const KickoffVehiclesTable = ({
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
+                </TableCell>
+                <TableCell>
+                  <PlateValidationCheckbox
+                    vehicleId={vehicle.id}
+                    plate={vehicle.plate || ""}
+                    isValidated={isPlateValidated}
+                    onToggle={handlePlateValidation}
+                  />
                 </TableCell>
               </TableRow>
             );

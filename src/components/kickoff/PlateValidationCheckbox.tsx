@@ -1,6 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Check } from "lucide-react";
 
 interface PlateValidationCheckboxProps {
   vehicleId: string;
@@ -24,14 +23,11 @@ export const PlateValidationCheckbox = ({
       />
       <Label
         htmlFor={`validate-${vehicleId}`}
-        className={`cursor-pointer flex items-center gap-2 ${
-          isValidated ? "text-green-600 font-medium" : ""
+        className={`cursor-pointer text-sm ${
+          isValidated ? "text-green-600 font-medium" : "text-muted-foreground"
         }`}
       >
-        {isValidated && <Check className="h-4 w-4 text-green-600" />}
-        <span className={isValidated ? "text-green-600" : ""}>
-          {plate || "Não informada"}
-        </span>
+        {isValidated ? "Validada ✓" : "Validar"}
       </Label>
     </div>
   );
