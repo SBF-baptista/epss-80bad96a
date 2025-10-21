@@ -128,49 +128,85 @@ export const KickoffDetailsModal = ({
 
   const loadCustomerData = async () => {
     try {
-      const { data, error } = await supabase
+      // First try to get customer data from customers table
+      const { data: customerData } = await supabase
         .from('customers')
         .select('*')
         .eq('sale_summary_id', saleSummaryId)
         .maybeSingle();
 
-      if (error) throw error;
-
-      if (data) {
-        setHasParticularity(data.has_installation_particularity || false);
-        setParticularityDetails(data.installation_particularity_details || "");
-        setNotes(data.kickoff_notes || "");
-        setContacts(Array.isArray(data.contacts) ? (data.contacts as unknown as Contact[]) : []);
+      if (customerData) {
+        setHasParticularity(customerData.has_installation_particularity || false);
+        setParticularityDetails(customerData.installation_particularity_details || "");
+        setNotes(customerData.kickoff_notes || "");
+        setContacts(Array.isArray(customerData.contacts) ? (customerData.contacts as unknown as Contact[]) : []);
         setInstallationLocations(
-          Array.isArray(data.installation_locations) && data.installation_locations.length > 0
-            ? (data.installation_locations as unknown as InstallationLocation[])
+          Array.isArray(customerData.installation_locations) && customerData.installation_locations.length > 0
+            ? (customerData.installation_locations as unknown as InstallationLocation[])
             : [{ city: "", state: "" }]
         );
         
-        // Load customer info for display
-        const modules = Array.isArray(data.modules) ? data.modules : [];
+        // Load customer info from customers table
+        const modules = Array.isArray(customerData.modules) ? customerData.modules : [];
         setCustomerInfo({
-          name: data.company_name || data.name || "Cliente não identificado",
+          name: customerData.company_name || customerData.name || companyName || "Cliente não identificado",
           services: modules,
-          city: data.address_city || "Não informado",
-          state: data.address_state || "Não informado"
+          city: customerData.address_city || "Não informado",
+          state: customerData.address_state || "Não informado"
         });
+      } else {
+        // If no customer data, get from incoming_vehicles
+        const { data: vehicleData } = await supabase
+          .from('incoming_vehicles')
+          .select('company_name, address_city, received_at')
+          .eq('sale_summary_id', saleSummaryId)
+          .order('received_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        
+        if (vehicleData) {
+          setKickoffCreatedAt(new Date(vehicleData.received_at));
+          
+          setCustomerInfo({
+            name: vehicleData.company_name || companyName || "Cliente não identificado",
+            services: [],
+            city: vehicleData.address_city || "Não informado",
+            state: "SP"
+          });
+        } else {
+          // Final fallback
+          setCustomerInfo({
+            name: companyName || "Cliente não identificado",
+            services: [],
+            city: "Não informado",
+            state: "Não informado"
+          });
+        }
       }
       
-      // Load kickoff created date from first incoming vehicle
-      const { data: vehicleData } = await supabase
-        .from('incoming_vehicles')
-        .select('received_at')
-        .eq('sale_summary_id', saleSummaryId)
-        .order('received_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-        
-      if (vehicleData) {
-        setKickoffCreatedAt(new Date(vehicleData.received_at));
+      // Load kickoff created date from first incoming vehicle if not set
+      if (!kickoffCreatedAt) {
+        const { data: vehicleData } = await supabase
+          .from('incoming_vehicles')
+          .select('received_at')
+          .eq('sale_summary_id', saleSummaryId)
+          .order('received_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+          
+        if (vehicleData) {
+          setKickoffCreatedAt(new Date(vehicleData.received_at));
+        }
       }
     } catch (error) {
       console.error("Error loading customer data:", error);
+      // Set basic info from props as fallback
+      setCustomerInfo({
+        name: companyName || "Cliente não identificado",
+        services: [],
+        city: "Não informado",
+        state: "Não informado"
+      });
     }
   };
 
