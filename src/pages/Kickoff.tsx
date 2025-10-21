@@ -214,11 +214,6 @@ const Kickoff = () => {
                       </Badge>
                     )}
                   </div>
-                  {client.usage_types.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {client.usage_types[0].usage_type}
-                    </Badge>
-                  )}
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
