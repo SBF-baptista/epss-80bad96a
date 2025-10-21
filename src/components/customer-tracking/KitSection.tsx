@@ -135,20 +135,19 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
         statusInfo.color.replace('bg-', '') === 'blue-500' ? '#3b82f6' : '#22c55e' }}>
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
-            <div>
+            <div className="space-y-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 {kitData.kit?.name || `Kit ${kitData.kit_id}`}
               </CardTitle>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="space-y-1">
                 <Badge variant="outline" className={statusInfo.color.replace('bg-', 'text-') + ' border-current'}>
                   {statusInfo.label}
                 </Badge>
-                {statusInfo.status === "homologation" && (
-                  <Badge variant="outline" className="text-red-600 border-red-300">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    {statusDaysInfo.days} dias
-                  </Badge>
+                {statusDaysInfo.entryDate && (
+                  <div className="text-xs text-muted-foreground">
+                    Entrou em {statusDaysInfo.entryDate}
+                  </div>
                 )}
               </div>
             </div>
@@ -177,20 +176,6 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
           )}
 
           <KitStatusTimeline status={statusInfo.status} />
-
-          {/* Status Date and Days Counter */}
-          {statusDaysInfo.entryDate && (
-            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Entrou em:</span>
-                <span>{statusDaysInfo.entryDate}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground ml-6">
-                <span>Há {statusDaysInfo.days} {statusDaysInfo.days === 1 ? 'dia' : 'dias'} nesse status</span>
-              </div>
-            </div>
-          )}
 
           {kitData.technician_name && (
             <div className="flex items-center gap-2 text-sm">

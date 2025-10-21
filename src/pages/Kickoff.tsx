@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Users, Truck, Edit, CheckCircle2, AlertCircle, History } from "lucide-react";
+import { Package, Users, Truck, Edit, CheckCircle2, AlertCircle, History, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
@@ -58,6 +59,43 @@ const Kickoff = () => {
     setSelectedSaleSummaryId(saleSummaryId);
     setSelectedCompanyName(companyName);
     setModalOpen(true);
+  };
+
+  // Buscar datas de received_at para cada cliente
+  const { data: kickoffDates } = useQuery({
+    queryKey: ['kickoff-dates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('incoming_vehicles')
+        .select('sale_summary_id, received_at')
+        .order('received_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Agrupar por sale_summary_id e pegar a primeira data (mais antiga)
+      const dateMap = new Map<number, Date>();
+      data?.forEach((vehicle: any) => {
+        if (!dateMap.has(vehicle.sale_summary_id)) {
+          dateMap.set(vehicle.sale_summary_id, new Date(vehicle.received_at));
+        }
+      });
+      
+      return dateMap;
+    },
+    enabled: !!kickoffData?.clients,
+  });
+
+  const getDaysInKickoff = (saleSummaryId: number): number => {
+    if (!kickoffDates) return 0;
+    
+    const startDate = kickoffDates.get(saleSummaryId);
+    if (!startDate) return 0;
+    
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
   };
 
 
@@ -162,10 +200,20 @@ const Kickoff = () => {
           </div>
         ) : kickoffData && kickoffData.clients.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {kickoffData.clients.map((client) => (
+            {kickoffData.clients.map((client) => {
+              const daysInKickoff = getDaysInKickoff(client.sale_summary_id);
+              return (
               <Card key={client.sale_summary_id} className="relative">
                 <CardHeader>
-                  <CardTitle className="text-lg">{client.company_name}</CardTitle>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CardTitle className="text-lg">{client.company_name}</CardTitle>
+                    {daysInKickoff > 0 && (
+                      <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {daysInKickoff} {daysInKickoff === 1 ? 'dia' : 'dias'}
+                      </Badge>
+                    )}
+                  </div>
                   {client.usage_types.length > 0 && (
                     <Badge variant="outline" className="text-xs">
                       {client.usage_types[0].usage_type}
@@ -210,7 +258,8 @@ const Kickoff = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            );
+            })}
           </div>
         ) : (
           <Card>
