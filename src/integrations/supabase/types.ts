@@ -1284,7 +1284,7 @@ export type Database = {
     }
     Functions: {
       backfill_planning_customers: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           customer_created: boolean
           customer_id: string
@@ -1293,7 +1293,7 @@ export type Database = {
         }[]
       }
       backfill_schedules_from_homologations: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           card_id: string
           created_customer: boolean
@@ -1316,10 +1316,7 @@ export type Database = {
           tracker_model: string
         }[]
       }
-      generate_auto_order_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_auto_order_number: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1331,10 +1328,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      relink_homologations_to_segsale_incoming: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "installer" | "order_manager"
