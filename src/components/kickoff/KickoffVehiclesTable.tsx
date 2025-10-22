@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Pencil, AlertTriangle } from "lucide-react";
+import { Pencil, CheckCircle, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -21,7 +21,6 @@ import {
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { EditVehicleModal } from "./EditVehicleModal";
 import { PlateValidationCheckbox } from "./PlateValidationCheckbox";
-import { FipeValidationAlert } from "./FipeValidationAlert";
 import { useFipeBrands } from "@/hooks/useFipeData";
 
 interface KickoffVehiclesTableProps {
@@ -147,8 +146,6 @@ export const KickoffVehiclesTable = ({
       )}
     
     <div className="space-y-4">
-      <FipeValidationAlert invalidVehicles={invalidVehicles} />
-      
       <div className="rounded-md border">
       <Table>
         <TableHeader>
@@ -161,6 +158,7 @@ export const KickoffVehiclesTable = ({
             <TableHead>Acessórios</TableHead>
             <TableHead>Bloqueio</TableHead>
             <TableHead className="w-[80px]">Ações</TableHead>
+            <TableHead className="w-[100px]">Padrão</TableHead>
             <TableHead className="w-[100px]">Validação</TableHead>
           </TableRow>
         </TableHeader>
@@ -183,17 +181,6 @@ export const KickoffVehiclesTable = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {isVehicleInvalid(vehicle) && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Veículo não encontrado na tabela FIPE</p>
-                          <p className="text-xs">Use o botão de edição para corrigir</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
                     <span className="font-medium">{vehicle.brand}</span>
                     {vehicle.quantity > 1 && (
                       <Badge variant="outline" className="text-xs">
@@ -298,6 +285,25 @@ export const KickoffVehiclesTable = ({
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-center">
+                    {isVehicleInvalid(vehicle) ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center cursor-help">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Veículo não encontrado na tabela FIPE</p>
+                          <p className="text-xs">Use o botão de edição para corrigir</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <PlateValidationCheckbox
