@@ -292,7 +292,7 @@ export const KickoffVehiclesTable = ({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="flex items-center cursor-help">
-                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            <AlertTriangle className="h-5 w-5 text-error" />
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -301,7 +301,7 @@ export const KickoffVehiclesTable = ({
                         </TooltipContent>
                       </Tooltip>
                     ) : (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-5 w-5 text-success" />
                     )}
                   </div>
                 </TableCell>
