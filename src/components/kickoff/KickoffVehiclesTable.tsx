@@ -11,7 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, AlertTriangle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { EditVehicleModal } from "./EditVehicleModal";
 import { PlateValidationCheckbox } from "./PlateValidationCheckbox";
@@ -118,8 +124,15 @@ export const KickoffVehiclesTable = ({
     onVehicleUpdate();
   };
 
+  const isVehicleInvalid = (vehicle: KickoffVehicle): boolean => {
+    return invalidVehicles.some(
+      inv => inv.brand.toUpperCase() === vehicle.brand.toUpperCase() &&
+             inv.model.toUpperCase() === vehicle.model.toUpperCase()
+    );
+  };
+
   return (
-    <>
+    <TooltipProvider>
       {editingVehicle && (
         <EditVehicleModal
           open={editModalOpen}
@@ -170,6 +183,17 @@ export const KickoffVehiclesTable = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    {isVehicleInvalid(vehicle) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Veículo não encontrado na tabela FIPE</p>
+                          <p className="text-xs">Use o botão de edição para corrigir</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <span className="font-medium">{vehicle.brand}</span>
                     {vehicle.quantity > 1 && (
                       <Badge variant="outline" className="text-xs">
@@ -290,6 +314,6 @@ export const KickoffVehiclesTable = ({
       </Table>
       </div>
     </div>
-    </>
+    </TooltipProvider>
   );
 };
