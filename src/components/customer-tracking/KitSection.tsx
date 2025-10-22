@@ -7,6 +7,7 @@ import { Calendar, User, Clock, Package, AlertCircle } from "lucide-react";
 import { KitStatusTimeline } from "./KitStatusTimeline";
 import { KitItemsList } from "./KitItemsList";
 import { RescheduleModal } from "./RescheduleModal";
+import { StatusHistory } from "./StatusHistory";
 
 interface KitSectionProps {
   kitData: {
@@ -213,6 +214,11 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
               <p className="text-sm"><strong>Observações:</strong> {kitData.notes}</p>
             </div>
           )}
+
+          {/* Histórico de Status */}
+          <div className="mt-4 pt-4 border-t">
+            <StatusHistory kitScheduleId={kitData.id} />
+          </div>
         </CardContent>
       </Card>
 

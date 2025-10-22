@@ -6,7 +6,6 @@ import { getCustomers, Customer } from "@/services/customerService";
 import { getKitSchedules, KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { fetchHomologationKits, HomologationKit } from "@/services/homologationKitService";
 import { checkMultipleKitsHomologation } from "@/services/kitHomologationService";
-import Navigation from "@/components/Navigation";
 import { Loader2 } from "lucide-react";
 
 interface CustomerKitData {
@@ -114,10 +113,7 @@ const CustomerTracking = () => {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Acompanhamento de Clientes</h1>
-          <Navigation />
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Acompanhamento de Clientes</h1>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -127,10 +123,7 @@ const CustomerTracking = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Acompanhamento de Clientes</h1>
-        <Navigation />
-      </div>
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Acompanhamento de Clientes</h1>
 
       <CustomerTrackingFilters
         onSearch={handleSearch}

@@ -189,7 +189,7 @@ export function AppNavigation() {
     <Sidebar collapsible="icon" className="border-r">
       <SidebarContent className="safe-area-inset">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm font-semibold text-gray-700 px-2">
+          <SidebarGroupLabel className="text-base font-bold text-white px-2">
             {!isCollapsed && "Menu"}
           </SidebarGroupLabel>
           <SidebarGroupContent>

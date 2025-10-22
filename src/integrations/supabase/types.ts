@@ -777,6 +777,47 @@ export type Database = {
         }
         Relationships: []
       }
+      kit_schedule_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          kit_schedule_id: string
+          new_status: string
+          notes: string | null
+          previous_status: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          kit_schedule_id: string
+          new_status: string
+          notes?: string | null
+          previous_status?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          kit_schedule_id?: string
+          new_status?: string
+          notes?: string | null
+          previous_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kit_schedule_status_history_kit_schedule_id_fkey"
+            columns: ["kit_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "kit_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kit_schedules: {
         Row: {
           accessories: string[] | null

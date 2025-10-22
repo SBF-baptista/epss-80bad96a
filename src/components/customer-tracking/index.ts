@@ -5,3 +5,4 @@ export { KitStatusTimeline } from './KitStatusTimeline';
 export { KitItemsList } from './KitItemsList';
 export { CustomerEditModal } from './CustomerEditModal';
 export { RescheduleModal } from './RescheduleModal';
+export { StatusHistory } from './StatusHistory';
