@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { KitStatusTimeline } from "./KitStatusTimeline";
 import { KitItemsList } from "./KitItemsList";
 import { RescheduleModal } from "./RescheduleModal";
 import { StatusHistory } from "./StatusHistory";
+import { supabase } from "@/integrations/supabase/client";
 
 interface KitSectionProps {
   kitData: {
@@ -28,6 +29,28 @@ interface KitSectionProps {
 
 export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [statusHistory, setStatusHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!kitData.id) return;
+      
+      const { data, error } = await supabase
+        .from('kit_schedule_status_history')
+        .select('*')
+        .eq('kit_schedule_id', kitData.id)
+        .order('changed_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error loading status history:', error);
+        return;
+      }
+      
+      setStatusHistory(data || []);
+    };
+
+    loadHistory();
+  }, [kitData.id]);
 
   const getStatusInfo = () => {
     // First check homologation status if kit exists
@@ -176,7 +199,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
-          <KitStatusTimeline status={statusInfo.status} kitData={kitData} />
+          <KitStatusTimeline status={statusInfo.status} kitData={kitData} statusHistory={statusHistory} />
 
           {kitData.technician_name && (
             <div className="flex items-center gap-2 text-sm">

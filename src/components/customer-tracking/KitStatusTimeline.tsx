@@ -1,11 +1,25 @@
 import { CheckCircle, Clock, User, Package } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface StatusHistoryEntry {
+  id: string;
+  kit_schedule_id: string;
+  previous_status: string | null;
+  new_status: string;
+  changed_at: string;
+  changed_by: string | null;
+  notes: string | null;
+  created_at: string;
+}
 
 interface KitStatusTimelineProps {
   status: string;
   kitData?: any;
+  statusHistory?: StatusHistoryEntry[];
 }
 
-export const KitStatusTimeline = ({ status, kitData }: KitStatusTimelineProps) => {
+export const KitStatusTimeline = ({ status, kitData, statusHistory }: KitStatusTimelineProps) => {
   const steps = [
     {
       id: "scheduled",
@@ -44,20 +58,39 @@ export const KitStatusTimeline = ({ status, kitData }: KitStatusTimelineProps) =
   };
 
   const getStepDate = (stepId: string) => {
-    if (!kitData) return null;
+    if (!statusHistory || statusHistory.length === 0) {
+      // Fallback: se for o status "scheduled" e não tem histórico, usar scheduled_date
+      if (stepId === "scheduled" && kitData?.scheduled_date) {
+        try {
+          return format(parseISO(kitData.scheduled_date), "dd/MM", { locale: ptBR });
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    }
     
     const stepStatus = getStepStatus(stepId);
     if (stepStatus === "pending") return null;
     
-    // Para o status atual e completados, mostramos a data
-    if (stepId === "scheduled" && kitData.scheduled_date) {
-      return new Date(kitData.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    // Buscar no histórico quando esse status foi atingido
+    const historyEntry = statusHistory.find(entry => entry.new_status === stepId);
+    
+    if (historyEntry) {
+      try {
+        return format(parseISO(historyEntry.changed_at), "dd/MM", { locale: ptBR });
+      } catch {
+        return null;
+      }
     }
     
-    // Para outros status, idealmente precisaríamos de um histórico de mudanças de status
-    // Como não temos isso, vamos mostrar apenas para o status atual
-    if (stepStatus === "active" && kitData.scheduled_date) {
-      return new Date(kitData.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    // Fallback: se for o status "scheduled" e não tem no histórico, usar scheduled_date
+    if (stepId === "scheduled" && kitData?.scheduled_date) {
+      try {
+        return format(parseISO(kitData.scheduled_date), "dd/MM", { locale: ptBR });
+      } catch {
+        return null;
+      }
     }
     
     return null;
