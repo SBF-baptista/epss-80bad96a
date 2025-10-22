@@ -237,8 +237,8 @@ export const ScheduleCalendar = ({
                             key={schedule.id}
                             className={`text-xs p-1 rounded border ${getStatusColor(schedule.status)}`}
                           >
-                            <div className="truncate font-medium">{schedule.kit.name}</div>
-                            <div className="truncate">{schedule.technician.name}</div>
+                            <div className="truncate font-medium">{schedule.kit?.name || 'Kit não especificado'}</div>
+                            <div className="truncate">{schedule.technician?.name || 'Técnico não especificado'}</div>
                             {schedule.installation_time && (
                               <div className="truncate">{schedule.installation_time}</div>
                             )}
@@ -318,7 +318,7 @@ export const ScheduleCalendar = ({
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-2">
                                   <Package className="w-4 h-4" />
-                                  <span className="font-medium">{visit.kit.name}</span>
+                                  <span className="font-medium">{visit.kit?.name || 'Kit não especificado'}</span>
                                   <Badge className={getStatusColor(visit.status)}>
                                     {getStatusLabel(visit.status)}
                                   </Badge>
@@ -328,7 +328,7 @@ export const ScheduleCalendar = ({
                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <User className="w-3 h-3" />
-                                  <span className="font-medium text-foreground">{visit.technician.name}</span>
+                                  <span className="font-medium text-foreground">{visit.technician?.name || 'Técnico não especificado'}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
@@ -344,7 +344,7 @@ export const ScheduleCalendar = ({
                                 )}
                               </div>
 
-                              {visit.kit.description && (
+                              {visit.kit?.description && (
                                 <div className="text-sm text-muted-foreground">
                                   <span className="font-medium">Descrição do Kit:</span> {visit.kit.description}
                                 </div>
@@ -431,7 +431,7 @@ export const ScheduleCalendar = ({
                                 </div>
                               )}
 
-                              {visit.technician.address_city && (
+                              {visit.technician?.address_city && (
                                 <div className="text-sm text-muted-foreground">
                                   <span className="font-medium">Técnico de:</span> {visit.technician.address_city}
                                   {visit.technician.address_state && ` - ${visit.technician.address_state}`}
