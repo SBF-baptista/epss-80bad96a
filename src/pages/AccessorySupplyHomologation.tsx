@@ -7,6 +7,7 @@ import { SupplyHomologationList } from "@/components/homologation/SupplyHomologa
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Navigation from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 
 const AccessorySupplyHomologation = () => {
@@ -55,6 +56,7 @@ const AccessorySupplyHomologation = () => {
         <div className="w-full max-w-7xl mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">Homologação de Acessórios e Insumos</h1>
+            <Navigation />
           </div>
           
           <Tabs defaultValue="accessories" className="w-full">
