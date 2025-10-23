@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building, Check, X } from 'lucide-react';
+import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building, Check, X, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -843,31 +843,127 @@ export const ScheduleModal = ({
                                  </div>
                                </td>
                                <td className="px-4 py-3">
-                                 <div className="flex flex-col gap-1 max-w-[180px]">
-                                   {kits.length > 0 ? (
-                                     kits.map((kit) => {
-                                       const status = homologationStatuses.get(kit.id!);
-                                       const isHomologated = status?.isHomologated ?? false;
-                                       return (
-                                         <div key={kit.id} className="flex items-center gap-1">
-                                           {isHomologated ? (
-                                             <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                                           ) : (
-                                             <X className="h-3 w-3 text-red-600 flex-shrink-0" />
-                                           )}
-                                           <span className={cn(
-                                             "text-xs",
-                                             isHomologated ? "text-green-700" : "text-red-700"
-                                           )}>
-                                             {kit.name}
+                                 {kits.length > 0 ? (
+                                   <Popover>
+                                     <PopoverTrigger asChild>
+                                       <Button
+                                         variant="outline"
+                                         size="sm"
+                                         className="h-auto py-2 px-3 flex items-center gap-2"
+                                       >
+                                         <Package className="h-4 w-4" />
+                                         <div className="flex flex-col items-start">
+                                           <span className="text-xs font-medium">
+                                             {kits.length} kit{kits.length > 1 ? 's' : ''} disponível{kits.length > 1 ? 'eis' : ''}
+                                           </span>
+                                           <span className="text-xs text-muted-foreground">
+                                             Ver detalhes
                                            </span>
                                          </div>
-                                       );
-                                     })
-                                   ) : (
-                                     <span className="text-xs text-muted-foreground">-</span>
-                                   )}
-                                 </div>
+                                       </Button>
+                                     </PopoverTrigger>
+                                     <PopoverContent className="w-[400px]" align="start">
+                                       <div className="space-y-4">
+                                         <div className="space-y-2">
+                                           <h4 className="font-semibold flex items-center gap-2">
+                                             <Package className="h-4 w-4" />
+                                             Kits Disponíveis
+                                           </h4>
+                                           <p className="text-xs text-muted-foreground">
+                                             Status de homologação dos kits
+                                           </p>
+                                         </div>
+
+                                         <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                                           {kits.map((kit) => {
+                                             const status = homologationStatuses.get(kit.id!);
+                                             const isHomologated = status?.isHomologated ?? false;
+                                             
+                                             return (
+                                               <div
+                                                 key={kit.id}
+                                                 className={`border rounded-lg p-3 space-y-2 ${
+                                                   isHomologated ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                                                 }`}
+                                               >
+                                                 <div className="flex items-start justify-between gap-2">
+                                                   <div className="flex items-start gap-2 flex-1">
+                                                     {isHomologated ? (
+                                                       <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                                     ) : (
+                                                       <X className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                                     )}
+                                                     <div className="flex-1">
+                                                       <p className={cn(
+                                                         "font-medium text-sm",
+                                                         isHomologated ? "text-green-900" : "text-red-900"
+                                                       )}>
+                                                         {kit.name}
+                                                       </p>
+                                                       {kit.description && (
+                                                         <p className="text-xs text-muted-foreground mt-1">
+                                                           {kit.description}
+                                                         </p>
+                                                       )}
+                                                     </div>
+                                                   </div>
+                                                   <Badge 
+                                                     variant={isHomologated ? "default" : "destructive"}
+                                                     className={cn(
+                                                       "shrink-0",
+                                                       isHomologated ? "bg-green-600 text-white" : ""
+                                                     )}
+                                                   >
+                                                     {isHomologated ? 'Homologado' : 'Pendente'}
+                                                   </Badge>
+                                                 </div>
+
+                                                 {status && !isHomologated && (
+                                                   <>
+                                                     {(() => {
+                                                       const allPendingItems = [
+                                                         ...status.pendingItems.equipment.map(i => i.item_name),
+                                                         ...status.pendingItems.accessories.map(i => i.item_name),
+                                                         ...status.pendingItems.supplies.map(i => i.item_name)
+                                                       ];
+                                                       
+                                                       if (allPendingItems.length === 0) return null;
+                                                       
+                                                       return (
+                                                         <div className="ml-6 space-y-1">
+                                                           <div className="flex items-center gap-1 text-xs text-red-600">
+                                                             <Info className="h-3 w-3" />
+                                                             <span className="font-medium">
+                                                               Itens não homologados:
+                                                             </span>
+                                                           </div>
+                                                           <div className="flex gap-1 flex-wrap">
+                                                             {allPendingItems.slice(0, 3).map((item, idx) => (
+                                                               <Badge key={idx} variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300">
+                                                                 {item}
+                                                               </Badge>
+                                                             ))}
+                                                             {allPendingItems.length > 3 && (
+                                                               <Badge variant="outline" className="text-xs">
+                                                                 +{allPendingItems.length - 3}
+                                                               </Badge>
+                                                             )}
+                                                           </div>
+                                                         </div>
+                                                       );
+                                                     })()}
+                                                   </>
+                                                 )}
+                                               </div>
+                                             );
+                                           })}
+                                         </div>
+                                       </div>
+                                     </PopoverContent>
+                                   </Popover>
+                                 ) : (
+                                   <span className="text-xs text-muted-foreground">Nenhum kit</span>
+                                 )}
                                </td>
                                <td className="px-4 py-3">
                                  <div className="space-y-1">
