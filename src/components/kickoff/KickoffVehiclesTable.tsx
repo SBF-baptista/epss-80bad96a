@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, CheckCircle, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
@@ -22,7 +21,6 @@ import {
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { EditVehicleModal } from "./EditVehicleModal";
 import { PlateValidationCheckbox } from "./PlateValidationCheckbox";
-import { KitSuggestionCell } from "./KitSuggestionCell";
 import { useFipeBrands } from "@/hooks/useFipeData";
 
 interface KickoffVehiclesTableProps {
@@ -31,10 +29,8 @@ interface KickoffVehiclesTableProps {
   onModuleToggle: (vehicleId: string, moduleName: string) => void;
   vehicleBlocking: Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean }>;
   onBlockingToggle: (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => void;
-  vehicleSiren: Map<string, { hasSiren: boolean; sirenType: string }>;
-  onSirenToggle: (vehicleId: string, field: 'hasSiren' | 'sirenType', value: boolean | string) => void;
-  selectedKits: Map<string, Set<string>>;
-  onKitToggle: (vehicleId: string, kitId: string) => void;
+  vehicleSiren: Map<string, boolean>;
+  onSirenToggle: (vehicleId: string, value: boolean) => void;
   saleSummaryId: number;
   onVehicleUpdate: () => void;
 }
@@ -47,8 +43,6 @@ export const KickoffVehiclesTable = ({
   onBlockingToggle,
   vehicleSiren,
   onSirenToggle,
-  selectedKits,
-  onKitToggle,
   saleSummaryId,
   onVehicleUpdate
 }: KickoffVehiclesTableProps) => {
@@ -299,44 +293,14 @@ export const KickoffVehiclesTable = ({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id={`mobile-siren-${vehicle.id}`}
-                    checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
-                    onCheckedChange={(checked) => onSirenToggle(vehicle.id, 'hasSiren', checked as boolean)}
+                    checked={vehicleSiren.get(vehicle.id) || false}
+                    onCheckedChange={(checked) => onSirenToggle(vehicle.id, checked as boolean)}
                     disabled={isPlateValidated}
                   />
                   <Label htmlFor={`mobile-siren-${vehicle.id}`} className="text-sm font-semibold cursor-pointer">
                     Possui Sirene
                   </Label>
                 </div>
-                {vehicleSiren.get(vehicle.id)?.hasSiren && (
-                  <div className="ml-6">
-                    <Select
-                      value={vehicleSiren.get(vehicle.id)?.sirenType || ''}
-                      onValueChange={(value) => onSirenToggle(vehicle.id, 'sirenType', value)}
-                      disabled={isPlateValidated}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Tipo de sirene" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sirene_padrao">Sirene Padrão</SelectItem>
-                        <SelectItem value="sirene_dupla">Sirene Dupla</SelectItem>
-                        <SelectItem value="sirene_especial">Sirene Especial</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              {/* Kits */}
-              <div className="space-y-2 pt-2 border-t">
-                <Label className="text-sm font-semibold">Kits Sugeridos</Label>
-                <KitSuggestionCell
-                  vehicleId={vehicle.id}
-                  vehicleModules={vehicle.modules}
-                  selectedKits={selectedKits.get(vehicle.id) || new Set()}
-                  onKitToggle={onKitToggle}
-                  disabled={isPlateValidated}
-                />
               </div>
 
               {/* Validation */}
@@ -467,9 +431,9 @@ export const KickoffVehiclesTable = ({
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id={`siren-${vehicle.id}`}
-                        checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
+                        checked={vehicleSiren.get(vehicle.id) || false}
                         onCheckedChange={(checked) => 
-                          onSirenToggle(vehicle.id, 'hasSiren', checked as boolean)
+                          onSirenToggle(vehicle.id, checked as boolean)
                         }
                         disabled={isPlateValidated}
                       />
@@ -477,24 +441,6 @@ export const KickoffVehiclesTable = ({
                         Possui Sirene
                       </Label>
                     </div>
-                    {vehicleSiren.get(vehicle.id)?.hasSiren && (
-                      <div className="ml-6">
-                        <Select
-                          value={vehicleSiren.get(vehicle.id)?.sirenType || ''}
-                          onValueChange={(value) => onSirenToggle(vehicle.id, 'sirenType', value)}
-                          disabled={isPlateValidated}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Tipo de sirene" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sirene_padrao">Sirene Padrão</SelectItem>
-                            <SelectItem value="sirene_dupla">Sirene Dupla</SelectItem>
-                            <SelectItem value="sirene_especial">Sirene Especial</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -539,15 +485,6 @@ export const KickoffVehiclesTable = ({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <KitSuggestionCell
-                    vehicleId={vehicle.id}
-                    vehicleModules={vehicle.modules}
-                    selectedKits={selectedKits.get(vehicle.id) || new Set()}
-                    onKitToggle={onKitToggle}
-                    disabled={isPlateValidated}
-                  />
-                </TableCell>
-                <TableCell>
                   <PlateValidationCheckbox
                     vehicleId={vehicle.id}
                     plate={vehicle.plate || ""}
@@ -575,7 +512,6 @@ export const KickoffVehiclesTable = ({
               <TableHead className="whitespace-nowrap">Sirene</TableHead>
               <TableHead className="whitespace-nowrap">Editar</TableHead>
               <TableHead className="whitespace-nowrap">FIPE</TableHead>
-              <TableHead className="whitespace-nowrap">Kits</TableHead>
               <TableHead className="whitespace-nowrap">Validação</TableHead>
             </TableRow>
           </TableHeader>
@@ -696,9 +632,9 @@ export const KickoffVehiclesTable = ({
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id={`siren-${vehicle.id}`}
-                          checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
+                          checked={vehicleSiren.get(vehicle.id) || false}
                           onCheckedChange={(checked) => 
-                            onSirenToggle(vehicle.id, 'hasSiren', checked as boolean)
+                            onSirenToggle(vehicle.id, checked as boolean)
                           }
                           disabled={isPlateValidated}
                         />
@@ -706,24 +642,6 @@ export const KickoffVehiclesTable = ({
                           Possui Sirene
                         </Label>
                       </div>
-                      {vehicleSiren.get(vehicle.id)?.hasSiren && (
-                        <div className="ml-6">
-                          <Select
-                            value={vehicleSiren.get(vehicle.id)?.sirenType || ''}
-                            onValueChange={(value) => onSirenToggle(vehicle.id, 'sirenType', value)}
-                            disabled={isPlateValidated}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Tipo de sirene" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sirene_padrao">Sirene Padrão</SelectItem>
-                              <SelectItem value="sirene_dupla">Sirene Dupla</SelectItem>
-                              <SelectItem value="sirene_especial">Sirene Especial</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -766,15 +684,6 @@ export const KickoffVehiclesTable = ({
                         </div>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <KitSuggestionCell
-                      vehicleId={vehicle.id}
-                      vehicleModules={vehicle.modules}
-                      selectedKits={selectedKits.get(vehicle.id) || new Set()}
-                      onKitToggle={onKitToggle}
-                      disabled={isPlateValidated}
-                    />
                   </TableCell>
                   <TableCell>
                     <PlateValidationCheckbox

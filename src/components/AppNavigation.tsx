@@ -36,9 +36,6 @@ import {
 } from "@/components/ui/collapsible";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
 
 // Definindo grupos de navegação
 const navigationGroups = {
@@ -144,7 +141,6 @@ export function AppNavigation() {
   const isCollapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const { role, loading } = useUserRole();
-  const { theme, setTheme } = useTheme();
   
   // Estados para controlar abertura dos dropdowns
   const [homologationOpen, setHomologationOpen] = useState(false);
@@ -413,20 +409,6 @@ export function AppNavigation() {
               </div>
             )}
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  tooltip={isCollapsed ? (theme === "dark" ? "Modo Claro" : "Modo Escuro") : undefined}
-                  className="touch-manipulation tap-target"
-                >
-                  {theme === "dark" ? (
-                    <Sun className="h-4 w-4 flex-shrink-0" />
-                  ) : (
-                    <Moon className="h-4 w-4 flex-shrink-0" />
-                  )}
-                  {!isCollapsed && <span className="font-medium text-sm">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={handleSignOut}

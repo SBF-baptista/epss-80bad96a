@@ -75,12 +75,8 @@ export const KickoffDetailsModal = ({
     new Map(vehicles.map(v => [v.id, { needsBlocking: false, engineBlocking: false, fuelBlocking: false }]))
   );
 
-  const [vehicleSiren, setVehicleSiren] = useState<Map<string, { hasSiren: boolean; sirenType: string }>>(
-    new Map(vehicles.map(v => [v.id, { hasSiren: false, sirenType: '' }]))
-  );
-
-  const [selectedKits, setSelectedKits] = useState<Map<string, Set<string>>>(
-    new Map(vehicles.map(v => [v.id, new Set()]))
+  const [vehicleSiren, setVehicleSiren] = useState<Map<string, boolean>>(
+    new Map(vehicles.map(v => [v.id, false]))
   );
 
   // Load existing customer data when modal opens
@@ -261,37 +257,10 @@ export const KickoffDetailsModal = ({
     });
   };
 
-  const handleSirenToggle = (vehicleId: string, field: 'hasSiren' | 'sirenType', value: boolean | string) => {
+  const handleSirenToggle = (vehicleId: string, value: boolean) => {
     setVehicleSiren(prev => {
       const newMap = new Map(prev);
-      const vehicleSirenData = { ...(newMap.get(vehicleId) || { hasSiren: false, sirenType: '' }) };
-      
-      if (field === 'hasSiren') {
-        vehicleSirenData.hasSiren = value as boolean;
-        if (!value) {
-          vehicleSirenData.sirenType = '';
-        }
-      } else {
-        vehicleSirenData.sirenType = value as string;
-      }
-      
-      newMap.set(vehicleId, vehicleSirenData);
-      return newMap;
-    });
-  };
-
-  const handleKitToggle = (vehicleId: string, kitId: string) => {
-    setSelectedKits(prev => {
-      const newMap = new Map(prev);
-      const vehicleKits = new Set(newMap.get(vehicleId) || []);
-      
-      if (vehicleKits.has(kitId)) {
-        vehicleKits.delete(kitId);
-      } else {
-        vehicleKits.add(kitId);
-      }
-      
-      newMap.set(vehicleId, vehicleKits);
+      newMap.set(vehicleId, value);
       return newMap;
     });
   };
@@ -347,8 +316,7 @@ export const KickoffDetailsModal = ({
       const vehiclesData = vehicles.map(vehicle => {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false };
-        const siren = vehicleSiren.get(vehicle.id) || { hasSiren: false, sirenType: '' };
-        const kits = Array.from(selectedKits.get(vehicle.id) || []);
+        const hasSiren = vehicleSiren.get(vehicle.id) || false;
         
         return {
           id: vehicle.id,
@@ -359,8 +327,7 @@ export const KickoffDetailsModal = ({
           quantity: vehicle.quantity,
           selected_modules: modules,
           blocking_info: blocking,
-          siren_info: siren,
-          selected_kits: kits,
+          has_siren: hasSiren,
           accessories: vehicle.modules.filter(m => {
             const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
             return normalize(m.categories || '') !== 'modulos';
@@ -485,8 +452,6 @@ export const KickoffDetailsModal = ({
               vehicles={vehicles}
               selectedModules={selectedModules}
               onModuleToggle={handleModuleToggle}
-              selectedKits={selectedKits}
-              onKitToggle={handleKitToggle}
               vehicleBlocking={vehicleBlocking}
               onBlockingToggle={handleBlockingToggle}
               vehicleSiren={vehicleSiren}
