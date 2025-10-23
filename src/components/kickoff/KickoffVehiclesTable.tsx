@@ -22,6 +22,7 @@ import {
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { EditVehicleModal } from "./EditVehicleModal";
 import { PlateValidationCheckbox } from "./PlateValidationCheckbox";
+import { KitSuggestionCell } from "./KitSuggestionCell";
 import { useFipeBrands } from "@/hooks/useFipeData";
 
 interface KickoffVehiclesTableProps {
@@ -32,6 +33,8 @@ interface KickoffVehiclesTableProps {
   onBlockingToggle: (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => void;
   vehicleSiren: Map<string, { hasSiren: boolean; sirenType: string }>;
   onSirenToggle: (vehicleId: string, field: 'hasSiren' | 'sirenType', value: boolean | string) => void;
+  selectedKits: Map<string, Set<string>>;
+  onKitToggle: (vehicleId: string, kitId: string) => void;
   saleSummaryId: number;
   onVehicleUpdate: () => void;
 }
@@ -44,6 +47,8 @@ export const KickoffVehiclesTable = ({
   onBlockingToggle,
   vehicleSiren,
   onSirenToggle,
+  selectedKits,
+  onKitToggle,
   saleSummaryId,
   onVehicleUpdate
 }: KickoffVehiclesTableProps) => {
@@ -165,6 +170,7 @@ export const KickoffVehiclesTable = ({
             <TableHead className="min-w-[200px]">Sirene</TableHead>
             <TableHead className="min-w-[80px]">Editar veículo</TableHead>
             <TableHead className="min-w-[180px]">Padrão FIPE</TableHead>
+            <TableHead className="min-w-[250px]">Kits</TableHead>
             <TableHead className="min-w-[120px]">Validação</TableHead>
           </TableRow>
         </TableHeader>
@@ -355,6 +361,15 @@ export const KickoffVehiclesTable = ({
                       </div>
                     )}
                   </div>
+                </TableCell>
+                <TableCell>
+                  <KitSuggestionCell
+                    vehicleId={vehicle.id}
+                    vehicleModules={vehicle.modules}
+                    selectedKits={selectedKits.get(vehicle.id) || new Set()}
+                    onKitToggle={onKitToggle}
+                    disabled={isPlateValidated}
+                  />
                 </TableCell>
                 <TableCell>
                   <PlateValidationCheckbox

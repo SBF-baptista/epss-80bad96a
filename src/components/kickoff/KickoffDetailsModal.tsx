@@ -78,6 +78,10 @@ export const KickoffDetailsModal = ({
     new Map(vehicles.map(v => [v.id, { hasSiren: false, sirenType: '' }]))
   );
 
+  const [selectedKits, setSelectedKits] = useState<Map<string, Set<string>>>(
+    new Map(vehicles.map(v => [v.id, new Set()]))
+  );
+
   // Load existing customer data when modal opens
   useEffect(() => {
     if (open && saleSummaryId) {
@@ -275,6 +279,22 @@ export const KickoffDetailsModal = ({
     });
   };
 
+  const handleKitToggle = (vehicleId: string, kitId: string) => {
+    setSelectedKits(prev => {
+      const newMap = new Map(prev);
+      const vehicleKits = new Set(newMap.get(vehicleId) || []);
+      
+      if (vehicleKits.has(kitId)) {
+        vehicleKits.delete(kitId);
+      } else {
+        vehicleKits.add(kitId);
+      }
+      
+      newMap.set(vehicleId, vehicleKits);
+      return newMap;
+    });
+  };
+
   const addContact = () => {
     setContacts([...contacts, { type: 'decisor', name: "", role: "", email: "", phone: "" }]);
   };
@@ -327,6 +347,7 @@ export const KickoffDetailsModal = ({
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false };
         const siren = vehicleSiren.get(vehicle.id) || { hasSiren: false, sirenType: '' };
+        const kits = Array.from(selectedKits.get(vehicle.id) || []);
         
         return {
           id: vehicle.id,
@@ -338,6 +359,7 @@ export const KickoffDetailsModal = ({
           selected_modules: modules,
           blocking_info: blocking,
           siren_info: siren,
+          selected_kits: kits,
           accessories: vehicle.modules.filter(m => {
             const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
             return normalize(m.categories || '') !== 'modulos';
@@ -461,6 +483,8 @@ export const KickoffDetailsModal = ({
               vehicles={vehicles}
               selectedModules={selectedModules}
               onModuleToggle={handleModuleToggle}
+              selectedKits={selectedKits}
+              onKitToggle={handleKitToggle}
               vehicleBlocking={vehicleBlocking}
               onBlockingToggle={handleBlockingToggle}
               vehicleSiren={vehicleSiren}
