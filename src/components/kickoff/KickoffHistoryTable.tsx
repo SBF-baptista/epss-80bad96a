@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -9,7 +9,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ChevronDown, ChevronRight, Eye, Search, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { KickoffHistoryRecord } from "@/services/kickoffHistoryService";
@@ -22,6 +24,9 @@ interface KickoffHistoryTableProps {
 export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedRecord, setSelectedRecord] = useState<KickoffHistoryRecord | null>(null);
+  const [searchName, setSearchName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const toggleRow = (id: string) => {
     const newExpanded = new Set(expandedRows);
@@ -33,6 +38,40 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
     setExpandedRows(newExpanded);
   };
 
+  // Filter and sort history
+  const filteredHistory = useMemo(() => {
+    let filtered = [...history];
+
+    // Filter by name
+    if (searchName.trim()) {
+      const searchLower = searchName.toLowerCase();
+      filtered = filtered.filter(record => 
+        record.company_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filter by date range
+    if (startDate) {
+      filtered = filtered.filter(record => 
+        new Date(record.approved_at) >= new Date(startDate)
+      );
+    }
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999); // Include the entire end date
+      filtered = filtered.filter(record => 
+        new Date(record.approved_at) <= endDateTime
+      );
+    }
+
+    // Sort by most recent first
+    filtered.sort((a, b) => 
+      new Date(b.approved_at).getTime() - new Date(a.approved_at).getTime()
+    );
+
+    return filtered;
+  }, [history, searchName, startDate, endDate]);
+
   if (history.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -42,7 +81,7 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
   }
 
   // Group history by company name
-  const groupedHistory = history.reduce((acc, record) => {
+  const groupedHistory = filteredHistory.reduce((acc, record) => {
     const key = record.company_name.trim().toUpperCase();
     if (!acc[key]) {
       acc[key] = {
@@ -58,6 +97,52 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
 
   return (
     <>
+      <div className="space-y-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="search-name" className="text-sm font-medium flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Buscar por nome
+            </Label>
+            <Input
+              id="search-name"
+              placeholder="Digite o nome do cliente..."
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="start-date" className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Data inicial
+            </Label>
+            <Input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="end-date" className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Data final
+            </Label>
+            <Input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+        {(searchName || startDate || endDate) && (
+          <div className="text-sm text-muted-foreground">
+            Exibindo {Object.keys(groupedHistory).length} cliente(s) encontrado(s)
+          </div>
+        )}
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, CheckCircle, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
@@ -29,16 +30,20 @@ interface KickoffVehiclesTableProps {
   onModuleToggle: (vehicleId: string, moduleName: string) => void;
   vehicleBlocking: Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean }>;
   onBlockingToggle: (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => void;
+  vehicleSiren: Map<string, { hasSiren: boolean; sirenType: string }>;
+  onSirenToggle: (vehicleId: string, field: 'hasSiren' | 'sirenType', value: boolean | string) => void;
   saleSummaryId: number;
   onVehicleUpdate: () => void;
 }
 
 export const KickoffVehiclesTable = ({ 
   vehicles, 
-  selectedModules,
+  selectedModules, 
   onModuleToggle,
   vehicleBlocking,
   onBlockingToggle,
+  vehicleSiren,
+  onSirenToggle,
   saleSummaryId,
   onVehicleUpdate
 }: KickoffVehiclesTableProps) => {
@@ -157,7 +162,8 @@ export const KickoffVehiclesTable = ({
             <TableHead className="min-w-[200px]">Módulos</TableHead>
             <TableHead className="min-w-[180px]">Acessórios</TableHead>
             <TableHead className="min-w-[220px]">Bloqueio</TableHead>
-            <TableHead className="min-w-[80px]">Ações</TableHead>
+            <TableHead className="min-w-[200px]">Sirene</TableHead>
+            <TableHead className="min-w-[80px]">Editar veículo</TableHead>
             <TableHead className="min-w-[180px]">Padrão FIPE</TableHead>
             <TableHead className="min-w-[120px]">Validação</TableHead>
           </TableRow>
@@ -270,6 +276,41 @@ export const KickoffVehiclesTable = ({
                             Bloqueio de combustível
                           </Label>
                         </div>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`siren-${vehicle.id}`}
+                        checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
+                        onCheckedChange={(checked) => 
+                          onSirenToggle(vehicle.id, 'hasSiren', checked as boolean)
+                        }
+                        disabled={isPlateValidated}
+                      />
+                      <Label htmlFor={`siren-${vehicle.id}`} className="text-sm font-medium cursor-pointer">
+                        Possui Sirene
+                      </Label>
+                    </div>
+                    {vehicleSiren.get(vehicle.id)?.hasSiren && (
+                      <div className="ml-6">
+                        <Select
+                          value={vehicleSiren.get(vehicle.id)?.sirenType || ''}
+                          onValueChange={(value) => onSirenToggle(vehicle.id, 'sirenType', value)}
+                          disabled={isPlateValidated}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Tipo de sirene" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sirene_padrao">Sirene Padrão</SelectItem>
+                            <SelectItem value="sirene_dupla">Sirene Dupla</SelectItem>
+                            <SelectItem value="sirene_especial">Sirene Especial</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
                   </div>

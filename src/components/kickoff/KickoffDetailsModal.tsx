@@ -74,6 +74,10 @@ export const KickoffDetailsModal = ({
     new Map(vehicles.map(v => [v.id, { needsBlocking: false, engineBlocking: false, fuelBlocking: false }]))
   );
 
+  const [vehicleSiren, setVehicleSiren] = useState<Map<string, { hasSiren: boolean; sirenType: string }>>(
+    new Map(vehicles.map(v => [v.id, { hasSiren: false, sirenType: '' }]))
+  );
+
   // Load existing customer data when modal opens
   useEffect(() => {
     if (open && saleSummaryId) {
@@ -252,6 +256,25 @@ export const KickoffDetailsModal = ({
     });
   };
 
+  const handleSirenToggle = (vehicleId: string, field: 'hasSiren' | 'sirenType', value: boolean | string) => {
+    setVehicleSiren(prev => {
+      const newMap = new Map(prev);
+      const vehicleSirenData = { ...(newMap.get(vehicleId) || { hasSiren: false, sirenType: '' }) };
+      
+      if (field === 'hasSiren') {
+        vehicleSirenData.hasSiren = value as boolean;
+        if (!value) {
+          vehicleSirenData.sirenType = '';
+        }
+      } else {
+        vehicleSirenData.sirenType = value as string;
+      }
+      
+      newMap.set(vehicleId, vehicleSirenData);
+      return newMap;
+    });
+  };
+
   const addContact = () => {
     setContacts([...contacts, { type: 'decisor', name: "", role: "", email: "", phone: "" }]);
   };
@@ -303,6 +326,7 @@ export const KickoffDetailsModal = ({
       const vehiclesData = vehicles.map(vehicle => {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false };
+        const siren = vehicleSiren.get(vehicle.id) || { hasSiren: false, sirenType: '' };
         
         return {
           id: vehicle.id,
@@ -313,6 +337,7 @@ export const KickoffDetailsModal = ({
           quantity: vehicle.quantity,
           selected_modules: modules,
           blocking_info: blocking,
+          siren_info: siren,
           accessories: vehicle.modules.filter(m => {
             const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
             return normalize(m.categories || '') !== 'modulos';
@@ -438,6 +463,8 @@ export const KickoffDetailsModal = ({
               onModuleToggle={handleModuleToggle}
               vehicleBlocking={vehicleBlocking}
               onBlockingToggle={handleBlockingToggle}
+              vehicleSiren={vehicleSiren}
+              onSirenToggle={handleSirenToggle}
               saleSummaryId={saleSummaryId}
               onVehicleUpdate={onSuccess}
             />
