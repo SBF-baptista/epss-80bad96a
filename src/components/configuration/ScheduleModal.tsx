@@ -751,6 +751,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Kit</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Técnico *</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Data *</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Horário</th>
@@ -838,12 +839,39 @@ export const ScheduleModal = ({
                                     } else {
                                       return <span className="text-xs text-muted-foreground">-</span>;
                                     }
-                                  })()}
+                                   })()}
+                                 </div>
+                               </td>
+                               <td className="px-4 py-3">
+                                 <div className="flex flex-col gap-1 max-w-[180px]">
+                                   {kits.length > 0 ? (
+                                     kits.map((kit) => {
+                                       const status = homologationStatuses.get(kit.id!);
+                                       const isHomologated = status?.isHomologated ?? false;
+                                       return (
+                                         <div key={kit.id} className="flex items-center gap-1">
+                                           {isHomologated ? (
+                                             <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                           ) : (
+                                             <X className="h-3 w-3 text-red-600 flex-shrink-0" />
+                                           )}
+                                           <span className={cn(
+                                             "text-xs",
+                                             isHomologated ? "text-green-700" : "text-red-700"
+                                           )}>
+                                             {kit.name}
+                                           </span>
+                                         </div>
+                                       );
+                                     })
+                                   ) : (
+                                     <span className="text-xs text-muted-foreground">-</span>
+                                   )}
                                  </div>
                                </td>
                                <td className="px-4 py-3">
                                  <div className="space-y-1">
-                                   <Select 
+                                   <Select
                                      value={vehicleSchedule.technician_ids[0] || ''} 
                                      onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [value])}
                                      disabled={!vehicleReady}
@@ -928,7 +956,7 @@ export const ScheduleModal = ({
                              </tr>
                               {!vehicleReady && (
                                 <tr>
-                                  <td colSpan={10} className="px-4 py-2">
+                                  <td colSpan={11} className="px-4 py-2">
                                     {(() => {
                                       const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
                                       const vehicleId = vehicleIdMap.get(vehicleKey);
