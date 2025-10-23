@@ -48,6 +48,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules, isModuleCategory } from '@/services/vehicleAccessoryService';
 import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 
 // Helper to normalize item names (remove quantity suffix, trim, uppercase)
@@ -76,6 +77,95 @@ const extractQuantity = (formatted: string): number => {
   return match ? parseInt(match[1], 10) : 1;
 };
 
+/**
+ * Função para verificar similaridade entre itens (adaptado do kitMatchingService)
+ */
+const isSimilarItem = (item1: string, item2: string): boolean => {
+  const norm1 = normalizeName(item1);
+  const norm2 = normalizeName(item2);
+  
+  // 1. Exatamente iguais
+  if (norm1 === norm2) return true;
+  
+  // 2. Um contém o outro
+  if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
+  
+  // 3. Equivalências semânticas
+  const equivalences = [
+    ['RFID', 'LEITOR RFID', 'LEITORA RFID', 'ID CONDUTOR RFID', 'CONDUTOR RFID'],
+    ['BLOQUEIO', 'RELE', 'RELÉ', 'BLOQUEIO MOTOR', 'BLOQUEIO COMBUSTIVEL', 'BLOQUEIO PARTIDA'],
+    ['IBUTTON', 'ID IBUTTON', 'CONDUTOR IBUTTON'],
+    ['SIRENE', 'SIRENE DUPLA', 'SIRENE PADRAO'],
+    ['BLUETOOTH', 'ID BLUETOOTH', 'CONDUTOR BLUETOOTH'],
+    ['SENSOR', 'SENSOR COMBUSTIVEL', 'SENSOR TEMPERATURA'],
+  ];
+  
+  for (const group of equivalences) {
+    const item1Match = group.some(term => norm1.includes(term));
+    const item2Match = group.some(term => norm2.includes(term));
+    
+    if (item1Match && item2Match) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+/**
+ * Calcula compatibilidade de um kit com os acessórios do veículo
+ * Retorna número de itens compatíveis encontrados
+ */
+const calculateKitCompatibility = (vehicleAccessories: string[], kit: HomologationKit): number => {
+  // Filtrar acessórios relevantes do kit (ignorar suprimentos genéricos)
+  const relevantKitItems = kit.accessories
+    .filter(a => {
+      const itemLower = a.item_name.toLowerCase();
+      return !itemLower.includes('fita') &&
+             !itemLower.includes('abraçadeira') &&
+             !itemLower.includes('abracadeira') &&
+             !itemLower.includes('parafuso') &&
+             !itemLower.includes('porca');
+    })
+    .map(a => a.item_name);
+
+  let matchCount = 0;
+  
+  // Para cada acessório do veículo, verificar se existe no kit
+  for (const vehicleAcc of vehicleAccessories) {
+    const vehicleAccNormalized = normalizeName(vehicleAcc);
+    
+    for (const kitItem of relevantKitItems) {
+      if (isSimilarItem(vehicleAccNormalized, kitItem)) {
+        matchCount++;
+        break;
+      }
+    }
+  }
+  
+  return matchCount;
+};
+
+/**
+ * Sugere kits compatíveis para um veículo baseado em seus acessórios
+ * Retorna kits ordenados por compatibilidade (maior primeiro)
+ */
+const matchKitsToAccessories = (vehicleAccessories: string[], allKits: HomologationKit[]): HomologationKit[] => {
+  if (vehicleAccessories.length === 0) return [];
+  
+  // Calcular compatibilidade para cada kit
+  const kitsWithScore = allKits.map(kit => ({
+    kit,
+    matchCount: calculateKitCompatibility(vehicleAccessories, kit)
+  }));
+  
+  // Filtrar apenas kits com pelo menos 1 match e ordenar por número de matches
+  return kitsWithScore
+    .filter(item => item.matchCount > 0)
+    .sort((a, b) => b.matchCount - a.matchCount)
+    .map(item => item.kit);
+};
+
 interface VehicleScheduleData {
   plate: string;
   brand: string;
@@ -87,6 +177,7 @@ interface VehicleScheduleData {
   notes: string;
   accessories: string[];
   modules: string[];
+  selected_kit_ids: string[]; // IDs dos kits selecionados para este veículo
 }
 
 const vehicleScheduleSchema = z.object({
@@ -137,6 +228,7 @@ export const ScheduleModal = ({
   const [scheduleConflicts, setScheduleConflicts] = useState<Map<string, string>>(new Map());
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
   const [vehicleIdMap, setVehicleIdMap] = useState<Map<string, string>>(new Map());
+  const [suggestedKitsByVehicle, setSuggestedKitsByVehicle] = useState<Map<string, HomologationKit[]>>(new Map());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -211,7 +303,8 @@ export const ScheduleModal = ({
       notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
       // Per-placa accessories from customer (módulos não são considerados)
       accessories: [...(selectedCustomer.accessories || [])],
-      modules: [] // Módulos não são mais utilizados
+      modules: [], // Módulos não são mais utilizados
+      selected_kit_ids: [] // Nenhum kit selecionado inicialmente
     }));
 
     console.log('Initial schedules created:', initialSchedules);
@@ -257,7 +350,7 @@ export const ScheduleModal = ({
 
             setAccessoriesByVehicleId(formattedMap);
 
-            // Update vehicle schedules with accessories
+            // Update vehicle schedules with accessories and suggest kits
             setVehicleSchedules(prev => {
               const updated = prev.map(s => {
                 const key = `${s.brand}-${s.model}-${s.plate || 'pending'}`;
@@ -271,6 +364,19 @@ export const ScheduleModal = ({
               form.setValue('vehicles', updated);
               return updated;
             });
+
+            // Calcular kits sugeridos para cada veículo baseado nos acessórios
+            const suggestedKitsMap = new Map<string, HomologationKit[]>();
+            for (const v of unscheduledVehicles) {
+              const key = `${v.brand}-${v.model}-${v.plate || 'pending'}`;
+              const vehicleId = vehicleIdMapping.get(key);
+              if (vehicleId) {
+                const vehicleAccessories = formattedMap.get(vehicleId) || [];
+                const matchedKits = matchKitsToAccessories(vehicleAccessories, kits);
+                suggestedKitsMap.set(v.plate, matchedKits);
+              }
+            }
+            setSuggestedKitsByVehicle(suggestedKitsMap);
           }
         } catch (error) {
           console.error('Error loading accessories by vehicle IDs:', error);
@@ -393,6 +499,26 @@ export const ScheduleModal = ({
         await checkVehicleConflicts(schedule);
       }
     }
+  };
+
+  const toggleKitSelection = (plate: string, kitId: string) => {
+    const updatedSchedules = vehicleSchedules.map(schedule => {
+      if (schedule.plate === plate) {
+        const currentSelection = schedule.selected_kit_ids || [];
+        const isSelected = currentSelection.includes(kitId);
+        
+        return {
+          ...schedule,
+          selected_kit_ids: isSelected
+            ? currentSelection.filter(id => id !== kitId)
+            : [...currentSelection, kitId]
+        };
+      }
+      return schedule;
+    });
+    
+    setVehicleSchedules(updatedSchedules);
+    form.setValue('vehicles', updatedSchedules);
   };
 
   const checkVehicleConflicts = async (schedule: VehicleScheduleData) => {
@@ -843,127 +969,230 @@ export const ScheduleModal = ({
                                  </div>
                                </td>
                                <td className="px-4 py-3">
-                                 {kits.length > 0 ? (
-                                   <Popover>
-                                     <PopoverTrigger asChild>
-                                       <Button
-                                         variant="outline"
-                                         size="sm"
-                                         className="h-auto py-2 px-3 flex items-center gap-2"
-                                       >
-                                         <Package className="h-4 w-4" />
-                                         <div className="flex flex-col items-start">
-                                           <span className="text-xs font-medium">
-                                             {kits.length} kit{kits.length > 1 ? 's' : ''} disponível{kits.length > 1 ? 'eis' : ''}
-                                           </span>
-                                           <span className="text-xs text-muted-foreground">
-                                             Ver detalhes
-                                           </span>
-                                         </div>
-                                       </Button>
-                                     </PopoverTrigger>
-                                     <PopoverContent className="w-[400px]" align="start">
-                                       <div className="space-y-4">
-                                         <div className="space-y-2">
-                                           <h4 className="font-semibold flex items-center gap-2">
-                                             <Package className="h-4 w-4" />
-                                             Kits Disponíveis
-                                           </h4>
-                                           <p className="text-xs text-muted-foreground">
-                                             Status de homologação dos kits
-                                           </p>
-                                         </div>
+                                 {(() => {
+                                   const suggestedKits = suggestedKitsByVehicle.get(vehicleSchedule.plate) || [];
+                                   const selectedKitIds = vehicleSchedule.selected_kit_ids || [];
+                                   
+                                   if (suggestedKits.length === 0) {
+                                     return <span className="text-xs text-muted-foreground">Nenhum kit compatível</span>;
+                                   }
+                                   
+                                   return (
+                                     <Popover>
+                                       <PopoverTrigger asChild>
+                                         <Button
+                                           variant="outline"
+                                           size="sm"
+                                           className="h-auto py-2 px-3 flex items-center gap-2"
+                                         >
+                                           <Package className="h-4 w-4" />
+                                           <div className="flex flex-col items-start">
+                                             <span className="text-xs font-medium">
+                                               {selectedKitIds.length > 0 
+                                                 ? `${selectedKitIds.length} selecionado${selectedKitIds.length > 1 ? 's' : ''}`
+                                                 : `${suggestedKits.length} compatível${suggestedKits.length > 1 ? 'eis' : ''}`
+                                               }
+                                             </span>
+                                             <span className="text-xs text-muted-foreground">
+                                               Ver detalhes
+                                             </span>
+                                           </div>
+                                         </Button>
+                                       </PopoverTrigger>
+                                       <PopoverContent className="w-[450px]" align="start">
+                                         <div className="space-y-4">
+                                           <div className="space-y-2">
+                                             <h4 className="font-semibold flex items-center gap-2">
+                                               <Package className="h-4 w-4" />
+                                               Kits Compatíveis com os Acessórios
+                                             </h4>
+                                             <p className="text-xs text-muted-foreground">
+                                               Kits sugeridos baseados nos acessórios da Segsale para este veículo
+                                             </p>
+                                           </div>
 
-                                         <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                                           {kits.map((kit) => {
-                                             const status = homologationStatuses.get(kit.id!);
-                                             const isHomologated = status?.isHomologated ?? false;
-                                             
-                                             return (
-                                               <div
-                                                 key={kit.id}
-                                                 className={`border rounded-lg p-3 space-y-2 ${
-                                                   isHomologated ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                                                 }`}
-                                               >
-                                                 <div className="flex items-start justify-between gap-2">
-                                                   <div className="flex items-start gap-2 flex-1">
-                                                     {isHomologated ? (
-                                                       <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                                                     ) : (
-                                                       <X className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                                     )}
-                                                     <div className="flex-1">
-                                                       <p className={cn(
-                                                         "font-medium text-sm",
-                                                         isHomologated ? "text-green-900" : "text-red-900"
-                                                       )}>
-                                                         {kit.name}
-                                                       </p>
-                                                       {kit.description && (
-                                                         <p className="text-xs text-muted-foreground mt-1">
-                                                           {kit.description}
+                                           <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                                             {suggestedKits.map((kit) => {
+                                               const status = homologationStatuses.get(kit.id!);
+                                               const isHomologated = status?.isHomologated ?? false;
+                                               const isSelected = selectedKitIds.includes(kit.id!);
+                                               const key = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
+                                               const vehicleId = vehicleIdMap.get(key);
+                                               const vehicleAccessories = vehicleId ? accessoriesByVehicleId.get(vehicleId) || [] : [];
+                                               
+                                               // Calcular itens compatíveis
+                                               const relevantKitItems = kit.accessories
+                                                 .filter(a => {
+                                                   const itemLower = a.item_name.toLowerCase();
+                                                   return !itemLower.includes('fita') &&
+                                                          !itemLower.includes('abraçadeira') &&
+                                                          !itemLower.includes('abracadeira') &&
+                                                          !itemLower.includes('parafuso') &&
+                                                          !itemLower.includes('porca');
+                                                 })
+                                                 .map(a => a.item_name);
+                                               
+                                               const matchedItems: string[] = [];
+                                               const unmatchedItems: string[] = [];
+                                               
+                                               for (const kitItem of relevantKitItems) {
+                                                 let found = false;
+                                                 for (const vehicleAcc of vehicleAccessories) {
+                                                   if (isSimilarItem(kitItem, normalizeName(vehicleAcc))) {
+                                                     matchedItems.push(kitItem);
+                                                     found = true;
+                                                     break;
+                                                   }
+                                                 }
+                                                 if (!found) {
+                                                   unmatchedItems.push(kitItem);
+                                                 }
+                                               }
+                                               
+                                               return (
+                                                 <div
+                                                   key={kit.id}
+                                                   className={cn(
+                                                     "border rounded-lg p-3 space-y-2 cursor-pointer transition-all",
+                                                     isSelected ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-200' : 'bg-background hover:bg-muted/50'
+                                                   )}
+                                                   onClick={() => toggleKitSelection(vehicleSchedule.plate, kit.id!)}
+                                                 >
+                                                   <div className="flex items-start justify-between gap-2">
+                                                     <div className="flex items-start gap-2 flex-1">
+                                                       <input
+                                                         type="checkbox"
+                                                         checked={isSelected}
+                                                         onChange={(e) => {
+                                                           e.stopPropagation();
+                                                           toggleKitSelection(vehicleSchedule.plate, kit.id!);
+                                                         }}
+                                                         className="mt-1 h-4 w-4 rounded border-gray-300"
+                                                       />
+                                                       <div className="flex-1">
+                                                         <p className="font-medium text-sm">
+                                                           {kit.name}
                                                          </p>
-                                                       )}
+                                                         {kit.description && (
+                                                           <p className="text-xs text-muted-foreground mt-1">
+                                                             {kit.description}
+                                                           </p>
+                                                         )}
+                                                       </div>
+                                                     </div>
+                                                     <div className="flex flex-col gap-1 items-end">
+                                                       <Badge 
+                                                         variant={isHomologated ? "default" : "destructive"}
+                                                         className={cn(
+                                                           "shrink-0 text-xs",
+                                                           isHomologated ? "bg-green-600 text-white" : ""
+                                                         )}
+                                                       >
+                                                         {isHomologated ? 'Homologado' : 'Pendente'}
+                                                       </Badge>
+                                                       <Badge 
+                                                         variant="outline"
+                                                         className="shrink-0 text-xs"
+                                                       >
+                                                         {matchedItems.length}/{relevantKitItems.length} itens
+                                                       </Badge>
                                                      </div>
                                                    </div>
-                                                   <Badge 
-                                                     variant={isHomologated ? "default" : "destructive"}
-                                                     className={cn(
-                                                       "shrink-0",
-                                                       isHomologated ? "bg-green-600 text-white" : ""
-                                                     )}
-                                                   >
-                                                     {isHomologated ? 'Homologado' : 'Pendente'}
-                                                   </Badge>
-                                                 </div>
 
-                                                 {status && !isHomologated && (
-                                                   <>
-                                                     {(() => {
-                                                       const allPendingItems = [
-                                                         ...status.pendingItems.equipment.map(i => i.item_name),
-                                                         ...status.pendingItems.accessories.map(i => i.item_name),
-                                                         ...status.pendingItems.supplies.map(i => i.item_name)
-                                                       ];
-                                                       
-                                                       if (allPendingItems.length === 0) return null;
-                                                       
-                                                       return (
-                                                         <div className="ml-6 space-y-1">
-                                                           <div className="flex items-center gap-1 text-xs text-red-600">
-                                                             <Info className="h-3 w-3" />
-                                                             <span className="font-medium">
-                                                               Itens não homologados:
-                                                             </span>
+                                                   {/* Itens compatíveis */}
+                                                   {matchedItems.length > 0 && (
+                                                     <div className="ml-6 space-y-1">
+                                                       <div className="flex items-center gap-1 text-xs text-green-700">
+                                                         <Check className="h-3 w-3" />
+                                                         <span className="font-medium">
+                                                           Itens compatíveis ({matchedItems.length}):
+                                                         </span>
+                                                       </div>
+                                                       <div className="flex gap-1 flex-wrap">
+                                                         {matchedItems.slice(0, 3).map((item, idx) => (
+                                                           <Badge key={idx} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                                                             {item}
+                                                           </Badge>
+                                                         ))}
+                                                         {matchedItems.length > 3 && (
+                                                           <Badge variant="outline" className="text-xs">
+                                                             +{matchedItems.length - 3}
+                                                           </Badge>
+                                                         )}
+                                                       </div>
+                                                     </div>
+                                                   )}
+
+                                                   {/* Itens adicionais do kit */}
+                                                   {unmatchedItems.length > 0 && (
+                                                     <div className="ml-6 space-y-1">
+                                                       <div className="flex items-center gap-1 text-xs text-blue-700">
+                                                         <Info className="h-3 w-3" />
+                                                         <span className="font-medium">
+                                                           Itens adicionais do kit ({unmatchedItems.length}):
+                                                         </span>
+                                                       </div>
+                                                       <div className="flex gap-1 flex-wrap">
+                                                         {unmatchedItems.slice(0, 3).map((item, idx) => (
+                                                           <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                                                             {item}
+                                                           </Badge>
+                                                         ))}
+                                                         {unmatchedItems.length > 3 && (
+                                                           <Badge variant="outline" className="text-xs">
+                                                             +{unmatchedItems.length - 3}
+                                                           </Badge>
+                                                         )}
+                                                       </div>
+                                                     </div>
+                                                   )}
+
+                                                   {/* Itens não homologados */}
+                                                   {status && !isHomologated && (
+                                                     <>
+                                                       {(() => {
+                                                         const allPendingItems = [
+                                                           ...status.pendingItems.equipment.map(i => i.item_name),
+                                                           ...status.pendingItems.accessories.map(i => i.item_name),
+                                                           ...status.pendingItems.supplies.map(i => i.item_name)
+                                                         ];
+                                                         
+                                                         if (allPendingItems.length === 0) return null;
+                                                         
+                                                         return (
+                                                           <div className="ml-6 space-y-1 pt-2 border-t">
+                                                             <div className="flex items-center gap-1 text-xs text-red-600">
+                                                               <X className="h-3 w-3" />
+                                                               <span className="font-medium">
+                                                                 Itens não homologados ({allPendingItems.length}):
+                                                               </span>
+                                                             </div>
+                                                             <div className="flex gap-1 flex-wrap">
+                                                               {allPendingItems.slice(0, 3).map((item, idx) => (
+                                                                 <Badge key={idx} variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300">
+                                                                   {item}
+                                                                 </Badge>
+                                                               ))}
+                                                               {allPendingItems.length > 3 && (
+                                                                 <Badge variant="outline" className="text-xs">
+                                                                   +{allPendingItems.length - 3}
+                                                                 </Badge>
+                                                               )}
+                                                             </div>
                                                            </div>
-                                                           <div className="flex gap-1 flex-wrap">
-                                                             {allPendingItems.slice(0, 3).map((item, idx) => (
-                                                               <Badge key={idx} variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300">
-                                                                 {item}
-                                                               </Badge>
-                                                             ))}
-                                                             {allPendingItems.length > 3 && (
-                                                               <Badge variant="outline" className="text-xs">
-                                                                 +{allPendingItems.length - 3}
-                                                               </Badge>
-                                                             )}
-                                                           </div>
-                                                         </div>
-                                                       );
-                                                     })()}
-                                                   </>
-                                                 )}
-                                               </div>
-                                             );
-                                           })}
+                                                         );
+                                                       })()}
+                                                     </>
+                                                   )}
+                                                 </div>
+                                               );
+                                             })}
+                                           </div>
                                          </div>
-                                       </div>
-                                     </PopoverContent>
-                                   </Popover>
-                                 ) : (
-                                   <span className="text-xs text-muted-foreground">Nenhum kit</span>
-                                 )}
+                                       </PopoverContent>
+                                     </Popover>
+                                   );
+                                 })()}
                                </td>
                                <td className="px-4 py-3">
                                  <div className="space-y-1">
