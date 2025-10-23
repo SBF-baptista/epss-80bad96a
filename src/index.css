@@ -8,36 +8,46 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
+    /* Modo Claro - Fundo principal: #F8FAFC */
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
 
+    /* Cards e blocos: #FFFFFF */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 222 47% 11%;
 
+    /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 222 47% 11%;
 
+    /* Primary - Azul do sistema */
     --primary: 214 90% 29%;
     --primary-foreground: 0 0% 100%;
 
+    /* Secondary */
     --secondary: 214 32% 91%;
     --secondary-foreground: 214 90% 29%;
 
+    /* Muted - Texto secundário: #475569 */
     --muted: 214 32% 91%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 20% 35%;
 
+    /* Accent */
     --accent: 214 32% 91%;
     --accent-foreground: 214 90% 29%;
 
+    /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 85%;
-    --input: 214 32% 91%;
+    /* Borders - Cinza #CBD5E1 */
+    --border: 214 18% 85%;
+    --input: 0 0% 100%;
     --ring: 214 90% 29%;
 
     --radius: 0.5rem;
 
+    /* Sidebar - Azul escuro #044395 mantido */
     --sidebar-background: 214 90% 29%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 214 90% 29%;
@@ -65,34 +75,44 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 20% 10%;
-    --foreground: 210 40% 98%;
+    /* Modo Escuro - Fundo principal: #0F172A (azul marinho quase preto) */
+    --background: 222 47% 11%;
+    --foreground: 0 0% 100%;
 
-    --card: 220 20% 12%;
-    --card-foreground: 210 40% 98%;
+    /* Cards e tabelas: #1E293B */
+    --card: 217 33% 17%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 220 20% 12%;
-    --popover-foreground: 210 40% 98%;
+    /* Popover e modal: fundo escuro #1E293B */
+    --popover: 217 33% 17%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 210 100% 45%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Azul padrão #2563EB */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary */
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 20% 18%;
-    --muted-foreground: 215 20% 70%;
+    /* Muted - Texto secundário: #CBD5E1 */
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 85%;
 
-    --accent: 220 20% 20%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent */
+    --accent: 217 33% 20%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 210 100% 60%;
+    /* Borders: #334155 */
+    --border: 217 19% 27%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
     
+    /* Sidebar - Azul escuro #044395 mantido */
     --sidebar-background: 214 90% 29%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 214 90% 29%;
@@ -100,21 +120,21 @@ All colors MUST be HSL.
     --sidebar-accent: 213 84% 44%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 214 90% 29%;
-    --sidebar-ring: 210 100% 60%;
+    --sidebar-ring: 217 91% 60%;
     
     /* Status colors - Dark mode */
     --success: 142 71% 55%;
-    --success-foreground: 220 20% 10%;
+    --success-foreground: 222 47% 11%;
     --success-light: 142 50% 20%;
     --success-border: 142 50% 35%;
     
     --warning: 38 92% 60%;
-    --warning-foreground: 220 20% 10%;
+    --warning-foreground: 222 47% 11%;
     --warning-light: 38 80% 20%;
     --warning-border: 38 80% 35%;
     
-    --error: 0 84.2% 70.2%;
-    --error-foreground: 220 20% 10%;
+    --error: 0 84% 60%;
+    --error-foreground: 222 47% 11%;
     --error-light: 0 70% 20%;
     --error-border: 0 70% 35%;
   }
