@@ -41,25 +41,13 @@ export const KitSuggestionCell = ({
   const loadKitSuggestions = async () => {
     setLoading(true);
     try {
-      const suggestions = await suggestKitsForVehicle(vehicleModules, 30); // Score mínimo de 30%
+      const suggestions = await suggestKitsForVehicle(vehicleModules);
       setSuggestedKits(suggestions);
     } catch (error) {
       console.error('Error loading kit suggestions:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getScoreVariant = (score: number): "default" | "secondary" | "outline" => {
-    if (score >= 90) return "default"; // Verde
-    if (score >= 70) return "secondary"; // Amarelo
-    return "outline"; // Cinza
-  };
-
-  const getScoreColor = (score: number): string => {
-    if (score >= 90) return "text-success";
-    if (score >= 70) return "text-warning";
-    return "text-muted-foreground";
   };
 
   if (loading) {
@@ -148,61 +136,54 @@ export const KitSuggestionCell = ({
                         )}
                       </div>
                     </div>
-                    <Badge
-                      variant={getScoreVariant(match.matchScore)}
-                      className="shrink-0"
-                    >
-                      <span className={getScoreColor(match.matchScore)}>
-                        {match.matchScore}%
-                      </span>
+                    <Badge variant="default" className="shrink-0 bg-green-600 text-white">
+                      {match.matchedItems.length} {match.matchedItems.length === 1 ? 'item' : 'itens'}
                     </Badge>
                   </div>
 
-                  {match.matchedItems.length > 0 && (
-                    <div className="ml-6 space-y-1">
-                      <div className="flex items-center gap-1 text-xs text-success">
-                        <CheckCircle className="h-3 w-3" />
-                        <span className="font-medium">
-                          {match.matchedItems.length} item(ns) compatível(is):
-                        </span>
-                      </div>
-                      <div className="flex gap-1 flex-wrap">
-                        {match.matchedItems.slice(0, 3).map((item, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs bg-success-light text-success border-success-border">
-                            {item}
-                          </Badge>
-                        ))}
-                        {match.matchedItems.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{match.matchedItems.length - 3}
-                          </Badge>
-                        )}
-                      </div>
+                  <div className="ml-6 space-y-1">
+                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                      <CheckCircle className="h-3 w-3" />
+                      <span className="font-medium">
+                        Itens compatíveis:
+                      </span>
                     </div>
-                  )}
+                    <div className="flex gap-1 flex-wrap">
+                      {match.matchedItems.slice(0, 3).map((item, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                          {item}
+                        </Badge>
+                      ))}
+                      {match.matchedItems.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{match.matchedItems.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
 
-                  {match.missingItems.length > 0 && (
+                  {match.unmatchedItems.length > 0 && (
                     <div className="ml-6 space-y-1">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Info className="h-3 w-3" />
                         <span className="font-medium">
-                          {match.missingItems.length} item(ns) complementar(es):
+                          Itens adicionais do kit:
                         </span>
                       </div>
                       <div className="flex gap-1 flex-wrap">
-                        {match.missingItems.slice(0, 2).map((item, idx) => (
+                        {match.unmatchedItems.slice(0, 2).map((item, idx) => (
                           <Badge key={idx} variant="outline" className="text-xs bg-muted">
                             {item}
                           </Badge>
                         ))}
-                        {match.missingItems.length > 2 && (
+                        {match.unmatchedItems.length > 2 && (
                           <Badge variant="outline" className="text-xs">
-                            +{match.missingItems.length - 2}
+                            +{match.unmatchedItems.length - 2}
                           </Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground italic">
-                        Itens complementares não encontrados no veículo
+                        Itens do kit não encontrados no veículo
                       </p>
                     </div>
                   )}

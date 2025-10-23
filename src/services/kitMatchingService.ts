@@ -4,9 +4,8 @@ import type { KickoffModule } from "./kickoffService";
 
 export interface KitMatch {
   kit: HomologationKit;
-  matchScore: number;
   matchedItems: string[];
-  missingItems: string[];
+  unmatchedItems: string[];
 }
 
 /**
@@ -143,30 +142,37 @@ export const fetchAllKits = async (): Promise<HomologationKit[]> => {
 
 /**
  * Compara os módulos/acessórios de um veículo com os itens de um kit
+ * Considera apenas accessories relevantes (ignora equipamentos e suprimentos genéricos)
  */
 export const matchKitToVehicle = (
   vehicleModules: KickoffModule[],
   kit: HomologationKit
 ): KitMatch => {
-  // Combinar todos os itens do kit (equipment, accessories, supplies)
-  const allKitItems = [
-    ...kit.equipment.map(e => e.item_name),
-    ...kit.accessories.map(a => a.item_name),
-    ...kit.supplies.map(s => s.item_name),
-  ];
+  // Filtrar apenas accessories relevantes do kit (ignorar suprimentos genéricos)
+  const relevantKitItems = kit.accessories
+    .filter(a => {
+      const itemLower = a.item_name.toLowerCase();
+      // Ignorar suprimentos genéricos
+      return !itemLower.includes('fita') &&
+             !itemLower.includes('abraçadeira') &&
+             !itemLower.includes('abracadeira') &&
+             !itemLower.includes('parafuso') &&
+             !itemLower.includes('porca');
+    })
+    .map(a => a.item_name);
 
   // Normalizar nomes dos módulos do veículo
   const vehicleItemsNames = vehicleModules.map(m => m.name);
 
   console.log('🔍 Matching Kit:', kit.name);
-  console.log('📦 Kit Items:', allKitItems);
+  console.log('📦 Relevant Kit Items:', relevantKitItems);
   console.log('🚗 Vehicle Modules:', vehicleItemsNames);
 
   const matchedItems: string[] = [];
-  const missingItems: string[] = [];
+  const unmatchedItems: string[] = [];
 
-  // Para cada item do kit, verificar se existe um item similar no veículo
-  for (const kitItem of allKitItems) {
+  // Para cada item relevante do kit, verificar se existe um item similar no veículo
+  for (const kitItem of relevantKitItems) {
     let found = false;
     for (const vehicleItem of vehicleItemsNames) {
       if (isSimilarItem(kitItem, vehicleItem)) {
@@ -177,34 +183,26 @@ export const matchKitToVehicle = (
       }
     }
     if (!found) {
-      missingItems.push(kitItem);
-      console.log(`❌ Missing: "${kitItem}"`);
+      unmatchedItems.push(kitItem);
+      console.log(`ℹ️ Additional: "${kitItem}"`);
     }
   }
 
-  // Calcular score de match (0 a 100)
-  // Score = (itens encontrados / total de itens do kit) * 100
-  const matchScore = allKitItems.length > 0 
-    ? Math.round((matchedItems.length / allKitItems.length) * 100)
-    : 0;
-
-  console.log(`📊 Match Score: ${matchScore}%`);
+  console.log(`📊 Matches: ${matchedItems.length}/${relevantKitItems.length}`);
 
   return {
     kit,
-    matchScore,
     matchedItems,
-    missingItems,
+    unmatchedItems,
   };
 };
 
 /**
  * Sugere kits compatíveis para um veículo baseado em seus módulos/acessórios
- * Retorna apenas kits com score >= minScore (padrão: 70%)
+ * Retorna kits que tenham pelo menos 1 item compatível
  */
 export const suggestKitsForVehicle = async (
-  vehicleModules: KickoffModule[],
-  minScore: number = 70
+  vehicleModules: KickoffModule[]
 ): Promise<KitMatch[]> => {
   const allKits = await fetchAllKits();
   
@@ -213,8 +211,8 @@ export const suggestKitsForVehicle = async (
   // Calcular match para cada kit
   const matches = allKits.map(kit => matchKitToVehicle(vehicleModules, kit));
 
-  // Filtrar apenas kits com score >= minScore e ordenar por score (maior primeiro)
+  // Filtrar apenas kits com pelo menos 1 match e ordenar por número de matches (maior primeiro)
   return matches
-    .filter(match => match.matchScore >= minScore)
-    .sort((a, b) => b.matchScore - a.matchScore);
+    .filter(match => match.matchedItems.length > 0)
+    .sort((a, b) => b.matchedItems.length - a.matchedItems.length);
 };
