@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, TrendingUp } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface StatusHistoryEntry {
@@ -153,7 +153,7 @@ export const StatusHistory = ({ kitScheduleId }: StatusHistoryProps) => {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(entry.changed_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { 
+                  {format(parseISO(entry.changed_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { 
                     locale: ptBR 
                   })}
                 </p>

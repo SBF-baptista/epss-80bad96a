@@ -58,6 +58,7 @@ export const KickoffHistoryDetailsModal = ({
                     <TableHead>Placa</TableHead>
                     <TableHead>Módulos Selecionados</TableHead>
                     <TableHead>Bloqueio</TableHead>
+                    <TableHead>Sirene</TableHead>
                     <TableHead>Acessórios</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -99,6 +100,13 @@ export const KickoffHistoryDetailsModal = ({
                               <Badge variant="outline" className="text-xs ml-1">Combustível</Badge>
                             )}
                           </div>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Não</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {vehicle.has_siren ? (
+                          <Badge variant="secondary" className="text-xs">Sim</Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">Não</Badge>
                         )}
