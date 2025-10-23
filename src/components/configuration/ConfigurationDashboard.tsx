@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, Users, Package, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw } from 'lucide-react';
 import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
 import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitScheduleService';
-import { generateMockScheduleData, type ExtendedScheduleData } from '@/services/mockScheduleDataService';
 import { ConfigurationStats } from './ConfigurationStats';
-import { KitManagementPanel } from './KitManagementPanel';
-import { ScheduleCalendar } from './ScheduleCalendar';
 import { SchedulingSection } from './SchedulingSection';
 import { supabase } from '@/integrations/supabase/client';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
@@ -24,13 +18,11 @@ interface ConfigurationDashboardProps {
 export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDashboardProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'scheduling' | 'schedule'>('scheduling');
   
   // Data states
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [kits, setKits] = useState<HomologationKit[]>([]);
   const [schedules, setSchedules] = useState<KitScheduleWithDetails[]>([]);
-  const [mockSchedules, setMockSchedules] = useState<ExtendedScheduleData[]>([]);
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   
   // Loading states
@@ -66,10 +58,6 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
       setTechnicians(techniciansData);
       setKits(kitsData);
       setSchedules(schedulesData);
-      
-      // Generate mock data for demonstration
-      const mockData = generateMockScheduleData(techniciansData, kitsData, 15);
-      setMockSchedules(mockData);
       
       // Load homologation statuses after kits are loaded
       await loadHomologationStatuses(kitsData);
@@ -185,50 +173,17 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
           schedules={schedules}
           kitsWithoutHomologation={kitsWithoutHomologation}
         />
-
-        {/* Tab Navigation */}
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={activeTab === 'scheduling' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveTab('scheduling')}
-            className="flex items-center gap-2"
-          >
-            <Users className="w-4 h-4" />
-            Agendamento
-          </Button>
-          <Button
-            variant={activeTab === 'schedule' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveTab('schedule')}
-            className="flex items-center gap-2"
-          >
-            <Calendar className="w-4 h-4" />
-            Cronograma
-          </Button>
-        </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden">
-        {activeTab === 'scheduling' && (
-          <SchedulingSection
-            kits={kits}
-            technicians={technicians}
-            schedules={schedules}
-            homologationStatuses={homologationStatuses}
-            onRefresh={loadData}
-          />
-        )}
-
-        {activeTab === 'schedule' && (
-          <ScheduleCalendar
-            schedules={[...schedules, ...mockSchedules]}
-            technicians={technicians}
-            kits={kits}
-            onRefresh={loadData}
-          />
-        )}
+        <SchedulingSection
+          kits={kits}
+          technicians={technicians}
+          schedules={schedules}
+          homologationStatuses={homologationStatuses}
+          onRefresh={loadData}
+        />
       </div>
     </div>
   );
