@@ -146,20 +146,20 @@ export const KickoffVehiclesTable = ({
       )}
     
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Placa</TableHead>
-            <TableHead>Marca</TableHead>
-            <TableHead>Modelo</TableHead>
-            <TableHead>Ano</TableHead>
-            <TableHead>Módulos</TableHead>
-            <TableHead>Acessórios</TableHead>
-            <TableHead>Bloqueio</TableHead>
-            <TableHead className="w-[80px]">Ações</TableHead>
-            <TableHead className="w-[100px]">Padrão</TableHead>
-            <TableHead className="w-[100px]">Validação</TableHead>
+            <TableHead className="min-w-[120px]">Placa</TableHead>
+            <TableHead className="min-w-[120px]">Marca</TableHead>
+            <TableHead className="min-w-[150px]">Modelo</TableHead>
+            <TableHead className="min-w-[80px]">Ano</TableHead>
+            <TableHead className="min-w-[200px]">Módulos</TableHead>
+            <TableHead className="min-w-[180px]">Acessórios</TableHead>
+            <TableHead className="min-w-[220px]">Bloqueio</TableHead>
+            <TableHead className="min-w-[80px]">Ações</TableHead>
+            <TableHead className="min-w-[180px]">Padrão FIPE</TableHead>
+            <TableHead className="min-w-[120px]">Validação</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -287,12 +287,17 @@ export const KickoffVehiclesTable = ({
                   </Button>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center justify-center">
+                  <div className="flex items-center justify-center gap-2">
                     {isVehicleInvalid(vehicle) ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center cursor-help">
+                          <div className="flex items-center gap-2 cursor-help">
                             <AlertTriangle className="h-5 w-5 text-error" />
+                            <div className="flex flex-col items-start">
+                              <Badge variant="outline" className="bg-error-light text-error border-error-border">
+                                Fora do padrão
+                              </Badge>
+                            </div>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -301,7 +306,12 @@ export const KickoffVehiclesTable = ({
                         </TooltipContent>
                       </Tooltip>
                     ) : (
-                      <CheckCircle className="h-5 w-5 text-success" />
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-success" />
+                        <Badge variant="outline" className="bg-success-light text-success border-success-border">
+                          Dentro do padrão
+                        </Badge>
+                      </div>
                     )}
                   </div>
                 </TableCell>

@@ -231,8 +231,21 @@ export const EditVehicleModal = ({
             </Select>
           </div>
 
-          <div className="rounded-lg bg-muted p-3 space-y-1">
-            <p className="text-sm font-medium">Resumo da alteração:</p>
+          <div className="rounded-lg bg-muted/50 p-3 space-y-1 border">
+            <p className="text-sm font-medium">Situação Atual:</p>
+            <p className="text-sm text-muted-foreground">
+              Marca: <span className="font-medium text-foreground">{currentBrand}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Modelo: <span className="font-medium text-foreground">{currentModel}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Ano: <span className="font-medium text-foreground">{currentYear || "-"}</span>
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-primary/10 p-3 space-y-1 border border-primary/20">
+            <p className="text-sm font-medium">Resumo da Alteração:</p>
             <p className="text-sm text-muted-foreground">
               Marca: <span className="font-medium text-foreground">{selectedBrand || "-"}</span>
             </p>
