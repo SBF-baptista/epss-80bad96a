@@ -145,6 +145,13 @@ export const ScheduleModal = ({
     }
   });
 
+  // Sync selectedCustomer when initialCustomer prop changes
+  useEffect(() => {
+    if (initialCustomer) {
+      setSelectedCustomer(initialCustomer);
+    }
+  }, [initialCustomer]);
+
   // Initialize vehicle schedules when customer is selected
   useEffect(() => {
     console.log('Customer selected:', selectedCustomer);
