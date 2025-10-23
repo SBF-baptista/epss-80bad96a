@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package } from "lucide-react";
@@ -438,15 +439,16 @@ export const KickoffDetailsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-6 md:p-8" aria-describedby="kickoff-details-desc">
-        <DialogHeader>
+      <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0" aria-describedby="kickoff-details-desc">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
         </DialogHeader>
         <p id="kickoff-details-desc" className="sr-only">Preencha os detalhes do kickoff do cliente {companyName}.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <ScrollArea className="flex-1 px-6">
+          <form id="kickoff-form" onSubmit={handleSubmit} className="space-y-6 py-4">
           {/* Vehicles Section */}
-          <div className="space-y-4 border rounded-lg p-6 shadow-sm bg-card">
+          <div className="space-y-4 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Truck className="h-5 w-5 text-primary" />
@@ -461,8 +463,8 @@ export const KickoffDetailsModal = ({
 
             {/* Customer Info Card */}
             {customerInfo && (
-              <div className="bg-muted/50 border rounded-lg p-4 mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-muted/50 border rounded-lg p-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
                     <p className="font-semibold mt-1">{customerInfo.name}</p>
@@ -495,7 +497,7 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Contatos */}
-          <div className="space-y-3 border rounded-lg p-6 shadow-sm bg-card">
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
@@ -531,7 +533,7 @@ export const KickoffDetailsModal = ({
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <Label>Nome</Label>
                     <Input
@@ -567,7 +569,7 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Locais de Instalação */}
-          <div className="space-y-3 border rounded-lg p-6 shadow-sm bg-card">
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
@@ -593,7 +595,7 @@ export const KickoffDetailsModal = ({
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <Label>Cidade</Label>
                     <Input
@@ -616,7 +618,7 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Particularidade de Instalação */}
-          <div className="space-y-3 border rounded-lg p-6 shadow-sm bg-card">
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center gap-2 mb-3">
               <Settings className="h-5 w-5 text-primary" />
               <h3 className="font-bold text-lg">Particularidades da Instalação</h3>
@@ -642,7 +644,7 @@ export const KickoffDetailsModal = ({
           </div>
 
           {/* Observações */}
-          <div className="space-y-3 border rounded-lg p-6 shadow-sm bg-card">
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="h-5 w-5 text-primary" />
               <h3 className="font-bold text-lg">Observações</h3>
@@ -656,17 +658,19 @@ export const KickoffDetailsModal = ({
             />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Package className="h-4 w-4 mr-2" />
-              Realizar Kickoff
-            </Button>
-          </div>
-        </form>
+          </form>
+        </ScrollArea>
+
+        <div className="flex justify-end gap-2 px-6 py-4 border-t bg-background">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="kickoff-form" disabled={loading}>
+            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Package className="h-4 w-4 mr-2" />
+            Realizar Kickoff
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
