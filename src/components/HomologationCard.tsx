@@ -68,21 +68,21 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
   const getStatusColor = (status: string) => {
     switch (status) {
       case "homologar":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-error-light text-error border-error-border";
       case "em_homologacao":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-warning-light text-warning border-warning-border";
       case "agendamento_teste":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-warning-light text-warning border-warning-border";
       case "execucao_teste":
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "em_testes_finais":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-primary/10 text-primary border-primary/20";
       case "armazenamento_plataforma":
         return "bg-teal-100 text-teal-800 border-teal-200";
       case "homologado":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success-light text-success border-success-border";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -123,10 +123,10 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
       <CardContent className="p-3 md:p-4">
         <div className="space-y-2 md:space-y-3">
           <div className="flex justify-between items-start gap-2">
-            <h4 className="font-semibold text-gray-900 text-sm md:text-base leading-tight flex-1 min-w-0">
+            <h4 className="font-semibold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0">
               <span className="block truncate">{card.brand} {card.model}</span>
               {card.year && (
-                <span className="text-xs md:text-sm text-gray-600">({card.year})</span>
+                <span className="text-xs md:text-sm text-muted-foreground">({card.year})</span>
               )}
             </h4>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -139,7 +139,7 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="h-7 w-7 p-0 text-error hover:text-error hover:bg-error-light"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Trash2 className="h-3 w-3" />
@@ -156,7 +156,7 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction 
                         onClick={handleDelete}
-                        className="bg-red-600 hover:bg-red-700"
+                        className="bg-destructive hover:bg-destructive/90"
                       >
                         Deletar
                       </AlertDialogAction>
@@ -169,25 +169,25 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           
           <div className="space-y-1 text-xs">
             <div className="flex justify-between gap-1 items-center">
-              <span className="text-gray-600 flex-shrink-0 text-xs">Marca:</span>
-              <span className="font-medium text-gray-900 truncate text-xs">{card.brand}</span>
+              <span className="text-muted-foreground flex-shrink-0 text-xs">Marca:</span>
+              <span className="font-medium text-foreground truncate text-xs">{card.brand}</span>
             </div>
             
             <div className="flex justify-between gap-1 items-center">
-              <span className="text-gray-600 flex-shrink-0 text-xs">Modelo:</span>
-              <span className="font-medium text-gray-900 truncate text-xs">{card.model}</span>
+              <span className="text-muted-foreground flex-shrink-0 text-xs">Modelo:</span>
+              <span className="font-medium text-foreground truncate text-xs">{card.model}</span>
             </div>
 
             {card.year && (
               <div className="flex justify-between gap-1 items-center">
-                <span className="text-gray-600 flex-shrink-0 text-xs">Ano:</span>
-                <span className="font-medium text-gray-900 text-xs">{card.year}</span>
+                <span className="text-muted-foreground flex-shrink-0 text-xs">Ano:</span>
+                <span className="font-medium text-foreground text-xs">{card.year}</span>
               </div>
             )}
             
             <div className="flex justify-between gap-2">
-              <span className="text-gray-600 flex-shrink-0">Criado:</span>
-              <span className="font-medium text-gray-900 text-right">{formatDate(card.created_at)}</span>
+              <span className="text-muted-foreground flex-shrink-0">Criado:</span>
+              <span className="font-medium text-foreground text-right">{formatDate(card.created_at)}</span>
             </div>
           </div>
 
@@ -206,15 +206,15 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           </div>
 
           {/* Workflow status indicators */}
-          <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-2 pt-2 border-t border-border">
             {card.incoming_vehicle_id && (
-              <div className="flex items-center gap-1 text-xs text-blue-600">
+              <div className="flex items-center gap-1 text-xs text-primary">
                 <Link className="h-3 w-3" />
                 <span>Vinculado</span>
               </div>
             )}
             {card.created_order_id && (
-              <div className="flex items-center gap-1 text-xs text-green-600">
+              <div className="flex items-center gap-1 text-xs text-success">
                 <Package className="h-3 w-3" />
                 <span>Pedido criado</span>
               </div>
@@ -223,13 +223,13 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
 
 
           {card.notes && (
-            <div className="mt-2 md:mt-3 p-2 bg-gray-50 border border-gray-200 rounded-md">
-              <p className="text-xs text-gray-700 line-clamp-2">{card.notes}</p>
+            <div className="mt-2 md:mt-3 p-2 bg-muted border border-border rounded-md">
+              <p className="text-xs text-muted-foreground line-clamp-2">{card.notes}</p>
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            <div className="flex items-center gap-1 text-xs text-gray-500">
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Image className="h-3 w-3 flex-shrink-0" />
               <span className="hidden md:inline">Clique para ver fotos</span>
               <span className="md:hidden">Toque para detalhes</span>

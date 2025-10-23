@@ -30,21 +30,21 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
   const getStatusColor = (status: string) => {
     switch (status) {
       case "homologar":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-error-light text-error border-error-border";
       case "em_homologacao":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-warning-light text-warning border-warning-border";
       case "agendamento_teste":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-warning-light text-warning border-warning-border";
       case "execucao_teste":
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "em_testes_finais":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-primary/10 text-primary border-primary/20";
       case "armazenamento_plataforma":
         return "bg-teal-100 text-teal-800 border-teal-200";
       case "homologado":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success-light text-success border-success-border";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -115,19 +115,19 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
         <div className="space-y-4 md:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Informações do Veículo</h3>
+              <h3 className="font-semibold text-foreground mb-3 md:mb-4 text-sm md:text-base">Informações do Veículo</h3>
               <div className="space-y-2 md:space-y-3 text-sm">
                 <div className="flex justify-between gap-2">
-                  <span className="text-gray-600">Marca:</span>
+                  <span className="text-muted-foreground">Marca:</span>
                   <span className="font-medium text-right">{card.brand}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-gray-600">Modelo:</span>
+                  <span className="text-muted-foreground">Modelo:</span>
                   <span className="font-medium text-right">{card.model}</span>
                 </div>
                 {card.year && (
                   <div className="flex justify-between gap-2">
-                    <span className="text-gray-600">Ano:</span>
+                    <span className="text-muted-foreground">Ano:</span>
                     <span className="font-medium text-right">{card.year}</span>
                   </div>
                 )}
@@ -135,14 +135,14 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
             </div>
 
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Datas</h3>
+              <h3 className="font-semibold text-foreground mb-3 md:mb-4 text-sm md:text-base">Datas</h3>
               <div className="space-y-2 md:space-y-3 text-sm">
                 <div className="flex justify-between gap-2">
-                  <span className="text-gray-600">Criado em:</span>
+                  <span className="text-muted-foreground">Criado em:</span>
                   <span className="font-medium text-right">{formatDate(card.created_at)}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-gray-600">Atualizado:</span>
+                  <span className="text-muted-foreground">Atualizado:</span>
                   <span className="font-medium text-right">{formatDate(card.updated_at)}</span>
                 </div>
               </div>
@@ -152,7 +152,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           <Separator />
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Notas</h3>
+            <h3 className="font-semibold text-foreground mb-4">Notas</h3>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -166,7 +166,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
 
           {/* Workflow Action Buttons */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Ações do Fluxo de Trabalho</h3>
+            <h3 className="font-semibold text-foreground mb-3 md:mb-4 text-sm md:text-base">Ações do Fluxo de Trabalho</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
               {(card.status === 'em_homologacao' || card.status === 'agendamento_teste') && (
                 <Button
@@ -211,7 +211,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           {card.test_checklist && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Resultados do Teste</h3>
+                <h3 className="font-semibold text-foreground">Resultados do Teste</h3>
                 <Button
                   variant="outline"
                   size="sm"
@@ -223,27 +223,27 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                 </Button>
               </div>
               <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-medium text-green-800 mb-3">Teste Executado com Sucesso</h4>
+                <div className="bg-success-light border border-success-border rounded-lg p-4">
+                  <h4 className="font-medium text-success mb-3">Teste Executado com Sucesso</h4>
                   
                   {/* Configuration Used */}
                   {card.configuration && (
                     <div className="mb-3">
-                      <span className="text-sm font-medium text-gray-700">Configuração Testada: </span>
-                      <span className="text-sm text-gray-900">{card.configuration}</span>
+                      <span className="text-sm font-medium text-muted-foreground">Configuração Testada: </span>
+                      <span className="text-sm text-foreground">{card.configuration}</span>
                     </div>
                   )}
                   
                   {/* Checklist Results */}
                   <div className="mb-3">
-                    <span className="text-sm font-medium text-gray-700 block mb-2">Itens Testados:</span>
+                    <span className="text-sm font-medium text-muted-foreground block mb-2">Itens Testados:</span>
                     <div className="space-y-1">
                       {Array.isArray(card.test_checklist) && card.test_checklist.map((item: any, index: number) => (
                         <div key={index} className="flex items-center text-sm">
-                          <span className={`mr-2 ${item.completed ? 'text-green-600' : 'text-gray-400'}`}>
+                          <span className={`mr-2 ${item.completed ? 'text-success' : 'text-muted-foreground/50'}`}>
                             {item.completed ? '✓' : '○'}
                           </span>
-                          <span className="text-gray-700">{item.label}</span>
+                          <span className="text-foreground">{item.label}</span>
                         </div>
                       ))}
                     </div>
@@ -253,20 +253,20 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     {card.chassis_info && (
                       <div>
-                        <span className="font-medium text-gray-700">Chassi: </span>
-                        <span className="text-gray-900">{card.chassis_info}</span>
+                        <span className="font-medium text-muted-foreground">Chassi: </span>
+                        <span className="text-foreground">{card.chassis_info}</span>
                       </div>
                     )}
                     {card.manufacture_year && (
                       <div>
-                        <span className="font-medium text-gray-700">Ano de Fabricação: </span>
-                        <span className="text-gray-900">{card.manufacture_year}</span>
+                        <span className="font-medium text-muted-foreground">Ano de Fabricação: </span>
+                        <span className="text-foreground">{card.manufacture_year}</span>
                       </div>
                     )}
                     {card.electrical_connection_type && (
                       <div className="md:col-span-2">
-                        <span className="font-medium text-gray-700">Tipo de Conexão: </span>
-                        <span className="text-gray-900">{card.electrical_connection_type}</span>
+                        <span className="font-medium text-muted-foreground">Tipo de Conexão: </span>
+                        <span className="text-foreground">{card.electrical_connection_type}</span>
                       </div>
                     )}
                   </div>
@@ -274,8 +274,8 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                   {/* Technical Observations */}
                   {card.technical_observations && (
                     <div className="mt-3">
-                      <span className="text-sm font-medium text-gray-700 block mb-1">Observações Técnicas:</span>
-                      <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      <span className="text-sm font-medium text-muted-foreground block mb-1">Observações Técnicas:</span>
+                      <p className="text-sm text-foreground bg-background p-2 rounded border">
                         {card.technical_observations}
                       </p>
                     </div>

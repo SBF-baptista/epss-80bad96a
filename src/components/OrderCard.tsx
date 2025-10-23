@@ -16,13 +16,13 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case "high":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-error-light text-error border-error-border";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-warning-light text-warning border-warning-border";
       case "low":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success-light text-success border-success-border";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -60,7 +60,7 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
   return (
     <Card
       className={`cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] ${
-        isStandby ? "border-red-300 bg-red-50" : ""
+        isStandby ? "border-error bg-error-light" : ""
       }`}
       draggable
       onDragStart={onDragStart}
@@ -70,11 +70,11 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
         <div className="space-y-3">
           <div className="flex justify-between items-start">
             <div>
-              <h4 className="font-semibold text-gray-900">
+              <h4 className="font-semibold text-foreground">
                 {order.company_name || 'Cliente'}
               </h4>
               {order.technicianName && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Técnico: {order.technicianName}
                 </p>
               )}
@@ -88,7 +88,7 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               {isInProduction && onScanClick && (
                 <button
                   onClick={handleScanClick}
-                  className="p-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                  className="p-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                   title="Abrir Scanner de Produção"
                 >
                   <Scan className="h-4 w-4" />
@@ -97,7 +97,7 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               {(isAwaitingShipment || isShipped) && onShipmentClick && (
                 <button
                   onClick={handleShipmentClick}
-                  className="p-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-sm"
+                  className="p-2 rounded-md bg-warning text-warning-foreground hover:bg-warning/90 transition-colors shadow-sm"
                   title={isShipped ? "Ver Informações de Envio" : "Preparar Envio"}
                 >
                   <Truck className="h-4 w-4" />
@@ -108,11 +108,11 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
           
           <div className="space-y-2 text-sm">
             <div>
-              <span className="text-gray-600 font-medium">Veículos ({totalVehicles}):</span>
+              <span className="text-muted-foreground font-medium">Veículos ({totalVehicles}):</span>
               <div className="mt-1 space-y-1">
                 {order.vehicles.map((vehicle, index) => (
                   <div key={index} className="flex justify-between text-xs">
-                    <span className="text-gray-700">{vehicle.brand} {vehicle.model}</span>
+                    <span className="text-foreground">{vehicle.brand} {vehicle.model}</span>
                     <span className="font-medium">{vehicle.quantity}x</span>
                   </div>
                 ))}
@@ -120,11 +120,11 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
             </div>
             
             <div>
-              <span className="text-gray-600 font-medium">Rastreadores ({totalTrackers}):</span>
+              <span className="text-muted-foreground font-medium">Rastreadores ({totalTrackers}):</span>
               <div className="mt-1 space-y-1">
                 {order.trackers.map((tracker, index) => (
                   <div key={index} className="flex justify-between text-xs">
-                    <span className="text-gray-700">{tracker.model}</span>
+                    <span className="text-foreground">{tracker.model}</span>
                     <span className="font-medium">{tracker.quantity}x</span>
                   </div>
                 ))}
@@ -132,38 +132,38 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
             </div>
 
             <div>
-              <span className="text-gray-600 font-medium">Acessórios:</span>
+              <span className="text-muted-foreground font-medium">Acessórios:</span>
               {order.accessories && order.accessories.length > 0 ? (
                 <div className="mt-1 space-y-1">
                   {order.accessories.map((accessory, index) => (
                     <div key={index} className="flex justify-between text-xs">
-                      <span className="text-gray-700">{accessory.name}</span>
+                      <span className="text-foreground">{accessory.name}</span>
                       <span className="font-medium">x{accessory.quantity}</span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="mt-1">
-                  <span className="text-xs text-gray-500 italic">Sem acessórios</span>
+                  <span className="text-xs text-muted-foreground italic">Sem acessórios</span>
                 </div>
               )}
             </div>
             
             <div className="flex justify-between">
-              <span className="text-gray-600">Configuração:</span>
-              <span className="font-medium text-gray-900">{order.configurationType}</span>
+              <span className="text-muted-foreground">Configuração:</span>
+              <span className="font-medium text-foreground">{order.configurationType}</span>
             </div>
           </div>
 
           {isStandby && (
-            <div className="mt-3 p-2 bg-red-100 border border-red-200 rounded-md">
-              <p className="text-xs text-red-800 font-medium">⚠️ Em Stand-by</p>
+            <div className="mt-3 p-2 bg-error-light border border-error-border rounded-md">
+              <p className="text-xs text-error font-medium">⚠️ Em Stand-by</p>
             </div>
           )}
 
           {isInProduction && (
-            <div className="mt-3 p-2 bg-blue-100 border border-blue-200 rounded-md">
-              <p className="text-xs text-blue-800 font-medium">🔧 Em Produção</p>
+            <div className="mt-3 p-2 bg-primary/10 border border-primary/20 rounded-md">
+              <p className="text-xs text-primary font-medium">🔧 Em Produção</p>
             </div>
           )}
         </div>

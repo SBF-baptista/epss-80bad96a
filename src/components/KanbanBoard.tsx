@@ -18,10 +18,10 @@ interface KanbanBoardProps {
 }
 
 const columns = [
-  { id: "scheduled", title: "Pedidos", color: "border-blue-300 bg-blue-50/30" },
-  { id: "in_progress", title: "Em Produção", color: "border-yellow-300 bg-yellow-50/30" },
-  { id: "completed", title: "Aguardando Envio", color: "border-orange-300 bg-orange-50/30" },
-  { id: "shipped", title: "Enviado", color: "border-green-300 bg-green-50/30" },
+  { id: "scheduled", title: "Pedidos", color: "border-primary/30 bg-primary/5" },
+  { id: "in_progress", title: "Em Produção", color: "border-warning/30 bg-warning-light/30" },
+  { id: "completed", title: "Aguardando Envio", color: "border-warning/30 bg-warning-light/30" },
+  { id: "shipped", title: "Enviado", color: "border-success/30 bg-success-light/30" },
 ];
 
 const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentClick }: KanbanBoardProps) => {
@@ -277,8 +277,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
               onClick={() => scrollToColumn(index)}
               className={`w-2 h-2 rounded-full transition-all duration-200 ${
                 index === activeScrollIndex 
-                  ? "bg-blue-500 w-6" 
-                  : "bg-gray-300 hover:bg-gray-400"
+                  ? "bg-primary w-6" 
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
               }`}
               title={column.title}
             />

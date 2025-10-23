@@ -14,13 +14,13 @@ interface HomologationKanbanProps {
 }
 
 const columns = [
-  { id: "homologar", title: "A Homologar", color: "bg-red-100 border-red-200" },
-  { id: "em_homologacao", title: "Em Homologação", color: "bg-yellow-100 border-yellow-200" },
-  { id: "agendamento_teste", title: "Agendamento de Teste", color: "bg-orange-100 border-orange-200" },
+  { id: "homologar", title: "A Homologar", color: "bg-error-light border-error-border" },
+  { id: "em_homologacao", title: "Em Homologação", color: "bg-warning-light border-warning-border" },
+  { id: "agendamento_teste", title: "Agendamento de Teste", color: "bg-warning-light border-warning-border" },
   { id: "execucao_teste", title: "Execução de Teste", color: "bg-purple-100 border-purple-200" },
-  { id: "em_testes_finais", title: "Em Testes Finais", color: "bg-blue-100 border-blue-200" },
+  { id: "em_testes_finais", title: "Em Testes Finais", color: "bg-primary/10 border-primary/20" },
   { id: "armazenamento_plataforma", title: "Armazenamento na Plataforma", color: "bg-teal-100 border-teal-200" },
-  { id: "homologado", title: "Homologado", color: "bg-green-100 border-green-200" }
+  { id: "homologado", title: "Homologado", color: "bg-success-light border-success-border" }
 ];
 
 const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {

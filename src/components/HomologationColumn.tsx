@@ -33,8 +33,8 @@ const HomologationColumn = ({
       onDrop={onDrop}
     >
       <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
-        <h3 className="font-semibold text-gray-800 text-xs sm:text-sm lg:text-base line-clamp-2">{title}</h3>
-        <span className="bg-white text-gray-600 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2">
+        <h3 className="font-semibold text-foreground text-xs sm:text-sm lg:text-base line-clamp-2">{title}</h3>
+        <span className="bg-card text-muted-foreground px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2">
           {cards.length}
         </span>
       </div>
@@ -49,8 +49,8 @@ const HomologationColumn = ({
               onUpdate={onUpdate}
             />
             {isUpdating === card.id && (
-              <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+              <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
               </div>
             )}
           </div>
