@@ -603,13 +603,13 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                   )}
                                   <CardTitle className="text-lg">{kit.name}</CardTitle>
                                   {/* Homologation Status Badge */}
-                                  {homologationStatus && (
+                                   {homologationStatus && (
                                     <Badge 
                                       variant={isHomologated ? "default" : "destructive"} 
                                       className={`flex items-center gap-1 ${
                                         isHomologated 
-                                          ? "bg-green-100 text-green-800 border-green-200" 
-                                          : "bg-orange-100 text-orange-800 border-orange-200"
+                                          ? "bg-success-light text-success border-success-border" 
+                                          : "bg-warning-light text-warning border-warning-border"
                                       }`}
                                     >
                                       {isHomologated ? (
@@ -675,16 +675,16 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
 
                               {/* Homologation Status Details */}
                               {homologationStatus && !isHomologated && (
-                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                <div className="bg-warning-light border border-warning-border rounded-lg p-3">
                                   <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
-                                      <AlertTriangle className="h-4 w-4 text-orange-600" />
-                                      <span className="text-sm font-medium text-orange-800">
+                                      <AlertTriangle className="h-4 w-4 text-warning" />
+                                      <span className="text-sm font-medium text-warning">
                                         Itens Pendentes de Homologação
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="text-xs text-orange-700 space-y-1">
+                                  <div className="text-xs text-warning space-y-1">
                                     {homologationStatus.pendingItems.equipment.length > 0 && (
                                       <p>• {homologationStatus.pendingItems.equipment.length} equipamento(s): {homologationStatus.pendingItems.equipment.map(item => item.item_name).join(', ')}</p>
                                     )}
@@ -695,21 +695,21 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                       <p>• {homologationStatus.pendingItems.supplies.length} insumo(s): {homologationStatus.pendingItems.supplies.map(item => item.item_name).join(', ')}</p>
                                     )}
                                   </div>
-                                  <p className="text-xs text-orange-600 mt-2 font-medium">
+                                  <p className="text-xs text-warning mt-2 font-medium">
                                     O kit ficará disponível para distribuição após todos os itens serem homologados.
                                   </p>
                                 </div>
                               )}
 
                               {homologationStatus && isHomologated && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div className="bg-success-light border border-success-border rounded-lg p-3">
                                   <div className="flex items-center gap-2">
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                    <span className="text-sm font-medium text-green-800">
+                                    <CheckCircle className="h-4 w-4 text-success" />
+                                    <span className="text-sm font-medium text-success">
                                       Kit Totalmente Homologado
                                     </span>
                                   </div>
-                                  <p className="text-xs text-green-700 mt-1">
+                                  <p className="text-xs text-success mt-1">
                                     Todos os itens foram homologados. O kit está pronto para distribuição aos técnicos.
                                   </p>
                                 </div>
@@ -735,8 +735,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                                 variant={isItemHomologated ? "default" : "secondary"} 
                                                 className={`text-xs ${
                                                   isItemHomologated 
-                                                    ? "bg-green-100 text-green-800" 
-                                                    : "bg-orange-100 text-orange-800"
+                                                    ? "bg-success-light text-success" 
+                                                    : "bg-warning-light text-warning"
                                                 }`}
                                               >
                                                 {isItemHomologated ? (
@@ -784,8 +784,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                                 variant={isItemHomologated ? "default" : "secondary"} 
                                                 className={`text-xs ${
                                                   isItemHomologated 
-                                                    ? "bg-green-100 text-green-800" 
-                                                    : "bg-orange-100 text-orange-800"
+                                                    ? "bg-success-light text-success" 
+                                                    : "bg-warning-light text-warning"
                                                 }`}
                                               >
                                                 {isItemHomologated ? (
@@ -833,8 +833,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                                 variant={isItemHomologated ? "default" : "secondary"} 
                                                 className={`text-xs ${
                                                   isItemHomologated 
-                                                    ? "bg-green-100 text-green-800" 
-                                                    : "bg-orange-100 text-orange-800"
+                                                    ? "bg-success-light text-success" 
+                                                    : "bg-warning-light text-warning"
                                                 }`}
                                               >
                                                 {isItemHomologated ? (
