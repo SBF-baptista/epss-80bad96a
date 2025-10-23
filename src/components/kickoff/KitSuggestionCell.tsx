@@ -41,7 +41,7 @@ export const KitSuggestionCell = ({
   const loadKitSuggestions = async () => {
     setLoading(true);
     try {
-      const suggestions = await suggestKitsForVehicle(vehicleModules, 60); // Score mínimo de 60%
+      const suggestions = await suggestKitsForVehicle(vehicleModules, 30); // Score mínimo de 30%
       setSuggestedKits(suggestions);
     } catch (error) {
       console.error('Error loading kit suggestions:', error);
@@ -186,7 +186,7 @@ export const KitSuggestionCell = ({
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Info className="h-3 w-3" />
                         <span className="font-medium">
-                          {match.missingItems.length} item(ns) não encontrado(s):
+                          {match.missingItems.length} item(ns) complementar(es):
                         </span>
                       </div>
                       <div className="flex gap-1 flex-wrap">
@@ -201,6 +201,9 @@ export const KitSuggestionCell = ({
                           </Badge>
                         )}
                       </div>
+                      <p className="text-xs text-muted-foreground italic">
+                        Itens complementares não encontrados no veículo
+                      </p>
                     </div>
                   )}
                 </div>

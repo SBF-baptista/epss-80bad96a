@@ -28,16 +28,39 @@ const isSimilarItem = (item1: string, item2: string): boolean => {
   const norm1 = normalizeString(item1);
   const norm2 = normalizeString(item2);
   
-  // Verifica se são exatamente iguais
+  // 1. Verifica se são exatamente iguais
   if (norm1 === norm2) return true;
   
-  // Verifica se um contém o outro (para casos como "BLOQUEIO" vs "BLOQUEIO DE MOTOR")
+  // 2. Verifica se um contém o outro
   if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
   
-  // Verifica palavras-chave importantes
-  const keywords = ['bloqueio', 'sirene', 'rfid', 'condutor', 'sensor', 'combustivel', 'partida'];
-  for (const keyword of keywords) {
-    if (norm1.includes(keyword) && norm2.includes(keyword)) {
+  // 3. Mapeamento semântico de equivalências
+  const equivalences = [
+    // RFID
+    ['rfid', 'leitor rfid', 'leitora rfid', 'id condutor rfid', 'condutor rfid'],
+    
+    // Bloqueio
+    ['bloqueio', 'rele', 'relé', 'bloqueio motor', 'bloqueio combustivel', 'bloqueio partida'],
+    
+    // iButton
+    ['ibutton', 'id ibutton', 'condutor ibutton'],
+    
+    // Sirene
+    ['sirene', 'sirene dupla', 'sirene padrao'],
+    
+    // Bluetooth
+    ['bluetooth', 'id bluetooth', 'condutor bluetooth'],
+    
+    // Sensor
+    ['sensor', 'sensor combustivel', 'sensor temperatura'],
+  ];
+  
+  // Verifica se ambos os itens pertencem ao mesmo grupo de equivalência
+  for (const group of equivalences) {
+    const item1Match = group.some(term => norm1.includes(term));
+    const item2Match = group.some(term => norm2.includes(term));
+    
+    if (item1Match && item2Match) {
       return true;
     }
   }
@@ -135,6 +158,10 @@ export const matchKitToVehicle = (
   // Normalizar nomes dos módulos do veículo
   const vehicleItemsNames = vehicleModules.map(m => m.name);
 
+  console.log('🔍 Matching Kit:', kit.name);
+  console.log('📦 Kit Items:', allKitItems);
+  console.log('🚗 Vehicle Modules:', vehicleItemsNames);
+
   const matchedItems: string[] = [];
   const missingItems: string[] = [];
 
@@ -144,12 +171,14 @@ export const matchKitToVehicle = (
     for (const vehicleItem of vehicleItemsNames) {
       if (isSimilarItem(kitItem, vehicleItem)) {
         matchedItems.push(kitItem);
+        console.log(`✅ Match: "${kitItem}" ≈ "${vehicleItem}"`);
         found = true;
         break;
       }
     }
     if (!found) {
       missingItems.push(kitItem);
+      console.log(`❌ Missing: "${kitItem}"`);
     }
   }
 
@@ -158,6 +187,8 @@ export const matchKitToVehicle = (
   const matchScore = allKitItems.length > 0 
     ? Math.round((matchedItems.length / allKitItems.length) * 100)
     : 0;
+
+  console.log(`📊 Match Score: ${matchScore}%`);
 
   return {
     kit,
