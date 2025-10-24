@@ -999,8 +999,8 @@ export const ScheduleModal = ({
                                            </div>
                                          </Button>
                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[450px] p-0 max-h-[70vh] overflow-hidden" align="start">
-                                          <div className="flex flex-col h-full">
+                                        <PopoverContent className="w-[450px] p-0 max-h-[70vh] flex flex-col" align="start">
+                                          <div className="flex flex-col min-h-0 flex-1">
                                             <div className="px-4 pt-4 pb-3 border-b">
                                               <h4 className="font-semibold flex items-center gap-2">
                                                 <Package className="h-4 w-4" />
@@ -1008,7 +1008,7 @@ export const ScheduleModal = ({
                                               </h4>
                                             </div>
 
-                                            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                                            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
                                              {suggestedKits.map((kit) => {
                                                const status = homologationStatuses.get(kit.id!);
                                                const isHomologated = status?.isHomologated ?? false;
