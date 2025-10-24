@@ -423,56 +423,37 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                     // Get equipment from kit
                     const equipment = sched.kit?.equipment || [];
                     
-                    // Merge accessories from multiple sources, normalizing names to prevent duplicates
-                    const mergedAccessories: Record<string, number> = {};
+                    // Use ONLY ONE source for accessories to prevent duplication
+                    let accessoriesItems: Array<{ id: string; item_name: string; quantity: number }> = [];
                     
-                    // Helper to normalize accessory names (uppercase, trim)
-                    const normalizeAccName = (name: string): string => {
-                      return name.replace(/\s*\(qty:\s*\d+\)\s*$/i, '').trim().toUpperCase();
-                    };
-                    
-                    // 1. DB accessories (highest priority - these come from the database)
+                    // Priority 1: DB accessories (real data from database)
                     const dbAccessories = scheduleAccessoriesMap[sched.id] || [];
                     if (dbAccessories.length > 0) {
-                      dbAccessories.forEach(acc => {
-                        const normalized = normalizeAccName(acc.name);
-                        mergedAccessories[normalized] = (mergedAccessories[normalized] || 0) + acc.quantity;
-                      });
-                    }
-                    
-                    // 2. Schedule accessories (only add if not already in DB accessories)
-                    if (Array.isArray(sched.accessories) && sched.accessories.length > 0) {
+                      accessoriesItems = dbAccessories.map((acc, i) => ({
+                        id: `${sched.id}-acc-${i}`,
+                        item_name: acc.name,
+                        quantity: acc.quantity
+                      }));
+                    } 
+                    // Priority 2: Schedule accessories (only if no DB data)
+                    else if (Array.isArray(sched.accessories) && sched.accessories.length > 0) {
+                      // Create a map to aggregate quantities
+                      const accessoryMap: Record<string, number> = {};
+                      
                       sched.accessories.forEach((accessoryStr: string) => {
                         const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
-                        const itemName = match ? match[1].trim() : accessoryStr;
+                        const itemName = match ? match[1].trim() : accessoryStr.trim();
                         const quantity = match ? parseInt(match[2], 10) : 1;
-                        const normalized = normalizeAccName(itemName);
                         
-                        // Only add if not already present
-                        if (!mergedAccessories[normalized]) {
-                          mergedAccessories[normalized] = quantity;
-                        }
+                        accessoryMap[itemName] = (accessoryMap[itemName] || 0) + quantity;
                       });
+                      
+                      accessoriesItems = Object.entries(accessoryMap).map(([name, quantity], i) => ({
+                        id: `${sched.id}-acc-${i}`,
+                        item_name: name,
+                        quantity
+                      }));
                     }
-                    
-                    // 3. Order accessories (lowest priority, only add if not already present)
-                    if (order.accessories && order.accessories.length > 0) {
-                      order.accessories.forEach((acc: any) => {
-                        const name = acc.name;
-                        if (name) {
-                          const normalized = normalizeAccName(name);
-                          if (!mergedAccessories[normalized]) {
-                            mergedAccessories[normalized] = acc.quantity || 1;
-                          }
-                        }
-                      });
-                    }
-                    
-                    const accessoriesItems = Object.entries(mergedAccessories).map(([name, quantity], i) => ({
-                      id: `${sched.id}-acc-${i}`,
-                      item_name: name,
-                      quantity
-                    }));
                     
                     const suppliesItems = Array.isArray(sched.supplies) && sched.supplies.length > 0
                       ? sched.supplies.map((name: string, i: number) => ({ 
@@ -546,6 +527,15 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                             </div>
                           )}
                         </div>
+
+                        {/* Configuration Block */}
+                        {sched.configuration && (
+                          <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
+                            <p className="text-sm font-medium text-primary">
+                              📋 Configuração: {sched.configuration}
+                            </p>
+                          </div>
+                        )}
 
                         <Separator />
 
