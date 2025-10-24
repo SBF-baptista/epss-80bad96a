@@ -999,8 +999,8 @@ export const ScheduleModal = ({
                                            </div>
                                          </Button>
                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[450px] p-0" align="start">
-                                          <div className="flex flex-col h-full max-h-[500px]">
+                                        <PopoverContent className="w-[450px] p-0 max-h-[70vh] overflow-hidden" align="start">
+                                          <div className="flex flex-col h-full">
                                             <div className="px-4 pt-4 pb-3 border-b">
                                               <h4 className="font-semibold flex items-center gap-2">
                                                 <Package className="h-4 w-4" />
@@ -1008,7 +1008,7 @@ export const ScheduleModal = ({
                                               </h4>
                                             </div>
 
-                                            <div className="overflow-y-auto px-4 py-3 space-y-3">
+                                            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
                                              {suggestedKits.map((kit) => {
                                                const status = homologationStatuses.get(kit.id!);
                                                const isHomologated = status?.isHomologated ?? false;
@@ -1181,6 +1181,33 @@ export const ScheduleModal = ({
                                                        })()}
                                                      </>
                                                    )}
+
+                                                   {/* Conteúdo completo do kit: acessórios e insumos */}
+                                                   <div className="ml-6 space-y-2 pt-2 border-t">
+                                                     <div className="text-xs font-medium">Conteúdo do kit</div>
+                                                     <div className="grid grid-cols-1 gap-2">
+                                                       <div>
+                                                         <div className="text-xs text-muted-foreground mb-1">Acessórios ({kit.accessories.length})</div>
+                                                         <div className="flex flex-wrap gap-1">
+                                                           {kit.accessories.map((acc, idx) => (
+                                                             <Badge key={idx} variant="outline" className="text-xs">
+                                                               {acc.item_name}{acc.quantity ? ` (${acc.quantity}x)` : ''}
+                                                             </Badge>
+                                                           ))}
+                                                         </div>
+                                                       </div>
+                                                       <div>
+                                                         <div className="text-xs text-muted-foreground mb-1">Insumos ({kit.supplies.length})</div>
+                                                         <div className="flex flex-wrap gap-1">
+                                                           {kit.supplies.map((sup, idx) => (
+                                                             <Badge key={idx} variant="outline" className="text-xs">
+                                                               {sup.item_name}{sup.quantity ? ` (${sup.quantity}x)` : ''}
+                                                             </Badge>
+                                                           ))}
+                                                         </div>
+                                                       </div>
+                                                     </div>
+                                                   </div>
                                                  </div>
                                                );
                                               })}
