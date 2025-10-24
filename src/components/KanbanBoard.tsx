@@ -120,7 +120,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       status: schedule.status === 'scheduled' ? 'novos' : 
               schedule.status === 'in_progress' ? 'producao' : 
               schedule.status === 'completed' ? 'aguardando' : 'enviado',
-      configurationType: kit?.name || 'N/A',
+      configurationType: (schedule as any).configuration || kit?.name || 'N/A',
       createdAt: schedule.created_at || new Date().toISOString(),
       vehicles: schedule.vehicle_brand && schedule.vehicle_model ? [{
         brand: schedule.vehicle_brand,

@@ -19,10 +19,10 @@ interface StatusHistoryProps {
 }
 
 const statusLabels: Record<string, string> = {
-  scheduled: "Agendado",
+  scheduled: "Pedidos",
   confirmed: "Confirmado",
-  in_progress: "Em Andamento",
-  completed: "Concluído",
+  in_progress: "Em Produção",
+  completed: "Aguardando Envio",
   shipped: "Enviado",
   cancelled: "Cancelado",
 };

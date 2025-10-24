@@ -120,25 +120,48 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const statusInfo = getStatusInfo();
 
   const getDaysInStatus = () => {
-    // Use kit created_at for homologation, otherwise use scheduled date or now
-    let referenceDate: Date;
-    
-    if (statusInfo.status === "homologation" && kitData.kit?.created_at) {
-      referenceDate = new Date(kitData.kit.created_at);
-    } else if (kitData.scheduled_date) {
-      referenceDate = new Date(kitData.scheduled_date);
-    } else {
-      return { days: 0, entryDate: null };
+    // Priority 1: Use statusHistory if available
+    if (statusHistory && statusHistory.length > 0) {
+      // Get the most recent status change
+      const mostRecentChange = statusHistory[statusHistory.length - 1]; // Last entry (most recent, array is asc)
+      const statusChangeDate = new Date(mostRecentChange.changed_at);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - statusChangeDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return {
+        days: diffDays,
+        entryDate: statusChangeDate.toLocaleDateString('pt-BR')
+      };
     }
     
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - referenceDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Priority 2: Use kit created_at for homologation
+    if (statusInfo.status === "homologation" && kitData.kit?.created_at) {
+      const referenceDate = new Date(kitData.kit.created_at);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - referenceDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return {
+        days: diffDays,
+        entryDate: referenceDate.toLocaleDateString('pt-BR')
+      };
+    }
     
-    return {
-      days: diffDays,
-      entryDate: referenceDate.toLocaleDateString('pt-BR')
-    };
+    // Priority 3: Fallback to scheduled_date
+    if (kitData.scheduled_date) {
+      const referenceDate = new Date(kitData.scheduled_date);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - referenceDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return {
+        days: diffDays,
+        entryDate: referenceDate.toLocaleDateString('pt-BR')
+      };
+    }
+    
+    return { days: 0, entryDate: null };
   };
 
   const statusDaysInfo = getDaysInStatus();
@@ -164,6 +187,11 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
                 <Package className="h-4 w-4" />
                 {kitData.kit?.name || `Kit ${kitData.kit_id}`}
               </CardTitle>
+              {(kitData as any).configuration && (
+                <p className="text-xs text-muted-foreground">
+                  Configuração: <span className="font-medium">{(kitData as any).configuration}</span>
+                </p>
+              )}
               <div className="space-y-1">
                 <Badge variant="outline" className={statusInfo.color.replace('bg-', 'text-') + ' border-current'}>
                   {statusInfo.label}

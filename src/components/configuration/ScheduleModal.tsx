@@ -631,6 +631,21 @@ export const ScheduleModal = ({
           // Resolve incoming_vehicle_id for this vehicle
           const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
           const incomingVehicleId = vehicleIdMap.get(vehicleKey);
+          
+          // Buscar configuração da homologação do veículo
+          let vehicleConfiguration: string | undefined;
+          if (incomingVehicleId) {
+            const { data: homologationData } = await supabase
+              .from('homologation_cards')
+              .select('configuration')
+              .eq('incoming_vehicle_id', incomingVehicleId)
+              .eq('status', 'homologado')
+              .single();
+            
+            if (homologationData?.configuration) {
+              vehicleConfiguration = homologationData.configuration;
+            }
+          }
 
           await createKitSchedule({
             kit_id: selectedKit?.id || null,
@@ -638,6 +653,8 @@ export const ScheduleModal = ({
             scheduled_date: vehicleSchedule.scheduled_date.toISOString().split('T')[0],
             installation_time: vehicleSchedule.installation_time || undefined,
             notes: vehicleSchedule.notes || undefined,
+            configuration: vehicleConfiguration,
+            selected_kit_ids: vehicleSchedule.selected_kit_ids || [],
             customer_id: selectedCustomer.id,
             customer_name: selectedCustomer.name,
             customer_document_number: selectedCustomer.document_number,

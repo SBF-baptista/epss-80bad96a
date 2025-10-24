@@ -821,6 +821,7 @@ export type Database = {
       kit_schedules: {
         Row: {
           accessories: string[] | null
+          configuration: string | null
           created_at: string
           created_by: string | null
           customer_document_number: string | null
@@ -841,6 +842,7 @@ export type Database = {
           kit_id: string | null
           notes: string | null
           scheduled_date: string
+          selected_kit_ids: string[] | null
           status: string
           supplies: string[] | null
           technician_id: string
@@ -852,6 +854,7 @@ export type Database = {
         }
         Insert: {
           accessories?: string[] | null
+          configuration?: string | null
           created_at?: string
           created_by?: string | null
           customer_document_number?: string | null
@@ -872,6 +875,7 @@ export type Database = {
           kit_id?: string | null
           notes?: string | null
           scheduled_date: string
+          selected_kit_ids?: string[] | null
           status?: string
           supplies?: string[] | null
           technician_id: string
@@ -883,6 +887,7 @@ export type Database = {
         }
         Update: {
           accessories?: string[] | null
+          configuration?: string | null
           created_at?: string
           created_by?: string | null
           customer_document_number?: string | null
@@ -903,6 +908,7 @@ export type Database = {
           kit_id?: string | null
           notes?: string | null
           scheduled_date?: string
+          selected_kit_ids?: string[] | null
           status?: string
           supplies?: string[] | null
           technician_id?: string

@@ -8,6 +8,8 @@ export interface KitSchedule {
   installation_time?: string;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   notes?: string;
+  configuration?: string;
+  selected_kit_ids?: string[];
   created_by?: string;
   created_at?: string;
   updated_at?: string;
@@ -52,6 +54,7 @@ export interface KitScheduleWithDetails extends KitSchedule {
     brand: string;
     model: string;
     status: string;
+    configuration?: string;
   };
   customer_id?: string;
   customer_name?: string;
@@ -80,6 +83,8 @@ export interface CreateKitScheduleData {
   scheduled_date: string;
   installation_time?: string;
   notes?: string;
+  configuration?: string;
+  selected_kit_ids?: string[];
   customer_id?: string;
   customer_name: string;
   customer_document_number: string;
