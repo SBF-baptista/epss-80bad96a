@@ -166,10 +166,13 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               )}
             </div>
             
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Configuração:</span>
-              <span className="font-medium text-foreground">{order.configurationType}</span>
-            </div>
+            {order.configurationType && (
+              <div className="p-2 bg-primary/5 border border-primary/20 rounded-md">
+                <p className="text-xs font-medium text-primary">
+                  📋 Configuração: {order.configurationType}
+                </p>
+              </div>
+            )}
           </div>
 
           {isStandby && (

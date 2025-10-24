@@ -89,31 +89,47 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const convertScheduleToOrder = async (schedule: KitScheduleWithDetails): Promise<Order> => {
     const kit = kits.find(k => k.id === schedule.kit_id);
     
-    // Priority 1: Get real accessories from database by incoming_vehicle_id
-    let formattedAccessories = schedule.incoming_vehicle_id
-      ? accessoriesByVehicleId.get(schedule.incoming_vehicle_id) || []
-      : [];
+    // Get real accessories from database - use ONLY ONE source to avoid duplication
+    let accessoriesList: { name: string; quantity: number }[] = [];
     
-    // Priority 2: Fallback to plate-based lookup if no incoming_vehicle_id
-    if (formattedAccessories.length === 0 && schedule.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente') {
-      const syntheticKey = `plate-${schedule.vehicle_plate}`;
-      formattedAccessories = accessoriesByVehicleId.get(syntheticKey) || [];
-    }
-    
-    // Detect corrupted arrays (duplicated data) - ignore if > 10 items
-    const isCorruptedArray = Array.isArray(schedule.accessories) && schedule.accessories.length > 10;
-    
-    // Priority 3: Use schedule.accessories only if not corrupted
-    const accessoriesList = formattedAccessories.length > 0
-      ? formattedAccessories.map((formatted) => {
+    // Priority 1: Get from incoming_vehicle_id
+    if (schedule.incoming_vehicle_id) {
+      const formattedAccessories = accessoriesByVehicleId.get(schedule.incoming_vehicle_id) || [];
+      
+      if (formattedAccessories.length > 0) {
+        accessoriesList = formattedAccessories.map((formatted) => {
           const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
           return match
             ? { name: match[1], quantity: parseInt(match[2]) }
             : { name: formatted, quantity: 1 };
-        })
-      : (!isCorruptedArray && Array.isArray(schedule.accessories) && schedule.accessories.length > 0
-        ? schedule.accessories.map((name) => ({ name, quantity: 1 }))
-        : []);
+        });
+      }
+    }
+    
+    // Priority 2: Fallback to plate-based lookup ONLY if no incoming_vehicle_id data
+    if (accessoriesList.length === 0 && schedule.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente') {
+      const syntheticKey = `plate-${schedule.vehicle_plate}`;
+      const formattedAccessories = accessoriesByVehicleId.get(syntheticKey) || [];
+      
+      if (formattedAccessories.length > 0) {
+        accessoriesList = formattedAccessories.map((formatted) => {
+          const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
+          return match
+            ? { name: match[1], quantity: parseInt(match[2]) }
+            : { name: formatted, quantity: 1 };
+        });
+      }
+    }
+    
+    // Priority 3: Use schedule.accessories ONLY if no database data found
+    if (accessoriesList.length === 0 && Array.isArray(schedule.accessories) && schedule.accessories.length > 0) {
+      // Detect corrupted arrays (duplicated data) - ignore if > 10 items
+      const isCorruptedArray = schedule.accessories.length > 10;
+      
+      if (!isCorruptedArray) {
+        accessoriesList = schedule.accessories.map((name) => ({ name, quantity: 1 }));
+      }
+    }
     
     // Fetch selected kit names if selected_kit_ids exists
     let selectedKitNames: string[] = [];
