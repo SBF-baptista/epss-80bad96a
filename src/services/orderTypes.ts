@@ -18,6 +18,7 @@ export interface Order {
     quantity: number
   }>
   configurationType: string
+  selectedKitNames?: string[]
   status: "novos" | "producao" | "aguardando" | "enviado" | "standby"
   priority?: "high" | "medium" | "low"
   createdAt: string

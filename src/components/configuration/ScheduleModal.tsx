@@ -229,6 +229,7 @@ export const ScheduleModal = ({
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
   const [vehicleIdMap, setVehicleIdMap] = useState<Map<string, string>>(new Map());
   const [suggestedKitsByVehicle, setSuggestedKitsByVehicle] = useState<Map<string, HomologationKit[]>>(new Map());
+  const [configurationsByVehicle, setConfigurationsByVehicle] = useState<Map<string, string>>(new Map());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -339,10 +340,28 @@ export const ScheduleModal = ({
 
           setVehicleIdMap(vehicleIdMapping);
 
-          // Fetch accessories by resolved IDs
+          // Fetch accessories and configurations by resolved IDs
           if (resolvedIds.length > 0) {
             const accessoriesMap = await fetchAccessoriesByVehicleIds(resolvedIds);
             const formattedMap = new Map<string, string[]>();
+            const configurationsMap = new Map<string, string>();
+
+            // Fetch configurations for each vehicle
+            for (const [key, vehicleId] of vehicleIdMapping.entries()) {
+              const { data: homologationData } = await supabase
+                .from('homologation_cards')
+                .select('configuration')
+                .eq('incoming_vehicle_id', vehicleId)
+                .eq('status', 'homologado')
+                .single();
+              
+              if (homologationData?.configuration) {
+                const plate = key.split('-').pop()?.replace('pending', '') || '';
+                configurationsMap.set(plate, homologationData.configuration);
+              }
+            }
+
+            setConfigurationsByVehicle(configurationsMap);
 
             accessoriesMap.forEach((accessories, vehicleId) => {
               formattedMap.set(vehicleId, aggregateAccessoriesWithoutModules(accessories));
@@ -893,6 +912,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Kit</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Técnico *</th>
@@ -932,6 +952,11 @@ export const ScheduleModal = ({
                                 <Badge variant="secondary">{vehicleSchedule.plate}</Badge>
                               </td>
                               <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
+                              <td className="px-4 py-3">
+                                <Badge variant="secondary" className="text-xs">
+                                  {configurationsByVehicle.get(vehicleSchedule.plate) || 'N/A'}
+                                </Badge>
+                              </td>
               <td className="px-4 py-3">
                                 <div className="flex flex-col gap-1 max-w-[180px]">
                                   {(() => {

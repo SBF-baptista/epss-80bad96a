@@ -28,8 +28,10 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const { toast } = useToast();
   const [draggedSchedules, setDraggedSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
+  const [orders, setOrders] = useState<Order[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch real accessories from database by vehicle IDs and fallback to plates
@@ -84,7 +86,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
     fetchAccessories();
   }, [schedules]);
 
-  const convertScheduleToOrder = (schedule: KitScheduleWithDetails): Order => {
+  const convertScheduleToOrder = async (schedule: KitScheduleWithDetails): Promise<Order> => {
     const kit = kits.find(k => k.id === schedule.kit_id);
     
     // Priority 1: Get real accessories from database by incoming_vehicle_id
@@ -113,6 +115,23 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         ? schedule.accessories.map((name) => ({ name, quantity: 1 }))
         : []);
     
+    // Fetch selected kit names if selected_kit_ids exists
+    let selectedKitNames: string[] = [];
+    const scheduleWithIds = schedule as any;
+    if (scheduleWithIds.selected_kit_ids && Array.isArray(scheduleWithIds.selected_kit_ids) && scheduleWithIds.selected_kit_ids.length > 0) {
+      const kitNames = await Promise.all(
+        scheduleWithIds.selected_kit_ids.map(async (kitId: string) => {
+          const { data } = await supabase
+            .from('homologation_kits')
+            .select('name')
+            .eq('id', kitId)
+            .single();
+          return data?.name || 'Kit desconhecido';
+        })
+      );
+      selectedKitNames = kitNames;
+    }
+
     return {
       id: schedule.id || '',
       number: schedule.id?.slice(0, 8) || '',
@@ -121,6 +140,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
               schedule.status === 'in_progress' ? 'producao' : 
               schedule.status === 'completed' ? 'aguardando' : 'enviado',
       configurationType: (schedule as any).configuration || kit?.name || 'N/A',
+      selectedKitNames,
       createdAt: schedule.created_at || new Date().toISOString(),
       vehicles: schedule.vehicle_brand && schedule.vehicle_model ? [{
         brand: schedule.vehicle_brand,
@@ -137,7 +157,29 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
     };
   };
 
-  const orders = schedules.map(convertScheduleToOrder);
+  // Convert schedules to orders asynchronously
+  useEffect(() => {
+    const convertSchedules = async () => {
+      const convertedOrders = await Promise.all(schedules.map(convertScheduleToOrder));
+      setOrders(convertedOrders);
+    };
+    
+    convertSchedules();
+  }, [schedules, kits, accessoriesByVehicleId]);
+
+  // Convert selected schedule to order when it changes
+  useEffect(() => {
+    const convertSelected = async () => {
+      if (selectedSchedule) {
+        const order = await convertScheduleToOrder(selectedSchedule);
+        setSelectedOrder(order);
+      } else {
+        setSelectedOrder(null);
+      }
+    };
+    
+    convertSelected();
+  }, [selectedSchedule, kits, accessoriesByVehicleId]);
 
   // Handle scroll to update active indicator
   const handleScroll = () => {
@@ -286,9 +328,9 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         </div>
       </div>
 
-      {selectedSchedule && (
+      {selectedSchedule && selectedOrder && (
         <OrderModal
-          order={convertScheduleToOrder(selectedSchedule)}
+          order={selectedOrder}
           isOpen={!!selectedSchedule}
           onClose={() => setSelectedSchedule(null)}
           onUpdate={onOrderUpdate}

@@ -132,6 +132,23 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
             </div>
 
             <div>
+              <span className="text-muted-foreground font-medium">Kits Selecionados:</span>
+              {order.selectedKitNames && order.selectedKitNames.length > 0 ? (
+                <div className="mt-1 space-y-1">
+                  {order.selectedKitNames.map((kitName, index) => (
+                    <div key={index} className="text-xs text-foreground">
+                      • {kitName}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-1">
+                  <span className="text-xs text-muted-foreground italic">Nenhum kit selecionado</span>
+                </div>
+              )}
+            </div>
+            
+            <div>
               <span className="text-muted-foreground font-medium">Acessórios:</span>
               {order.accessories && order.accessories.length > 0 ? (
                 <div className="mt-1 space-y-1">
