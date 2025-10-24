@@ -999,19 +999,16 @@ export const ScheduleModal = ({
                                            </div>
                                          </Button>
                                        </PopoverTrigger>
-                                       <PopoverContent className="w-[450px]" align="start">
-                                         <div className="space-y-4">
-                                           <div className="space-y-2">
-                                             <h4 className="font-semibold flex items-center gap-2">
-                                               <Package className="h-4 w-4" />
-                                               Kits Compatíveis com os Acessórios
-                                             </h4>
-                                             <p className="text-xs text-muted-foreground">
-                                               Kits sugeridos baseados nos acessórios da Segsale para este veículo
-                                             </p>
-                                           </div>
+                                        <PopoverContent className="w-[450px] p-0" align="start">
+                                          <div className="flex flex-col h-full max-h-[500px]">
+                                            <div className="px-4 pt-4 pb-3 border-b">
+                                              <h4 className="font-semibold flex items-center gap-2">
+                                                <Package className="h-4 w-4" />
+                                                Kits
+                                              </h4>
+                                            </div>
 
-                                           <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                                            <div className="overflow-y-auto px-4 py-3 space-y-3">
                                              {suggestedKits.map((kit) => {
                                                const status = homologationStatuses.get(kit.id!);
                                                const isHomologated = status?.isHomologated ?? false;
@@ -1186,10 +1183,10 @@ export const ScheduleModal = ({
                                                    )}
                                                  </div>
                                                );
-                                             })}
-                                           </div>
-                                         </div>
-                                       </PopoverContent>
+                                              })}
+                                            </div>
+                                          </div>
+                                        </PopoverContent>
                                      </Popover>
                                    );
                                  })()}

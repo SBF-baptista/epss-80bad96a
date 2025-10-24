@@ -335,9 +335,10 @@ export const KickoffDetailsModal = ({
         };
       });
 
-      // Store selected modules info (will be processed by processKickoffVehicles)
+      // Store selected modules info and sirene accessory (will be processed by processKickoffVehicles)
       for (const vehicle of vehicles) {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
+        const hasSiren = vehicleSiren.get(vehicle.id) || false;
         
         if (modules.length > 0) {
           const { error: vehicleError } = await supabase
@@ -349,6 +350,30 @@ export const KickoffDetailsModal = ({
 
           if (vehicleError) {
             console.error(`Error updating vehicle ${vehicle.id} modules:`, vehicleError);
+          }
+        }
+
+        // Add sirene as accessory if has_siren is true
+        if (hasSiren) {
+          const { error: sirenError } = await supabase
+            .from("accessories")
+            .upsert({
+              vehicle_id: vehicle.id,
+              company_name: companyName,
+              usage_type: (vehicle as any).usage_type || 'outros',
+              name: 'Sirene',
+              categories: 'Acessórios',
+              quantity: 1,
+              received_at: new Date().toISOString()
+            }, {
+              onConflict: 'vehicle_id,name,categories',
+              ignoreDuplicates: false
+            });
+
+          if (sirenError) {
+            console.error(`Error adding sirene for vehicle ${vehicle.id}:`, sirenError);
+          } else {
+            console.log(`Successfully added sirene accessory for vehicle ${vehicle.id}`);
           }
         }
       }
