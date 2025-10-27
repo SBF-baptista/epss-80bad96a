@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Users, Truck, Edit, CheckCircle2, AlertCircle, History, Clock } from "lucide-react";
+import { Edit, AlertCircle, History, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -108,75 +108,6 @@ const Kickoff = () => {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total de Veículos
-            </CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{kickoffData?.total_vehicles || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Veículos do Segsale
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Clientes
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{kickoffData?.total_companies || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Empresas únicas
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Tipos de Uso
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {kickoffData?.clients?.reduce((sum, client) => {
-                    const uniqueTypes = new Set(client.usage_types.map(ut => ut.usage_type));
-                    return sum + uniqueTypes.size;
-                  }, 0) || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Configurações diferentes
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList>
@@ -210,7 +141,7 @@ const Kickoff = () => {
                     {daysInKickoff > 0 && (
                       <Badge variant="outline" className="text-xs flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {daysInKickoff} {daysInKickoff === 1 ? 'dia' : 'dias'}
+                        Kickoff pendente há {daysInKickoff} {daysInKickoff === 1 ? 'dia' : 'dias'}
                       </Badge>
                     )}
                   </div>
@@ -222,24 +153,13 @@ const Kickoff = () => {
                     <span className="font-semibold">{client.total_vehicles} {client.total_vehicles === 1 ? 'veículo' : 'veículos'}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {client.needs_blocking && (
+                  {client.needs_blocking && (
+                    <div className="flex items-center gap-2">
                       <Badge variant="destructive" className="text-xs">
                         Bloqueio
                       </Badge>
-                    )}
-                    {client.has_kickoff_details ? (
-                      <div className="flex items-center gap-1 text-xs text-green-600">
-                        <CheckCircle2 className="h-3 w-3" />
-                        <span>Completo</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 text-xs text-amber-600">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>Pendente</span>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div className="flex justify-end pt-2">
                     <Button

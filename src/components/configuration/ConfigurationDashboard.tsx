@@ -6,7 +6,6 @@ import { Search, RefreshCw } from 'lucide-react';
 import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
 import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitScheduleService';
-import { ConfigurationStats } from './ConfigurationStats';
 import { SchedulingSection } from './SchedulingSection';
 import { supabase } from '@/integrations/supabase/client';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
@@ -166,13 +165,6 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
           </div>
         </div>
 
-        {/* Stats */}
-        <ConfigurationStats 
-          technicians={technicians}
-          kits={kits}
-          schedules={schedules}
-          kitsWithoutHomologation={kitsWithoutHomologation}
-        />
       </div>
 
       {/* Content */}
