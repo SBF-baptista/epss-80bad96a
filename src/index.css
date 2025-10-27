@@ -258,6 +258,47 @@ All colors MUST be HSL.
   }
 }
 
+/* Vertical scrollbar for Homologation Kanban columns */
+.homologation-column-scroll [data-radix-scroll-area-viewport] > div {
+  display: block !important;
+}
+
+.homologation-column-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+.homologation-column-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.homologation-column-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.2);
+  border-radius: 3px;
+}
+
+.homologation-column-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.homologation-column-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Smooth scroll for columns */
+.homologation-column-scroll [data-radix-scroll-area-viewport] {
+  scroll-behavior: smooth;
+}
+
+/* Mobile touch optimization for column scroll */
+@media (max-width: 768px) {
+  .homologation-column-scroll [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* Navegação lateral contínua - Homologation Kanban */
 .no-scrollbar {
   -ms-overflow-style: none;
