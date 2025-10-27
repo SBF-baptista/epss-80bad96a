@@ -45,6 +45,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
     quantity: number;
   }>>([]);
   const [scheduleAccessoriesMap, setScheduleAccessoriesMap] = useState<Record<string, { name: string; quantity: number }[]>>({});
+  const [kitNamesMap, setKitNamesMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchAllSchedules = async () => {
@@ -131,6 +132,42 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
 
     fetchAccessoriesPerVehicle();
   }, [isOpen, schedule, allSchedules]);
+
+  // Fetch kit names from selected_kit_ids
+  useEffect(() => {
+    const fetchKitNames = async () => {
+      if (!isOpen || allSchedules.length === 0) return;
+      
+      try {
+        const allKitIds = new Set<string>();
+        allSchedules.forEach((sched: any) => {
+          if (sched.selected_kit_ids && Array.isArray(sched.selected_kit_ids)) {
+            sched.selected_kit_ids.forEach((kitId: string) => allKitIds.add(kitId));
+          }
+        });
+
+        if (allKitIds.size === 0) return;
+
+        const { data: kits, error } = await supabase
+          .from('homologation_kits')
+          .select('id, name')
+          .in('id', Array.from(allKitIds));
+        
+        if (error) throw error;
+
+        const namesMap: Record<string, string> = {};
+        (kits || []).forEach((kit) => {
+          if (kit.id) namesMap[kit.id] = kit.name;
+        });
+        
+        setKitNamesMap(namesMap);
+      } catch (error) {
+        console.error('Error fetching kit names:', error);
+      }
+    };
+
+    fetchKitNames();
+  }, [isOpen, allSchedules]);
 
   if (!order) return null;
 
@@ -538,6 +575,42 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                         )}
 
                         <Separator />
+
+                        {/* Kits Section - Show selected kits */}
+                        {(() => {
+                          const scheduleWithKits = sched as any;
+                          const hasSelectedKits = scheduleWithKits.selected_kit_ids && 
+                                                 Array.isArray(scheduleWithKits.selected_kit_ids) && 
+                                                 scheduleWithKits.selected_kit_ids.length > 0;
+                          
+                          if (!hasSelectedKits && !sched.kit?.name) return null;
+                          
+                          return (
+                            <div>
+                              <h4 className="font-semibold text-sm mb-2 text-primary">
+                                Kits
+                              </h4>
+                              <div className="space-y-2">
+                                {/* Selected kits from selected_kit_ids */}
+                                {hasSelectedKits && (
+                                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1">
+                                    {scheduleWithKits.selected_kit_ids.map((kitId: string, kitIdx: number) => (
+                                      <div key={kitIdx} className="text-sm text-blue-900 font-medium">
+                                        • {kitNamesMap[kitId] || `Kit ${kitId}`}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {/* Legacy single kit (if exists and no selected_kit_ids) */}
+                                {!hasSelectedKits && sched.kit?.name && (
+                                  <div className="p-2 bg-muted/30 rounded border text-sm">
+                                    <p className="font-medium text-foreground">{sched.kit.name}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Equipment/Trackers */}
                         {equipment.length > 0 && (

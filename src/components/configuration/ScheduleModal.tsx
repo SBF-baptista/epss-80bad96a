@@ -1021,27 +1021,27 @@ export const ScheduleModal = ({
                                    
                                    return (
                                      <Popover>
-                                       <PopoverTrigger asChild>
-                                         <Button
-                                           variant="outline"
-                                           size="sm"
-                                           className="h-auto py-2 px-3 flex items-center gap-2"
-                                         >
-                                           <Package className="h-4 w-4" />
-                                           <div className="flex flex-col items-start">
-                                             <span className="text-xs font-medium">
-                                               {selectedKitIds.length > 0 
-                                                 ? `${selectedKitIds.length} selecionado${selectedKitIds.length > 1 ? 's' : ''}`
-                                                 : `${suggestedKits.length} compatível${suggestedKits.length > 1 ? 'eis' : ''}`
-                                               }
-                                             </span>
-                                             <span className="text-xs text-muted-foreground">
-                                               Ver detalhes
-                                             </span>
-                                           </div>
-                                         </Button>
-                                       </PopoverTrigger>
-                                        <PopoverContent className="w-[450px] p-0 max-h-[70vh] flex flex-col" align="start">
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-auto py-2 px-3 flex items-center gap-2"
+                                          >
+                                            <Package className="h-4 w-4" />
+                                            <div className="flex flex-col items-start">
+                                              <span className="text-xs font-medium">
+                                                {selectedKitIds.length > 0 
+                                                  ? `${selectedKitIds.length} selecionado${selectedKitIds.length > 1 ? 's' : ''}`
+                                                  : `${suggestedKits.length} compatível${suggestedKits.length > 1 ? 'eis' : ''}`
+                                                }
+                                              </span>
+                                              <span className="text-xs text-muted-foreground">
+                                                Ver detalhes
+                                              </span>
+                                            </div>
+                                          </Button>
+                                        </PopoverTrigger>
+                                         <PopoverContent className="w-[90vw] max-w-[450px] p-0 max-h-[70vh] flex flex-col z-50" align="start" side="bottom" sideOffset={8}>
                                           <div className="flex flex-col min-h-0 flex-1">
                                             <div className="px-4 pt-4 pb-3 border-b">
                                               <h4 className="font-semibold flex items-center gap-2">
