@@ -1041,7 +1041,14 @@ export const ScheduleModal = ({
                                             </div>
                                           </Button>
                                         </PopoverTrigger>
-                                         <PopoverContent className="w-[90vw] max-w-[450px] p-0 max-h-[70vh] flex flex-col z-50" align="start" side="bottom" sideOffset={8}>
+                                         <PopoverContent 
+                                           className="w-[90vw] max-w-[500px] p-0 max-h-[80vh] flex flex-col z-50" 
+                                           align="center" 
+                                           side="left"
+                                           sideOffset={10}
+                                           avoidCollisions={true}
+                                           collisionPadding={20}
+                                         >
                                           <div className="flex flex-col min-h-0 flex-1">
                                             <div className="px-4 pt-4 pb-3 border-b">
                                               <h4 className="font-semibold flex items-center gap-2">
