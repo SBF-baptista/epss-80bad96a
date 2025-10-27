@@ -1378,7 +1378,13 @@ export type Database = {
       relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "admin" | "installer" | "order_manager"
+      app_role:
+        | "admin"
+        | "gestor"
+        | "operador_kickoff"
+        | "operador_homologacao"
+        | "operador_agendamento"
+        | "operador_suprimentos"
       homologation_status:
         | "homologar"
         | "em_homologacao"
@@ -1523,7 +1529,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "installer", "order_manager"],
+      app_role: [
+        "admin",
+        "gestor",
+        "operador_kickoff",
+        "operador_homologacao",
+        "operador_agendamento",
+        "operador_suprimentos",
+      ],
       homologation_status: [
         "homologar",
         "em_homologacao",
