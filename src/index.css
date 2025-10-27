@@ -258,43 +258,40 @@ All colors MUST be HSL.
   }
 }
 
-/* Vertical scrollbar for Homologation Kanban columns */
-.homologation-column-scroll [data-radix-scroll-area-viewport] > div {
-  display: block !important;
-}
-
-.homologation-column-scroll {
+/* Vertical scrollbar for entire Homologation Kanban */
+.homologation-kanban-scroll {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--muted) / 0.1);
 }
 
-.homologation-column-scroll::-webkit-scrollbar {
-  width: 6px;
+.homologation-kanban-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.homologation-column-scroll::-webkit-scrollbar-track {
-  background: hsl(var(--muted) / 0.2);
-  border-radius: 3px;
+.homologation-kanban-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.1);
+  border-radius: 4px;
 }
 
-.homologation-column-scroll::-webkit-scrollbar-thumb {
+.homologation-kanban-scroll::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 3px;
+  border-radius: 4px;
   transition: background 0.2s ease;
 }
 
-.homologation-column-scroll::-webkit-scrollbar-thumb:hover {
+.homologation-kanban-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-/* Smooth scroll for columns */
-.homologation-column-scroll [data-radix-scroll-area-viewport] {
-  scroll-behavior: smooth;
+/* Corner for both scrollbars */
+.homologation-kanban-scroll::-webkit-scrollbar-corner {
+  background: hsl(var(--muted) / 0.1);
 }
 
-/* Mobile touch optimization for column scroll */
+/* Mobile touch optimization */
 @media (max-width: 768px) {
-  .homologation-column-scroll [data-radix-scroll-area-viewport] {
+  .homologation-kanban-scroll {
     -webkit-overflow-scrolling: touch;
   }
 }

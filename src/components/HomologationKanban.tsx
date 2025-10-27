@@ -215,14 +215,14 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
             <ChevronRight className="h-4 w-4" />
           </Button>
 
-          {/* Container do Kanban */}
+          {/* Container do Kanban com scroll vertical e horizontal */}
           <div 
             ref={scrollContainerRef}
-            className="w-full overflow-x-auto overflow-y-hidden no-scrollbar"
+            className="w-full overflow-x-auto overflow-y-auto no-scrollbar homologation-kanban-scroll max-h-[calc(4*140px+3*0.75rem+4rem)] sm:max-h-[calc(4*150px+3*0.5rem+4rem)] lg:max-h-[calc(4*160px+3*0.75rem+4rem)]"
             onScroll={handleScroll}
             style={{ scrollBehavior: 'smooth' }}
           >
-            <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4 min-h-[300px] sm:min-h-[400px] lg:min-h-[600px]" style={{ minWidth: 'max-content' }}>
+            <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4" style={{ minWidth: 'max-content' }}>
               {columns.map(column => (
                 <HomologationColumn
                   key={column.id}

@@ -2,7 +2,6 @@
 import { HomologationCard } from "@/services/homologationService";
 import HomologationCardComponent from "./HomologationCard";
 import { Loader2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface HomologationColumnProps {
   title: string;
@@ -40,25 +39,23 @@ const HomologationColumn = ({
         </span>
       </div>
       
-      <ScrollArea className="h-[calc(4*140px+3*0.75rem)] sm:h-[calc(4*140px+3*0.5rem)] lg:h-[calc(4*150px+3*0.75rem)] homologation-column-scroll">
-        <div className="space-y-2 sm:space-y-2 lg:space-y-3 pr-3">
-          {cards.map((card) => (
-            <div key={card.id} className="relative">
-              <HomologationCardComponent
-                card={card}
-                onClick={() => onCardClick(card)}
-                onDragStart={() => onDragStart(card)}
-                onUpdate={onUpdate}
-              />
-              {isUpdating === card.id && (
-                <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
+      <div className="space-y-2 sm:space-y-2 lg:space-y-3">
+        {cards.map((card) => (
+          <div key={card.id} className="relative">
+            <HomologationCardComponent
+              card={card}
+              onClick={() => onCardClick(card)}
+              onDragStart={() => onDragStart(card)}
+              onUpdate={onUpdate}
+            />
+            {isUpdating === card.id && (
+              <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
