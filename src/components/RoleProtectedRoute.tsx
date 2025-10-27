@@ -11,14 +11,17 @@ interface RoleProtectedRouteProps {
 const RoleProtectedRoute = ({ 
   children, 
   allowedRoles, 
-  redirectTo = '/homologation' 
+  redirectTo = '/' 
 }: RoleProtectedRouteProps) => {
   const { role, loading } = useUserRole()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (!loading && role) {
-      if (!allowedRoles.includes(role)) {
+      // Admin e Gestor têm acesso a tudo
+      const hasAccess = role === 'admin' || role === 'gestor' || allowedRoles.includes(role)
+      
+      if (!hasAccess) {
         console.log(`Access denied. User role: ${role}, Required roles:`, allowedRoles)
         navigate(redirectTo)
       }
@@ -36,7 +39,10 @@ const RoleProtectedRoute = ({
     )
   }
 
-  if (!role || !allowedRoles.includes(role)) {
+  // Admin e Gestor têm acesso a tudo
+  const hasAccess = role === 'admin' || role === 'gestor' || (role && allowedRoles.includes(role))
+  
+  if (!hasAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

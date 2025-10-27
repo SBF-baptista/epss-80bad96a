@@ -79,7 +79,7 @@ function App() {
             } />
             <Route path="/kanban" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin', 'order_manager']}>
+                <RoleProtectedRoute allowedRoles={['operador_suprimentos']}>
                   <Layout>
                     <Kanban />
                   </Layout>
@@ -88,7 +88,7 @@ function App() {
             } />
             <Route path="/homologation" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
                   <Layout>
                     <Homologation />
                   </Layout>
@@ -97,7 +97,7 @@ function App() {
             } />
             <Route path="/kits" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
                   <Layout>
                     <KitManagement />
                   </Layout>
@@ -106,7 +106,7 @@ function App() {
             } />
             <Route path="/accessories-supplies" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
                   <Layout>
                     <AccessorySupplyHomologation />
                   </Layout>
@@ -115,7 +115,7 @@ function App() {
             } />
             <Route path="/technicians" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                <RoleProtectedRoute allowedRoles={['admin']}>
                   <Layout>
                     <TechnicianManagement />
                   </Layout>
@@ -124,7 +124,7 @@ function App() {
             } />
             <Route path="/customer-tracking" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
                   <Layout>
                     <CustomerTracking />
                   </Layout>
@@ -133,7 +133,7 @@ function App() {
             } />
             <Route path="/planning" element={
               <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+                <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
                   <Layout>
                     <Planning />
                   </Layout>
@@ -167,7 +167,7 @@ function App() {
         } />
         <Route path="/kickoff" element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={['admin', 'installer']}>
+            <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
               <Layout>
                 <Kickoff />
               </Layout>

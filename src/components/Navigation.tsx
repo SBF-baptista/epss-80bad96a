@@ -1,20 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useUserRole } from "@/hooks/useUserRole";
+import { getNavigationItems } from "@/services/permissionsService";
 
 const Navigation = () => {
   const location = useLocation();
+  const { role } = useUserRole();
 
-  const navItems = [
-    { to: "/homologation", label: "Homologação" },
-    { to: "/kits", label: "Kits" },
-    { to: "/customer-tracking", label: "Acompanhamento de Clientes" },
-    { to: "/accessories-supplies", label: "Acessórios & Insumos" },
-    { to: "/technicians", label: "Técnicos" },
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/kanban", label: "Kanban" },
-    { to: "/orders", label: "Pedidos" },
-    { to: "/config", label: "Configurações" },
-  ];
+  const navItems = getNavigationItems(role);
 
   return (
     <nav className="flex gap-2 flex-wrap">

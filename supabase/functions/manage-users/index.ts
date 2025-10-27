@@ -9,12 +9,12 @@ const corsHeaders = {
 interface CreateUserRequest {
   email: string;
   password: string;
-  role: 'admin' | 'installer';
+  role: 'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos';
 }
 
 interface UpdateUserRequest {
   userId: string;
-  role?: 'admin' | 'installer';
+  role?: 'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos';
   resetPassword?: boolean;
 }
 
@@ -135,7 +135,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Validate role
-      const validRoles = ['admin', 'installer', 'order_manager'];
+      const validRoles = ['admin', 'gestor', 'operador_kickoff', 'operador_homologacao', 'operador_agendamento', 'operador_suprimentos'];
       if (!validRoles.includes(role)) {
         return new Response(
           JSON.stringify({ success: false, error: 'Invalid role specified' }),

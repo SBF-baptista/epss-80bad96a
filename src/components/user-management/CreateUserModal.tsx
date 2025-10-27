@@ -29,7 +29,7 @@ interface CreateUserModalProps {
 export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalProps) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'admin' | 'installer' | 'order_manager'>('installer')
+  const [role, setRole] = useState<'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos'>('operador_homologacao')
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -69,7 +69,7 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
         })
         setEmail('')
         setPassword('')
-        setRole('installer')
+        setRole('operador_homologacao')
         onOpenChange(false)
         onUserCreated()
       } else {
@@ -137,14 +137,17 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
 
           <div className="space-y-2">
             <Label htmlFor="role">Função</Label>
-            <Select value={role} onValueChange={(value: 'admin' | 'installer' | 'order_manager') => setRole(value)}>
+            <Select value={role} onValueChange={(value: any) => setRole(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma função" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="installer">Instalador</SelectItem>
-                <SelectItem value="order_manager">Gestor de Pedidos</SelectItem>
+                <SelectItem value="gestor">Gestor</SelectItem>
+                <SelectItem value="operador_kickoff">Operador de Kickoff</SelectItem>
+                <SelectItem value="operador_homologacao">Operador de Homologação</SelectItem>
+                <SelectItem value="operador_agendamento">Operador de Agendamento</SelectItem>
+                <SelectItem value="operador_suprimentos">Operador de Suprimentos</SelectItem>
               </SelectContent>
             </Select>
           </div>

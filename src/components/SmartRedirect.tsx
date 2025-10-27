@@ -17,11 +17,17 @@ const SmartRedirect = () => {
   }
 
   // Redirect based on user role
-  if (role === 'installer') {
+  if (role === 'admin') {
     return <Navigate to="/homologation" replace />
-  } else if (role === 'admin') {
+  } else if (role === 'gestor') {
+    return <Navigate to="/dashboard" replace />
+  } else if (role === 'operador_kickoff') {
+    return <Navigate to="/kickoff" replace />
+  } else if (role === 'operador_homologacao') {
     return <Navigate to="/homologation" replace />
-  } else if (role === 'order_manager') {
+  } else if (role === 'operador_agendamento') {
+    return <Navigate to="/planning" replace />
+  } else if (role === 'operador_suprimentos') {
     return <Navigate to="/kanban" replace />
   } else if (role === null) {
     // User is authenticated but has no role assigned

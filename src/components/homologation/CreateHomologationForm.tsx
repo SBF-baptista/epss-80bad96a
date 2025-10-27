@@ -17,14 +17,14 @@ interface CreateHomologationFormProps {
 
 const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const { toast } = useToast();
-  const { isInstaller } = useUserRole();
+  const { isOperadorHomologacao } = useUserRole();
   const [isCreating, setIsCreating] = useState(false);
   const [selectedBrandCode, setSelectedBrandCode] = useState("");
   const [selectedBrandName, setSelectedBrandName] = useState("");
   const [selectedModelCode, setSelectedModelCode] = useState("");
   const [selectedModelName, setSelectedModelName] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [nextStep, setNextStep] = useState<"queue" | "execute" | "">(isInstaller() ? "execute" : "");
+  const [nextStep, setNextStep] = useState<"queue" | "execute" | "">(isOperadorHomologacao() ? "execute" : "");
   const [openBrand, setOpenBrand] = useState(false);
   const [openModel, setOpenModel] = useState(false);
   const [openYear, setOpenYear] = useState(false);
@@ -34,10 +34,10 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const { years, loading: loadingYears } = useFipeYears(selectedBrandCode, selectedModelCode);
 
   const handleCreateCard = async () => {
-    if (!selectedBrandName || !selectedModelName || (!isInstaller() && !nextStep)) {
+    if (!selectedBrandName || !selectedModelName || (!isOperadorHomologacao() && !nextStep)) {
       toast({
         title: "Campos obrigatórios",
-        description: isInstaller() 
+        description: isOperadorHomologacao() 
           ? "Por favor, selecione marca e modelo" 
           : "Por favor, selecione marca, modelo e como deseja prosseguir",
         variant: "destructive"
@@ -49,7 +49,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
 
     setIsCreating(true);
     try {
-      const executeNow = isInstaller() || nextStep === "execute";
+      const executeNow = isOperadorHomologacao() || nextStep === "execute";
       await createHomologationCard(selectedBrandName, selectedModelName, year, undefined, executeNow);
       
       // Reset form
@@ -58,7 +58,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
       setSelectedModelCode("");
       setSelectedModelName("");
       setSelectedYear("");
-      setNextStep(isInstaller() ? "execute" : "");
+      setNextStep(isOperadorHomologacao() ? "execute" : "");
       
       onUpdate();
       const statusMessage = executeNow ? " e movido para execução de testes" : " e adicionado à fila";
@@ -336,36 +336,19 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
           </div>
         </div>
         
-        {!isInstaller() && (
+        {!isOperadorHomologacao() && (
           <div>
             <Label className="block text-sm font-medium text-gray-700 mb-3">
               Como deseja prosseguir? *
             </Label>
-            <RadioGroup 
-              value={nextStep} 
-              onValueChange={(value: "queue" | "execute") => setNextStep(value)}
-              className="space-y-2"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="queue" id="queue" />
-                <Label htmlFor="queue" className="text-sm cursor-pointer">
-                  Adicionar à fila (fluxo padrão)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="execute" id="execute" />
-                <Label htmlFor="execute" className="text-sm cursor-pointer">
-                  Executar testes agora (urgente)
-                </Label>
-              </div>
-            </RadioGroup>
+...
           </div>
         )}
         
-        {isInstaller() && (
+        {isOperadorHomologacao() && (
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800 font-medium">
-              Como instalador, este card será automaticamente direcionado para execução de testes.
+              Como operador de homologação, este card será automaticamente direcionado para execução de testes.
             </p>
           </div>
         )}

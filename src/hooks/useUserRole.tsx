@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react'
 import { useAuth } from './useAuth'
 import { supabase } from '@/integrations/supabase/client'
 
-export type UserRole = 'admin' | 'installer' | 'order_manager' | null
+export type UserRole = 
+  | 'admin' 
+  | 'gestor' 
+  | 'operador_kickoff' 
+  | 'operador_homologacao' 
+  | 'operador_agendamento' 
+  | 'operador_suprimentos' 
+  | null
 
 export const useUserRole = () => {
   const { user } = useAuth()
@@ -46,16 +53,42 @@ export const useUserRole = () => {
     return role === requiredRole
   }
 
+  const hasAnyRole = (requiredRoles: UserRole[]): boolean => {
+    if (!role) return false
+    return requiredRoles.includes(role)
+  }
+
   const isAdmin = (): boolean => hasRole('admin')
-  const isInstaller = (): boolean => hasRole('installer')
-  const isOrderManager = (): boolean => hasRole('order_manager')
+  const isGestor = (): boolean => hasRole('gestor')
+  const isOperadorKickoff = (): boolean => hasRole('operador_kickoff')
+  const isOperadorHomologacao = (): boolean => hasRole('operador_homologacao')
+  const isOperadorAgendamento = (): boolean => hasRole('operador_agendamento')
+  const isOperadorSuprimentos = (): boolean => hasRole('operador_suprimentos')
+
+  // Permissões por área
+  const canAccessKickoff = (): boolean => hasAnyRole(['admin', 'operador_kickoff'])
+  const canAccessHomologation = (): boolean => hasAnyRole(['admin', 'operador_homologacao'])
+  const canAccessPlanning = (): boolean => hasAnyRole(['admin', 'operador_agendamento'])
+  const canAccessSupply = (): boolean => hasAnyRole(['admin', 'operador_suprimentos'])
+  
+  // Permissões de edição (Gestor só visualiza)
+  const canEdit = (): boolean => role !== 'gestor' && role !== null
 
   return {
     role,
     loading,
     hasRole,
+    hasAnyRole,
     isAdmin,
-    isInstaller,
-    isOrderManager
+    isGestor,
+    isOperadorKickoff,
+    isOperadorHomologacao,
+    isOperadorAgendamento,
+    isOperadorSuprimentos,
+    canAccessKickoff,
+    canAccessHomologation,
+    canAccessPlanning,
+    canAccessSupply,
+    canEdit
   }
 }

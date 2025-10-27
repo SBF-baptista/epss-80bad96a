@@ -21,6 +21,7 @@ import { MoreHorizontal, Key, UserCog } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { userManagementService, type User } from '@/services/userManagementService'
 import { EditUserModal } from './EditUserModal'
+import { getRoleLabel, getRoleBadgeVariant } from '@/services/permissionsService'
 
 interface UserListProps {
   users: User[]
@@ -72,32 +73,6 @@ export const UserList = ({ users, onUserUpdated }: UserListProps) => {
     })
   }
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'destructive'
-      case 'installer':
-        return 'secondary'
-      case 'order_manager':
-        return 'default'
-      default:
-        return 'outline'
-    }
-  }
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador'
-      case 'installer':
-        return 'Instalador'
-      case 'order_manager':
-        return 'Gestor de Pedidos'
-      default:
-        return role
-    }
-  }
-
   return (
     <>
       <div className="rounded-md border">
@@ -119,8 +94,8 @@ export const UserList = ({ users, onUserUpdated }: UserListProps) => {
                   <div className="flex gap-1">
                     {user.roles.length > 0 ? (
                       user.roles.map((role) => (
-                        <Badge key={role} variant={getRoleBadgeVariant(role)}>
-                          {getRoleLabel(role)}
+                        <Badge key={role} variant={getRoleBadgeVariant(role as any) as any}>
+                          {getRoleLabel(role as any)}
                         </Badge>
                       ))
                     ) : (

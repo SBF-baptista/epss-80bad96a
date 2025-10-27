@@ -402,8 +402,11 @@ export function AppNavigation() {
                   <div className="font-medium truncate">{user?.email}</div>
                   <div className="text-gray-500 capitalize">
                     {role === 'admin' ? 'Administrador' : 
-                     role === 'installer' ? 'Instalador' : 
-                     role === 'order_manager' ? 'Gestor de Pedidos' : role}
+                     role === 'gestor' ? 'Gestor' : 
+                     role === 'operador_kickoff' ? 'Operador de Kickoff' :
+                     role === 'operador_homologacao' ? 'Operador de Homologação' :
+                     role === 'operador_agendamento' ? 'Operador de Agendamento' :
+                     role === 'operador_suprimentos' ? 'Operador de Suprimentos' : role}
                   </div>
                 </div>
               </div>

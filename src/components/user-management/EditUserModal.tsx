@@ -27,9 +27,12 @@ interface EditUserModalProps {
 }
 
 export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditUserModalProps) => {
-  const [role, setRole] = useState<'admin' | 'installer' | 'order_manager'>(
+  const [role, setRole] = useState<'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos'>(
     user.roles.includes('admin') ? 'admin' : 
-    user.roles.includes('order_manager') ? 'order_manager' : 'installer'
+    user.roles.includes('gestor') ? 'gestor' :
+    user.roles.includes('operador_kickoff') ? 'operador_kickoff' :
+    user.roles.includes('operador_homologacao') ? 'operador_homologacao' :
+    user.roles.includes('operador_agendamento') ? 'operador_agendamento' : 'operador_suprimentos'
   )
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -84,14 +87,17 @@ export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditU
 
           <div className="space-y-2">
             <Label htmlFor="role">Função</Label>
-            <Select value={role} onValueChange={(value: 'admin' | 'installer' | 'order_manager') => setRole(value)}>
+            <Select value={role} onValueChange={(value: any) => setRole(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma função" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="installer">Instalador</SelectItem>
-                <SelectItem value="order_manager">Gestor de Pedidos</SelectItem>
+                <SelectItem value="gestor">Gestor</SelectItem>
+                <SelectItem value="operador_kickoff">Operador de Kickoff</SelectItem>
+                <SelectItem value="operador_homologacao">Operador de Homologação</SelectItem>
+                <SelectItem value="operador_agendamento">Operador de Agendamento</SelectItem>
+                <SelectItem value="operador_suprimentos">Operador de Suprimentos</SelectItem>
               </SelectContent>
             </Select>
           </div>
