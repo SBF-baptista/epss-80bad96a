@@ -73,17 +73,24 @@ export const createKitItemOption = async (optionData: CreateKitItemOptionRequest
   }
 };
 
-export const deleteKitItemOption = async (optionId: string): Promise<void> => {
+export const deleteKitItemOption = async (optionId: string): Promise<{ count: number }> => {
   try {
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('kit_item_options')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('id', optionId);
 
     if (error) {
       console.error('Error deleting kit item option:', error);
       throw error;
     }
+
+    // If no rows were deleted, it likely means RLS blocked the operation or the item doesn't exist
+    if (!count || count === 0) {
+      throw new Error('Sem permissão para excluir ou item não encontrado.');
+    }
+
+    return { count };
   } catch (error) {
     console.error('Error in deleteKitItemOption:', error);
     throw error;
