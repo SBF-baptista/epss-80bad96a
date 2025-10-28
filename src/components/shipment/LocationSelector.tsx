@@ -1,13 +1,23 @@
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { useStates, useCities } from "@/hooks/useIBGEData";
-import { Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface LocationSelectorProps {
   selectedUF: string;
@@ -26,71 +36,128 @@ const LocationSelector = ({
 }: LocationSelectorProps) => {
   const { states, loading: statesLoading, error: statesError } = useStates();
   const { cities, loading: citiesLoading, error: citiesError } = useCities(selectedUF);
+  const [openUF, setOpenUF] = useState(false);
+  const [openCity, setOpenCity] = useState(false);
 
   // Handle state change and reset city selection
   const handleUFChange = (value: string) => {
     onUFChange(value);
     onCityChange(''); // Reset city when state changes
+    setOpenUF(false);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* UF Selection */}
       <div className="space-y-2">
         <Label>UF (Estado)</Label>
-        <Select value={selectedUF} onValueChange={handleUFChange} disabled={disabled || statesLoading}>
-          <SelectTrigger>
-            <SelectValue placeholder={statesLoading ? "Carregando estados..." : "Selecione o estado"} />
-          </SelectTrigger>
-          <SelectContent>
-            {statesError ? (
-              <SelectItem value="" disabled>
-                Erro ao carregar estados
-              </SelectItem>
-            ) : (
-              states.map((state) => (
-                <SelectItem key={state.sigla} value={state.sigla}>
-                  {state.sigla} - {state.nome}
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
+        <Popover open={openUF} onOpenChange={setOpenUF}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={openUF}
+              className="w-full justify-between"
+              disabled={disabled || statesLoading}
+            >
+              {selectedUF
+                ? states.find((state) => state.sigla === selectedUF)?.sigla + " - " + states.find((state) => state.sigla === selectedUF)?.nome
+                : statesLoading ? "Carregando..." : "Selecione ou digite..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput 
+                placeholder="Digite para buscar ou escrever..." 
+                value={selectedUF}
+                onValueChange={(value) => {
+                  onUFChange(value.toUpperCase());
+                }}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {selectedUF ? `"${selectedUF}" será usado` : "Nenhum estado encontrado"}
+                </CommandEmpty>
+                <CommandGroup>
+                  {states.map((state) => (
+                    <CommandItem
+                      key={state.sigla}
+                      value={state.sigla}
+                      onSelect={(value) => handleUFChange(value.toUpperCase())}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedUF === state.sigla ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {state.sigla} - {state.nome}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* City Selection */}
-      {selectedUF && (
-        <div className="space-y-2">
-          <Label>Cidade</Label>
-          <Select value={selectedCity} onValueChange={onCityChange} disabled={disabled || citiesLoading}>
-            <SelectTrigger>
-              <SelectValue 
-                placeholder={
-                  citiesLoading 
-                    ? "Carregando cidades..." 
-                    : citiesError 
-                    ? "Erro ao carregar cidades" 
-                    : "Selecione a cidade"
-                } 
+      <div className="space-y-2">
+        <Label>Cidade</Label>
+        <Popover open={openCity} onOpenChange={setOpenCity}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={openCity}
+              className="w-full justify-between"
+              disabled={disabled}
+            >
+              {selectedCity || (citiesLoading ? "Carregando..." : "Selecione ou digite...")}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput 
+                placeholder="Digite para buscar ou escrever..." 
+                value={selectedCity}
+                onValueChange={(value) => {
+                  onCityChange(value);
+                }}
               />
-              {citiesLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            </SelectTrigger>
-            <SelectContent>
-              {citiesError ? (
-                <SelectItem value="" disabled>
-                  Erro ao carregar cidades
-                </SelectItem>
-              ) : (
-                cities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+              <CommandList>
+                <CommandEmpty>
+                  {selectedCity ? `"${selectedCity}" será usado` : selectedUF ? "Nenhuma cidade encontrada" : "Selecione um estado primeiro"}
+                </CommandEmpty>
+                {selectedUF && cities.length > 0 && (
+                  <CommandGroup>
+                    {cities.map((city) => (
+                      <CommandItem
+                        key={city}
+                        value={city}
+                        onSelect={(value) => {
+                          onCityChange(value);
+                          setOpenCity(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedCity === city ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {city}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
 };
