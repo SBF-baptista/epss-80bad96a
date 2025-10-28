@@ -15,6 +15,7 @@ export const SupplyHomologationList = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin } = useUserRole();
@@ -34,8 +35,10 @@ export const SupplyHomologationList = () => {
 
   const handleDeleteSupply = async (supplyId: string, supplyName: string) => {
     try {
+      console.log('Supply delete start', { supplyId, supplyName });
       setDeletingId(supplyId);
-      await deleteKitItemOption(supplyId);
+      const res = await deleteKitItemOption(supplyId);
+      console.log('Supply delete success', { supplyId, res });
       
       queryClient.invalidateQueries({
         queryKey: ['kit-item-options', 'supply']
@@ -45,11 +48,13 @@ export const SupplyHomologationList = () => {
         title: "Insumo removido",
         description: `${supplyName} foi removido com sucesso.`,
       });
-    } catch (error) {
+      
+      setDialogOpen(null);
+    } catch (error: any) {
       console.error('Error deleting supply:', error);
       toast({
         title: "Erro ao remover",
-        description: "Ocorreu um erro ao remover o insumo. Tente novamente.",
+        description: error?.message || "Ocorreu um erro ao remover o insumo. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -159,7 +164,10 @@ export const SupplyHomologationList = () => {
                     </div>
 
                     {isAdmin && (
-                      <AlertDialog>
+                      <AlertDialog 
+                        open={dialogOpen === supply.id}
+                        onOpenChange={(open) => setDialogOpen(open ? supply.id : null)}
+                      >
                         <AlertDialogTrigger asChild>
                           <Button
                             variant="outline"
@@ -179,12 +187,18 @@ export const SupplyHomologationList = () => {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogCancel disabled={deletingId === supply.id}>
+                              Cancelar
+                            </AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteSupply(supply.id, supply.item_name)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteSupply(supply.id, supply.item_name);
+                              }}
+                              disabled={deletingId === supply.id}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Remover
+                              {deletingId === supply.id ? "Removendo..." : "Remover"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

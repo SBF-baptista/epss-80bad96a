@@ -35,8 +35,10 @@ export const AccessoryHomologationList = () => {
 
   const handleDeleteAccessory = async (accessoryId: string, accessoryName: string) => {
     try {
+      console.log('Accessory delete start', { accessoryId, accessoryName });
       setDeletingId(accessoryId);
-      await deleteKitItemOption(accessoryId);
+      const res = await deleteKitItemOption(accessoryId);
+      console.log('Accessory delete success', { accessoryId, res });
       
       queryClient.invalidateQueries({
         queryKey: ['kit-item-options', 'accessory']
@@ -48,11 +50,11 @@ export const AccessoryHomologationList = () => {
       });
       
       setDialogOpen(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting accessory:', error);
       toast({
         title: "Erro ao remover",
-        description: "Ocorreu um erro ao remover o acessório. Tente novamente.",
+        description: error?.message || "Ocorreu um erro ao remover o acessório. Tente novamente.",
         variant: "destructive",
       });
     } finally {
