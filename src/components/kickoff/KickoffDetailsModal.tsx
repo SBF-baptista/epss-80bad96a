@@ -15,6 +15,7 @@ import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
+import { LocationSelector } from "@/components/shipment";
 
 interface KickoffDetailsModalProps {
   open: boolean;
@@ -585,24 +586,13 @@ export const KickoffDetailsModal = ({
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <Label>Cidade</Label>
-                    <Input
-                      value={location.city}
-                      onChange={(e) => updateLocation(index, "city", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Estado</Label>
-                    <Input
-                      value={location.state}
-                      onChange={(e) => updateLocation(index, "state", e.target.value)}
-                      maxLength={2}
-                      placeholder="SP"
-                    />
-                  </div>
-                </div>
+                <LocationSelector
+                  selectedUF={location.state}
+                  selectedCity={location.city}
+                  onUFChange={(value) => updateLocation(index, "state", value)}
+                  onCityChange={(value) => updateLocation(index, "city", value)}
+                  disabled={loading}
+                />
               </div>
             ))}
           </div>
