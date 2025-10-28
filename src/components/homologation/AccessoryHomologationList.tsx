@@ -15,6 +15,7 @@ export const AccessoryHomologationList = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin } = useUserRole();
@@ -45,6 +46,8 @@ export const AccessoryHomologationList = () => {
         title: "Acessório removido",
         description: `${accessoryName} foi removido com sucesso.`,
       });
+      
+      setDialogOpen(null);
     } catch (error) {
       console.error('Error deleting accessory:', error);
       toast({
@@ -159,7 +162,10 @@ export const AccessoryHomologationList = () => {
                     </div>
 
                     {isAdmin && (
-                      <AlertDialog>
+                      <AlertDialog 
+                        open={dialogOpen === accessory.id}
+                        onOpenChange={(open) => setDialogOpen(open ? accessory.id : null)}
+                      >
                         <AlertDialogTrigger asChild>
                           <Button
                             variant="outline"
@@ -179,12 +185,18 @@ export const AccessoryHomologationList = () => {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogCancel disabled={deletingId === accessory.id}>
+                              Cancelar
+                            </AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteAccessory(accessory.id, accessory.item_name)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteAccessory(accessory.id, accessory.item_name);
+                              }}
+                              disabled={deletingId === accessory.id}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Remover
+                              {deletingId === accessory.id ? "Removendo..." : "Remover"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
