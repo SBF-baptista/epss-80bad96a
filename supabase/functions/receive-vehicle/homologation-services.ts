@@ -168,38 +168,26 @@ export async function createHomologationCard(supabase: any, vehicleData: any, in
       .limit(1)
       .single()
 
-    if (existingCard) {
-      console.log(`Homologation card already exists for ${vehicleData.brand} ${vehicleData.vehicle} with status: ${existingCard.status}`)
-      
-      // Link existing card to incoming vehicle
-      const { error: updateError } = await supabase
-        .from('homologation_cards')
-        .update({ incoming_vehicle_id: incomingVehicleId })
-        .eq('id', existingCard.id)
-        .is('incoming_vehicle_id', null)
+    // Always create a new card per incoming_vehicle
+    // If an existing card is found, inherit its status
+    const inheritedStatus = existingCard ? existingCard.status : 'homologar'
+    const notes = existingCard 
+      ? `Status inherited from existing homologation (${inheritedStatus}). Original card: ${existingCard.id}. Created on ${new Date().toISOString()}`
+      : `Automatically created from vehicle data received on ${new Date().toISOString()}`
 
-      if (updateError) {
-        console.error('Error linking existing homologation card:', updateError)
-      }
-
-      // If the card is already homologated, create kit schedule immediately
-      if (existingCard.status === 'homologado') {
-        console.log('Card is already homologated, creating kit schedule immediately...')
-        await createKitScheduleForHomologation(supabase, existingCard, incomingVehicleId)
-      }
-
-      return { homologation_id: existingCard.id, created: false, already_homologated: existingCard.status === 'homologado' }
-    }
+    console.log(existingCard 
+      ? `Found existing homologation for ${vehicleData.brand} ${vehicleData.vehicle} with status: ${existingCard.status}. Creating NEW card with inherited status.`
+      : `No existing homologation found for ${vehicleData.brand} ${vehicleData.vehicle}. Creating new card with status 'homologar'.`)
 
     const { data: newCard, error: cardError } = await supabase
       .from('homologation_cards')
       .insert({
         brand: BRAND,
         model: MODEL,
-        year: vehicleData.year || null,
-        status: 'homologar',
+        year: vehicleData.year || existingCard?.year || null,
+        status: inheritedStatus,
         incoming_vehicle_id: incomingVehicleId,
-        notes: `Automatically created from vehicle data received on ${new Date().toISOString()}`
+        notes: notes
       })
       .select()
       .single()
@@ -209,8 +197,15 @@ export async function createHomologationCard(supabase: any, vehicleData: any, in
       throw cardError
     }
 
-    console.log(`Created homologation card for ${vehicleData.brand} ${vehicleData.vehicle}`)
-    return { homologation_id: newCard.id, created: true }
+    console.log(`Created new homologation card with status '${inheritedStatus}' for ${vehicleData.brand} ${vehicleData.vehicle}`)
+    
+    // If the inherited status is 'homologado', the trigger will automatically create customer + kit_schedule
+    return { 
+      homologation_id: newCard.id, 
+      created: true, 
+      already_homologated: inheritedStatus === 'homologado',
+      inherited_status: existingCard ? inheritedStatus : undefined
+    }
 
   } catch (error) {
     console.error('Error in createHomologationCard:', error)
