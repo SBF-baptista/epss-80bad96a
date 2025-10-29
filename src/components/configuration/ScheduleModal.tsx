@@ -789,29 +789,6 @@ export const ScheduleModal = ({
                   <p className="font-semibold">{selectedCustomer.name}</p>
                 </div>
 
-                {/* Company and Package Info */}
-                {(selectedCustomer.company_name || selectedCustomer.package_name) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                    {selectedCustomer.company_name && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Empresa</span>
-                        </div>
-                        <p className="font-semibold">{selectedCustomer.company_name}</p>
-                      </div>
-                    )}
-                    {selectedCustomer.package_name && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4" />
-                          <span className="text-sm font-medium text-muted-foreground">Pacote</span>
-                        </div>
-                        <p className="font-semibold">{selectedCustomer.package_name}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {/* Vehicles */}
                 {selectedCustomer.vehicles && selectedCustomer.vehicles.length > 0 && (

@@ -218,7 +218,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
           {/* Container do Kanban com scroll vertical e horizontal */}
           <div 
             ref={scrollContainerRef}
-            className="w-full overflow-x-auto overflow-y-auto no-scrollbar homologation-kanban-scroll max-h-[calc(4*140px+3*0.75rem+4rem)] sm:max-h-[calc(4*150px+3*0.5rem+4rem)] lg:max-h-[calc(4*160px+3*0.75rem+4rem)]"
+            className="w-full overflow-x-auto overflow-y-auto no-scrollbar homologation-kanban-scroll max-h-[calc(6*140px+5*0.75rem+4rem)] sm:max-h-[calc(6*150px+5*0.5rem+4rem)] lg:max-h-[calc(6*160px+5*0.75rem+4rem)]"
             onScroll={handleScroll}
             style={{ scrollBehavior: 'smooth' }}
           >

@@ -211,17 +211,6 @@ export const EnhancedKitScheduleModal = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Company and Package Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Empresa</p>
-                    <p className="font-semibold">{mockData.company_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Pacote</p>
-                    <p className="font-semibold">{mockData.package_name}</p>
-                  </div>
-                </div>
 
                 {/* Customer Info */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
