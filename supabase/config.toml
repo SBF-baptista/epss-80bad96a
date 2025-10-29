@@ -1,5 +1,8 @@
 project_id = "eeidevcyxpnorbgcskdf"
 
+[functions.create-homologation]
+verify_jwt = true
+
 [functions.fetch-segsale-products]
 verify_jwt = false
 
