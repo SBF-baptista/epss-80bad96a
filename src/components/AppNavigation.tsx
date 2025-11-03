@@ -1,6 +1,6 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   BarChart3, 
   Kanban, 
@@ -146,6 +146,15 @@ export function AppNavigation() {
   const [homologationOpen, setHomologationOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [configurationOpen, setConfigurationOpen] = useState(false);
+
+  // Recolher todos os dropdowns quando o sidebar é fechado
+  useEffect(() => {
+    if (isCollapsed) {
+      setHomologationOpen(false);
+      setOrdersOpen(false);
+      setConfigurationOpen(false);
+    }
+  }, [isCollapsed]);
 
   // Função para expandir sidebar e abrir dropdown
   const handleDropdownToggle = (
