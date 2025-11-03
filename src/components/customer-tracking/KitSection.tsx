@@ -266,6 +266,42 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
+          {/* Bloco de Configurações */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h5 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Configurações do Kit
+            </h5>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-gray-600">ID do Kit:</span>
+                <p className="font-medium text-gray-900">{kitData.kit_id}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Status Atual:</span>
+                <p className="font-medium text-gray-900">{statusInfo.label}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Data de Criação:</span>
+                <p className="font-medium text-gray-900">
+                  {kitData.kit?.created_at 
+                    ? new Date(kitData.kit.created_at).toLocaleDateString('pt-BR')
+                    : 'N/A'}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-600">Dias no Status:</span>
+                <p className="font-medium text-gray-900">{statusDaysInfo.days} dias</p>
+              </div>
+              {kitData.kit?.configuration && (
+                <div className="sm:col-span-2">
+                  <span className="text-gray-600">Configuração:</span>
+                  <p className="font-medium text-gray-900">{kitData.kit.configuration}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Histórico de Status */}
           <div className="mt-4 pt-4 border-t">
             <StatusHistory kitScheduleId={kitData.id} />

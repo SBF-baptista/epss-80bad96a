@@ -136,7 +136,7 @@ const singleNavigationItems = [
 ];
 
 export function AppNavigation() {
-  const { state } = useSidebar();
+  const { state, setOpen } = useSidebar();
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const { user, signOut } = useAuth();
@@ -146,6 +146,17 @@ export function AppNavigation() {
   const [homologationOpen, setHomologationOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [configurationOpen, setConfigurationOpen] = useState(false);
+
+  // Função para expandir sidebar e abrir dropdown
+  const handleDropdownToggle = (
+    isOpen: boolean,
+    setIsOpen: (value: boolean) => void
+  ) => {
+    if (isCollapsed && !isOpen) {
+      setOpen(true); // Expande a sidebar
+    }
+    setIsOpen(!isOpen); // Toggle do dropdown
+  };
 
   const isActive = (path: string) => location.pathname === path;
   
@@ -221,6 +232,12 @@ export function AppNavigation() {
                       <SidebarMenuButton 
                         className="w-full justify-between touch-manipulation tap-target"
                         tooltip={isCollapsed ? navigationGroups.homologation.label : undefined}
+                        onClick={(e) => {
+                          if (isCollapsed) {
+                            e.preventDefault();
+                            handleDropdownToggle(homologationOpen, setHomologationOpen);
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-3">
                           <navigationGroups.homologation.icon className="h-4 w-4 flex-shrink-0" />
@@ -287,6 +304,12 @@ export function AppNavigation() {
                       <SidebarMenuButton 
                         className="w-full justify-between touch-manipulation tap-target"
                         tooltip={isCollapsed ? navigationGroups.orders.label : undefined}
+                        onClick={(e) => {
+                          if (isCollapsed) {
+                            e.preventDefault();
+                            handleDropdownToggle(ordersOpen, setOrdersOpen);
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-3">
                           <navigationGroups.orders.icon className="h-4 w-4 flex-shrink-0" />
@@ -353,6 +376,12 @@ export function AppNavigation() {
                       <SidebarMenuButton 
                         className="w-full justify-between touch-manipulation tap-target"
                         tooltip={isCollapsed ? navigationGroups.configuration.label : undefined}
+                        onClick={(e) => {
+                          if (isCollapsed) {
+                            e.preventDefault();
+                            handleDropdownToggle(configurationOpen, setConfigurationOpen);
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-3">
                           <navigationGroups.configuration.icon className="h-4 w-4 flex-shrink-0" />
