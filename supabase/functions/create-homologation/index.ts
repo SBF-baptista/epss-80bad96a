@@ -78,6 +78,20 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Convert test_checklist from object to array format if needed
+    let testChecklistArray
+    if (Array.isArray(requestData.test_checklist)) {
+      testChecklistArray = requestData.test_checklist
+    } else {
+      // Convert object format {rpm: false, odometro: false, ...} to array format
+      testChecklistArray = [
+        { id: 'rpm', label: 'RPM', completed: requestData.test_checklist.rpm || false },
+        { id: 'odometro', label: 'Odômetro', completed: requestData.test_checklist.odometro || false },
+        { id: 'nivel_combustivel', label: 'Nível de Combustível', completed: requestData.test_checklist.nivel_combustivel || false },
+        { id: 'combustivel_consumido', label: 'Combustível Consumido', completed: requestData.test_checklist.combustivel_consumido || false }
+      ]
+    }
+
     console.log('Creating homologation card for:', requestData.vehicle)
 
     // Create homologation card with test results
@@ -88,7 +102,7 @@ Deno.serve(async (req) => {
         model: requestData.vehicle.model.trim().toUpperCase(),
         year: requestData.vehicle.year,
         status: 'homologado',
-        test_checklist: requestData.test_checklist,
+        test_checklist: testChecklistArray,
         technical_observations: requestData.technical_observations || null,
         requested_by: user.id
       })
