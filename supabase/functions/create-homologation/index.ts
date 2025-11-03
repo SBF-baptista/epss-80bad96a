@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
 
           // Upload to storage
           const { error: uploadError } = await supabase.storage
-            .from('homologation_photos')
+            .from('homologation-photos')
             .upload(filePath, photoData, {
               contentType: photo.content_type,
               upsert: false
