@@ -56,6 +56,7 @@ export const KickoffVehiclesTable = ({
     model: string; 
     year?: number;
     issue: 'brand' | 'model' | 'year';
+    suggestion?: string;
   }>>([]);
   const [validating, setValidating] = useState(false);
   
@@ -96,6 +97,7 @@ export const KickoffVehiclesTable = ({
       model: string; 
       year?: number;
       issue: 'brand' | 'model' | 'year';
+      suggestion?: string;
     }> = [];
     
     for (const vehicle of vehicles) {
@@ -105,11 +107,24 @@ export const KickoffVehiclesTable = ({
       );
       
       if (!brandMatch) {
+        // Buscar marcas similares
+        const suggestion = brands
+          .filter(b => {
+            const brandName = b.name.toUpperCase();
+            const vehicleBrand = vehicle.brand.toUpperCase();
+            return brandName.includes(vehicleBrand.substring(0, 3)) ||
+                   vehicleBrand.includes(brandName.substring(0, 3));
+          })
+          .map(b => b.name)
+          .slice(0, 3)
+          .join(', ');
+        
         invalid.push({
           brand: vehicle.brand,
           model: vehicle.model,
           year: vehicle.year,
-          issue: 'brand'
+          issue: 'brand',
+          suggestion: suggestion || 'Nenhuma sugestão encontrada'
         });
         continue; // Se marca inválida, não adianta validar modelo/ano
       }
@@ -123,11 +138,24 @@ export const KickoffVehiclesTable = ({
         );
         
         if (!modelMatch) {
+          // Buscar modelos similares
+          const suggestion = modelData
+            .filter(m => {
+              const modelName = m.name.toUpperCase();
+              const vehicleModel = vehicle.model.toUpperCase();
+              return modelName.includes(vehicleModel.substring(0, 3)) ||
+                     vehicleModel.includes(modelName.substring(0, 3));
+            })
+            .map(m => m.name)
+            .slice(0, 3)
+            .join(', ');
+          
           invalid.push({
             brand: vehicle.brand,
             model: vehicle.model,
             year: vehicle.year,
-            issue: 'model'
+            issue: 'model',
+            suggestion: suggestion || 'Nenhuma sugestão encontrada'
           });
           continue;
         }
@@ -140,11 +168,18 @@ export const KickoffVehiclesTable = ({
           );
           
           if (!yearMatch) {
+            // Listar anos disponíveis
+            const suggestion = yearData
+              .map(y => y.name)
+              .slice(0, 5)
+              .join(', ');
+            
             invalid.push({
               brand: vehicle.brand,
               model: vehicle.model,
               year: vehicle.year,
-              issue: 'year'
+              issue: 'year',
+              suggestion: suggestion || 'Nenhuma sugestão encontrada'
             });
           }
         }
@@ -187,6 +222,26 @@ export const KickoffVehiclesTable = ({
       inv => inv.brand.toUpperCase() === vehicle.brand.toUpperCase() &&
              inv.model.toUpperCase() === vehicle.model.toUpperCase()
     );
+  };
+
+  const getVehicleValidationDetails = (vehicle: KickoffVehicle) => {
+    const invalidVehicle = invalidVehicles.find(
+      inv => inv.brand.toUpperCase() === vehicle.brand.toUpperCase() &&
+             inv.model.toUpperCase() === vehicle.model.toUpperCase()
+    );
+    
+    if (!invalidVehicle) return null;
+    
+    const errorMessages = {
+      brand: `Marca "${invalidVehicle.brand}" não encontrada na FIPE`,
+      model: `Modelo "${invalidVehicle.model}" não encontrado na FIPE`,
+      year: `Ano "${invalidVehicle.year}" não encontrado na FIPE`
+    };
+    
+    return {
+      error: errorMessages[invalidVehicle.issue],
+      suggestion: invalidVehicle.suggestion
+    };
   };
 
   return (
@@ -248,19 +303,48 @@ export const KickoffVehiclesTable = ({
               {/* FIPE Status */}
               <div className="flex items-center gap-2 pb-3 border-b">
                 {isVehicleInvalid(vehicle) ? (
-                  <>
-                    <AlertTriangle className="h-4 w-4 text-error" />
-                    <Badge variant="outline" className="bg-error-light text-error border-error-border">
-                      Fora do padrão FIPE
-                    </Badge>
-                  </>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 cursor-help">
+                        <AlertTriangle className="h-4 w-4 text-error" />
+                        <Badge variant="outline" className="bg-error-light text-error border-error-border">
+                          Fora do padrão FIPE
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <div className="space-y-2">
+                        <p className="font-semibold text-error">
+                          {getVehicleValidationDetails(vehicle)?.error}
+                        </p>
+                        {getVehicleValidationDetails(vehicle)?.suggestion && (
+                          <div className="text-xs">
+                            <p className="font-medium mb-1">Sugestões da FIPE:</p>
+                            <p className="text-muted-foreground">
+                              {getVehicleValidationDetails(vehicle)?.suggestion}
+                            </p>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Clique no botão de edição para corrigir
+                        </p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <Badge variant="outline" className="bg-success-light text-success border-success-border">
-                      Dentro do padrão FIPE
-                    </Badge>
-                  </>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-success" />
+                        <Badge variant="outline" className="bg-success-light text-success border-success-border">
+                          Dentro do padrão FIPE
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Veículo encontrado na tabela FIPE</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
 
@@ -524,9 +608,23 @@ export const KickoffVehiclesTable = ({
                             </div>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Veículo não encontrado na tabela FIPE</p>
-                          <p className="text-xs">Use o botão de edição para corrigir</p>
+                        <TooltipContent className="max-w-sm">
+                          <div className="space-y-2">
+                            <p className="font-semibold text-error">
+                              {getVehicleValidationDetails(vehicle)?.error}
+                            </p>
+                            {getVehicleValidationDetails(vehicle)?.suggestion && (
+                              <div className="text-xs">
+                                <p className="font-medium mb-1">Sugestões da FIPE:</p>
+                                <p className="text-muted-foreground">
+                                  {getVehicleValidationDetails(vehicle)?.suggestion}
+                                </p>
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Clique no botão de edição para corrigir
+                            </p>
+                          </div>
                         </TooltipContent>
                       </Tooltip>
                     ) : (
@@ -725,9 +823,23 @@ export const KickoffVehiclesTable = ({
                               </div>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Veículo não encontrado na tabela FIPE</p>
-                            <p className="text-xs">Use o botão de edição para corrigir</p>
+                          <TooltipContent className="max-w-sm">
+                            <div className="space-y-2">
+                              <p className="font-semibold text-error">
+                                {getVehicleValidationDetails(vehicle)?.error}
+                              </p>
+                              {getVehicleValidationDetails(vehicle)?.suggestion && (
+                                <div className="text-xs">
+                                  <p className="font-medium mb-1">Sugestões da FIPE:</p>
+                                  <p className="text-muted-foreground">
+                                    {getVehicleValidationDetails(vehicle)?.suggestion}
+                                  </p>
+                                </div>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Clique no botão de edição para corrigir
+                              </p>
+                            </div>
                           </TooltipContent>
                         </Tooltip>
                       ) : (
