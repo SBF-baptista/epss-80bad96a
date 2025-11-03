@@ -6,6 +6,7 @@ interface FipeValidationAlertProps {
     brand: string;
     model: string;
     year?: number;
+    issue: 'brand' | 'model' | 'year';
   }>;
 }
 
@@ -20,9 +21,16 @@ export const FipeValidationAlert = ({ invalidVehicles }: FipeValidationAlertProp
         <p className="mb-2">Os seguintes veículos não foram encontrados na tabela FIPE:</p>
         <ul className="list-disc list-inside space-y-1">
           {invalidVehicles.map((vehicle, idx) => (
-            <li key={idx}>
-              <strong>{vehicle.brand}</strong> - {vehicle.model}
-              {vehicle.year && ` (${vehicle.year})`}
+            <li key={idx} className="flex items-center gap-2 flex-wrap">
+              <span>
+                <strong>{vehicle.brand}</strong> - {vehicle.model}
+                {vehicle.year && ` (${vehicle.year})`}
+              </span>
+              <span className="text-xs bg-destructive/20 px-1.5 py-0.5 rounded whitespace-nowrap">
+                {vehicle.issue === 'brand' && '❌ Marca inválida'}
+                {vehicle.issue === 'model' && '❌ Modelo inválido'}
+                {vehicle.issue === 'year' && '❌ Ano inválido'}
+              </span>
             </li>
           ))}
         </ul>

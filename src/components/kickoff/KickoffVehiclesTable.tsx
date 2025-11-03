@@ -22,6 +22,7 @@ import type { KickoffVehicle } from "@/services/kickoffService";
 import { EditVehicleModal } from "./EditVehicleModal";
 import { PlateValidationCheckbox } from "./PlateValidationCheckbox";
 import { useFipeBrands } from "@/hooks/useFipeData";
+import { fetchFipeModels, fetchFipeYears } from "@/services/fipeService";
 
 interface KickoffVehiclesTableProps {
   vehicles: KickoffVehicle[];
@@ -50,7 +51,13 @@ export const KickoffVehiclesTable = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<KickoffVehicle | null>(null);
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
-  const [invalidVehicles, setInvalidVehicles] = useState<Array<{ brand: string; model: string; year?: number }>>([]);
+  const [invalidVehicles, setInvalidVehicles] = useState<Array<{ 
+    brand: string; 
+    model: string; 
+    year?: number;
+    issue: 'brand' | 'model' | 'year';
+  }>>([]);
+  const [validating, setValidating] = useState(false);
   
   const { brands } = useFipeBrands();
 
@@ -82,10 +89,17 @@ export const KickoffVehiclesTable = ({
     });
   }, [vehicles]);
 
-  const validateVehiclesAgainstFipe = () => {
-    const invalid: Array<{ brand: string; model: string; year?: number }> = [];
+  const validateVehiclesAgainstFipe = async () => {
+    setValidating(true);
+    const invalid: Array<{ 
+      brand: string; 
+      model: string; 
+      year?: number;
+      issue: 'brand' | 'model' | 'year';
+    }> = [];
     
-    vehicles.forEach(vehicle => {
+    for (const vehicle of vehicles) {
+      // 1️⃣ Validar Marca
       const brandMatch = brands.find(
         b => b.name.toUpperCase() === vehicle.brand.toUpperCase()
       );
@@ -94,12 +108,53 @@ export const KickoffVehiclesTable = ({
         invalid.push({
           brand: vehicle.brand,
           model: vehicle.model,
-          year: vehicle.year
+          year: vehicle.year,
+          issue: 'brand'
         });
+        continue; // Se marca inválida, não adianta validar modelo/ano
       }
-    });
+      
+      // 2️⃣ Validar Modelo (precisa buscar da API)
+      try {
+        const modelData = await fetchFipeModels(brandMatch.code);
+        const modelMatch = modelData.find(m => 
+          m.name.toUpperCase().includes(vehicle.model.toUpperCase()) ||
+          vehicle.model.toUpperCase().includes(m.name.toUpperCase())
+        );
+        
+        if (!modelMatch) {
+          invalid.push({
+            brand: vehicle.brand,
+            model: vehicle.model,
+            year: vehicle.year,
+            issue: 'model'
+          });
+          continue;
+        }
+        
+        // 3️⃣ Validar Ano (se fornecido)
+        if (vehicle.year) {
+          const yearData = await fetchFipeYears(brandMatch.code, modelMatch.code);
+          const yearMatch = yearData.find(y => 
+            y.name.includes(vehicle.year.toString())
+          );
+          
+          if (!yearMatch) {
+            invalid.push({
+              brand: vehicle.brand,
+              model: vehicle.model,
+              year: vehicle.year,
+              issue: 'year'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Erro na validação FIPE:', error);
+      }
+    }
     
     setInvalidVehicles(invalid);
+    setValidating(false);
   };
 
   const handlePlateValidation = (vehicleId: string, validated: boolean) => {
