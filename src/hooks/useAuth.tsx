@@ -2,6 +2,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
+import { logLogin, logLogout } from '@/services/logService'
 
 interface AuthContextType {
   user: User | null
@@ -57,10 +58,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password
     })
+    
+    if (!error) {
+      // Registrar login com sucesso
+      setTimeout(() => {
+        logLogin();
+      }, 100);
+    }
+    
     return { error }
   }
 
   const signOut = async () => {
+    // Registrar logout antes de sair
+    await logLogout();
+    
     const { error } = await supabase.auth.signOut()
     return { error }
   }

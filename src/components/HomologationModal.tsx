@@ -12,6 +12,7 @@ import HomologationPhotos from "./HomologationPhotos";
 import TestSchedulingModal from "./TestSchedulingModal";
 import TestExecutionModal from "./TestExecutionModal";
 import KitManagementSection from "./homologation/KitManagementSection";
+import { logUpdate } from "@/services/logService";
 
 interface HomologationModalProps {
   card: HomologationCard | null;
@@ -75,6 +76,15 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
     setIsUpdating(true);
     try {
       await updateHomologationNotes(card.id, notes);
+      
+      // Registrar log da edição
+      await logUpdate(
+        "Homologação",
+        "card de homologação",
+        card.id,
+        "Notas atualizadas"
+      );
+      
       onUpdate();
       toast({
         title: "Notas atualizadas",

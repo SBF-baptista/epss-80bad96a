@@ -10,6 +10,7 @@ import { useFipeBrands, useFipeModels, useFipeYears } from "@/hooks/useFipeData"
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { logCreate } from "@/services/logService";
 
 interface CreateHomologationFormProps {
   onUpdate: () => void;
@@ -50,7 +51,14 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
     setIsCreating(true);
     try {
       const executeNow = isOperadorHomologacao() || nextStep === "execute";
-      await createHomologationCard(selectedBrandName, selectedModelName, year, undefined, executeNow);
+      const newCard = await createHomologationCard(selectedBrandName, selectedModelName, year, undefined, executeNow);
+      
+      // Registrar log da criação
+      await logCreate(
+        "Homologação",
+        "card de homologação",
+        newCard.id
+      );
       
       // Reset form
       setSelectedBrandCode("");

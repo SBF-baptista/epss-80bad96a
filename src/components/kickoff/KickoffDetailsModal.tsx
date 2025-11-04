@@ -16,6 +16,7 @@ import type { KickoffVehicle } from "@/services/kickoffService";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
 import { LocationSelector } from "@/components/shipment";
+import { logCreate } from "@/services/logService";
 
 interface KickoffDetailsModalProps {
   open: boolean;
@@ -404,6 +405,13 @@ export const KickoffDetailsModal = ({
       // Process vehicles for homologation after kickoff completion
       console.log("Processing kickoff vehicles for homologation...");
       const processingResult = await processKickoffVehicles(saleSummaryId);
+      
+      // Registrar log do kickoff aprovado
+      await logCreate(
+        "Kickoff",
+        "kickoff",
+        saleSummaryId.toString()
+      );
       
       if (!processingResult.success) {
         console.error("Errors during vehicle processing:", processingResult.errors);

@@ -7,6 +7,7 @@ import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary"
 import { HomologationCard, updateHomologationStatus } from "@/services/homologationService";
 import { useHomologationToast } from "@/hooks/useHomologationToast";
 import { Button } from "@/components/ui/button";
+import { logKanbanMove } from "@/services/logService";
 
 interface HomologationKanbanProps {
   cards: HomologationCard[];
@@ -58,6 +59,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     const cardId = draggedCard.id;
     const previousStatus = draggedCard.status;
     const targetColumn = columns.find(c => c.id === columnId);
+    const previousColumn = columns.find(c => c.id === previousStatus);
     
     setIsUpdating(cardId);
     
@@ -67,6 +69,15 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       await updateHomologationStatus(cardId, columnId as HomologationCard['status']);
       
       console.log(`Successfully moved card ${cardId} to ${columnId}`);
+      
+      // Registrar log da movimentação
+      await logKanbanMove(
+        "Homologação",
+        cardId,
+        previousColumn?.title || previousStatus,
+        targetColumn?.title || columnId,
+        `${draggedCard.brand} ${draggedCard.model}`
+      );
       
       showSuccess(
         "Status atualizado",
