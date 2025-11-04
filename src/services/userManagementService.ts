@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client'
+import { logCreate, logUpdate } from './logService'
 
 export interface User {
   id: string
@@ -55,6 +56,15 @@ class UserManagementService {
         throw error;
       }
 
+      // Registrar log da criação de usuário
+      if (data.success && data.user) {
+        await logCreate(
+          "Usuários",
+          "usuário",
+          data.user.id
+        );
+      }
+
       return data;
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -88,6 +98,20 @@ class UserManagementService {
       if (error) {
         console.error('Supabase function error:', error);
         throw error;
+      }
+
+      // Registrar log da atualização de usuário
+      if (data.success) {
+        const changes = [];
+        if (updateData.role) changes.push(`Papel: ${updateData.role}`);
+        if (updateData.resetPassword) changes.push("Senha resetada");
+        
+        await logUpdate(
+          "Usuários",
+          "usuário",
+          updateData.userId,
+          changes.join(", ")
+        );
       }
 
       return data;

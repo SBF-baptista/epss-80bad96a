@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logCreate, logUpdate, logDelete } from "./logService";
 
 export interface KitSchedule {
   id?: string;
@@ -124,6 +125,13 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
     throw new Error(error.message || 'Erro ao criar agendamento');
   }
 
+  // Registrar log da criação
+  await logCreate(
+    "Agendamentos",
+    "agendamento de kit",
+    schedule.id
+  );
+
   return {
     ...schedule,
     status: schedule.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
@@ -145,6 +153,14 @@ export const updateKitSchedule = async (id: string, data: Partial<CreateKitSched
     console.error('Error updating kit schedule:', error);
     throw new Error(error.message || 'Erro ao atualizar agendamento');
   }
+
+  // Registrar log da atualização
+  await logUpdate(
+    "Agendamentos",
+    "agendamento de kit",
+    id,
+    Object.keys(data).join(", ")
+  );
 
   return {
     ...schedule,
@@ -374,6 +390,13 @@ export const deleteKitSchedule = async (id: string): Promise<void> => {
     console.error('Error deleting kit schedule:', error);
     throw new Error(error.message || 'Erro ao excluir agendamento');
   }
+
+  // Registrar log da exclusão
+  await logDelete(
+    "Agendamentos",
+    "agendamento de kit",
+    id
+  );
 };
 
 // Check for conflicts (same technician, date and time)

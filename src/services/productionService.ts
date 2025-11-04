@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client'
+import { logCreate, logUpdate } from './logService'
 
 export interface ProductionItem {
   id: string
@@ -34,6 +35,13 @@ export const addProductionItem = async (
     console.error('Error adding production item:', error)
     throw error
   }
+
+  // Registrar log da adição de item de produção
+  await logCreate(
+    "Produção",
+    "item de produção",
+    data.id
+  );
 
   return data
 }
@@ -81,4 +89,12 @@ export const updateProductionStatus = async (
     console.error('Error updating production status:', error)
     throw error
   }
+
+  // Registrar log da atualização de status
+  await logUpdate(
+    "Produção",
+    "status de produção",
+    pedidoId,
+    `Status alterado para ${status}${notes ? ` - ${notes}` : ''}`
+  );
 }

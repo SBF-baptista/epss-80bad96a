@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logCreate, logUpdate, logDelete } from "./logService";
 
 export interface Technician {
   id?: string;
@@ -41,6 +42,13 @@ export const createTechnician = async (data: CreateTechnicianData): Promise<Tech
     throw new Error(error.message || 'Erro ao criar técnico');
   }
 
+  // Registrar log da criação
+  await logCreate(
+    "Técnicos",
+    "técnico",
+    technician.id
+  );
+
   return technician;
 };
 
@@ -56,6 +64,14 @@ export const updateTechnician = async (id: string, data: Partial<CreateTechnicia
     console.error('Error updating technician:', error);
     throw new Error(error.message || 'Erro ao atualizar técnico');
   }
+
+  // Registrar log da atualização
+  await logUpdate(
+    "Técnicos",
+    "técnico",
+    id,
+    Object.keys(data).join(", ")
+  );
 
   return technician;
 };
@@ -99,4 +115,11 @@ export const deleteTechnician = async (id: string): Promise<void> => {
     console.error('Error deleting technician:', error);
     throw new Error(error.message || 'Erro ao excluir técnico');
   }
+
+  // Registrar log da exclusão
+  await logDelete(
+    "Técnicos",
+    "técnico",
+    id
+  );
 };

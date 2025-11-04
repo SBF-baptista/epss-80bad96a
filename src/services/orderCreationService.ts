@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Order } from './orderTypes'
 import { generateOrderNumber } from './orderUtils'
 import { applyAutomationRules } from './orderAutomationService'
+import { logCreate } from './logService'
 
 export const createOrder = async (orderData: {
   numero_pedido?: string
@@ -96,6 +97,13 @@ export const createOrder = async (orderData: {
       throw accessoryError
     }
   }
+
+  // Registrar log da criação do pedido
+  await logCreate(
+    "Pedidos",
+    "pedido",
+    pedido.id
+  );
 
   return {
     id: pedido.id,

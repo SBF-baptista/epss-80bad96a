@@ -8,23 +8,35 @@ export interface LogAction {
 }
 
 /**
- * Registra uma ação no sistema
+ * Registra uma ação no sistema usando RPC (server-side function)
  * @param logData - Dados do log a ser registrado
  */
 export const logAction = async (logData: LogAction): Promise<void> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { error } = await supabase.from("app_logs").insert({
-      user_id: user?.id || null,
-      action: logData.action,
-      module: logData.module,
-      details: logData.details || null,
-      ip_address: logData.ip_address || null,
+    // Usar função RPC server-side para garantir que o log seja registrado
+    const { error } = await supabase.rpc("log_action", {
+      p_action: logData.action,
+      p_module: logData.module,
+      p_details: logData.details || null,
+      p_ip_address: logData.ip_address || null,
     });
 
     if (error) {
-      console.error("Erro ao registrar log:", error);
+      console.error("Erro ao registrar log via RPC:", error);
+      
+      // Fallback: tentar inserir diretamente
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: insertError } = await supabase.from("app_logs").insert({
+        user_id: user?.id || null,
+        action: logData.action,
+        module: logData.module,
+        details: logData.details || null,
+        ip_address: logData.ip_address || null,
+      });
+      
+      if (insertError) {
+        console.error("Erro ao registrar log (fallback):", insertError);
+      }
     }
   } catch (error) {
     console.error("Erro ao registrar log:", error);

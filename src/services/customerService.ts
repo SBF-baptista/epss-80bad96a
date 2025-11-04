@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logCreate, logUpdate } from './logService';
 
 export interface VehicleInfo {
   id?: string;
@@ -176,6 +177,13 @@ export const createCustomer = async (data: CreateCustomerData): Promise<Customer
     throw new Error(error.message);
   }
 
+  // Registrar log da criação
+  await logCreate(
+    "Clientes",
+    "cliente",
+    customer.id
+  );
+
   return {
     ...customer,
     document_type: customer.document_type as 'cpf' | 'cnpj',
@@ -249,6 +257,14 @@ export const updateCustomer = async (id: string, data: Partial<CreateCustomerDat
     console.error('Error updating customer:', error);
     throw new Error(error.message);
   }
+
+  // Registrar log da atualização
+  await logUpdate(
+    "Clientes",
+    "cliente",
+    id,
+    Object.keys(data).join(", ")
+  );
 
   return {
     ...customer,

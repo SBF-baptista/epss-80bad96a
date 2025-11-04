@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logCreate, logUpdate } from "./logService";
 
 export interface ShipmentRecipient {
   id: string;
@@ -50,6 +51,13 @@ export const createShipmentRecipient = async (recipient: Omit<ShipmentRecipient,
     throw error;
   }
 
+  // Registrar log da criação
+  await logCreate(
+    "Embarque",
+    "destinatário de embarque",
+    data.id
+  );
+
   return data;
 };
 
@@ -77,6 +85,14 @@ export const updateOrderShipment = async (
     console.error('Error updating order shipment:', error);
     throw error;
   }
+
+  // Registrar log da preparação de embarque
+  await logUpdate(
+    "Embarque",
+    "embarque de pedido",
+    orderId,
+    `Endereço: ${shipmentData.shipment_address_city}${shipmentData.correios_tracking_code ? `, Código: ${shipmentData.correios_tracking_code}` : ''}`
+  );
 };
 
 // Address parsing utility
