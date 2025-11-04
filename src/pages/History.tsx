@@ -2,7 +2,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,45 +69,29 @@ const History = () => {
     );
   }
 
-  const { data: logs = [], isLoading: logsLoading } = useQuery({
+  const { data: logs = [], isLoading: logsLoading, isError, error } = useQuery({
     queryKey: ["app-logs", moduleFilter, actionFilter, startDate, endDate],
     queryFn: async () => {
-      let query = supabase
-        .from("app_logs")
-        .select(`
-          *,
-          usuarios!app_logs_user_id_fkey (email)
-        `)
-        .order("created_at", { ascending: false })
-        .limit(1000);
-
-      if (moduleFilter !== "all") {
-        query = query.eq("module", moduleFilter);
-      }
-
-      if (actionFilter !== "all") {
-        query = query.eq("action", actionFilter);
-      }
-
-      if (startDate) {
-        query = query.gte("created_at", new Date(startDate).toISOString());
-      }
-
-      if (endDate) {
-        query = query.lte("created_at", new Date(endDate).toISOString());
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.rpc("get_app_logs_admin", {
+        p_module: moduleFilter === "all" ? null : moduleFilter,
+        p_action: actionFilter === "all" ? null : actionFilter,
+        p_start_date: startDate ? new Date(startDate).toISOString() : null,
+        p_end_date: endDate ? new Date(endDate).toISOString() : null,
+      });
 
       if (error) throw error;
 
-      return (data || []).map((log: any) => ({
-        ...log,
-        user_email: log.usuarios?.email || "Sistema",
-      })) as AppLog[];
+      return (data || []) as AppLog[];
     },
     enabled: role === "admin",
   });
+
+  // Real-time subscription for new logs
+  useRealtimeSubscription(
+    "app_logs",
+    ["app-logs", moduleFilter, actionFilter, startDate, endDate],
+    { event: "*" }
+  );
 
   // Filtrar logs com base no termo de busca
   const filteredLogs = logs.filter((log) => {
@@ -128,6 +120,23 @@ const History = () => {
       <div className="container mx-auto p-6 space-y-4">
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="p-8 text-center border-destructive">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Erro ao Carregar Histórico</h2>
+          <p className="text-muted-foreground mb-4">
+            {error instanceof Error ? error.message : "Ocorreu um erro ao carregar os registros do sistema."}
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Recarregar Página
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -294,7 +303,22 @@ const History = () => {
                 paginatedLogs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="font-medium">
-                      {log.user_email || "Sistema"}
+                      {log.user_id ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="cursor-help">
+                                {log.user_email || `Usuário ${log.user_id.slice(0, 8)}...`}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">ID: {log.user_id}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Badge variant="secondary">Sistema</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", {

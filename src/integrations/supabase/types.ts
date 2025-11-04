@@ -1394,6 +1394,24 @@ export type Database = {
         }[]
       }
       generate_auto_order_number: { Args: never; Returns: string }
+      get_app_logs_admin: {
+        Args: {
+          p_action?: string
+          p_end_date?: string
+          p_module?: string
+          p_start_date?: string
+        }
+        Returns: {
+          action: string
+          created_at: string
+          details: string
+          id: string
+          ip_address: string
+          module: string
+          user_email: string
+          user_id: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
