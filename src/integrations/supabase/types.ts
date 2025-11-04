@@ -99,6 +99,36 @@ export type Database = {
           },
         ]
       }
+      app_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          ip_address: string | null
+          module: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          ip_address?: string | null
+          module: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          ip_address?: string | null
+          module?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       automation_rule_photos: {
         Row: {
           automation_rule_id: number
@@ -1374,6 +1404,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_action: {
+        Args: {
+          p_action: string
+          p_details?: string
+          p_ip_address?: string
+          p_module: string
+        }
+        Returns: undefined
       }
       relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
     }

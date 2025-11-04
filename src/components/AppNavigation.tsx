@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Calendar,
   UserCheck,
-  Rocket
+  Rocket,
+  Clock
 } from "lucide-react";
 import {
   Sidebar,
@@ -132,6 +133,13 @@ const singleNavigationItems = [
     icon: UserCheck,
     description: "Acompanhar status dos clientes e kits",
     roles: ["admin", "installer"]
+  },
+  { 
+    to: "/history", 
+    label: "Histórico", 
+    icon: Clock,
+    description: "Visualizar histórico de ações do sistema",
+    roles: ["admin"]
   },
 ];
 

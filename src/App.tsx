@@ -25,6 +25,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import SmartRedirect from "@/components/SmartRedirect";
 import SegsaleTest from "./pages/SegsaleTest";
+import History from "./pages/History";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -170,6 +171,15 @@ function App() {
             <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
               <Layout>
                 <Kickoff />
+              </Layout>
+            </RoleProtectedRoute>
+          </ProtectedRoute>
+        } />
+        <Route path="/history" element={
+          <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <Layout>
+                <History />
               </Layout>
             </RoleProtectedRoute>
           </ProtectedRoute>
