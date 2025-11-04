@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getBrandCategory } from "@/types/vehicleCategories";
+import { logCreate, logUpdate, logDelete } from "./logService";
 
 export interface HomologationCard {
   id: string;
@@ -124,6 +125,13 @@ export const filterHomologationCards = (
 };
 
 export const softDeleteHomologationCard = async (cardId: string): Promise<void> => {
+  // Get card details for logging
+  const { data: card } = await supabase
+    .from('homologation_cards')
+    .select('brand, model, year')
+    .eq('id', cardId)
+    .single();
+
   const { error } = await supabase
     .from('homologation_cards')
     .update({ deleted_at: new Date().toISOString() })
@@ -133,6 +141,13 @@ export const softDeleteHomologationCard = async (cardId: string): Promise<void> 
     console.error('Error deleting homologation card:', error);
     throw error;
   }
+
+  // Log deletion
+  await logDelete(
+    "Homologação",
+    "card de homologação",
+    cardId
+  );
 };
 
 export const fetchWorkflowChain = async (): Promise<WorkflowChainItem[]> => {
@@ -162,6 +177,8 @@ export const updateHomologationStatus = async (
     console.error('Error updating homologation status:', error);
     throw error;
   }
+
+  // Note: Kanban movements are logged separately in the component to include column names
 };
 
 export const createHomologationCard = async (
@@ -236,6 +253,13 @@ export const createHomologationCard = async (
     throw error;
   }
 
+  // Log creation
+  await logCreate(
+    "Homologação",
+    "card de homologação",
+    data.id
+  );
+
   return data;
 };
 
@@ -252,6 +276,14 @@ export const updateHomologationConfiguration = async (
     console.error('Error updating homologation configuration:', error);
     throw error;
   }
+
+  // Log update
+  await logUpdate(
+    "Homologação",
+    "configuração",
+    cardId,
+    `Nova configuração: ${configuration}`
+  );
 };
 
 export const fetchAutomationConfigurations = async (): Promise<string[]> => {
@@ -308,6 +340,13 @@ export const updateHomologationNotes = async (
     console.error('Error updating homologation notes:', error);
     throw error;
   }
+
+  // Log update
+  await logUpdate(
+    "Homologação",
+    "notas",
+    cardId
+  );
 };
 
 export const fetchHomologationPhotos = async (cardId: string): Promise<HomologationPhoto[]> => {

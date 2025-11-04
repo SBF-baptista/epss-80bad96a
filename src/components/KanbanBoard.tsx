@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessoriesWithoutModules } from "@/services/vehicleAccessoryService";
+import { logKanbanMove } from "@/services/logService";
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -241,6 +242,17 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         };
         
         const newStatus = statusMap[columnId] || 'scheduled';
+        const previousStatus = draggedSchedules[0].status;
+        const targetColumn = columns.find(c => c.id === columnId);
+        const previousColumn = columns.find(c => {
+          const reverseMap: Record<string, string> = {
+            'scheduled': 'scheduled',
+            'in_progress': 'in_progress',
+            'completed': 'completed',
+            'shipped': 'shipped',
+          };
+          return reverseMap[previousStatus] === c.id;
+        });
         
         // Update all schedules in the group
         const scheduleIds = draggedSchedules.map(s => s.id);
@@ -248,6 +260,17 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
           .from('kit_schedules')
           .update({ status: newStatus })
           .in('id', scheduleIds);
+        
+        // Log each movement
+        for (const schedule of draggedSchedules) {
+          await logKanbanMove(
+            "Pedidos",
+            schedule.id,
+            previousColumn?.title || previousStatus,
+            targetColumn?.title || columnId,
+            schedule.customer_name || "Cliente não identificado"
+          );
+        }
         
         onOrderUpdate();
         toast({

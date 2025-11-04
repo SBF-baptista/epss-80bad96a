@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client'
+import { logUpdate, logDelete } from './logService'
 
 export const generateOrderNumber = async (): Promise<string> => {
   console.log('Generating new order number...')
@@ -93,6 +94,8 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
     throw error
   }
 
+  // Note: Kanban movements are logged separately in the component to include column names
+
   // Send WhatsApp notification when order is moved to "enviado"
   if (status === 'enviado' && orderData?.shipment_recipients) {
     try {
@@ -130,6 +133,13 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
 export const deleteOrder = async (orderId: string) => {
   console.log('Deleting order:', orderId)
   
+  // Get order number before deletion
+  const { data: order } = await supabase
+    .from('pedidos')
+    .select('numero_pedido')
+    .eq('id', orderId)
+    .single()
+  
   const { error } = await supabase
     .from('pedidos')
     .delete()
@@ -139,4 +149,11 @@ export const deleteOrder = async (orderId: string) => {
     console.error('Error deleting order:', error)
     throw error
   }
+
+  // Log deletion
+  await logDelete(
+    "Pedidos",
+    "pedido",
+    orderId
+  )
 }
