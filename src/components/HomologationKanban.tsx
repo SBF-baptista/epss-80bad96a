@@ -215,10 +215,10 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
             <ChevronRight className="h-4 w-4" />
           </Button>
 
-          {/* Container do Kanban com scroll vertical e horizontal */}
+          {/* Container do Kanban com scroll horizontal apenas */}
           <div 
             ref={scrollContainerRef}
-            className="w-full overflow-x-auto overflow-y-auto no-scrollbar homologation-kanban-scroll max-h-[calc(6*140px+5*0.75rem+4rem)] sm:max-h-[calc(6*150px+5*0.5rem+4rem)] lg:max-h-[calc(6*160px+5*0.75rem+4rem)]"
+            className="w-full overflow-x-auto no-scrollbar homologation-kanban-scroll"
             onScroll={handleScroll}
             style={{ scrollBehavior: 'smooth' }}
           >
