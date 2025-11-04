@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -59,133 +59,135 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <TooltipProvider>
           <Toaster />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth" element={<Auth />} />
-            {/* Smart redirect based on user role */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <SmartRedirect />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin']}>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/kanban" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['operador_suprimentos']}>
-                  <Layout>
-                    <Kanban />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/homologation" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
-                  <Layout>
-                    <Homologation />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/kits" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
-                  <Layout>
-                    <KitManagement />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/accessories-supplies" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
-                  <Layout>
-                    <AccessorySupplyHomologation />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/technicians" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin']}>
-                  <Layout>
-                    <TechnicianManagement />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/customer-tracking" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
-                  <Layout>
-                    <CustomerTracking />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/planning" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
-                  <Layout>
-                    <Planning />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/orders" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin']}>
-                  <Layout>
-                    <Orders />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/config" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin']}>
-                  <Layout>
-                    <ConfigurationManagement />
-                  </Layout>
-                </RoleProtectedRoute>
-              </ProtectedRoute>
-            } />
-            <Route path="/users" element={
-              <ProtectedRoute>
-                <RoleProtectedRoute allowedRoles={['admin']}>
-                  <UserManagement />
-                </RoleProtectedRoute>
-          </ProtectedRoute>
-        } />
-        <Route path="/kickoff" element={
-          <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
-              <Layout>
-                <Kickoff />
-              </Layout>
-            </RoleProtectedRoute>
-          </ProtectedRoute>
-        } />
-        <Route path="/history" element={
-          <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <Layout>
-                <History />
-              </Layout>
-            </RoleProtectedRoute>
-          </ProtectedRoute>
-        } />
-        <Route path="/segsale-test" element={<SegsaleTest />} />
-        <Route path="*" element={<NotFound />} />
-          </Routes>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth" element={<Auth />} />
+              {/* Smart redirect based on user role */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <SmartRedirect />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/kanban" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_suprimentos']}>
+                    <Layout>
+                      <Kanban />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/homologation" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
+                    <Layout>
+                      <Homologation />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/kits" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
+                    <Layout>
+                      <KitManagement />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/accessories-supplies" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
+                    <Layout>
+                      <AccessorySupplyHomologation />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/technicians" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <TechnicianManagement />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/customer-tracking" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
+                    <Layout>
+                      <CustomerTracking />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/planning" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
+                    <Layout>
+                      <Planning />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/orders" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <Orders />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/config" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <ConfigurationManagement />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/users" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <UserManagement />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/kickoff" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
+                    <Layout>
+                      <Kickoff />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/history" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <History />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/segsale-test" element={<SegsaleTest />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
