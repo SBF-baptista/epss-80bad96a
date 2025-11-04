@@ -106,6 +106,12 @@ const navigationGroups = {
         label: "Usuários", 
         icon: UserCog,
         roles: ["admin"]
+      },
+      { 
+        to: "/history", 
+        label: "Histórico", 
+        icon: Clock,
+        roles: ["admin"]
       }
     ]
   }
@@ -133,13 +139,6 @@ const singleNavigationItems = [
     icon: UserCheck,
     description: "Acompanhar status dos clientes e kits",
     roles: ["admin", "installer"]
-  },
-  { 
-    to: "/history", 
-    label: "Histórico", 
-    icon: Clock,
-    description: "Visualizar histórico de ações do sistema",
-    roles: ["admin"]
   },
 ];
 
