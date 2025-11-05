@@ -6,6 +6,7 @@ import { Edit, AlertCircle, History, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
+import { reprocessKickoff } from "@/services/reprocessKickoff";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";

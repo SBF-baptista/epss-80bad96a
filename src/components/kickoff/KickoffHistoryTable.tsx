@@ -11,11 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronDown, ChevronRight, Eye, Search, Calendar } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, Search, Calendar, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { KickoffHistoryRecord } from "@/services/kickoffHistoryService";
 import { KickoffHistoryDetailsModal } from "./KickoffHistoryDetailsModal";
+import { reprocessKickoff } from "@/services/reprocessKickoff";
+import { useToast } from "@/hooks/use-toast";
+import { useState as useReactState } from "react";
 
 interface KickoffHistoryTableProps {
   history: KickoffHistoryRecord[];
@@ -27,6 +30,8 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
   const [searchName, setSearchName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [reprocessing, setReprocessing] = useReactState<number | null>(null);
+  const { toast } = useToast();
 
   const toggleRow = (id: string) => {
     const newExpanded = new Set(expandedRows);
@@ -36,6 +41,39 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
       newExpanded.add(id);
     }
     setExpandedRows(newExpanded);
+  };
+
+  const handleReprocess = async (saleSummaryId: number) => {
+    try {
+      setReprocessing(saleSummaryId);
+      toast({
+        title: "Reprocessando kickoff...",
+        description: "Criando cards de homologação faltantes",
+      });
+
+      const result = await reprocessKickoff(saleSummaryId);
+      
+      if (result.success) {
+        toast({
+          title: "Kickoff reprocessado!",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Erro ao reprocessar",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao reprocessar",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setReprocessing(null);
+    }
   };
 
   // Filter and sort history
@@ -214,14 +252,25 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
                           </Badge>
                         </TableCell>
                         <TableCell colSpan={2}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedRecord(record)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalhes
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedRecord(record)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReprocess(record.sale_summary_id)}
+                              disabled={reprocessing === record.sale_summary_id}
+                            >
+                              <RefreshCw className={`h-4 w-4 mr-2 ${reprocessing === record.sale_summary_id ? 'animate-spin' : ''}`} />
+                              Reprocessar
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
