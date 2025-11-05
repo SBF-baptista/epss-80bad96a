@@ -7,6 +7,7 @@ import {
   filterHomologationCards,
   type HomologationFilters as HomologationFiltersType
 } from "@/services/homologationService";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import {
   HomologationMetrics,
   CreateHomologationForm,
@@ -34,6 +35,9 @@ const Homologation = () => {
     queryKey: ['workflow-chain'],
     queryFn: fetchWorkflowChain,
   });
+
+  // Realtime subscription for homologation cards
+  useRealtimeSubscription('homologation_cards', 'homologation-cards');
 
   // Filter cards based on active filters
   const filteredCards = useMemo(() => {
