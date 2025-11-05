@@ -2,16 +2,16 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, AlertCircle, History, Clock } from "lucide-react";
+import { Edit, AlertCircle, History, Clock, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
-import { reprocessKickoff } from "@/services/reprocessKickoff";
+import { checkKickoffIntegrity } from "@/services/kickoffIntegrityCheck";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { supabase } from "@/integrations/supabase/client";
-
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,15 @@ const Kickoff = () => {
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     staleTime: 0,
+  });
+
+  // Check for orphan kickoffs (approved but missing cards)
+  const { data: integrityCheck, isLoading: integrityLoading } = useQuery({
+    queryKey: ['kickoff-integrity'],
+    queryFn: checkKickoffIntegrity,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // 30 seconds
   });
 
   // Real-time subscriptions for automatic updates with toast notification
@@ -188,6 +197,34 @@ const Kickoff = () => {
 
         <TabsContent value="history" className="space-y-4">
           <h2 className="text-2xl font-semibold">Histórico de Aprovações</h2>
+          
+          {/* Integrity Check Alert */}
+          {!integrityLoading && integrityCheck?.orphans && integrityCheck.orphans.length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>⚠️ Kickoffs com problemas detectados</AlertTitle>
+              <AlertDescription>
+                <div className="mt-2 space-y-2">
+                  <p>
+                    Foram encontrados {integrityCheck.orphans.length} kickoff(s) aprovado(s) 
+                    com veículos sem cards de homologação:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {integrityCheck.orphans.map((orphan) => (
+                      <li key={orphan.sale_summary_id}>
+                        <strong>{orphan.company_name}</strong>: {orphan.vehicles_without_cards} veículo(s) 
+                        sem cards (de {orphan.total_vehicles} total)
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm mt-2">
+                    Por favor, entre em contato com o suporte técnico para investigar estes casos.
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {historyLoading ? (
             <Skeleton className="h-32" />
           ) : (

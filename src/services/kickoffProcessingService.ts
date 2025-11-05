@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logAction } from "./logService";
 
 export interface ProcessKickoffResult {
   success: boolean;
@@ -6,6 +7,7 @@ export interface ProcessKickoffResult {
   homologations_created: number;
   already_homologated_count: number;
   errors: string[];
+  failed_vehicles: Array<{ id: string; brand: string; model: string; error: string }>;
 }
 
 /**
@@ -20,8 +22,11 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
     processed_count: 0,
     homologations_created: 0,
     already_homologated_count: 0,
-    errors: []
+    errors: [],
+    failed_vehicles: [],
   };
+
+  console.log(`[KICKOFF] Starting processing for sale_summary_id: ${saleSummaryId}`);
 
   try {
     // Prefer the exact set selected in the latest kickoff (kickoff_history)
@@ -155,33 +160,89 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
           const status = existingHomologation ? 'homologado' : 'homologar';
           const notes = existingHomologation ? baseNotesAuto : baseNotesManual;
 
-          console.log(`Creating ${status} card (${i + 1}/${missingCount}) for vehicle ${vehicle.id}`);
-          const { data: newCard, error: createErr } = await supabase
-            .from('homologation_cards')
-            .insert({
+          console.log(`[KICKOFF] Creating ${status} card (${i + 1}/${missingCount}) for vehicle ${vehicle.id}`);
+          
+          try {
+            const { data: newCard, error: createErr } = await supabase
+              .from('homologation_cards')
+              .insert({
+                brand: vehicle.brand,
+                model: vehicle.vehicle,
+                year: vehicle.year || null,
+                status,
+                incoming_vehicle_id: vehicle.id,
+                configuration: existingHomologation?.configuration || null,
+                notes,
+              })
+              .select()
+              .single();
+
+            if (createErr) {
+              const errorMsg = `Failed to create card: ${createErr.message} (code: ${createErr.code}, details: ${createErr.details})`;
+              console.error(`[KICKOFF ERROR] Vehicle ${vehicle.id}:`, {
+                error: createErr,
+                vehicle: { id: vehicle.id, brand: vehicle.brand, model: vehicle.vehicle, year: vehicle.year },
+                attemptedInsert: { brand: vehicle.brand, model: vehicle.vehicle, year: vehicle.year, status },
+              });
+              
+              result.errors.push(`${vehicle.brand} ${vehicle.vehicle}: ${createErr.message}`);
+              result.failed_vehicles.push({
+                id: vehicle.id,
+                brand: vehicle.brand,
+                model: vehicle.vehicle,
+                error: errorMsg,
+              });
+
+              // Log to app_logs
+              await logAction({
+                action: 'create_homologation_card_failed',
+                module: 'kickoff',
+                details: JSON.stringify({
+                  sale_summary_id: saleSummaryId,
+                  vehicle_id: vehicle.id,
+                  brand: vehicle.brand,
+                  model: vehicle.vehicle,
+                  error: createErr.message,
+                  error_code: createErr.code,
+                  error_details: createErr.details,
+                }),
+              }).catch(logErr => console.error('[KICKOFF] Failed to log error:', logErr));
+
+              continue; // try to create remaining ones
+            }
+
+            console.log(`[KICKOFF SUCCESS] Created homologation card ${newCard.id} for vehicle ${vehicle.id}`);
+            if (!firstCardId) firstCardId = newCard.id;
+            existingCards.push({ id: newCard.id, status: newCard.status, configuration: newCard.configuration, incoming_vehicle_id: vehicle.id } as any);
+
+            if (!existingHomologation) {
+              result.homologations_created++;
+            }
+          } catch (insertError) {
+            const errorMsg = `Unexpected error during card creation: ${insertError instanceof Error ? insertError.message : 'Unknown error'}`;
+            console.error(`[KICKOFF CRITICAL ERROR] Vehicle ${vehicle.id}:`, insertError);
+            
+            result.errors.push(`${vehicle.brand} ${vehicle.vehicle}: ${errorMsg}`);
+            result.failed_vehicles.push({
+              id: vehicle.id,
               brand: vehicle.brand,
               model: vehicle.vehicle,
-              year: vehicle.year || null,
-              status,
-              incoming_vehicle_id: vehicle.id,
-              configuration: existingHomologation?.configuration || null,
-              notes,
-            })
-            .select()
-            .single();
+              error: errorMsg,
+            });
 
-          if (createErr) {
-            console.error(`Error creating homologation card for vehicle ${vehicle.id}:`, createErr);
-            result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: ${createErr.message}`);
-            continue; // try to create remaining ones
-          }
-
-          console.log(`Successfully created homologation card ${newCard.id} for vehicle ${vehicle.id}`);
-          if (!firstCardId) firstCardId = newCard.id;
-          existingCards.push({ id: newCard.id, status: newCard.status, configuration: newCard.configuration, incoming_vehicle_id: vehicle.id } as any);
-
-          if (!existingHomologation) {
-            result.homologations_created++;
+            // Log to app_logs
+            await logAction({
+              action: 'create_homologation_card_exception',
+              module: 'kickoff',
+              details: JSON.stringify({
+                sale_summary_id: saleSummaryId,
+                vehicle_id: vehicle.id,
+                brand: vehicle.brand,
+                model: vehicle.vehicle,
+                error: insertError instanceof Error ? insertError.message : 'Unknown error',
+                stack: insertError instanceof Error ? insertError.stack : undefined,
+              }),
+            }).catch(logErr => console.error('[KICKOFF] Failed to log exception:', logErr));
           }
         }
 
@@ -190,22 +251,35 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
           ? 'homologado'
           : (existingCards[0]?.status || 'homologar');
 
-        // 6) Mark incoming vehicle as kickoff completed and store linkage
-        const { error: updateErr } = await supabase
-          .from('incoming_vehicles')
-          .update({
-            kickoff_completed: true,
-            created_homologation_id: firstCardId,
-            homologation_status: linkedStatus,
-            processing_notes: `Kickoff completed. ${missingCount > 0 ? `Created ${missingCount} card(s).` : 'Cards already existed.'}`,
-          })
-          .eq('id', vehicle.id);
+        // 6) Only mark as kickoff_completed if we have at least one card
+        if (existingCards.length > 0 && firstCardId) {
+          const { error: updateErr } = await supabase
+            .from('incoming_vehicles')
+            .update({
+              kickoff_completed: true,
+              created_homologation_id: firstCardId,
+              homologation_status: linkedStatus,
+              processing_notes: `Kickoff completed. ${missingCount > 0 ? `Created ${missingCount} card(s).` : 'Cards already existed.'}`,
+            })
+            .eq('id', vehicle.id);
 
-        if (updateErr) {
-          console.error(`Error updating vehicle ${vehicle.id}:`, updateErr);
-          result.errors.push(`Vehicle ${vehicle.brand} ${vehicle.vehicle}: Failed to mark as completed - ${updateErr.message}`);
+          if (updateErr) {
+            console.error(`[KICKOFF ERROR] Failed to update vehicle ${vehicle.id}:`, updateErr);
+            result.errors.push(`${vehicle.brand} ${vehicle.vehicle}: Failed to mark as completed - ${updateErr.message}`);
+          } else {
+            console.log(`[KICKOFF] Marked vehicle ${vehicle.id} as kickoff_completed with status ${linkedStatus}`);
+          }
         } else {
-          console.log(`Successfully marked vehicle ${vehicle.id} as kickoff_completed with status ${linkedStatus}`);
+          console.error(`[KICKOFF ERROR] Vehicle ${vehicle.id} has no cards, NOT marking as kickoff_completed`);
+          result.errors.push(`${vehicle.brand} ${vehicle.vehicle}: No cards created, kickoff not completed`);
+          
+          // Update with error status
+          await supabase
+            .from('incoming_vehicles')
+            .update({
+              processing_notes: `ERRO: Falha ao criar cards de homologação. Necessário reprocessamento.`,
+            })
+            .eq('id', vehicle.id);
         }
 
         if (linkedStatus === 'homologado' || existingHomologation) {
@@ -220,14 +294,41 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
       }
     }
 
-    console.log(`Kickoff processing complete: ${result.processed_count} processed, ${result.homologations_created} created, ${result.already_homologated_count} auto-homologated, ${result.errors.length} errors`);
+    console.log(`[KICKOFF] Processing complete: ${result.processed_count} processed, ${result.homologations_created} created, ${result.already_homologated_count} auto-homologated, ${result.errors.length} errors`);
 
     result.success = result.errors.length === 0;
+
+    // Log final result to app_logs
+    await logAction({
+      action: result.success ? 'kickoff_completed' : 'kickoff_completed_with_errors',
+      module: 'kickoff',
+      details: JSON.stringify({
+        sale_summary_id: saleSummaryId,
+        processed_count: result.processed_count,
+        homologations_created: result.homologations_created,
+        already_homologated_count: result.already_homologated_count,
+        errors_count: result.errors.length,
+        failed_vehicles: result.failed_vehicles,
+      }),
+    }).catch(logErr => console.error('[KICKOFF] Failed to log completion:', logErr));
+
     return result;
   } catch (error) {
-    console.error('Unexpected error in processKickoffVehicles:', error);
+    console.error('[KICKOFF FATAL ERROR]:', error);
     result.errors.push(`Unexpected error: ${(error as Error).message}`);
     result.success = false;
+
+    // Log fatal error
+    await logAction({
+      action: 'kickoff_fatal_error',
+      module: 'kickoff',
+      details: JSON.stringify({
+        sale_summary_id: saleSummaryId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      }),
+    }).catch(logErr => console.error('[KICKOFF] Failed to log fatal error:', logErr));
+
     return result;
   }
 };
