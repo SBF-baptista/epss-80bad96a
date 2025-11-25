@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Pencil, CheckCircle, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
@@ -28,12 +29,14 @@ interface KickoffVehiclesTableProps {
   vehicles: KickoffVehicle[];
   selectedModules: Map<string, Set<string>>;
   onModuleToggle: (vehicleId: string, moduleName: string) => void;
-  vehicleBlocking: Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean }>;
+  vehicleBlocking: Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean; quantity: number }>;
   onBlockingToggle: (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => void;
-  vehicleSiren: Map<string, boolean>;
+  vehicleSiren: Map<string, { hasSiren: boolean; quantity: number }>;
   onSirenToggle: (vehicleId: string, value: boolean) => void;
   saleSummaryId: number;
   onVehicleUpdate: () => void;
+  onBlockingQuantityChange: (vehicleId: string, quantity: number) => void;
+  onSirenQuantityChange: (vehicleId: string, quantity: number) => void;
 }
 
 export const KickoffVehiclesTable = ({ 
@@ -45,7 +48,9 @@ export const KickoffVehiclesTable = ({
   vehicleSiren,
   onSirenToggle,
   saleSummaryId,
-  onVehicleUpdate
+  onVehicleUpdate,
+  onBlockingQuantityChange,
+  onSirenQuantityChange
 }: KickoffVehiclesTableProps) => {
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -80,7 +85,8 @@ export const KickoffVehiclesTable = ({
         const currentBlocking = vehicleBlocking.get(vehicle.id) || { 
           needsBlocking: false, 
           engineBlocking: false, 
-          fuelBlocking: false 
+          fuelBlocking: false,
+          quantity: 1
         };
         
         if (!currentBlocking.needsBlocking) {
@@ -388,16 +394,31 @@ export const KickoffVehiclesTable = ({
 
               {/* Blocking */}
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`mobile-${vehicle.id}-blocking`}
-                    checked={blocking.needsBlocking}
-                    onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'needsBlocking', checked as boolean)}
-                    disabled={isPlateValidated}
-                  />
-                  <Label htmlFor={`mobile-${vehicle.id}-blocking`} className="text-sm font-semibold cursor-pointer">
-                    Necessita de bloqueio
-                  </Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`mobile-${vehicle.id}-blocking`}
+                      checked={blocking.needsBlocking}
+                      onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'needsBlocking', checked as boolean)}
+                      disabled={isPlateValidated}
+                    />
+                    <Label htmlFor={`mobile-${vehicle.id}-blocking`} className="text-sm font-semibold cursor-pointer">
+                      Necessita de bloqueio
+                    </Label>
+                  </div>
+                  {blocking.needsBlocking && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">Qtd:</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={blocking.quantity}
+                        onChange={(e) => onBlockingQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
+                        className="w-16 h-8 text-xs"
+                        disabled={isPlateValidated}
+                      />
+                    </div>
+                  )}
                 </div>
                 {blocking.needsBlocking && (
                   <div className="ml-6 space-y-2">
@@ -429,16 +450,31 @@ export const KickoffVehiclesTable = ({
 
               {/* Siren */}
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`mobile-siren-${vehicle.id}`}
-                    checked={vehicleSiren.get(vehicle.id) || false}
-                    onCheckedChange={(checked) => onSirenToggle(vehicle.id, checked as boolean)}
-                    disabled={isPlateValidated}
-                  />
-                  <Label htmlFor={`mobile-siren-${vehicle.id}`} className="text-sm font-semibold cursor-pointer">
-                    Possui Sirene
-                  </Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`mobile-siren-${vehicle.id}`}
+                      checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
+                      onCheckedChange={(checked) => onSirenToggle(vehicle.id, checked as boolean)}
+                      disabled={isPlateValidated}
+                    />
+                    <Label htmlFor={`mobile-siren-${vehicle.id}`} className="text-sm font-semibold cursor-pointer">
+                      Possui Sirene
+                    </Label>
+                  </div>
+                  {vehicleSiren.get(vehicle.id)?.hasSiren && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">Qtd:</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={vehicleSiren.get(vehicle.id)?.quantity || 1}
+                        onChange={(e) => onSirenQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
+                        className="w-16 h-8 text-xs"
+                        disabled={isPlateValidated}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -570,7 +606,7 @@ export const KickoffVehiclesTable = ({
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id={`siren-${vehicle.id}`}
-                        checked={vehicleSiren.get(vehicle.id) || false}
+                        checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
                         onCheckedChange={(checked) => 
                           onSirenToggle(vehicle.id, checked as boolean)
                         }
@@ -741,7 +777,7 @@ export const KickoffVehiclesTable = ({
                   </TableCell>
                   <TableCell>
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <Checkbox
                           id={`${vehicle.id}-blocking`}
                           checked={blocking.needsBlocking}
@@ -753,30 +789,43 @@ export const KickoffVehiclesTable = ({
                         </Label>
                       </div>
                       {blocking.needsBlocking && (
-                        <div className="ml-6 space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${vehicle.id}-engine`}
-                              checked={blocking.engineBlocking}
-                              onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'engineBlocking', checked as boolean)}
+                        <>
+                          <div className="flex items-center gap-2 ml-6">
+                            <Label className="text-xs text-muted-foreground whitespace-nowrap">Quantidade:</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={blocking.quantity}
+                              onChange={(e) => onBlockingQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
+                              className="w-16 h-8 text-xs"
                               disabled={isPlateValidated}
                             />
-                            <Label htmlFor={`${vehicle.id}-engine`} className="text-xs cursor-pointer">
-                              Bloqueio de partida
-                            </Label>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${vehicle.id}-fuel`}
-                              checked={blocking.fuelBlocking}
-                              onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'fuelBlocking', checked as boolean)}
-                              disabled={isPlateValidated}
-                            />
-                            <Label htmlFor={`${vehicle.id}-fuel`} className="text-xs cursor-pointer">
-                              Bloqueio de combustível
-                            </Label>
+                          <div className="ml-6 space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${vehicle.id}-engine`}
+                                checked={blocking.engineBlocking}
+                                onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'engineBlocking', checked as boolean)}
+                                disabled={isPlateValidated}
+                              />
+                              <Label htmlFor={`${vehicle.id}-engine`} className="text-xs cursor-pointer">
+                                Bloqueio de partida
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${vehicle.id}-fuel`}
+                                checked={blocking.fuelBlocking}
+                                onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'fuelBlocking', checked as boolean)}
+                                disabled={isPlateValidated}
+                              />
+                              <Label htmlFor={`${vehicle.id}-fuel`} className="text-xs cursor-pointer">
+                                Bloqueio de combustível
+                              </Label>
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -785,7 +834,7 @@ export const KickoffVehiclesTable = ({
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id={`siren-${vehicle.id}`}
-                          checked={vehicleSiren.get(vehicle.id) || false}
+                          checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
                           onCheckedChange={(checked) => 
                             onSirenToggle(vehicle.id, checked as boolean)
                           }
@@ -795,6 +844,19 @@ export const KickoffVehiclesTable = ({
                           Possui Sirene
                         </Label>
                       </div>
+                      {vehicleSiren.get(vehicle.id)?.hasSiren && (
+                        <div className="flex items-center gap-2 ml-6">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">Quantidade:</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={vehicleSiren.get(vehicle.id)?.quantity || 1}
+                            onChange={(e) => onSirenQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
+                            className="w-16 h-8 text-xs"
+                            disabled={isPlateValidated}
+                          />
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
