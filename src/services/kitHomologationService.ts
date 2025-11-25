@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { HomologationKit, HomologationKitItem } from '@/types/homologationKit';
+import { normalizeItemName } from '@/utils/itemNormalization';
 
 export interface HomologationStatus {
   isHomologated: boolean;
@@ -17,22 +18,28 @@ export interface HomologationStatus {
 
 /**
  * Verifica se um item específico está homologado (existe na tabela kit_item_options)
+ * Usa normalização de nomes para lidar com variações como "SIRENE" vs "Sirene"
  */
 export async function checkItemHomologation(itemName: string, itemType: string): Promise<boolean> {
   try {
+    // Buscar todos os itens do tipo e comparar usando normalização
     const { data, error } = await supabase
       .from('kit_item_options')
-      .select('id')
-      .eq('item_name', itemName)
-      .eq('item_type', itemType)
-      .maybeSingle();
+      .select('item_name')
+      .eq('item_type', itemType);
 
     if (error) {
       console.error('Error checking item homologation:', error);
       return false;
     }
 
-    return !!data;
+    if (!data) return false;
+
+    // Normalizar o nome de entrada
+    const normalizedInput = normalizeItemName(itemName);
+
+    // Verificar se algum item homologado corresponde (case-insensitive, sem acentos)
+    return data.some(item => normalizeItemName(item.item_name) === normalizedInput);
   } catch (error) {
     console.error('Error checking item homologation:', error);
     return false;
@@ -41,6 +48,7 @@ export async function checkItemHomologation(itemName: string, itemType: string):
 
 /**
  * Verifica o status de homologação de um kit completo
+ * Usa normalização de nomes para lidar com variações
  */
 export async function checkKitHomologationStatus(kit: HomologationKit): Promise<HomologationStatus> {
   try {
@@ -53,8 +61,9 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
       throw error;
     }
 
+    // Criar Set com nomes normalizados para comparação
     const homologatedSet = new Set(
-      homologatedItems?.map(item => `${item.item_name}:${item.item_type}`) || []
+      homologatedItems?.map(item => `${normalizeItemName(item.item_name)}:${item.item_type}`) || []
     );
 
     // Verificar cada categoria de itens do kit
@@ -73,7 +82,7 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
     // Processar equipamentos - add safety check
     const equipment = kit.equipment || [];
     equipment.forEach(item => {
-      const key = `${item.item_name}:equipment`;
+      const key = `${normalizeItemName(item.item_name)}:equipment`;
       if (homologatedSet.has(key)) {
         homologatedKitItems.equipment.push(item);
       } else {
@@ -82,19 +91,19 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
     });
 
     // Processar acessórios - add safety check
-    // IMPORTANTE: Módulos (categories='modulos') não precisam de homologação
+    // IMPORTANTE: Módulos não precisam de homologação
     const accessories = kit.accessories || [];
     accessories.forEach(item => {
       // Ignorar módulos - eles não passam por homologação
-      const itemDescription = (item.description || '').toLowerCase();
-      const isModule = itemDescription.includes('modulo') || itemDescription.includes('módulo');
+      const normalizedName = normalizeItemName(item.item_name);
+      const isModule = normalizedName.includes('modulo');
       if (isModule) {
         // Módulos são automaticamente considerados OK
         homologatedKitItems.accessories.push(item);
         return;
       }
       
-      const key = `${item.item_name}:accessory`;
+      const key = `${normalizedName}:accessory`;
       if (homologatedSet.has(key)) {
         homologatedKitItems.accessories.push(item);
       } else {
@@ -105,7 +114,7 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
     // Processar insumos - add safety check
     const supplies = kit.supplies || [];
     supplies.forEach(item => {
-      const key = `${item.item_name}:supply`;
+      const key = `${normalizeItemName(item.item_name)}:supply`;
       if (homologatedSet.has(key)) {
         homologatedKitItems.supplies.push(item);
       } else {
@@ -133,6 +142,7 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
 
 /**
  * Verifica o status de homologação de múltiplos kits
+ * Usa normalização de nomes para lidar com variações
  */
 export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Promise<Map<string, HomologationStatus>> {
   const results = new Map<string, HomologationStatus>();
@@ -147,8 +157,9 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
       throw error;
     }
 
+    // Criar Set com nomes normalizados para comparação
     const homologatedSet = new Set(
-      homologatedItems?.map(item => `${item.item_name}:${item.item_type}`) || []
+      homologatedItems?.map(item => `${normalizeItemName(item.item_name)}:${item.item_type}`) || []
     );
 
     // Verificar cada kit
@@ -170,7 +181,7 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
       // Verificar equipamentos - add safety check
       const equipment = kit.equipment || [];
       equipment.forEach(item => {
-        const key = `${item.item_name}:equipment`;
+        const key = `${normalizeItemName(item.item_name)}:equipment`;
         if (homologatedSet.has(key)) {
           homologatedKitItems.equipment.push(item);
         } else {
@@ -179,19 +190,19 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
       });
 
       // Verificar acessórios - add safety check
-      // IMPORTANTE: Módulos (categories='modulos') não precisam de homologação
+      // IMPORTANTE: Módulos não precisam de homologação
       const accessories = kit.accessories || [];
       accessories.forEach(item => {
         // Ignorar módulos - eles não passam por homologação
-        const itemDescription = (item.description || '').toLowerCase();
-        const isModule = itemDescription.includes('modulo') || itemDescription.includes('módulo');
+        const normalizedName = normalizeItemName(item.item_name);
+        const isModule = normalizedName.includes('modulo');
         if (isModule) {
           // Módulos são automaticamente considerados OK
           homologatedKitItems.accessories.push(item);
           return;
         }
         
-        const key = `${item.item_name}:accessory`;
+        const key = `${normalizedName}:accessory`;
         if (homologatedSet.has(key)) {
           homologatedKitItems.accessories.push(item);
         } else {
@@ -202,7 +213,7 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
       // Verificar insumos - add safety check
       const supplies = kit.supplies || [];
       supplies.forEach(item => {
-        const key = `${item.item_name}:supply`;
+        const key = `${normalizeItemName(item.item_name)}:supply`;
         if (homologatedSet.has(key)) {
           homologatedKitItems.supplies.push(item);
         } else {

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { HomologationKit, CreateKitRequest, UpdateKitRequest, HomologationKitItem, ItemType } from '@/types/homologationKit';
+import { normalizeItemName, getCanonicalItemName } from '@/utils/itemNormalization';
 
 export type { HomologationKit, CreateKitRequest, UpdateKitRequest, HomologationKitItem, ItemType };
 
@@ -99,11 +100,12 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
       throw kitError;
     }
 
+    // Normalize item names to ensure consistency
     // Create all items (equipment, accessories, supplies)
     const allItems = [
       ...kitData.equipment.map(item => ({
         kit_id: kit.id,
-        item_name: item.item_name,
+        item_name: getCanonicalItemName(item.item_name),
         item_type: 'equipment' as ItemType,
         quantity: item.quantity,
         description: item.description,
@@ -111,7 +113,7 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
       })),
       ...kitData.accessories.map(item => ({
         kit_id: kit.id,
-        item_name: item.item_name,
+        item_name: getCanonicalItemName(item.item_name),
         item_type: 'accessory' as ItemType,
         quantity: item.quantity,
         description: item.description,
@@ -119,7 +121,7 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
       })),
       ...kitData.supplies.map(item => ({
         kit_id: kit.id,
-        item_name: item.item_name,
+        item_name: getCanonicalItemName(item.item_name),
         item_type: 'supply' as ItemType,
         quantity: item.quantity,
         description: item.description,
@@ -181,11 +183,12 @@ export async function updateHomologationKit(kitId: string, updateData: UpdateKit
       throw deleteError;
     }
 
+    // Normalize item names to ensure consistency
     // Create new items if provided
     const allItems = [
       ...(updateData.equipment || []).map(item => ({
         kit_id: kitId,
-        item_name: item.item_name,
+        item_name: getCanonicalItemName(item.item_name),
         item_type: 'equipment' as ItemType,
         quantity: item.quantity,
         description: item.description,
@@ -193,7 +196,7 @@ export async function updateHomologationKit(kitId: string, updateData: UpdateKit
       })),
       ...(updateData.accessories || []).map(item => ({
         kit_id: kitId,
-        item_name: item.item_name,
+        item_name: getCanonicalItemName(item.item_name),
         item_type: 'accessory' as ItemType,
         quantity: item.quantity,
         description: item.description,
@@ -201,7 +204,7 @@ export async function updateHomologationKit(kitId: string, updateData: UpdateKit
       })),
       ...(updateData.supplies || []).map(item => ({
         kit_id: kitId,
-        item_name: item.item_name,
+        item_name: getCanonicalItemName(item.item_name),
         item_type: 'supply' as ItemType,
         quantity: item.quantity,
         description: item.description,

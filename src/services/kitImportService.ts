@@ -1,4 +1,5 @@
 import { CreateKitRequest, HomologationKitItem, ItemType } from '@/types/homologationKit';
+import { getCanonicalItemName } from '@/utils/itemNormalization';
 
 export interface ParsedKit {
   name: string;
@@ -94,7 +95,7 @@ export function parseKitsTxtFile(content: string): ImportValidationResult {
         }
         
         equipment.push({
-          item_name: equipmentName,
+          item_name: getCanonicalItemName(equipmentName),
           item_type: 'equipment',
           quantity: 1,
           description: '',
@@ -109,7 +110,7 @@ export function parseKitsTxtFile(content: string): ImportValidationResult {
         const parsed = parseItemLine(line);
         if (parsed) {
           accessories.push({
-            item_name: parsed.itemName,
+            item_name: getCanonicalItemName(parsed.itemName),
             item_type: 'accessory',
             quantity: 1,
             description: '',
@@ -126,7 +127,7 @@ export function parseKitsTxtFile(content: string): ImportValidationResult {
         const parsed = parseItemLine(line);
         if (parsed) {
           supplies.push({
-            item_name: parsed.itemName,
+            item_name: getCanonicalItemName(parsed.itemName),
             item_type: 'supply',
             quantity: 1,
             description: '',
