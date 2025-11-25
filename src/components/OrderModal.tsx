@@ -23,6 +23,7 @@ import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitSc
 import { HomologationKit } from "@/types/homologationKit";
 import { Calendar, User, MapPin, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeItemName } from "@/utils/itemNormalization";
 
 interface OrderModalProps {
   order: Order | null;
@@ -359,8 +360,13 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                       const techTotals: Record<string, number> = {};
                       
                       schedules.forEach((sched) => {
-                        // Equipment/Trackers
+                        // Equipment/Trackers - Exclude FMC 150
                         (sched.kit?.equipment || []).forEach((item: any) => {
+                          const normalizedName = normalizeItemName(item.item_name);
+                          // Skip FMC 150 equipment
+                          if (normalizedName === 'fmc150' || normalizedName === 'fmc 150') {
+                            return;
+                          }
                           techTotals[item.item_name] = (techTotals[item.item_name] || 0) + item.quantity;
                         });
                         
