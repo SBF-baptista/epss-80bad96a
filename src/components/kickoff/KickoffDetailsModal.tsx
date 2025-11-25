@@ -73,12 +73,12 @@ export const KickoffDetailsModal = ({
     }))
   );
   
-  const [vehicleBlocking, setVehicleBlocking] = useState<Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean }>>(
-    new Map(vehicles.map(v => [v.id, { needsBlocking: false, engineBlocking: false, fuelBlocking: false }]))
+  const [vehicleBlocking, setVehicleBlocking] = useState<Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean; quantity: number }>>(
+    new Map(vehicles.map(v => [v.id, { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 }]))
   );
 
-  const [vehicleSiren, setVehicleSiren] = useState<Map<string, boolean>>(
-    new Map(vehicles.map(v => [v.id, false]))
+  const [vehicleSiren, setVehicleSiren] = useState<Map<string, { hasSiren: boolean; quantity: number }>>(
+    new Map(vehicles.map(v => [v.id, { hasSiren: false, quantity: 1 }]))
   );
 
   // Load existing customer data when modal opens
@@ -244,7 +244,7 @@ export const KickoffDetailsModal = ({
   const handleBlockingToggle = (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => {
     setVehicleBlocking(prev => {
       const newMap = new Map(prev);
-      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false }) };
+      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 }) };
       
       vehicleBlock[field] = value;
       
@@ -259,10 +259,30 @@ export const KickoffDetailsModal = ({
     });
   };
 
+  const handleBlockingQuantityChange = (vehicleId: string, quantity: number) => {
+    setVehicleBlocking(prev => {
+      const newMap = new Map(prev);
+      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 }) };
+      vehicleBlock.quantity = Math.max(1, quantity);
+      newMap.set(vehicleId, vehicleBlock);
+      return newMap;
+    });
+  };
+
   const handleSirenToggle = (vehicleId: string, value: boolean) => {
     setVehicleSiren(prev => {
       const newMap = new Map(prev);
-      newMap.set(vehicleId, value);
+      const current = newMap.get(vehicleId) || { hasSiren: false, quantity: 1 };
+      newMap.set(vehicleId, { ...current, hasSiren: value });
+      return newMap;
+    });
+  };
+
+  const handleSirenQuantityChange = (vehicleId: string, quantity: number) => {
+    setVehicleSiren(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(vehicleId) || { hasSiren: false, quantity: 1 };
+      newMap.set(vehicleId, { ...current, quantity: Math.max(1, quantity) });
       return newMap;
     });
   };
@@ -317,8 +337,8 @@ export const KickoffDetailsModal = ({
       // Prepare vehicles data for history
       const vehiclesData = vehicles.map(vehicle => {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
-        const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false };
-        const hasSiren = vehicleSiren.get(vehicle.id) || false;
+        const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 };
+        const sirenData = vehicleSiren.get(vehicle.id) || { hasSiren: false, quantity: 1 };
         
         return {
           id: vehicle.id,
@@ -329,7 +349,7 @@ export const KickoffDetailsModal = ({
           quantity: vehicle.quantity,
           selected_modules: modules,
           blocking_info: blocking,
-          has_siren: hasSiren,
+          siren_info: sirenData,
           accessories: vehicle.modules.filter(m => {
             const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
             return normalize(m.categories || '') !== 'modulos';
@@ -337,10 +357,11 @@ export const KickoffDetailsModal = ({
         };
       });
 
-      // Store selected modules info and sirene accessory (will be processed by processKickoffVehicles)
+      // Store selected modules info and accessories (sirene, bloqueio) with quantities
       for (const vehicle of vehicles) {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
-        const hasSiren = vehicleSiren.get(vehicle.id) || false;
+        const sirenData = vehicleSiren.get(vehicle.id) || { hasSiren: false, quantity: 1 };
+        const blockingData = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 };
         
         if (modules.length > 0) {
           const { error: vehicleError } = await supabase
@@ -355,8 +376,8 @@ export const KickoffDetailsModal = ({
           }
         }
 
-        // Add sirene as accessory if has_siren is true
-        if (hasSiren) {
+        // Add sirene as accessory with quantity
+        if (sirenData.hasSiren) {
           const { error: sirenError } = await supabase
             .from("accessories")
             .upsert({
@@ -365,7 +386,7 @@ export const KickoffDetailsModal = ({
               usage_type: (vehicle as any).usage_type || 'outros',
               name: 'Sirene',
               categories: 'Acessórios',
-              quantity: 1,
+              quantity: sirenData.quantity,
               received_at: new Date().toISOString()
             }, {
               onConflict: 'vehicle_id,name,categories',
@@ -375,7 +396,31 @@ export const KickoffDetailsModal = ({
           if (sirenError) {
             console.error(`Error adding sirene for vehicle ${vehicle.id}:`, sirenError);
           } else {
-            console.log(`Successfully added sirene accessory for vehicle ${vehicle.id}`);
+            console.log(`Successfully added ${sirenData.quantity} sirene(s) for vehicle ${vehicle.id}`);
+          }
+        }
+
+        // Add bloqueio as accessory with quantity
+        if (blockingData.needsBlocking) {
+          const { error: blockingError } = await supabase
+            .from("accessories")
+            .upsert({
+              vehicle_id: vehicle.id,
+              company_name: companyName,
+              usage_type: (vehicle as any).usage_type || 'outros',
+              name: 'Bloqueio',
+              categories: 'Acessórios',
+              quantity: blockingData.quantity,
+              received_at: new Date().toISOString()
+            }, {
+              onConflict: 'vehicle_id,name,categories',
+              ignoreDuplicates: false
+            });
+
+          if (blockingError) {
+            console.error(`Error adding bloqueio for vehicle ${vehicle.id}:`, blockingError);
+          } else {
+            console.log(`Successfully added ${blockingData.quantity} bloqueio(s) for vehicle ${vehicle.id}`);
           }
         }
       }
@@ -488,8 +533,10 @@ export const KickoffDetailsModal = ({
               onModuleToggle={handleModuleToggle}
               vehicleBlocking={vehicleBlocking}
               onBlockingToggle={handleBlockingToggle}
+              onBlockingQuantityChange={handleBlockingQuantityChange}
               vehicleSiren={vehicleSiren}
               onSirenToggle={handleSirenToggle}
+              onSirenQuantityChange={handleSirenQuantityChange}
               saleSummaryId={saleSummaryId}
               onVehicleUpdate={onSuccess}
             />

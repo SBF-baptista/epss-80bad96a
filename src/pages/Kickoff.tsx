@@ -197,33 +197,6 @@ const Kickoff = () => {
 
         <TabsContent value="history" className="space-y-4">
           <h2 className="text-2xl font-semibold">Histórico de Aprovações</h2>
-          
-          {/* Integrity Check Alert */}
-          {!integrityLoading && integrityCheck?.orphans && integrityCheck.orphans.length > 0 && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>⚠️ Kickoffs com problemas detectados</AlertTitle>
-              <AlertDescription>
-                <div className="mt-2 space-y-2">
-                  <p>
-                    Foram encontrados {integrityCheck.orphans.length} kickoff(s) aprovado(s) 
-                    com veículos sem cards de homologação:
-                  </p>
-                  <ul className="list-disc list-inside space-y-1 text-sm">
-                    {integrityCheck.orphans.map((orphan) => (
-                      <li key={orphan.sale_summary_id}>
-                        <strong>{orphan.company_name}</strong>: {orphan.vehicles_without_cards} veículo(s) 
-                        sem cards (de {orphan.total_vehicles} total)
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-sm mt-2">
-                    Por favor, entre em contato com o suporte técnico para investigar estes casos.
-                  </p>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
 
           {historyLoading ? (
             <Skeleton className="h-32" />

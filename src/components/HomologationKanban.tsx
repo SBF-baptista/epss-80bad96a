@@ -61,6 +61,24 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     const targetColumn = columns.find(c => c.id === columnId);
     const previousColumn = columns.find(c => c.id === previousStatus);
     
+    // Validação: não permitir mover de "agendamento_teste" para "execucao_teste" 
+    // sem preencher dados obrigatórios de teste
+    if (previousStatus === 'agendamento_teste' && columnId === 'execucao_teste') {
+      if (!draggedCard.test_checklist || !draggedCard.configuration) {
+        showError(
+          new Error('Dados de teste incompletos'),
+          {
+            action: 'validate_test_data',
+            component: 'HomologationKanban',
+            cardId: cardId,
+          },
+          'Para mover para Execução de Teste, preencha primeiro os dados de teste no card (configuração e checklist)'
+        );
+        setDraggedCard(null);
+        return;
+      }
+    }
+    
     setIsUpdating(cardId);
     
     try {
