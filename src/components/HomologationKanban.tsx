@@ -64,7 +64,19 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     // Validação: não permitir mover de "agendamento_teste" para "execucao_teste" 
     // sem preencher dados obrigatórios de teste
     if (previousStatus === 'agendamento_teste' && columnId === 'execucao_teste') {
-      if (!draggedCard.test_checklist || !draggedCard.configuration) {
+      // Verificar se configuration existe e não está vazio
+      const hasValidConfiguration = draggedCard.configuration && draggedCard.configuration.trim() !== '';
+      
+      // Verificar se test_checklist existe, é array, e tem pelo menos um item marcado
+      const hasValidChecklist = Array.isArray(draggedCard.test_checklist) && 
+        draggedCard.test_checklist.length > 0 &&
+        draggedCard.test_checklist.some((item: any) => item.completed === true);
+      
+      if (!hasValidConfiguration || !hasValidChecklist) {
+        const missingFields: string[] = [];
+        if (!hasValidConfiguration) missingFields.push('Configuração');
+        if (!hasValidChecklist) missingFields.push('Checklist de testes (marcar pelo menos um item)');
+        
         showError(
           new Error('Dados de teste incompletos'),
           {
@@ -72,7 +84,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
             component: 'HomologationKanban',
             cardId: cardId,
           },
-          'Para mover para Execução de Teste, preencha primeiro os dados de teste no card (configuração e checklist)'
+          `Para mover para Execução de Teste, preencha primeiro: ${missingFields.join(', ')}`
         );
         setDraggedCard(null);
         return;
