@@ -929,11 +929,26 @@ export const ScheduleModal = ({
                                 <Badge variant="secondary">{vehicleSchedule.plate}</Badge>
                               </td>
                               <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
-                              <td className="px-4 py-3">
-                                <Badge variant="secondary" className="text-xs">
-                                  {configurationsByVehicle.get(vehicleSchedule.plate) || 'N/A'}
-                                </Badge>
-                              </td>
+                               <td className="px-4 py-3">
+                                 {(() => {
+                                   const vehicleConfiguration = configurationsByVehicle.get(vehicleSchedule.plate);
+                                   if (vehicleConfiguration) {
+                                     return (
+                                       <div className="p-2 bg-purple-100 border border-purple-300 rounded-lg min-w-[150px]">
+                                         <div className="flex items-center gap-2">
+                                           <Cpu className="h-4 w-4 text-purple-700 flex-shrink-0" />
+                                           <div className="flex flex-col">
+                                             <span className="text-xs text-purple-600 font-medium">Configuração:</span>
+                                             <span className="text-xs text-purple-900 font-semibold">{vehicleConfiguration}</span>
+                                           </div>
+                                         </div>
+                                       </div>
+                                     );
+                                   } else {
+                                     return <span className="text-xs text-muted-foreground">N/A</span>;
+                                   }
+                                 })()}
+                               </td>
               <td className="px-4 py-3">
                                 <div className="flex flex-col gap-1 max-w-[180px]">
                                   {(() => {
@@ -987,54 +1002,113 @@ export const ScheduleModal = ({
                                    })()}
                                  </div>
                                </td>
-                               <td className="px-4 py-3">
-                                 {(() => {
-                                   const suggestedKits = suggestedKitsByVehicle.get(vehicleSchedule.plate) || [];
-                                   const selectedKitIds = vehicleSchedule.selected_kit_ids || [];
-                                   
-                                   if (suggestedKits.length === 0) {
-                                     return <span className="text-xs text-muted-foreground">Nenhum kit compatível</span>;
-                                   }
-                                   
-                                   return (
-                                     <Popover>
-                                        <PopoverTrigger asChild>
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-auto py-2 px-3 flex items-center gap-2"
+                                <td className="px-4 py-3">
+                                  {(() => {
+                                    const suggestedKits = suggestedKitsByVehicle.get(vehicleSchedule.plate) || [];
+                                    const selectedKitIds = vehicleSchedule.selected_kit_ids || [];
+                                    const selectedKits = kits.filter(k => selectedKitIds.includes(k.id!));
+                                    
+                                    if (suggestedKits.length === 0) {
+                                      return <span className="text-xs text-muted-foreground">Nenhum kit compatível</span>;
+                                    }
+                                    
+                                    return (
+                                      <div className="flex flex-col gap-2">
+                                        {/* Selected Kits Display */}
+                                        {selectedKits.length > 0 && (
+                                          <div className="space-y-2">
+                                            {selectedKits.map((kit) => (
+                                              <div key={kit.id} className="border border-blue-400 bg-blue-50 rounded-lg p-3 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                  <p className="font-semibold text-sm text-blue-900">{kit.name}</p>
+                                                  <Badge className="bg-blue-600 text-white text-xs">Selecionado</Badge>
+                                                </div>
+                                                
+                                                {/* Equipment */}
+                                                {kit.equipment && kit.equipment.length > 0 && (
+                                                  <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-gray-700">Equipamentos:</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                      {kit.equipment.map((item, idx) => (
+                                                        <Badge key={idx} variant="outline" className="text-xs bg-white">
+                                                          {item.item_name} ({item.quantity}x)
+                                                        </Badge>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* Accessories */}
+                                                {kit.accessories && kit.accessories.length > 0 && (
+                                                  <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-gray-700">Acessórios:</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                      {kit.accessories.map((item, idx) => (
+                                                        <Badge key={idx} variant="outline" className="text-xs bg-white">
+                                                          {item.item_name} ({item.quantity}x)
+                                                        </Badge>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* Supplies */}
+                                                {kit.supplies && kit.supplies.length > 0 && (
+                                                  <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-gray-700">Insumos:</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                      {kit.supplies.map((item, idx) => (
+                                                        <Badge key={idx} variant="outline" className="text-xs bg-white">
+                                                          {item.item_name} ({item.quantity}x)
+                                                        </Badge>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Select Kits Button */}
+                                        <Popover>
+                                         <PopoverTrigger asChild>
+                                           <Button
+                                             variant="outline"
+                                             size="sm"
+                                             className="h-auto py-2 px-3 flex items-center gap-2 w-full"
+                                           >
+                                             <Package className="h-4 w-4" />
+                                             <div className="flex flex-col items-start flex-1">
+                                               <span className="text-xs font-medium">
+                                                 {selectedKitIds.length > 0 
+                                                   ? `${selectedKitIds.length} selecionado${selectedKitIds.length > 1 ? 's' : ''}`
+                                                   : `${suggestedKits.length} compatível${suggestedKits.length > 1 ? 'eis' : ''}`
+                                                 }
+                                               </span>
+                                               <span className="text-xs text-muted-foreground">
+                                                 {selectedKitIds.length > 0 ? 'Editar seleção' : 'Selecionar kits'}
+                                               </span>
+                                             </div>
+                                           </Button>
+                                         </PopoverTrigger>
+                                          <PopoverContent 
+                                            className="w-[90vw] max-w-[500px] p-0 max-h-[80vh] flex flex-col z-50" 
+                                            align="center" 
+                                            side="left"
+                                            sideOffset={10}
+                                            avoidCollisions={true}
+                                            collisionPadding={20}
                                           >
-                                            <Package className="h-4 w-4" />
-                                            <div className="flex flex-col items-start">
-                                              <span className="text-xs font-medium">
-                                                {selectedKitIds.length > 0 
-                                                  ? `${selectedKitIds.length} selecionado${selectedKitIds.length > 1 ? 's' : ''}`
-                                                  : `${suggestedKits.length} compatível${suggestedKits.length > 1 ? 'eis' : ''}`
-                                                }
-                                              </span>
-                                              <span className="text-xs text-muted-foreground">
-                                                Ver detalhes
-                                              </span>
-                                            </div>
-                                          </Button>
-                                        </PopoverTrigger>
-                                         <PopoverContent 
-                                           className="w-[90vw] max-w-[500px] p-0 max-h-[80vh] flex flex-col z-50" 
-                                           align="center" 
-                                           side="left"
-                                           sideOffset={10}
-                                           avoidCollisions={true}
-                                           collisionPadding={20}
-                                         >
-                                          <div className="flex flex-col min-h-0 flex-1">
-                                            <div className="px-4 pt-4 pb-3 border-b">
-                                              <h4 className="font-semibold flex items-center gap-2">
-                                                <Package className="h-4 w-4" />
-                                                Kits
-                                              </h4>
-                                            </div>
+                                           <div className="flex flex-col min-h-0 flex-1">
+                                             <div className="px-4 pt-4 pb-3 border-b">
+                                               <h4 className="font-semibold flex items-center gap-2">
+                                                 <Package className="h-4 w-4" />
+                                                 Selecionar Kits
+                                               </h4>
+                                             </div>
 
-                                            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
+                                             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
                                              {suggestedKits.map((kit) => {
                                                const status = homologationStatuses.get(kit.id!);
                                                const isHomologated = status?.isHomologated ?? false;
@@ -1206,43 +1280,60 @@ export const ScheduleModal = ({
                                                          );
                                                        })()}
                                                      </>
-                                                   )}
+                                                    )}
 
-                                                   {/* Conteúdo completo do kit: acessórios e insumos */}
-                                                   <div className="ml-6 space-y-2 pt-2 border-t">
-                                                     <div className="text-xs font-medium">Conteúdo do kit</div>
-                                                     <div className="grid grid-cols-1 gap-2">
-                                                       <div>
-                                                         <div className="text-xs text-muted-foreground mb-1">Acessórios ({kit.accessories.length})</div>
-                                                         <div className="flex flex-wrap gap-1">
-                                                           {kit.accessories.map((acc, idx) => (
-                                                             <Badge key={idx} variant="outline" className="text-xs">
-                                                               {acc.item_name}{acc.quantity ? ` (${acc.quantity}x)` : ''}
-                                                             </Badge>
-                                                           ))}
-                                                         </div>
-                                                       </div>
-                                                       <div>
-                                                         <div className="text-xs text-muted-foreground mb-1">Insumos ({kit.supplies.length})</div>
-                                                         <div className="flex flex-wrap gap-1">
-                                                           {kit.supplies.map((sup, idx) => (
-                                                             <Badge key={idx} variant="outline" className="text-xs">
-                                                               {sup.item_name}{sup.quantity ? ` (${sup.quantity}x)` : ''}
-                                                             </Badge>
-                                                           ))}
-                                                         </div>
-                                                       </div>
-                                                     </div>
-                                                   </div>
+                                                    {/* Conteúdo completo do kit: equipamentos, acessórios e insumos */}
+                                                    <div className="ml-6 space-y-2 pt-2 border-t">
+                                                      <div className="text-xs font-semibold text-gray-700">Conteúdo completo do kit:</div>
+                                                      <div className="grid grid-cols-1 gap-2">
+                                                        {kit.equipment && kit.equipment.length > 0 && (
+                                                          <div>
+                                                            <div className="text-xs text-gray-600 font-medium mb-1">Equipamentos ({kit.equipment.length})</div>
+                                                            <div className="flex flex-wrap gap-1">
+                                                              {kit.equipment.map((eq, idx) => (
+                                                                <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                                                  {eq.item_name}{eq.quantity ? ` (${eq.quantity}x)` : ''}
+                                                                </Badge>
+                                                              ))}
+                                                            </div>
+                                                          </div>
+                                                        )}
+                                                        {kit.accessories && kit.accessories.length > 0 && (
+                                                          <div>
+                                                            <div className="text-xs text-gray-600 font-medium mb-1">Acessórios ({kit.accessories.length})</div>
+                                                            <div className="flex flex-wrap gap-1">
+                                                              {kit.accessories.map((acc, idx) => (
+                                                                <Badge key={idx} variant="outline" className="text-xs bg-green-50 text-green-700">
+                                                                  {acc.item_name}{acc.quantity ? ` (${acc.quantity}x)` : ''}
+                                                                </Badge>
+                                                              ))}
+                                                            </div>
+                                                          </div>
+                                                        )}
+                                                        {kit.supplies && kit.supplies.length > 0 && (
+                                                          <div>
+                                                            <div className="text-xs text-gray-600 font-medium mb-1">Insumos ({kit.supplies.length})</div>
+                                                            <div className="flex flex-wrap gap-1">
+                                                              {kit.supplies.map((sup, idx) => (
+                                                                <Badge key={idx} variant="outline" className="text-xs bg-yellow-50 text-yellow-700">
+                                                                  {sup.item_name}{sup.quantity ? ` (${sup.quantity}x)` : ''}
+                                                                </Badge>
+                                                              ))}
+                                                            </div>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    </div>
                                                  </div>
                                                );
                                               })}
-                                            </div>
-                                          </div>
-                                        </PopoverContent>
-                                     </Popover>
-                                   );
-                                 })()}
+                                             </div>
+                                           </div>
+                                         </PopoverContent>
+                                      </Popover>
+                                    </div>
+                                    );
+                                  })()}
                                </td>
                                <td className="px-4 py-3">
                                  <div className="space-y-1">
