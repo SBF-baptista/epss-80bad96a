@@ -18,6 +18,7 @@ import {
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import HomologationFilters from "@/components/homologation/HomologationFilters";
 import { SegsaleFetchPanel } from "@/components/homologation/SegsaleFetchPanel";
+import { PendingItemsAlert } from "@/components/homologation/PendingItemsAlert";
 
 const Homologation = () => {
   const [filters, setFilters] = useState<HomologationFiltersType>({
@@ -72,6 +73,8 @@ const Homologation = () => {
             cards={filteredCards} 
             workflowData={workflowData} 
           />
+          
+          <PendingItemsAlert />
           
           <CreateHomologationForm onUpdate={refetch} />
           
