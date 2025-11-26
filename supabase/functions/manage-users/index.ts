@@ -65,9 +65,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    // Simple authentication check
+    // Authentication and authorization check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('Missing or invalid authorization header');
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Missing or invalid authorization header' 
@@ -77,8 +78,48 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // For now, just check that the token exists - Supabase will validate it
-    console.log('Authorization header present, proceeding...');
+    // Verify the user is authenticated and get their ID
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('Failed to authenticate user:', authError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Invalid or expired token' 
+      }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+    
+    // Check if user has admin role
+    const { data: userRole, error: roleError } = await supabaseAdmin
+      .rpc('get_user_role', { _user_id: user.id });
+    
+    if (roleError) {
+      console.error('Failed to get user role:', roleError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Failed to verify user permissions' 
+      }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+    
+    if (userRole !== 'admin') {
+      console.error(`Access denied: User ${user.id} has role ${userRole}, admin required`);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Forbidden - Admin role required to manage users' 
+      }), { 
+        status: 403, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+    
+    console.log(`Admin user ${user.id} authorized to manage users`);
 
     // Parse request
     let requestData: any = {};
