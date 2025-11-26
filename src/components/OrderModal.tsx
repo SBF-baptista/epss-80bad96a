@@ -118,11 +118,19 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
 
           const { data: acc, error: accErr } = await supabase
             .from('accessories')
-            .select('name, quantity, vehicle_id')
+            .select('name, quantity, vehicle_id, categories')
             .in('vehicle_id', matchingVehicleIds as string[]);
           if (accErr) throw accErr;
 
-          resultsMap[sched.id] = (acc || []).map(a => ({ name: a.name, quantity: a.quantity }));
+          // Filter out modules - only include real accessories
+          const normalizeCategory = (cat?: string | null) => 
+            (cat || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+          const realAccessories = (acc || []).filter(a => 
+            normalizeCategory(a.categories) !== 'modulos'
+          );
+
+          resultsMap[sched.id] = realAccessories.map(a => ({ name: a.name, quantity: a.quantity }));
         }));
 
         setScheduleAccessoriesMap(resultsMap);
