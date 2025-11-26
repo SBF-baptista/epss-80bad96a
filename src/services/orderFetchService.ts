@@ -50,9 +50,21 @@ export const fetchOrders = async (): Promise<Order[]> => {
     // Create a map of order accessories from both sources
     const accessoriesByOrderId = new Map<string, Array<{ name: string; quantity: number }>>()
     
-    // Add accessories from incoming vehicles
+    // Helper function to check if accessory is a module
+    const isModule = (categories: string | null): boolean => {
+      if (!categories) return false;
+      const normalized = categories.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return normalized === 'modulos';
+    };
+
+    // Add accessories from incoming vehicles (filtrar módulos)
     if (accessoriesFromVehicles) {
       accessoriesFromVehicles.forEach((accessory: any) => {
+        // Skip modules
+        if (isModule(accessory.categories)) {
+          return;
+        }
+        
         const orderId = accessory.incoming_vehicles?.created_order_id
         if (orderId) {
           if (!accessoriesByOrderId.has(orderId)) {
@@ -66,9 +78,14 @@ export const fetchOrders = async (): Promise<Order[]> => {
       })
     }
 
-    // Add accessories directly linked to orders
+    // Add accessories directly linked to orders (filtrar módulos)
     if (directAccessories) {
       directAccessories.forEach((accessory: AccessoryRow) => {
+        // Skip modules
+        if (isModule(accessory.categories)) {
+          return;
+        }
+        
         const orderId = accessory.pedido_id
         if (orderId) {
           if (!accessoriesByOrderId.has(orderId)) {

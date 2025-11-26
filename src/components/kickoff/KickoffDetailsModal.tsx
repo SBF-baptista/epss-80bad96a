@@ -81,6 +81,8 @@ export const KickoffDetailsModal = ({
     new Map(vehicles.map(v => [v.id, { hasSiren: false, quantity: 1 }]))
   );
 
+  const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
+
   // Load existing customer data when modal opens
   useEffect(() => {
     if (open && saleSummaryId) {
@@ -320,6 +322,15 @@ export const KickoffDetailsModal = ({
     setLoading(true);
 
     try {
+      // Verificar se há pelo menos um veículo validado
+      if (validatedPlates.size === 0) {
+        toast.error("Por favor, valide pelo menos um veículo antes de concluir o kickoff.");
+        setLoading(false);
+        return;
+      }
+
+      // Filtrar apenas os veículos validados
+      const validatedVehicles = vehicles.filter(v => validatedPlates.has(v.id));
       // Save customer kickoff details
       const { error: customerError } = await supabase
         .from("customers")
@@ -334,8 +345,8 @@ export const KickoffDetailsModal = ({
 
       if (customerError) throw customerError;
 
-      // Prepare vehicles data for history
-      const vehiclesData = vehicles.map(vehicle => {
+      // Prepare vehicles data for history (apenas veículos validados)
+      const vehiclesData = validatedVehicles.map(vehicle => {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 };
         const sirenData = vehicleSiren.get(vehicle.id) || { hasSiren: false, quantity: 1 };
@@ -357,8 +368,8 @@ export const KickoffDetailsModal = ({
         };
       });
 
-      // Store selected modules info and accessories (sirene, bloqueio) with quantities
-      for (const vehicle of vehicles) {
+      // Store selected modules info and accessories (sirene, bloqueio) with quantities (apenas veículos validados)
+      for (const vehicle of validatedVehicles) {
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         const sirenData = vehicleSiren.get(vehicle.id) || { hasSiren: false, quantity: 1 };
         const blockingData = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 };
@@ -434,7 +445,7 @@ export const KickoffDetailsModal = ({
         .insert({
           sale_summary_id: saleSummaryId,
           company_name: companyName,
-          total_vehicles: vehicles.length,
+          total_vehicles: validatedVehicles.length,
           contacts: contacts.filter(c => c.name) as any,
           installation_locations: installationLocations.filter(loc => loc.city) as any,
           has_installation_particularity: hasParticularity,
@@ -447,9 +458,10 @@ export const KickoffDetailsModal = ({
       if (historyError) throw historyError;
 
 
-      // Process vehicles for homologation after kickoff completion
+      // Process vehicles for homologation after kickoff completion (apenas veículos validados)
       console.log("Processing kickoff vehicles for homologation...");
-      const processingResult = await processKickoffVehicles(saleSummaryId);
+      const validatedVehicleIds = Array.from(validatedPlates);
+      const processingResult = await processKickoffVehicles(saleSummaryId, validatedVehicleIds);
       
       // Registrar log do kickoff aprovado
       await logCreate(
@@ -539,6 +551,18 @@ export const KickoffDetailsModal = ({
               onSirenQuantityChange={handleSirenQuantityChange}
               saleSummaryId={saleSummaryId}
               onVehicleUpdate={onSuccess}
+              validatedPlates={validatedPlates}
+              onPlateValidationChange={(vehicleId, validated) => {
+                setValidatedPlates(prev => {
+                  const newSet = new Set(prev);
+                  if (validated) {
+                    newSet.add(vehicleId);
+                  } else {
+                    newSet.delete(vehicleId);
+                  }
+                  return newSet;
+                });
+              }}
             />
           </div>
 
