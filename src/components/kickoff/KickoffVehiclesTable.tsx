@@ -37,6 +37,8 @@ interface KickoffVehiclesTableProps {
   onVehicleUpdate: () => void;
   onBlockingQuantityChange: (vehicleId: string, quantity: number) => void;
   onSirenQuantityChange: (vehicleId: string, quantity: number) => void;
+  validatedPlates: Set<string>;
+  onPlateValidationChange: (vehicleId: string, validated: boolean) => void;
 }
 
 export const KickoffVehiclesTable = ({ 
@@ -50,13 +52,14 @@ export const KickoffVehiclesTable = ({
   saleSummaryId,
   onVehicleUpdate,
   onBlockingQuantityChange,
-  onSirenQuantityChange
+  onSirenQuantityChange,
+  validatedPlates,
+  onPlateValidationChange
 }: KickoffVehiclesTableProps) => {
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<KickoffVehicle | null>(null);
-  const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
-  const [invalidVehicles, setInvalidVehicles] = useState<Array<{ 
+  const [invalidVehicles, setInvalidVehicles] = useState<Array<{
     brand: string; 
     model: string; 
     year?: number;
@@ -199,15 +202,7 @@ export const KickoffVehiclesTable = ({
   };
 
   const handlePlateValidation = (vehicleId: string, validated: boolean) => {
-    setValidatedPlates(prev => {
-      const newSet = new Set(prev);
-      if (validated) {
-        newSet.add(vehicleId);
-      } else {
-        newSet.delete(vehicleId);
-      }
-      return newSet;
-    });
+    onPlateValidationChange(vehicleId, validated);
   };
 
   const handleEditClick = (vehicle: KickoffVehicle) => {

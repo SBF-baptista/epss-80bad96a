@@ -15,8 +15,10 @@ export interface ProcessKickoffResult {
  * - Check if vehicle already has homologation (brand, model, year)
  * - If yes: mark as homologated and send to planning
  * - If no: create homologation card with status "homologar"
+ * @param saleSummaryId - ID do resumo de venda
+ * @param validatedVehicleIds - IDs dos veículos que foram validados (opcional - se não fornecido, processa todos)
  */
-export const processKickoffVehicles = async (saleSummaryId: number): Promise<ProcessKickoffResult> => {
+export const processKickoffVehicles = async (saleSummaryId: number, validatedVehicleIds?: string[]): Promise<ProcessKickoffResult> => {
   const result: ProcessKickoffResult = {
     success: true,
     processed_count: 0,
@@ -78,6 +80,17 @@ export const processKickoffVehicles = async (saleSummaryId: number): Promise<Pro
 
     if (!vehicles || vehicles.length === 0) {
       console.log('No vehicles to process for kickoff');
+      return result;
+    }
+
+    // Filtrar apenas os veículos validados, se fornecidos
+    if (validatedVehicleIds && validatedVehicleIds.length > 0) {
+      vehicles = vehicles.filter(v => validatedVehicleIds.includes(v.id));
+      console.log(`Filtered to ${vehicles.length} validated vehicles out of ${validatedVehicleIds.length} requested`);
+    }
+
+    if (vehicles.length === 0) {
+      console.log('No validated vehicles to process for kickoff');
       return result;
     }
 
