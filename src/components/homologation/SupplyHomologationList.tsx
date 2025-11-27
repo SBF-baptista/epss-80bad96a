@@ -43,10 +43,16 @@ export const SupplyHomologationList = () => {
       queryClient.invalidateQueries({
         queryKey: ['kit-item-options', 'supply']
       });
+      queryClient.invalidateQueries({
+        queryKey: ['kit-item-options']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['pending-homologation-items']
+      });
 
       toast({
         title: "Insumo removido",
-        description: `${supplyName} foi removido com sucesso.`,
+        description: `${supplyName} foi removido com sucesso e movido para pendentes.`,
       });
       
       setDialogOpen(null);
