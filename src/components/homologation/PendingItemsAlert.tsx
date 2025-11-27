@@ -59,9 +59,9 @@ export const PendingItemsAlert = () => {
     // Count kits that use this item
     const kitsCount = item.kits?.length || 0;
 
-    // Calculate pending days from the oldest_item_created_at
-    const oldestDate = item.oldest_item_created_at ? new Date(item.oldest_item_created_at) : new Date();
-    const pendingDays = Math.floor((new Date().getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+    // Calculate pending days from the last_pending_date
+    const pendingDate = item.last_pending_date ? new Date(item.last_pending_date) : new Date();
+    const pendingDays = Math.floor((new Date().getTime() - pendingDate.getTime()) / (1000 * 60 * 60 * 24));
 
     // Count planning kits that depend on this item
     let planningKitsCount = 0;

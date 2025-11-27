@@ -24,9 +24,9 @@ export const PendingAccessoriesSection = () => {
   const accessories = pendingItems?.accessories || [];
 
   const calculatePendingDays = (item: PendingItem): number => {
-    if (!item.oldest_item_created_at) return 0;
-    const oldestDate = new Date(item.oldest_item_created_at);
-    return Math.floor((new Date().getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (!item.last_pending_date) return 0;
+    const pendingDate = new Date(item.last_pending_date);
+    return Math.floor((new Date().getTime() - pendingDate.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const handleApprove = async (item: PendingItem) => {
@@ -164,12 +164,10 @@ export const PendingAccessoriesSection = () => {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
-                        {accessory.oldest_item_created_at && (
-                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {calculatePendingDays(accessory)} {calculatePendingDays(accessory) === 1 ? 'dia' : 'dias'}
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {calculatePendingDays(accessory)} {calculatePendingDays(accessory) === 1 ? 'dia' : 'dias'}
+                        </Badge>
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
                           {accessory.kits?.length || 0} {accessory.kits?.length === 1 ? 'kit' : 'kits'}
                         </Badge>
