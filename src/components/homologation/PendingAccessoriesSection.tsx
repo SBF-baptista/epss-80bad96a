@@ -25,8 +25,18 @@ export const PendingAccessoriesSection = () => {
 
   const calculatePendingDays = (item: PendingItem): number => {
     if (!item.last_pending_date) return 0;
+    
     const pendingDate = new Date(item.last_pending_date);
-    return Math.floor((new Date().getTime() - pendingDate.getTime()) / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    
+    // Reset time to midnight for both dates to compare calendar days
+    pendingDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = today.getTime() - pendingDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
   };
 
   const handleApprove = async (item: PendingItem) => {

@@ -61,7 +61,14 @@ export const PendingItemsAlert = () => {
 
     // Calculate pending days from the last_pending_date
     const pendingDate = item.last_pending_date ? new Date(item.last_pending_date) : new Date();
-    const pendingDays = Math.floor((new Date().getTime() - pendingDate.getTime()) / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    
+    // Reset time to midnight for both dates to compare calendar days
+    pendingDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = today.getTime() - pendingDate.getTime();
+    const pendingDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     // Count planning kits that depend on this item
     let planningKitsCount = 0;
