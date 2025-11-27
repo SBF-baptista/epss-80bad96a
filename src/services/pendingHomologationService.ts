@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ItemType } from '@/types/homologationKit';
+import { normalizeItemName } from '@/utils/itemNormalization';
 
 export interface PendingItem {
   item_name: string;
@@ -37,8 +38,9 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       throw homologatedError;
     }
 
-    const homologatedMap = new Set(
-      homologatedItems?.map(item => `${item.item_name}|${item.item_type}`) || []
+    // Create a normalized set of homologated items
+    const homologatedSet = new Set(
+      homologatedItems?.map(item => normalizeItemName(item.item_name)) || []
     );
 
     // Get all kits with their items
@@ -86,10 +88,11 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
     }>();
 
     kitItems?.forEach(item => {
-      const itemKey = `${item.item_name}|${item.item_type}`;
+      const normalizedName = normalizeItemName(item.item_name);
       
       // Check if item is not homologated
-      if (!homologatedMap.has(itemKey)) {
+      if (!homologatedSet.has(normalizedName)) {
+        const itemKey = `${item.item_name}|${item.item_type}`;
         const existingItem = pendingItemsMap.get(itemKey);
         
         if (existingItem) {
@@ -106,6 +109,42 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
             totalQuantity: item.quantity,
             kits: new Set([item.kit_id]),
             oldest_created_at: item.created_at
+          });
+        }
+      }
+    });
+
+    // Also check accessories from vehicles (accessories table)
+    const { data: vehicleAccessories, error: accessoriesError } = await supabase
+      .from('accessories')
+      .select('name, quantity, created_at, vehicle_id, incoming_vehicles!inner(company_name)');
+
+    if (accessoriesError) {
+      console.error('Error fetching vehicle accessories:', accessoriesError);
+      throw accessoriesError;
+    }
+
+    // Add vehicle accessories to pending items if not homologated
+    vehicleAccessories?.forEach(acc => {
+      const normalizedName = normalizeItemName(acc.name);
+      
+      if (!homologatedSet.has(normalizedName)) {
+        const itemKey = `${acc.name}|accessory`;
+        const existingItem = pendingItemsMap.get(itemKey);
+        
+        if (existingItem) {
+          existingItem.totalQuantity += acc.quantity;
+          // Update oldest_created_at if this item is older
+          if (acc.created_at && (!existingItem.oldest_created_at || acc.created_at < existingItem.oldest_created_at)) {
+            existingItem.oldest_created_at = acc.created_at;
+          }
+        } else {
+          pendingItemsMap.set(itemKey, {
+            item_name: acc.name,
+            item_type: 'accessory',
+            totalQuantity: acc.quantity,
+            kits: new Set(),
+            oldest_created_at: acc.created_at
           });
         }
       }
