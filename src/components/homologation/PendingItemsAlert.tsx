@@ -12,7 +12,6 @@ interface PendingItemWithMetrics {
   item_type: string;
   kitsCount: number;
   planningKitsCount: number;
-  oldestCreatedAt: Date;
   pendingDays: number;
 }
 
@@ -39,20 +38,8 @@ export const PendingItemsAlert = () => {
     refetchInterval: 60000,
   });
 
-  // Fetch all kits with their created dates
-  const { data: kits } = useQuery({
-    queryKey: ['homologation-kits-dates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('homologation_kits')
-        .select('id, name, created_at');
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
-  if (!pendingItems || !planningSchedules || !kits) {
+  if (!pendingItems || !planningSchedules) {
     return null;
   }
 
@@ -67,24 +54,13 @@ export const PendingItemsAlert = () => {
     return null;
   }
 
-  // Create a map of kit_id to created_at
-  const kitsDateMap = new Map(kits.map(k => [k.id, new Date(k.created_at)]));
-
   // Calculate metrics for each pending item
   const itemsWithMetrics: PendingItemWithMetrics[] = allPendingItems.map(item => {
     // Count kits that use this item
     const kitsCount = item.kits?.length || 0;
 
-    // Find oldest kit creation date for this item
-    let oldestDate = new Date();
-    item.kits?.forEach(kit => {
-      const kitDate = kitsDateMap.get(kit.id);
-      if (kitDate && kitDate < oldestDate) {
-        oldestDate = kitDate;
-      }
-    });
-
-    // Calculate pending days
+    // Calculate pending days from the oldest_item_created_at
+    const oldestDate = item.oldest_item_created_at ? new Date(item.oldest_item_created_at) : new Date();
     const pendingDays = Math.floor((new Date().getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
 
     // Count planning kits that depend on this item
@@ -112,7 +88,6 @@ export const PendingItemsAlert = () => {
       item_type: item.item_type,
       kitsCount,
       planningKitsCount,
-      oldestCreatedAt: oldestDate,
       pendingDays,
     };
   });
