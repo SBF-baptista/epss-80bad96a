@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ItemType } from '@/types/homologationKit';
-import { isModuleCategory } from '@/services/vehicleAccessoryService';
 
 export interface PendingItem {
   item_name: string;
@@ -104,99 +103,6 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       }
     });
 
-    // Fetch accessories from the accessories table (from incoming_vehicles)
-    const { data: vehicleAccessories, error: accessoriesError } = await supabase
-      .from('accessories')
-      .select('vehicle_id, name, quantity, incoming_vehicle_group_id, categories')
-      .not('vehicle_id', 'is', null);
-
-    if (accessoriesError) {
-      console.error('Error fetching vehicle accessories:', accessoriesError);
-      throw accessoriesError;
-    }
-
-    // Process vehicle accessories
-    // IMPORTANTE: Filtrar módulos (categories='modulos' ou 'Módulos') - eles não precisam de homologação
-    vehicleAccessories?.forEach(accessory => {
-      // Ignorar módulos - eles não passam por homologação
-      if (isModuleCategory(accessory.categories)) {
-        return;
-      }
-      
-      const itemKey = `${accessory.name}|accessory`;
-      
-      if (!homologatedMap.has(itemKey)) {
-        const existing = pendingItemsMap.get(itemKey);
-        
-        if (existing) {
-          existing.totalQuantity += accessory.quantity;
-          existing.kits.add(accessory.vehicle_id); // Use vehicle_id as reference
-        } else {
-          pendingItemsMap.set(itemKey, {
-            item_name: accessory.name,
-            item_type: 'accessory' as ItemType,
-            totalQuantity: accessory.quantity,
-            kits: new Set([accessory.vehicle_id])
-          });
-        }
-      }
-    });
-
-    // Also fetch accessories from customers (NOTA: módulos não são mais processados)
-    const { data: customers, error: customersError } = await supabase
-      .from('customers')
-      .select('id, name, accessories, vehicles');
-
-    if (customersError) {
-      console.error('Error fetching customers:', customersError);
-      throw customersError;
-    }
-
-    // Process customer accessories only (não processar módulos)
-    const customerItemsMap = new Map<string, {
-      item_name: string;
-      item_type: ItemType;
-      customers: Set<string>;
-      vehiclesCount: number;
-    }>();
-
-    customers?.forEach(customer => {
-      // Parse vehicles to count
-      let vehiclesCount = 0;
-      try {
-        const vehiclesData = typeof customer.vehicles === 'string' 
-          ? JSON.parse(customer.vehicles) 
-          : customer.vehicles;
-        vehiclesCount = Array.isArray(vehiclesData) ? vehiclesData.length : 0;
-      } catch (e) {
-        console.warn('Failed to parse vehicles for customer:', customer.id);
-      }
-
-      // Process accessories only
-      const accessories = Array.isArray(customer.accessories) ? customer.accessories : [];
-      accessories.forEach(acc => {
-        const itemKey = `${acc}|accessory`;
-        if (!homologatedMap.has(itemKey)) {
-          const existing = customerItemsMap.get(itemKey);
-          if (existing) {
-            existing.customers.add(customer.id);
-            existing.vehiclesCount += vehiclesCount;
-          } else {
-            customerItemsMap.set(itemKey, {
-              item_name: acc,
-              item_type: 'accessory',
-              customers: new Set([customer.id]),
-              vehiclesCount
-            });
-          }
-        }
-      });
-    });
-
-    // Create a customers map for lookup
-    const customersMap = new Map(
-      customers?.map(c => [c.id, c]) || []
-    );
 
     // Convert to response format
     const result: PendingItemsResponse = {
@@ -205,7 +111,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       equipment: []
     };
 
-    // First, add items from kits
+    // Add items from kits only
     pendingItemsMap.forEach((pendingItem) => {
       const kitsForItem = Array.from(pendingItem.kits)
         .map(kitId => kitsMap.get(kitId))
@@ -234,57 +140,6 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         case 'equipment':
           result.equipment.push(item);
           break;
-      }
-    });
-
-    // Then, merge items from customers (apenas acessórios)
-    customerItemsMap.forEach((customerItem) => {
-      const itemKey = `${customerItem.item_name}|${customerItem.item_type}`;
-      
-      // Check if this item is already in result from kits
-      let existingItem: PendingItem | undefined;
-      if (customerItem.item_type === 'accessory') {
-        existingItem = result.accessories.find(i => i.item_name === customerItem.item_name);
-      }
-
-      const customersForItem = Array.from(customerItem.customers)
-        .map(customerId => customersMap.get(customerId))
-        .filter(Boolean)
-        .map(customer => {
-          let vehiclesCount = 0;
-          try {
-            const vehiclesData = typeof customer!.vehicles === 'string' 
-              ? JSON.parse(customer!.vehicles) 
-              : customer!.vehicles;
-            vehiclesCount = Array.isArray(vehiclesData) ? vehiclesData.length : 0;
-          } catch (e) {
-            vehiclesCount = 0;
-          }
-          return {
-            id: customer!.id!,
-            name: customer!.name,
-            vehicles_count: vehiclesCount
-          };
-        });
-
-      if (existingItem) {
-        // Merge customers info into existing item
-        existingItem.customers = customersForItem;
-        existingItem.quantity += customerItem.vehiclesCount;
-      } else {
-        // Create new item entry
-        const newItem: PendingItem = {
-          item_name: customerItem.item_name,
-          item_type: customerItem.item_type,
-          quantity: customerItem.vehiclesCount,
-          kits: [],
-          customers: customersForItem
-        };
-
-        // Apenas acessórios são adicionados (sem equipment/módulos)
-        if (customerItem.item_type === 'accessory') {
-          result.accessories.push(newItem);
-        }
       }
     });
 
