@@ -13,12 +13,12 @@ import { Loader2 } from "lucide-react";
 
 const technicianSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome deve ter no máximo 100 caracteres"),
-  postal_code: z.string().trim().min(1, "CEP é obrigatório"),
-  address_street: z.string().optional(),
-  address_number: z.string().optional(),
-  address_neighborhood: z.string().optional(),
-  address_city: z.string().optional(),
-  address_state: z.string().optional(),
+  postal_code: z.string().trim().min(8, "CEP é obrigatório (formato: 00000-000)"),
+  address_street: z.string().trim().min(1, "Logradouro é obrigatório").max(200, "Logradouro deve ter no máximo 200 caracteres"),
+  address_number: z.string().trim().min(1, "Número é obrigatório").max(20, "Número deve ter no máximo 20 caracteres"),
+  address_neighborhood: z.string().trim().min(1, "Bairro é obrigatório").max(100, "Bairro deve ter no máximo 100 caracteres"),
+  address_city: z.string().trim().min(1, "Cidade é obrigatória").max(100, "Cidade deve ter no máximo 100 caracteres"),
+  address_state: z.string().trim().length(2, "Estado deve ter 2 caracteres (UF)"),
 });
 
 type TechnicianFormData = z.infer<typeof technicianSchema>;
@@ -155,49 +155,79 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
             </div>
 
             <div>
-              <Label htmlFor="address_number">Número</Label>
+              <Label htmlFor="address_number">Número *</Label>
               <Input
                 id="address_number"
                 {...form.register("address_number")}
                 placeholder="123"
+                className={form.formState.errors.address_number ? "border-destructive" : ""}
               />
+              {form.formState.errors.address_number && (
+                <span className="text-sm text-destructive">
+                  {form.formState.errors.address_number.message}
+                </span>
+              )}
             </div>
 
             <div className="md:col-span-2">
-              <Label htmlFor="address_street">Logradouro</Label>
+              <Label htmlFor="address_street">Logradouro *</Label>
               <Input
                 id="address_street"
                 {...form.register("address_street")}
                 placeholder="Rua, Avenida, etc."
+                className={form.formState.errors.address_street ? "border-destructive" : ""}
               />
+              {form.formState.errors.address_street && (
+                <span className="text-sm text-destructive">
+                  {form.formState.errors.address_street.message}
+                </span>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="address_neighborhood">Bairro</Label>
+              <Label htmlFor="address_neighborhood">Bairro *</Label>
               <Input
                 id="address_neighborhood"
                 {...form.register("address_neighborhood")}
                 placeholder="Nome do bairro"
+                className={form.formState.errors.address_neighborhood ? "border-destructive" : ""}
               />
+              {form.formState.errors.address_neighborhood && (
+                <span className="text-sm text-destructive">
+                  {form.formState.errors.address_neighborhood.message}
+                </span>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="address_city">Cidade</Label>
+              <Label htmlFor="address_city">Cidade *</Label>
               <Input
                 id="address_city"
                 {...form.register("address_city")}
                 placeholder="Nome da cidade"
+                className={form.formState.errors.address_city ? "border-destructive" : ""}
               />
+              {form.formState.errors.address_city && (
+                <span className="text-sm text-destructive">
+                  {form.formState.errors.address_city.message}
+                </span>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="address_state">Estado</Label>
+              <Label htmlFor="address_state">Estado *</Label>
               <Input
                 id="address_state"
                 {...form.register("address_state")}
                 placeholder="UF"
                 maxLength={2}
+                className={form.formState.errors.address_state ? "border-destructive" : ""}
               />
+              {form.formState.errors.address_state && (
+                <span className="text-sm text-destructive">
+                  {form.formState.errors.address_state.message}
+                </span>
+              )}
             </div>
           </div>
 
