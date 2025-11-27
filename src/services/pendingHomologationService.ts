@@ -5,6 +5,7 @@ export interface PendingItem {
   item_name: string;
   item_type: ItemType;
   quantity: number;
+  oldest_item_created_at?: string;
   kits: Array<{
     id: string;
     name: string;
@@ -61,7 +62,8 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         kit_id,
         item_name,
         item_type,
-        quantity
+        quantity,
+        created_at
       `);
 
     if (itemsError) {
@@ -80,6 +82,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       item_type: ItemType;
       totalQuantity: number;
       kits: Set<string>;
+      oldest_created_at?: string;
     }>();
 
     kitItems?.forEach(item => {
@@ -92,12 +95,17 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         if (existingItem) {
           existingItem.totalQuantity += item.quantity;
           existingItem.kits.add(item.kit_id);
+          // Update oldest_created_at if this item is older
+          if (item.created_at && (!existingItem.oldest_created_at || item.created_at < existingItem.oldest_created_at)) {
+            existingItem.oldest_created_at = item.created_at;
+          }
         } else {
           pendingItemsMap.set(itemKey, {
             item_name: item.item_name,
             item_type: item.item_type as ItemType,
             totalQuantity: item.quantity,
-            kits: new Set([item.kit_id])
+            kits: new Set([item.kit_id]),
+            oldest_created_at: item.created_at
           });
         }
       }
@@ -126,6 +134,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         item_name: pendingItem.item_name,
         item_type: pendingItem.item_type,
         quantity: pendingItem.totalQuantity,
+        oldest_item_created_at: pendingItem.oldest_created_at,
         kits: kitsForItem,
         customers: []
       };
