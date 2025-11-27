@@ -154,7 +154,7 @@ export const PendingItemsAlert = () => {
                     </div>
                     <div className="text-center">
                       <div className="font-semibold text-red-700">{item.pendingDays}</div>
-                      <div className="text-red-600">{item.pendingDays === 1 ? 'dia' : 'dias'}</div>
+                      <div className="text-red-600">{item.pendingDays === 1 ? 'dia pendente' : 'dias pendentes'}</div>
                     </div>
                   </div>
                 </div>
