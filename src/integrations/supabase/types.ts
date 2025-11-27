@@ -726,6 +726,36 @@ export type Database = {
         }
         Relationships: []
       }
+      item_homologation_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          item_name: string
+          item_type: string
+          status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          item_name: string
+          item_type: string
+          status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
       kickoff_history: {
         Row: {
           approved_at: string

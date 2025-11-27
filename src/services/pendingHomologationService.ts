@@ -6,7 +6,7 @@ export interface PendingItem {
   item_name: string;
   item_type: ItemType;
   quantity: number;
-  oldest_item_created_at?: string;
+  last_pending_date?: string;
   kits: Array<{
     id: string;
     name: string;
@@ -28,7 +28,7 @@ export interface PendingItemsResponse {
 // Get all items that are used in kits but are not homologated
 export async function fetchPendingHomologationItems(): Promise<PendingItemsResponse> {
   try {
-    // First, get all homologated items from kit_item_options
+    // Get all homologated items from kit_item_options
     const { data: homologatedItems, error: homologatedError } = await supabase
       .from('kit_item_options')
       .select('item_name, item_type');
@@ -43,8 +43,27 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       homologatedItems?.map(item => normalizeItemName(item.item_name)) || []
     );
 
-    console.log('Homologated items (normalized):', Array.from(homologatedSet));
-    console.log('Total homologated items:', homologatedSet.size);
+    // Get the latest status change for each item to pending
+    const { data: statusHistory, error: historyError } = await supabase
+      .from('item_homologation_history')
+      .select('item_name, item_type, status, changed_at')
+      .eq('status', 'pending')
+      .order('changed_at', { ascending: false });
+
+    if (historyError) {
+      console.error('Error fetching item status history:', historyError);
+      throw historyError;
+    }
+
+    // Create a map of last pending date for each item
+    const lastPendingDateMap = new Map<string, string>();
+    statusHistory?.forEach(record => {
+      const normalizedName = normalizeItemName(record.item_name);
+      const itemKey = `${normalizedName}|${record.item_type}`;
+      if (!lastPendingDateMap.has(itemKey)) {
+        lastPendingDateMap.set(itemKey, record.changed_at);
+      }
+    });
 
     // Get all kits with their items
     const { data: kits, error: kitsError } = await supabase
@@ -76,9 +95,6 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       throw itemsError;
     }
 
-    console.log('Total kit items found:', kitItems?.length || 0);
-    console.log('Kit items:', kitItems?.map(i => ({ name: i.item_name, type: i.item_type })));
-
     // Create a map of kit_id to kit info
     const kitsMap = new Map(
       kits?.map(kit => [kit.id, kit]) || []
@@ -90,30 +106,27 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       item_type: ItemType;
       totalQuantity: number;
       kits: Set<string>;
-      oldest_created_at?: string;
+      last_pending_date?: string;
     }>();
 
     kitItems?.forEach(item => {
       const normalizedName = normalizeItemName(item.item_name);
       
-      console.log('Checking kit item:', {
-        item_name: item.item_name,
-        normalized: normalizedName,
-        item_type: item.item_type,
-        isHomologated: homologatedSet.has(normalizedName)
-      });
-      
       // Check if item is not homologated
       if (!homologatedSet.has(normalizedName)) {
         const itemKey = `${item.item_name}|${item.item_type}`;
+        const normalizedItemKey = `${normalizedName}|${item.item_type}`;
         const existingItem = pendingItemsMap.get(itemKey);
+        
+        // Get last pending date from history, fallback to item creation date
+        const lastPendingDate = lastPendingDateMap.get(normalizedItemKey) || item.created_at;
         
         if (existingItem) {
           existingItem.totalQuantity += item.quantity;
           existingItem.kits.add(item.kit_id);
-          // Update oldest_created_at if this item is older
-          if (item.created_at && (!existingItem.oldest_created_at || item.created_at < existingItem.oldest_created_at)) {
-            existingItem.oldest_created_at = item.created_at;
+          // Keep the most recent pending date
+          if (lastPendingDate && (!existingItem.last_pending_date || lastPendingDate > existingItem.last_pending_date)) {
+            existingItem.last_pending_date = lastPendingDate;
           }
         } else {
           pendingItemsMap.set(itemKey, {
@@ -121,13 +134,11 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
             item_type: item.item_type as ItemType,
             totalQuantity: item.quantity,
             kits: new Set([item.kit_id]),
-            oldest_created_at: item.created_at
+            last_pending_date: lastPendingDate
           });
         }
       }
     });
-
-    console.log('Pending items map:', Array.from(pendingItemsMap.entries()));
 
 
     // Convert to response format
@@ -152,7 +163,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         item_name: pendingItem.item_name,
         item_type: pendingItem.item_type,
         quantity: pendingItem.totalQuantity,
-        oldest_item_created_at: pendingItem.oldest_created_at,
+        last_pending_date: pendingItem.last_pending_date,
         kits: kitsForItem,
         customers: []
       };
