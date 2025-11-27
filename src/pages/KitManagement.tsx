@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 const KitManagement = () => {
   const queryClient = useQueryClient();
 
-  // Set up real-time subscription for kit_item_options changes
+  // Set up real-time subscription for changes
   useEffect(() => {
     const channel = supabase
       .channel('kit-management-sync')
@@ -20,7 +20,22 @@ const KitManagement = () => {
         },
         (payload) => {
           console.log('Kit item option changed in Kit Management:', payload);
-          // Trigger refetch of kits data
+          // Trigger refetch of kits and pending items data
+          queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'homologation_kit_accessories'
+        },
+        (payload) => {
+          console.log('Kit accessory changed in Kit Management:', payload);
+          // Trigger refetch of pending items when kit items change
+          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
           queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
         }
       )

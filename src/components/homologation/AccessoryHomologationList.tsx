@@ -43,10 +43,16 @@ export const AccessoryHomologationList = () => {
       queryClient.invalidateQueries({
         queryKey: ['kit-item-options', 'accessory']
       });
+      queryClient.invalidateQueries({
+        queryKey: ['kit-item-options']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['pending-homologation-items']
+      });
 
       toast({
         title: "Acessório removido",
-        description: `${accessoryName} foi removido com sucesso.`,
+        description: `${accessoryName} foi removido com sucesso e movido para pendentes.`,
       });
       
       setDialogOpen(null);

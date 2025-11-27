@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 const AccessorySupplyHomologation = () => {
   const queryClient = useQueryClient();
 
-  // Set up real-time subscription for kit_item_options and customers changes
+  // Set up real-time subscription for changes
   useEffect(() => {
     const channel = supabase
       .channel('accessory-homologation-sync')
@@ -25,7 +25,21 @@ const AccessorySupplyHomologation = () => {
         },
         (payload) => {
           console.log('Kit item option changed in Accessories:', payload);
-          // Invalidate queries to refetch pending items
+          // Invalidate queries to refetch pending items and homologated lists
+          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+          queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'homologation_kit_accessories'
+        },
+        (payload) => {
+          console.log('Kit accessory changed in Accessories:', payload);
+          // Invalidate queries when kit items change
           queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
         }
       )
