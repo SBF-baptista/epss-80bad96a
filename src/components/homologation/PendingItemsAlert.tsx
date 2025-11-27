@@ -154,13 +154,17 @@ export const PendingItemsAlert = () => {
                   key={`${item.item_name}-${index}`}
                   className="flex items-start justify-between text-sm bg-white p-3 rounded border border-orange-200 hover:border-orange-300 transition-colors"
                 >
-                  <div className="flex items-start gap-2 flex-1">
-                    <Package className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-orange-900 break-words">{item.item_name}</p>
-                      <p className="text-xs text-orange-700 mt-0.5 capitalize">{item.item_type}</p>
+                    <div className="flex items-start gap-2 flex-1">
+                      <Package className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-orange-900 break-words">{item.item_name}</p>
+                        <p className="text-xs text-orange-700 mt-0.5 capitalize">
+                          {item.item_type === 'accessory' ? 'Acessório' : 
+                           item.item_type === 'supply' ? 'Insumo' : 
+                           item.item_type === 'equipment' ? 'Equipamento' : item.item_type}
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   <div className="flex items-center gap-3 text-xs ml-3 flex-shrink-0">
                     <div className="text-center">
                       <div className="font-semibold text-orange-700">{item.kitsCount}</div>
@@ -175,10 +179,6 @@ export const PendingItemsAlert = () => {
               ))}
             </div>
           </div>
-
-          <p className="text-sm text-orange-800 pt-2">
-            Role para baixo para ver todos os itens pendentes e homologá-los.
-          </p>
         </div>
       </AlertDescription>
     </Alert>
