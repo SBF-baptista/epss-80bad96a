@@ -118,13 +118,14 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         const normalizedItemKey = `${normalizedName}|${item.item_type}`;
         const existingItem = pendingItemsMap.get(itemKey);
         
-        // Get last pending date from history, fallback to item creation date
-        const lastPendingDate = lastPendingDateMap.get(normalizedItemKey) || item.created_at;
+        // Get last pending date from history only (no fallback to creation date)
+        // This ensures items without history show 0 days pending
+        const lastPendingDate = lastPendingDateMap.get(normalizedItemKey);
         
         if (existingItem) {
           existingItem.totalQuantity += item.quantity;
           existingItem.kits.add(item.kit_id);
-          // Keep the most recent pending date
+          // Keep the most recent pending date if available
           if (lastPendingDate && (!existingItem.last_pending_date || lastPendingDate > existingItem.last_pending_date)) {
             existingItem.last_pending_date = lastPendingDate;
           }
