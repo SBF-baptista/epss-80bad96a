@@ -43,6 +43,9 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       homologatedItems?.map(item => normalizeItemName(item.item_name)) || []
     );
 
+    console.log('Homologated items (normalized):', Array.from(homologatedSet));
+    console.log('Total homologated items:', homologatedSet.size);
+
     // Get all kits with their items
     const { data: kits, error: kitsError } = await supabase
       .from('homologation_kits')
@@ -73,6 +76,9 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       throw itemsError;
     }
 
+    console.log('Total kit items found:', kitItems?.length || 0);
+    console.log('Kit items:', kitItems?.map(i => ({ name: i.item_name, type: i.item_type })));
+
     // Create a map of kit_id to kit info
     const kitsMap = new Map(
       kits?.map(kit => [kit.id, kit]) || []
@@ -89,6 +95,13 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
 
     kitItems?.forEach(item => {
       const normalizedName = normalizeItemName(item.item_name);
+      
+      console.log('Checking kit item:', {
+        item_name: item.item_name,
+        normalized: normalizedName,
+        item_type: item.item_type,
+        isHomologated: homologatedSet.has(normalizedName)
+      });
       
       // Check if item is not homologated
       if (!homologatedSet.has(normalizedName)) {
@@ -114,41 +127,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       }
     });
 
-    // Also check accessories from vehicles (accessories table)
-    const { data: vehicleAccessories, error: accessoriesError } = await supabase
-      .from('accessories')
-      .select('name, quantity, created_at, vehicle_id, incoming_vehicles!inner(company_name)');
-
-    if (accessoriesError) {
-      console.error('Error fetching vehicle accessories:', accessoriesError);
-      throw accessoriesError;
-    }
-
-    // Add vehicle accessories to pending items if not homologated
-    vehicleAccessories?.forEach(acc => {
-      const normalizedName = normalizeItemName(acc.name);
-      
-      if (!homologatedSet.has(normalizedName)) {
-        const itemKey = `${acc.name}|accessory`;
-        const existingItem = pendingItemsMap.get(itemKey);
-        
-        if (existingItem) {
-          existingItem.totalQuantity += acc.quantity;
-          // Update oldest_created_at if this item is older
-          if (acc.created_at && (!existingItem.oldest_created_at || acc.created_at < existingItem.oldest_created_at)) {
-            existingItem.oldest_created_at = acc.created_at;
-          }
-        } else {
-          pendingItemsMap.set(itemKey, {
-            item_name: acc.name,
-            item_type: 'accessory',
-            totalQuantity: acc.quantity,
-            kits: new Set(),
-            oldest_created_at: acc.created_at
-          });
-        }
-      }
-    });
+    console.log('Pending items map:', Array.from(pendingItemsMap.entries()));
 
 
     // Convert to response format
