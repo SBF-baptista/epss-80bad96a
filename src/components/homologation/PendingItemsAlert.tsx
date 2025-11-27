@@ -117,37 +117,27 @@ export const PendingItemsAlert = () => {
     };
   });
 
-  // Sort by pending days (oldest first) and filter items with planning impact
-  const criticalItems = itemsWithMetrics
-    .filter(item => item.planningKitsCount > 0)
-    .sort((a, b) => b.pendingDays - a.pendingDays)
-    .slice(0, 3); // Show top 3 critical items
+  // Sort all items by pending days (oldest first)
+  const sortedItems = itemsWithMetrics
+    .sort((a, b) => b.pendingDays - a.pendingDays);
 
   const totalPendingItems = allPendingItems.length;
-  const totalPlanningImpacted = itemsWithMetrics.reduce((sum, item) => sum + item.planningKitsCount, 0);
   const maxPendingDays = Math.max(...itemsWithMetrics.map(item => item.pendingDays), 0);
 
   return (
     <Alert className="border-orange-500 bg-orange-50 mb-4">
       <AlertTriangle className="h-5 w-5 text-orange-600" />
       <AlertTitle className="text-orange-900 font-semibold mb-2">
-        Itens Pendentes de Homologação Detectados
+        {totalPendingItems} {totalPendingItems === 1 ? 'Item Pendente' : 'Itens Pendentes'} de Homologação
       </AlertTitle>
       <AlertDescription>
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="bg-white border-orange-300 text-orange-800">
               <Package className="h-3 w-3 mr-1" />
-              {totalPendingItems} {totalPendingItems === 1 ? 'item pendente' : 'itens pendentes'}
+              {totalPendingItems} {totalPendingItems === 1 ? 'item' : 'itens'}
             </Badge>
             
-            {totalPlanningImpacted > 0 && (
-              <Badge variant="outline" className="bg-red-50 border-red-300 text-red-800">
-                <Calendar className="h-3 w-3 mr-1" />
-                {totalPlanningImpacted} {totalPlanningImpacted === 1 ? 'agendamento impactado' : 'agendamentos impactados'}
-              </Badge>
-            )}
-
             {maxPendingDays > 0 && (
               <Badge variant="outline" className="bg-orange-100 border-orange-400 text-orange-900">
                 <Clock className="h-3 w-3 mr-1" />
@@ -156,36 +146,35 @@ export const PendingItemsAlert = () => {
             )}
           </div>
 
-          {criticalItems.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-orange-200">
-              <p className="text-sm font-medium text-orange-900">Itens críticos (impactam agendamentos):</p>
-              <div className="space-y-2">
-                {criticalItems.map((item, index) => (
-                  <div 
-                    key={`${item.item_name}-${index}`}
-                    className="flex items-center justify-between text-sm bg-white p-2 rounded border border-orange-200"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-orange-600" />
-                      <span className="font-medium text-orange-900">{item.item_name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs">
-                      <span className="text-orange-700">
-                        {item.kitsCount} {item.kitsCount === 1 ? 'kit' : 'kits'}
-                      </span>
-                      <span className="text-red-700 font-medium">
-                        {item.planningKitsCount} {item.planningKitsCount === 1 ? 'agendamento' : 'agendamentos'}
-                      </span>
-                      <span className="text-orange-600 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(item.oldestCreatedAt, { locale: ptBR, addSuffix: true })}
-                      </span>
+          <div className="space-y-2 pt-2">
+            <p className="text-sm font-medium text-orange-900">Itens aguardando homologação:</p>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {sortedItems.map((item, index) => (
+                <div 
+                  key={`${item.item_name}-${index}`}
+                  className="flex items-start justify-between text-sm bg-white p-3 rounded border border-orange-200 hover:border-orange-300 transition-colors"
+                >
+                  <div className="flex items-start gap-2 flex-1">
+                    <Package className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-orange-900 break-words">{item.item_name}</p>
+                      <p className="text-xs text-orange-700 mt-0.5 capitalize">{item.item_type}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-3 text-xs ml-3 flex-shrink-0">
+                    <div className="text-center">
+                      <div className="font-semibold text-orange-700">{item.kitsCount}</div>
+                      <div className="text-orange-600">{item.kitsCount === 1 ? 'kit' : 'kits'}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-red-700">{item.pendingDays}</div>
+                      <div className="text-red-600">{item.pendingDays === 1 ? 'dia' : 'dias'}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
           <p className="text-sm text-orange-800 pt-2">
             Role para baixo para ver todos os itens pendentes e homologá-los.
