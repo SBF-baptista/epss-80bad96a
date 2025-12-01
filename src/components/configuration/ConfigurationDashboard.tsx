@@ -7,8 +7,10 @@ import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
 import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitScheduleService';
 import { SchedulingSection } from './SchedulingSection';
+import { ScheduleManagement } from './ScheduleManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ConfigurationDashboardProps {
   onNavigateToSection?: (section: string) => void;
@@ -164,18 +166,30 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* Content */}
+      {/* Tabs */}
       <div className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden">
-        <SchedulingSection
-          kits={kits}
-          technicians={technicians}
-          schedules={schedules}
-          homologationStatuses={homologationStatuses}
-          onRefresh={loadData}
-        />
+        <Tabs defaultValue="kits" className="h-full flex flex-col">
+          <TabsList className="mb-4">
+            <TabsTrigger value="kits">Kits e Técnicos</TabsTrigger>
+            <TabsTrigger value="agendamento">Agendamento</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="kits" className="flex-1 overflow-auto">
+            <SchedulingSection
+              kits={kits}
+              technicians={technicians}
+              schedules={schedules}
+              homologationStatuses={homologationStatuses}
+              onRefresh={loadData}
+            />
+          </TabsContent>
+          
+          <TabsContent value="agendamento" className="flex-1 overflow-auto">
+            <ScheduleManagement />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
