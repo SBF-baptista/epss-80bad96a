@@ -44,7 +44,7 @@ export const ScheduleManagement = () => {
             selected={selectedDate || undefined}
             onSelect={handleDateSelect}
             locale={ptBR}
-            className="rounded-md border pointer-events-auto"
+            className="rounded-md border p-3 pointer-events-auto"
           />
         </CardContent>
       </Card>
