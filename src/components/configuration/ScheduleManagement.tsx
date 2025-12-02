@@ -1,30 +1,60 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScheduleFormModal } from './ScheduleFormModal';
+import { toast } from 'sonner';
 
 export const ScheduleManagement = () => {
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleFormSubmit = (data: any) => {
+    console.log('Agendamento criado:', data);
+    toast.success('Agendamento criado com sucesso!');
+    // TODO: Implementar persistência no banco de dados
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Agendamento</h2>
           <p className="text-muted-foreground">
-            Gerencie os agendamentos de instalação
+            Clique em uma data para criar um novo agendamento
           </p>
         </div>
-        <Button className="gap-2">
-          <Calendar className="w-4 h-4" />
-          Novo Agendamento
-        </Button>
       </div>
 
-      <div className="rounded-lg border bg-card p-8 text-center">
-        <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Em desenvolvimento</h3>
-        <p className="text-muted-foreground">
-          A funcionalidade de agendamento estará disponível em breve.
-        </p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Calendário de Agendamentos</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <Calendar
+            mode="single"
+            selected={selectedDate || undefined}
+            onSelect={handleDateSelect}
+            locale={ptBR}
+            className="rounded-md border pointer-events-auto"
+          />
+        </CardContent>
+      </Card>
+
+      <ScheduleFormModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        selectedDate={selectedDate}
+        onSubmit={handleFormSubmit}
+      />
     </div>
   );
 };
