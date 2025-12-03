@@ -24,6 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const scheduleFormSchema = z.object({
   technician_name: z.string().min(1, 'Nome do técnico é obrigatório'),
+  technician_whatsapp: z.string().min(1, 'WhatsApp do técnico é obrigatório'),
   time: z.string().min(1, 'Horário é obrigatório'),
   scheduled_by: z.string().min(1, 'Quem agendou é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
@@ -38,13 +39,14 @@ const scheduleFormSchema = z.object({
   observation: z.string().min(1, 'Observação é obrigatória'),
 });
 
-type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
+export type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
 
 interface ScheduleFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate: Date | null;
   onSubmit: (data: ScheduleFormData & { date: Date }) => void;
+  isLoading?: boolean;
 }
 
 export const ScheduleFormModal = ({
@@ -52,11 +54,13 @@ export const ScheduleFormModal = ({
   onOpenChange,
   selectedDate,
   onSubmit,
+  isLoading = false,
 }: ScheduleFormModalProps) => {
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
       technician_name: '',
+      technician_whatsapp: '',
       time: '',
       scheduled_by: '',
       service: '',
@@ -92,19 +96,35 @@ export const ScheduleFormModal = ({
         <ScrollArea className="max-h-[70vh] pr-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="technician_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do Técnico *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do técnico" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="technician_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Técnico *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do técnico" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="technician_whatsapp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp do Técnico *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: 5511999999999" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -278,8 +298,8 @@ export const ScheduleFormModal = ({
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit">
-                  Salvar Agendamento
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? 'Salvando...' : 'Salvar Agendamento'}
                 </Button>
               </div>
             </form>

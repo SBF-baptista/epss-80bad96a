@@ -687,6 +687,72 @@ export type Database = {
         }
         Relationships: []
       }
+      installation_schedules: {
+        Row: {
+          address: string
+          created_at: string
+          created_by: string | null
+          customer: string
+          id: string
+          local_contact: string | null
+          observation: string | null
+          phone: string | null
+          plate: string
+          reference_point: string | null
+          scheduled_by: string
+          scheduled_date: string
+          scheduled_time: string
+          service: string
+          technician_name: string
+          technician_whatsapp: string
+          tracker_model: string
+          updated_at: string
+          vehicle_model: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          created_by?: string | null
+          customer: string
+          id?: string
+          local_contact?: string | null
+          observation?: string | null
+          phone?: string | null
+          plate: string
+          reference_point?: string | null
+          scheduled_by: string
+          scheduled_date: string
+          scheduled_time: string
+          service: string
+          technician_name: string
+          technician_whatsapp: string
+          tracker_model: string
+          updated_at?: string
+          vehicle_model: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          created_by?: string | null
+          customer?: string
+          id?: string
+          local_contact?: string | null
+          observation?: string | null
+          phone?: string | null
+          plate?: string
+          reference_point?: string | null
+          scheduled_by?: string
+          scheduled_date?: string
+          scheduled_time?: string
+          service?: string
+          technician_name?: string
+          technician_whatsapp?: string
+          tracker_model?: string
+          updated_at?: string
+          vehicle_model?: string
+        }
+        Relationships: []
+      }
       integration_state: {
         Row: {
           created_at: string | null
