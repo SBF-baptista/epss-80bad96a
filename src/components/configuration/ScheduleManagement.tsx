@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks, getWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { ScheduleFormModal } from './ScheduleFormModal';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, MapPin, User, Car } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const timeSlots = [
   '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -18,6 +20,7 @@ interface ScheduleEntry {
   date: Date;
   time: string;
   technician_name: string;
+  technician_whatsapp: string;
   customer: string;
   address: string;
   plate: string;
@@ -38,21 +41,60 @@ export const ScheduleManagement = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+  const [rowHeight, setRowHeight] = useState(80);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
+
+  // Fetch schedules from database
+  const fetchSchedules = async () => {
+    const { data, error } = await supabase
+      .from('installation_schedules')
+      .select('*');
+    
+    if (error) {
+      console.error('Error fetching schedules:', error);
+      return;
+    }
+
+    if (data) {
+      const mappedSchedules: ScheduleEntry[] = data.map(item => ({
+        id: item.id,
+        date: new Date(item.scheduled_date),
+        time: item.scheduled_time,
+        technician_name: item.technician_name,
+        technician_whatsapp: item.technician_whatsapp,
+        customer: item.customer,
+        address: item.address,
+        plate: item.plate,
+        service: item.service,
+        vehicle_model: item.vehicle_model,
+        tracker_model: item.tracker_model,
+        scheduled_by: item.scheduled_by,
+        reference_point: item.reference_point || '',
+        phone: item.phone || '',
+        local_contact: item.local_contact || '',
+        observation: item.observation || '',
+      }));
+      setSchedules(mappedSchedules);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchedules();
+  }, []);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setIsModalOpen(true);
   };
 
-  const handleFormSubmit = (data: any) => {
-    const newSchedule: ScheduleEntry = {
-      id: crypto.randomUUID(),
-      date: data.date,
-      time: data.time,
+  const handleFormSubmit = async (data: any) => {
+    const scheduleData = {
+      scheduled_date: format(data.date, 'yyyy-MM-dd'),
+      scheduled_time: data.time,
       technician_name: data.technician_name,
+      technician_whatsapp: data.technician_whatsapp,
       customer: data.customer,
       address: data.address,
       plate: data.plate,
@@ -60,13 +102,26 @@ export const ScheduleManagement = () => {
       vehicle_model: data.vehicle_model,
       tracker_model: data.tracker_model,
       scheduled_by: data.scheduled_by,
-      reference_point: data.reference_point,
-      phone: data.phone,
-      local_contact: data.local_contact,
-      observation: data.observation,
+      reference_point: data.reference_point || null,
+      phone: data.phone || null,
+      local_contact: data.local_contact || null,
+      observation: data.observation || null,
     };
-    setSchedules(prev => [...prev, newSchedule]);
-    console.log('Agendamento criado:', newSchedule);
+
+    const { data: insertedData, error } = await supabase
+      .from('installation_schedules')
+      .insert(scheduleData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating schedule:', error);
+      toast.error('Erro ao criar agendamento');
+      return;
+    }
+
+    // Refresh schedules from database
+    await fetchSchedules();
     toast.success('Agendamento criado com sucesso!');
   };
 
@@ -126,7 +181,18 @@ export const ScheduleManagement = () => {
               </p>
             </div>
 
-            <div className="w-[140px]" /> {/* Spacer para centralizar */}
+            <div className="flex items-center gap-2 w-[200px]">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Altura:</span>
+              <Slider
+                value={[rowHeight]}
+                onValueChange={(value) => setRowHeight(value[0])}
+                min={60}
+                max={200}
+                step={10}
+                className="w-[120px]"
+              />
+              <span className="text-xs text-muted-foreground">{rowHeight}px</span>
+            </div>
           </div>
 
           {/* Cabeçalho dos dias da semana */}
@@ -161,10 +227,13 @@ export const ScheduleManagement = () => {
           </div>
 
           {/* Grade de horários */}
-          <div className="max-h-[500px] overflow-y-auto">
+          <div className="max-h-[600px] overflow-y-auto">
             {timeSlots.map((time, timeIndex) => (
               <div key={time} className="grid grid-cols-[80px_repeat(7,1fr)] border-b last:border-b-0">
-                <div className="p-2 text-xs text-muted-foreground text-right pr-3 border-r bg-muted/20 flex items-center justify-end">
+                <div 
+                  className="p-2 text-xs text-muted-foreground text-right pr-3 border-r bg-muted/20 flex items-center justify-end"
+                  style={{ minHeight: `${rowHeight}px` }}
+                >
                   {time}
                 </div>
                 {weekDays.map((day, dayIndex) => {
@@ -174,31 +243,35 @@ export const ScheduleManagement = () => {
                     <div
                       key={`${timeIndex}-${dayIndex}`}
                       className={cn(
-                        "min-h-[60px] border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1",
+                        "border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1 overflow-y-auto",
                         isToday && "bg-primary/5"
                       )}
+                      style={{ minHeight: `${rowHeight}px` }}
                       onClick={() => handleDateSelect(day)}
                     >
                       {daySchedules.map(schedule => (
                         <div
                           key={schedule.id}
-                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-xs space-y-1 mb-1"
+                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-xs space-y-0.5 mb-1"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="flex items-center gap-1 font-semibold">
-                            <User className="h-3 w-3" />
-                            <span className="truncate">{schedule.technician_name}</span>
+                          <div className="font-semibold truncate">
+                            <span className="font-normal opacity-80">Técnico:</span> {schedule.technician_name}
                           </div>
-                          <div className="text-[10px] opacity-90">
-                            {schedule.time} - {schedule.customer}
+                          <div className="truncate">
+                            <span className="font-normal opacity-80">Horário:</span> {schedule.time}
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] opacity-90">
-                            <Car className="h-3 w-3" />
-                            <span className="truncate">{schedule.plate}</span>
+                          <div className="truncate">
+                            <span className="font-normal opacity-80">Cliente:</span> {schedule.customer}
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] opacity-90">
-                            <MapPin className="h-3 w-3" />
-                            <span className="truncate">{schedule.address}</span>
+                          <div className="truncate">
+                            <span className="font-normal opacity-80">Placa:</span> {schedule.plate}
+                          </div>
+                          <div className="truncate">
+                            <span className="font-normal opacity-80">Endereço:</span> {schedule.address}
+                          </div>
+                          <div className="truncate">
+                            <span className="font-normal opacity-80">WhatsApp:</span> {schedule.technician_whatsapp}
                           </div>
                         </div>
                       ))}
