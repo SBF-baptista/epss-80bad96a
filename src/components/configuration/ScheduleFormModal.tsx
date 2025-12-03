@@ -56,6 +56,7 @@ interface ScheduleFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate: Date | null;
+  selectedTime: string | null;
   onSubmit: (data: ScheduleFormData & { date: Date }) => void;
   isLoading?: boolean;
 }
@@ -64,6 +65,7 @@ export const ScheduleFormModal = ({
   open,
   onOpenChange,
   selectedDate,
+  selectedTime,
   onSubmit,
   isLoading = false,
 }: ScheduleFormModalProps) => {
@@ -101,8 +103,13 @@ export const ScheduleFormModal = ({
     };
     if (open) {
       loadTechnicians();
+      if (selectedTime) {
+        form.setValue('time', selectedTime);
+      }
+    } else {
+      form.reset();
     }
-  }, [open]);
+  }, [open, selectedTime, form]);
 
   const handleTechnicianChange = (technicianId: string) => {
     const technician = technicians.find(t => t.id === technicianId);
