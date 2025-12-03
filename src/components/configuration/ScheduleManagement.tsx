@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks, getWeek } from 'date-fns';
+import { format, startOfWeek, addDays, addWeeks, subWeeks, getWeek, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { ScheduleFormModal } from './ScheduleFormModal';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -17,8 +16,8 @@ const timeSlots = [
 
 interface ScheduleEntry {
   id: string;
-  date: Date;
-  time: string;
+  scheduled_date: string;
+  scheduled_time: string;
   technician_name: string;
   technician_whatsapp: string;
   customer: string;
@@ -41,12 +40,10 @@ export const ScheduleManagement = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
-  const [rowHeight, setRowHeight] = useState(80);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
 
-  // Fetch schedules from database
   const fetchSchedules = async () => {
     const { data, error } = await supabase
       .from('installation_schedules')
@@ -58,25 +55,7 @@ export const ScheduleManagement = () => {
     }
 
     if (data) {
-      const mappedSchedules: ScheduleEntry[] = data.map(item => ({
-        id: item.id,
-        date: new Date(item.scheduled_date),
-        time: item.scheduled_time,
-        technician_name: item.technician_name,
-        technician_whatsapp: item.technician_whatsapp,
-        customer: item.customer,
-        address: item.address,
-        plate: item.plate,
-        service: item.service,
-        vehicle_model: item.vehicle_model,
-        tracker_model: item.tracker_model,
-        scheduled_by: item.scheduled_by,
-        reference_point: item.reference_point || '',
-        phone: item.phone || '',
-        local_contact: item.local_contact || '',
-        observation: item.observation || '',
-      }));
-      setSchedules(mappedSchedules);
+      setSchedules(data as ScheduleEntry[]);
     }
   };
 
@@ -108,7 +87,7 @@ export const ScheduleManagement = () => {
       observation: data.observation || null,
     };
 
-    const { data: insertedData, error } = await supabase
+    const { error } = await supabase
       .from('installation_schedules')
       .insert(scheduleData)
       .select()
@@ -120,17 +99,24 @@ export const ScheduleManagement = () => {
       return;
     }
 
-    // Refresh schedules from database
     await fetchSchedules();
     toast.success('Agendamento criado com sucesso!');
   };
 
   const getSchedulesForDateAndTime = (date: Date, timeSlot: string) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const slotHour = parseInt(timeSlot.split(':')[0], 10);
+    
     return schedules.filter(schedule => {
-      const scheduleHour = schedule.time.split(':')[0];
-      const slotHour = timeSlot.split(':')[0];
-      return isSameDay(schedule.date, date) && scheduleHour === slotHour;
+      const scheduleHour = parseInt(schedule.scheduled_time.split(':')[0], 10);
+      return schedule.scheduled_date === dateStr && scheduleHour === slotHour;
     });
+  };
+
+  const isToday = (date: Date) => {
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return todayStr === dateStr;
   };
 
   const goToPreviousWeek = () => {
@@ -159,7 +145,7 @@ export const ScheduleManagement = () => {
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           {/* Header com navegação */}
-          <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+          <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-b bg-muted/30 gap-4">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={goToPreviousWeek}>
                 <ChevronLeft className="h-4 w-4" />
@@ -181,44 +167,33 @@ export const ScheduleManagement = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 w-[200px]">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">Altura:</span>
-              <Slider
-                value={[rowHeight]}
-                onValueChange={(value) => setRowHeight(value[0])}
-                min={60}
-                max={200}
-                step={10}
-                className="w-[120px]"
-              />
-              <span className="text-xs text-muted-foreground">{rowHeight}px</span>
-            </div>
+            <div className="w-[140px] hidden sm:block" />
           </div>
 
           {/* Cabeçalho dos dias da semana */}
-          <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b">
+          <div className="grid grid-cols-[60px_repeat(7,1fr)] sm:grid-cols-[80px_repeat(7,1fr)] border-b">
             <div className="p-2 border-r bg-muted/20" />
             {weekDays.map((day, index) => {
-              const isToday = isSameDay(day, today);
+              const isTodayDate = isToday(day);
               return (
                 <div
                   key={index}
                   className={cn(
-                    "p-3 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent/50 transition-colors",
-                    isToday && "bg-primary/10"
+                    "p-2 sm:p-3 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent/50 transition-colors",
+                    isTodayDate && "bg-primary/10"
                   )}
                   onClick={() => handleDateSelect(day)}
                 >
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {format(day, 'EEE', { locale: ptBR })}
                   </p>
                   <p className={cn(
-                    "text-2xl font-bold mt-1",
-                    isToday && "text-primary"
+                    "text-lg sm:text-2xl font-bold mt-1",
+                    isTodayDate && "text-primary"
                   )}>
                     {format(day, 'd')}
                   </p>
-                  {isToday && (
+                  {isTodayDate && (
                     <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />
                   )}
                 </div>
@@ -229,49 +204,49 @@ export const ScheduleManagement = () => {
           {/* Grade de horários */}
           <div className="max-h-[600px] overflow-y-auto">
             {timeSlots.map((time, timeIndex) => (
-              <div key={time} className="grid grid-cols-[80px_repeat(7,1fr)] border-b last:border-b-0">
+              <div key={time} className="grid grid-cols-[60px_repeat(7,1fr)] sm:grid-cols-[80px_repeat(7,1fr)] border-b last:border-b-0">
                 <div 
-                  className="p-2 text-xs text-muted-foreground text-right pr-3 border-r bg-muted/20 flex items-center justify-end"
-                  style={{ minHeight: `${rowHeight}px` }}
+                  className="p-2 text-xs text-muted-foreground text-right pr-2 sm:pr-3 border-r bg-muted/20 flex items-center justify-end"
+                  style={{ minHeight: '110px' }}
                 >
                   {time}
                 </div>
                 {weekDays.map((day, dayIndex) => {
-                  const isToday = isSameDay(day, today);
+                  const isTodayDate = isToday(day);
                   const daySchedules = getSchedulesForDateAndTime(day, time);
                   return (
                     <div
                       key={`${timeIndex}-${dayIndex}`}
                       className={cn(
                         "border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1 overflow-y-auto",
-                        isToday && "bg-primary/5"
+                        isTodayDate && "bg-primary/5"
                       )}
-                      style={{ minHeight: `${rowHeight}px` }}
+                      style={{ minHeight: '110px' }}
                       onClick={() => handleDateSelect(day)}
                     >
                       {daySchedules.map(schedule => (
                         <div
                           key={schedule.id}
-                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-xs space-y-0.5 mb-1"
+                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-[10px] sm:text-xs space-y-0.5 mb-1"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="font-semibold truncate">
-                            <span className="font-normal opacity-80">Técnico:</span> {schedule.technician_name}
+                            Técnico: {schedule.technician_name}
                           </div>
                           <div className="truncate">
-                            <span className="font-normal opacity-80">Horário:</span> {schedule.time}
+                            Horário: {schedule.scheduled_time}
                           </div>
                           <div className="truncate">
-                            <span className="font-normal opacity-80">Cliente:</span> {schedule.customer}
+                            Cliente: {schedule.customer}
                           </div>
                           <div className="truncate">
-                            <span className="font-normal opacity-80">Placa:</span> {schedule.plate}
+                            Placa: {schedule.plate}
                           </div>
                           <div className="truncate">
-                            <span className="font-normal opacity-80">Endereço:</span> {schedule.address}
+                            Endereço: {schedule.address}
                           </div>
                           <div className="truncate">
-                            <span className="font-normal opacity-80">WhatsApp:</span> {schedule.technician_whatsapp}
+                            WhatsApp: {schedule.technician_whatsapp}
                           </div>
                         </div>
                       ))}
