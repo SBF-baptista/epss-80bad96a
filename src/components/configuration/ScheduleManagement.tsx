@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScheduleFormModal } from './ScheduleFormModal';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, User, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const timeSlots = [
@@ -13,9 +13,28 @@ const timeSlots = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
 ];
 
+interface ScheduleEntry {
+  id: string;
+  date: Date;
+  time: string;
+  technician_name: string;
+  customer: string;
+  address: string;
+  plate: string;
+  service: string;
+  vehicle_model: string;
+  tracker_model: string;
+  scheduled_by: string;
+  reference_point: string;
+  phone: string;
+  local_contact: string;
+  observation: string;
+}
+
 export const ScheduleManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [currentWeekStart, setCurrentWeekStart] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -29,8 +48,34 @@ export const ScheduleManagement = () => {
   };
 
   const handleFormSubmit = (data: any) => {
-    console.log('Agendamento criado:', data);
+    const newSchedule: ScheduleEntry = {
+      id: crypto.randomUUID(),
+      date: data.date,
+      time: data.time,
+      technician_name: data.technician_name,
+      customer: data.customer,
+      address: data.address,
+      plate: data.plate,
+      service: data.service,
+      vehicle_model: data.vehicle_model,
+      tracker_model: data.tracker_model,
+      scheduled_by: data.scheduled_by,
+      reference_point: data.reference_point,
+      phone: data.phone,
+      local_contact: data.local_contact,
+      observation: data.observation,
+    };
+    setSchedules(prev => [...prev, newSchedule]);
+    console.log('Agendamento criado:', newSchedule);
     toast.success('Agendamento criado com sucesso!');
+  };
+
+  const getSchedulesForDateAndTime = (date: Date, timeSlot: string) => {
+    return schedules.filter(schedule => {
+      const scheduleHour = schedule.time.split(':')[0];
+      const slotHour = timeSlot.split(':')[0];
+      return isSameDay(schedule.date, date) && scheduleHour === slotHour;
+    });
   };
 
   const goToPreviousWeek = () => {
@@ -124,15 +169,40 @@ export const ScheduleManagement = () => {
                 </div>
                 {weekDays.map((day, dayIndex) => {
                   const isToday = isSameDay(day, today);
+                  const daySchedules = getSchedulesForDateAndTime(day, time);
                   return (
                     <div
                       key={`${timeIndex}-${dayIndex}`}
                       className={cn(
-                        "min-h-[60px] border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors",
+                        "min-h-[60px] border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1",
                         isToday && "bg-primary/5"
                       )}
                       onClick={() => handleDateSelect(day)}
-                    />
+                    >
+                      {daySchedules.map(schedule => (
+                        <div
+                          key={schedule.id}
+                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-xs space-y-1 mb-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center gap-1 font-semibold">
+                            <User className="h-3 w-3" />
+                            <span className="truncate">{schedule.technician_name}</span>
+                          </div>
+                          <div className="text-[10px] opacity-90">
+                            {schedule.time} - {schedule.customer}
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] opacity-90">
+                            <Car className="h-3 w-3" />
+                            <span className="truncate">{schedule.plate}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] opacity-90">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate">{schedule.address}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   );
                 })}
               </div>
