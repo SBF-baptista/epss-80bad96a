@@ -4,6 +4,7 @@ import { logCreate, logUpdate, logDelete } from "./logService";
 export interface Technician {
   id?: string;
   name: string;
+  phone?: string;
   address_street?: string;
   address_number?: string;
   postal_code: string;
@@ -17,6 +18,7 @@ export interface Technician {
 
 export interface CreateTechnicianData {
   name: string;
+  phone?: string;
   address_street?: string;
   address_number?: string;
   postal_code: string;
