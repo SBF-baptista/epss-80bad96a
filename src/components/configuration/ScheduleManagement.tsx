@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, addWeeks, subWeeks, getWeek, parseISO } from 'date-fns';
+import { format, startOfWeek, addDays, addWeeks, subWeeks, getWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScheduleFormModal } from './ScheduleFormModal';
+import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,7 +37,10 @@ interface ScheduleEntry {
 export const ScheduleManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEntry | null>(null);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -66,6 +70,12 @@ export const ScheduleManagement = () => {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setIsModalOpen(true);
+  };
+
+  const handleScheduleClick = (schedule: ScheduleEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedSchedule(schedule);
+    setIsEditModalOpen(true);
   };
 
   const handleFormSubmit = async (data: any) => {
@@ -103,6 +113,61 @@ export const ScheduleManagement = () => {
     toast.success('Agendamento criado com sucesso!');
   };
 
+  const handleUpdateSchedule = async (id: string, data: ScheduleEditFormData) => {
+    setIsLoading(true);
+    
+    const { error } = await supabase
+      .from('installation_schedules')
+      .update({
+        technician_name: data.technician_name,
+        technician_whatsapp: data.technician_whatsapp,
+        scheduled_time: data.scheduled_time,
+        scheduled_by: data.scheduled_by,
+        service: data.service,
+        plate: data.plate,
+        vehicle_model: data.vehicle_model,
+        tracker_model: data.tracker_model,
+        customer: data.customer,
+        address: data.address,
+        reference_point: data.reference_point || null,
+        phone: data.phone || null,
+        local_contact: data.local_contact || null,
+        observation: data.observation || null,
+      })
+      .eq('id', id);
+
+    setIsLoading(false);
+
+    if (error) {
+      console.error('Error updating schedule:', error);
+      toast.error('Erro ao atualizar agendamento');
+      return;
+    }
+
+    await fetchSchedules();
+    toast.success('Agendamento atualizado com sucesso!');
+  };
+
+  const handleDeleteSchedule = async (id: string) => {
+    setIsLoading(true);
+    
+    const { error } = await supabase
+      .from('installation_schedules')
+      .delete()
+      .eq('id', id);
+
+    setIsLoading(false);
+
+    if (error) {
+      console.error('Error deleting schedule:', error);
+      toast.error('Erro ao excluir agendamento');
+      return;
+    }
+
+    await fetchSchedules();
+    toast.success('Agendamento excluído com sucesso!');
+  };
+
   const getSchedulesForDateAndTime = (date: Date, timeSlot: string) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const slotHour = parseInt(timeSlot.split(':')[0], 10);
@@ -137,7 +202,7 @@ export const ScheduleManagement = () => {
         <div>
           <h2 className="text-2xl font-bold">Agendamento</h2>
           <p className="text-muted-foreground">
-            Clique em uma data para criar um novo agendamento
+            Clique em uma data para criar ou em um card para editar
           </p>
         </div>
       </div>
@@ -227,8 +292,8 @@ export const ScheduleManagement = () => {
                       {daySchedules.map(schedule => (
                         <div
                           key={schedule.id}
-                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-[10px] sm:text-xs space-y-0.5 mb-1"
-                          onClick={(e) => e.stopPropagation()}
+                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-[10px] sm:text-xs space-y-0.5 mb-1 cursor-pointer hover:bg-primary transition-colors"
+                          onClick={(e) => handleScheduleClick(schedule, e)}
                         >
                           <div className="font-semibold truncate">
                             Técnico: {schedule.technician_name}
@@ -264,6 +329,15 @@ export const ScheduleManagement = () => {
         onOpenChange={setIsModalOpen}
         selectedDate={selectedDate}
         onSubmit={handleFormSubmit}
+      />
+
+      <ScheduleEditModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        schedule={selectedSchedule}
+        onUpdate={handleUpdateSchedule}
+        onDelete={handleDeleteSchedule}
+        isLoading={isLoading}
       />
     </div>
   );

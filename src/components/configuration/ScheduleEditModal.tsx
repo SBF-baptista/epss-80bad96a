@@ -1,0 +1,408 @@
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Trash2 } from 'lucide-react';
+import { useEffect } from 'react';
+
+const scheduleFormSchema = z.object({
+  technician_name: z.string().min(1, 'Nome do técnico é obrigatório'),
+  technician_whatsapp: z.string().min(1, 'WhatsApp do técnico é obrigatório'),
+  scheduled_time: z.string().min(1, 'Horário é obrigatório'),
+  scheduled_by: z.string().min(1, 'Quem agendou é obrigatório'),
+  service: z.string().min(1, 'Serviço é obrigatório'),
+  plate: z.string().min(1, 'Placa é obrigatória'),
+  vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
+  tracker_model: z.string().min(1, 'Modelo do rastreador é obrigatório'),
+  customer: z.string().min(1, 'Cliente é obrigatório'),
+  address: z.string().min(1, 'Endereço é obrigatório'),
+  reference_point: z.string().optional(),
+  phone: z.string().optional(),
+  local_contact: z.string().optional(),
+  observation: z.string().optional(),
+});
+
+export type ScheduleEditFormData = z.infer<typeof scheduleFormSchema>;
+
+interface ScheduleEntry {
+  id: string;
+  scheduled_date: string;
+  scheduled_time: string;
+  technician_name: string;
+  technician_whatsapp: string;
+  customer: string;
+  address: string;
+  plate: string;
+  service: string;
+  vehicle_model: string;
+  tracker_model: string;
+  scheduled_by: string;
+  reference_point: string;
+  phone: string;
+  local_contact: string;
+  observation: string;
+}
+
+interface ScheduleEditModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  schedule: ScheduleEntry | null;
+  onUpdate: (id: string, data: ScheduleEditFormData) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  isLoading?: boolean;
+}
+
+export const ScheduleEditModal = ({
+  open,
+  onOpenChange,
+  schedule,
+  onUpdate,
+  onDelete,
+  isLoading = false,
+}: ScheduleEditModalProps) => {
+  const form = useForm<ScheduleEditFormData>({
+    resolver: zodResolver(scheduleFormSchema),
+    defaultValues: {
+      technician_name: '',
+      technician_whatsapp: '',
+      scheduled_time: '',
+      scheduled_by: '',
+      service: '',
+      plate: '',
+      vehicle_model: '',
+      tracker_model: '',
+      customer: '',
+      address: '',
+      reference_point: '',
+      phone: '',
+      local_contact: '',
+      observation: '',
+    },
+  });
+
+  useEffect(() => {
+    if (schedule) {
+      form.reset({
+        technician_name: schedule.technician_name,
+        technician_whatsapp: schedule.technician_whatsapp,
+        scheduled_time: schedule.scheduled_time,
+        scheduled_by: schedule.scheduled_by,
+        service: schedule.service,
+        plate: schedule.plate,
+        vehicle_model: schedule.vehicle_model,
+        tracker_model: schedule.tracker_model,
+        customer: schedule.customer,
+        address: schedule.address,
+        reference_point: schedule.reference_point || '',
+        phone: schedule.phone || '',
+        local_contact: schedule.local_contact || '',
+        observation: schedule.observation || '',
+      });
+    }
+  }, [schedule, form]);
+
+  const handleSubmit = async (data: ScheduleEditFormData) => {
+    if (schedule) {
+      await onUpdate(schedule.id, data);
+      onOpenChange(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (schedule) {
+      await onDelete(schedule.id);
+      onOpenChange(false);
+    }
+  };
+
+  const formattedDate = schedule 
+    ? format(new Date(schedule.scheduled_date + 'T12:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+    : '';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle>
+              Editar Agendamento - {formattedDate}
+            </DialogTitle>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="mr-6">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </DialogHeader>
+        
+        <ScrollArea className="max-h-[70vh] pr-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="technician_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Técnico *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do técnico" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="technician_whatsapp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp do Técnico *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: 5511999999999" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="scheduled_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Horário *</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="scheduled_by"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quem Agendou *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome de quem agendou" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="service"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Serviço *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tipo de serviço" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="plate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Placa *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Placa do veículo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="vehicle_model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modelo do Veículo *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Modelo do veículo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tracker_model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modelo do Rastreador *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Modelo do rastreador" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="customer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cliente *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome do cliente" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Endereço *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Endereço completo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="reference_point"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ponto de Referência</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ponto de referência" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Telefone para contato" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="local_contact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contato Local</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome do contato no local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="observation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observação</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Observações sobre o agendamento" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+};
