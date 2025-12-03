@@ -12,8 +12,9 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 const timeSlots = [
-  '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
 ];
 
 interface ScheduleEntry {
@@ -172,11 +173,17 @@ export const ScheduleManagement = () => {
 
   const getSchedulesForDateAndTime = (date: Date, timeSlot: string) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const slotHour = parseInt(timeSlot.split(':')[0], 10);
+    const [slotHour, slotMinute] = timeSlot.split(':').map(Number);
     
     return schedules.filter(schedule => {
-      const scheduleHour = parseInt(schedule.scheduled_time.split(':')[0], 10);
-      return schedule.scheduled_date === dateStr && scheduleHour === slotHour;
+      const [scheduleHour, scheduleMinute] = schedule.scheduled_time.split(':').map(Number);
+      // Match if schedule falls within this 30-minute slot
+      if (schedule.scheduled_date !== dateStr) return false;
+      if (scheduleHour !== slotHour) return false;
+      // Check if minute is in the same 30-min block
+      const slotBlock = slotMinute < 30 ? 0 : 30;
+      const scheduleBlock = scheduleMinute < 30 ? 0 : 30;
+      return slotBlock === scheduleBlock;
     });
   };
 
