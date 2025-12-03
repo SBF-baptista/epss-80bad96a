@@ -38,6 +38,7 @@ interface ScheduleEntry {
 
 export const ScheduleManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEntry | null>(null);
@@ -70,8 +71,9 @@ export const ScheduleManagement = () => {
     fetchSchedules();
   }, []);
 
-  const handleDateSelect = (date: Date) => {
+  const handleDateSelect = (date: Date, time?: string) => {
     setSelectedDate(date);
+    setSelectedTime(time || null);
     setIsModalOpen(true);
   };
 
@@ -366,7 +368,7 @@ export const ScheduleManagement = () => {
                         draggedSchedule && "bg-accent/20"
                       )}
                       style={{ minHeight: '110px' }}
-                      onClick={() => handleDateSelect(day)}
+                      onClick={() => handleDateSelect(day, time)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, day, time)}
                     >
@@ -422,6 +424,7 @@ export const ScheduleManagement = () => {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         selectedDate={selectedDate}
+        selectedTime={selectedTime}
         onSubmit={handleFormSubmit}
       />
 
