@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,14 +18,24 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getTechnicians, Technician } from '@/services/technicianService';
+import { MapPin } from 'lucide-react';
 
 const scheduleFormSchema = z.object({
+  technician_id: z.string().min(1, 'Técnico é obrigatório'),
   technician_name: z.string().min(1, 'Nome do técnico é obrigatório'),
-  technician_whatsapp: z.string().min(1, 'WhatsApp do técnico é obrigatório'),
+  technician_whatsapp: z.string().optional(),
   time: z.string().min(1, 'Horário é obrigatório'),
   scheduled_by: z.string().min(1, 'Quem agendou é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
@@ -56,9 +67,12 @@ export const ScheduleFormModal = ({
   onSubmit,
   isLoading = false,
 }: ScheduleFormModalProps) => {
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
+      technician_id: '',
       technician_name: '',
       technician_whatsapp: '',
       time: '',
@@ -75,6 +89,34 @@ export const ScheduleFormModal = ({
       observation: '',
     },
   });
+
+  useEffect(() => {
+    const loadTechnicians = async () => {
+      try {
+        const data = await getTechnicians();
+        setTechnicians(data);
+      } catch (error) {
+        console.error('Error loading technicians:', error);
+      }
+    };
+    if (open) {
+      loadTechnicians();
+    }
+  }, [open]);
+
+  const handleTechnicianChange = (technicianId: string) => {
+    const technician = technicians.find(t => t.id === technicianId);
+    if (technician) {
+      form.setValue('technician_id', technicianId);
+      form.setValue('technician_name', technician.name);
+      form.setValue('technician_whatsapp', ''); // Can be added to technician table later
+    }
+  };
+
+  const getTechnicianLocation = (technician: Technician) => {
+    const parts = [technician.address_city, technician.address_state].filter(Boolean);
+    return parts.length > 0 ? parts.join(' - ') : 'Localização não informada';
+  };
 
   const handleSubmit = (data: ScheduleFormData) => {
     if (selectedDate) {
@@ -96,35 +138,36 @@ export const ScheduleFormModal = ({
         <ScrollArea className="max-h-[70vh] pr-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="technician_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Técnico *</FormLabel>
+              <FormField
+                control={form.control}
+                name="technician_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Técnico *</FormLabel>
+                    <Select onValueChange={handleTechnicianChange} value={field.value}>
                       <FormControl>
-                        <Input placeholder="Nome do técnico" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um técnico" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="technician_whatsapp"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>WhatsApp do Técnico *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: 5511999999999" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent className="bg-background">
+                        {technicians.map((technician) => (
+                          <SelectItem key={technician.id} value={technician.id!}>
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{technician.name}</span>
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {getTechnicianLocation(technician)}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
