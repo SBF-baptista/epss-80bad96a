@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScheduleFormModal } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Car, Clock, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -44,6 +44,7 @@ export const ScheduleManagement = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+  const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -196,6 +197,52 @@ export const ScheduleManagement = () => {
     setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   };
 
+  const handleDragStart = (e: React.DragEvent, schedule: ScheduleEntry) => {
+    setDraggedSchedule(schedule);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', schedule.id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetDate: Date, targetTime: string) => {
+    e.preventDefault();
+    if (!draggedSchedule) return;
+
+    const newDate = format(targetDate, 'yyyy-MM-dd');
+    const newTime = targetTime;
+
+    if (draggedSchedule.scheduled_date === newDate && draggedSchedule.scheduled_time.startsWith(targetTime.split(':')[0])) {
+      setDraggedSchedule(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('installation_schedules')
+      .update({
+        scheduled_date: newDate,
+        scheduled_time: newTime,
+      })
+      .eq('id', draggedSchedule.id);
+
+    if (error) {
+      console.error('Error moving schedule:', error);
+      toast.error('Erro ao mover agendamento');
+    } else {
+      await fetchSchedules();
+      toast.success('Agendamento movido com sucesso!');
+    }
+
+    setDraggedSchedule(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedSchedule(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -284,34 +331,51 @@ export const ScheduleManagement = () => {
                       key={`${timeIndex}-${dayIndex}`}
                       className={cn(
                         "border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1 overflow-y-auto",
-                        isTodayDate && "bg-primary/5"
+                        isTodayDate && "bg-primary/5",
+                        draggedSchedule && "bg-accent/20"
                       )}
                       style={{ minHeight: '110px' }}
                       onClick={() => handleDateSelect(day)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, day, time)}
                     >
                       {daySchedules.map(schedule => (
                         <div
                           key={schedule.id}
-                          className="bg-primary/90 text-primary-foreground rounded-md p-2 text-[10px] sm:text-xs space-y-0.5 mb-1 cursor-pointer hover:bg-primary transition-colors"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, schedule)}
+                          onDragEnd={handleDragEnd}
+                          className={cn(
+                            "bg-primary/90 text-primary-foreground rounded-lg p-2 text-[10px] sm:text-xs mb-1 cursor-grab active:cursor-grabbing hover:bg-primary transition-all shadow-sm hover:shadow-md",
+                            draggedSchedule?.id === schedule.id && "opacity-50"
+                          )}
                           onClick={(e) => handleScheduleClick(schedule, e)}
                         >
-                          <div className="font-semibold truncate">
-                            Técnico: {schedule.technician_name}
+                          {/* Drag handle and technician name as title */}
+                          <div className="flex items-center gap-1 mb-1.5">
+                            <GripVertical className="h-3 w-3 opacity-50 flex-shrink-0" />
+                            <span className="font-bold text-sm sm:text-base truncate">
+                              {schedule.technician_name}
+                            </span>
                           </div>
-                          <div className="truncate">
-                            Horário: {schedule.scheduled_time}
-                          </div>
-                          <div className="truncate">
-                            Cliente: {schedule.customer}
-                          </div>
-                          <div className="truncate">
-                            Placa: {schedule.plate}
-                          </div>
-                          <div className="truncate">
-                            Endereço: {schedule.address}
-                          </div>
-                          <div className="truncate">
-                            WhatsApp: {schedule.technician_whatsapp}
+                          
+                          {/* Schedule details */}
+                          <div className="space-y-0.5 pl-4">
+                            <div className="flex items-center gap-1 truncate">
+                              <Clock className="h-3 w-3 flex-shrink-0 opacity-70" />
+                              <span>{schedule.scheduled_time}</span>
+                            </div>
+                            <div className="truncate font-medium">
+                              {schedule.customer}
+                            </div>
+                            <div className="flex items-center gap-1 truncate">
+                              <Car className="h-3 w-3 flex-shrink-0 opacity-70" />
+                              <span>{schedule.plate}</span>
+                            </div>
+                            <div className="flex items-center gap-1 truncate">
+                              <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />
+                              <span className="truncate">{schedule.address}</span>
+                            </div>
                           </div>
                         </div>
                       ))}
