@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, getWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ScheduleFormModal } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, MapPin, Car, Clock, GripVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -243,15 +244,38 @@ export const ScheduleManagement = () => {
     setDraggedSchedule(null);
   };
 
+  // Get technicians with activities today
+  const techniciansWithActivitiesToday = useMemo(() => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const todaySchedules = schedules.filter(s => s.scheduled_date === todayStr);
+    const uniqueTechnicians = [...new Set(todaySchedules.map(s => s.technician_name))];
+    return uniqueTechnicians;
+  }, [schedules]);
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Agendamento</h2>
-          <p className="text-muted-foreground">
-            Clique em uma data para criar ou em um card para editar
-          </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Agendamento</h2>
+            <p className="text-muted-foreground">
+              Clique em uma data para criar ou em um card para editar
+            </p>
+          </div>
         </div>
+
+        {/* Technicians with activities today */}
+        {techniciansWithActivitiesToday.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <User className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Técnicos com atividades hoje:</span>
+            {techniciansWithActivitiesToday.map((name) => (
+              <Badge key={name} variant="secondary" className="bg-primary/20 text-primary border-0">
+                {name}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       <Card className="overflow-hidden">
@@ -355,7 +379,7 @@ export const ScheduleManagement = () => {
                           <div className="flex items-center gap-1 mb-1.5">
                             <GripVertical className="h-3 w-3 opacity-50 flex-shrink-0" />
                             <span className="font-bold text-sm sm:text-base truncate">
-                              {schedule.technician_name}
+                              Técnico: {schedule.technician_name}
                             </span>
                           </div>
                           
@@ -369,11 +393,6 @@ export const ScheduleManagement = () => {
                             <div className="truncate">
                               <span className="opacity-70">Cliente:</span>{' '}
                               <span className="font-medium">{schedule.customer}</span>
-                            </div>
-                            <div className="flex items-center gap-1 truncate">
-                              <Car className="h-3 w-3 flex-shrink-0 opacity-70" />
-                              <span className="opacity-70">Placa:</span>
-                              <span>{schedule.plate}</span>
                             </div>
                             <div className="flex items-center gap-1 truncate">
                               <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />

@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 
 const technicianSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome deve ter no máximo 100 caracteres"),
+  phone: z.string().trim().optional(),
   postal_code: z.string().trim().min(8, "CEP é obrigatório (formato: 00000-000)"),
   address_street: z.string().trim().min(1, "Logradouro é obrigatório").max(200, "Logradouro deve ter no máximo 200 caracteres"),
   address_number: z.string().trim().min(1, "Número é obrigatório").max(20, "Número deve ter no máximo 20 caracteres"),
@@ -38,6 +39,7 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
     resolver: zodResolver(technicianSchema),
     defaultValues: {
       name: technician?.name || "",
+      phone: technician?.phone || "",
       postal_code: technician?.postal_code || "",
       address_street: technician?.address_street || "",
       address_number: technician?.address_number || "",
@@ -78,6 +80,7 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
     try {
       const technicianData = {
         name: data.name,
+        phone: data.phone || null,
         postal_code: data.postal_code,
         address_street: data.address_street,
         address_number: data.address_number,
@@ -117,7 +120,7 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
+            <div>
               <Label htmlFor="name">Nome do Técnico *</Label>
               <Input
                 id="name"
@@ -128,6 +131,21 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
               {form.formState.errors.name && (
                 <span className="text-sm text-destructive">
                   {form.formState.errors.name.message}
+                </span>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                {...form.register("phone")}
+                placeholder="(00) 00000-0000"
+                className={form.formState.errors.phone ? "border-destructive" : ""}
+              />
+              {form.formState.errors.phone && (
+                <span className="text-sm text-destructive">
+                  {form.formState.errors.phone.message}
                 </span>
               )}
             </div>

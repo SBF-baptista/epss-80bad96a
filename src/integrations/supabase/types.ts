@@ -1313,6 +1313,7 @@ export type Database = {
           created_by: string | null
           id: string
           name: string
+          phone: string | null
           postal_code: string
           updated_at: string
         }
@@ -1326,6 +1327,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           name: string
+          phone?: string | null
           postal_code: string
           updated_at?: string
         }
@@ -1339,6 +1341,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           name?: string
+          phone?: string | null
           postal_code?: string
           updated_at?: string
         }
