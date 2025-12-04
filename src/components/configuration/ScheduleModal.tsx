@@ -3,14 +3,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building, Check, X, Info } from 'lucide-react';
+import { ptBR } from 'date-fns/locale';
+import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building, Check, X, Info, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,69 @@ import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/se
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchKitItemOptions, type KitItemOption } from '@/services/kitItemOptionsService';
+import { ScheduleFormModal, ScheduleFormData, PendingVehicleData } from './ScheduleFormModal';
+
+// Send WhatsApp notification to technician using Twilio template
+const sendTechnicianWhatsApp = async (
+  technicianId: string,
+  scheduleData: {
+    date: string;
+    time: string;
+    customer: string;
+    address: string;
+    local_contact: string;
+    phone?: string;
+  }
+): Promise<{ success: boolean; technicianName?: string; error?: string }> => {
+  try {
+    console.log('[WhatsApp Template] Starting notification for technician:', technicianId);
+    
+    const { data: technician, error: techError } = await supabase
+      .from('technicians')
+      .select('name, phone')
+      .eq('id', technicianId)
+      .single();
+
+    if (techError || !technician) {
+      console.error('[WhatsApp Template] Error fetching technician:', techError);
+      return { success: false, error: 'Técnico não encontrado' };
+    }
+
+    if (!technician.phone) {
+      return { success: false, error: 'Técnico sem telefone cadastrado' };
+    }
+
+    const formattedDate = format(new Date(scheduleData.date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR });
+
+    const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+      body: {
+        orderId: 'schedule-notification',
+        orderNumber: `Agendamento - ${scheduleData.customer}`,
+        recipientPhone: technician.phone,
+        recipientName: technician.name,
+        templateType: 'technician_schedule',
+        templateVariables: {
+          technicianName: technician.name,
+          scheduledDate: formattedDate,
+          scheduledTime: scheduleData.time,
+          customerName: scheduleData.customer,
+          address: scheduleData.address,
+          contactPhone: scheduleData.phone || scheduleData.local_contact || 'Não informado'
+        }
+      }
+    });
+
+    if (error) {
+      console.error('[WhatsApp Template] Error sending:', error);
+      return { success: false, technicianName: technician.name, error: error.message || 'Erro ao enviar' };
+    }
+    
+    return { success: true, technicianName: technician.name };
+  } catch (error) {
+    console.error('[WhatsApp Template] Exception:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+  }
+};
 
 // Helper to normalize item names (remove quantity suffix, trim, uppercase, remove special chars)
 const normalizeName = (name: string): string => {
@@ -256,8 +320,7 @@ export const ScheduleModal = ({
   existingSchedules = [],
   onSuccess
 }: ScheduleModalProps) => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { toast: toastHook } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
   const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
@@ -268,6 +331,11 @@ export const ScheduleModal = ({
   const [suggestedKitsByVehicle, setSuggestedKitsByVehicle] = useState<Map<string, HomologationKit[]>>(new Map());
   const [configurationsByVehicle, setConfigurationsByVehicle] = useState<Map<string, string>>(new Map());
   const [homologatedAccessories, setHomologatedAccessories] = useState<KitItemOption[]>([]);
+  
+  // State for the scheduling form modal
+  const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
+  const [pendingVehicleData, setPendingVehicleData] = useState<PendingVehicleData | null>(null);
+  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
 
   // Fetch homologated accessories from kit_item_options (synced with homologation section)
   useEffect(() => {
@@ -314,7 +382,7 @@ export const ScheduleModal = ({
     // Check if customer has vehicles
     if (!selectedCustomer.vehicles || selectedCustomer.vehicles.length === 0) {
       console.warn('Customer has no vehicles registered');
-      toast({
+      toastHook({
         title: "Aviso",
         description: "Este cliente não possui veículos cadastrados. Por favor, adicione veículos ao cliente antes de agendar.",
         variant: "destructive"
@@ -337,7 +405,7 @@ export const ScheduleModal = ({
     console.log('Unscheduled vehicles:', unscheduledVehicles);
 
     if (unscheduledVehicles.length === 0) {
-      toast({
+      toastHook({
         title: "Aviso",
         description: "Todos os veículos deste cliente já possuem agendamentos ativos.",
         variant: "default"
@@ -675,7 +743,7 @@ export const ScheduleModal = ({
 
   const onSubmit = async () => {
     if (!selectedCustomer) {
-      toast({
+      toastHook({
         title: "Cliente obrigatório",
         description: "Selecione ou cadastre um cliente para continuar.",
         variant: "destructive"
@@ -702,7 +770,7 @@ export const ScheduleModal = ({
       }
 
       if (conflictingPlates.length > 0) {
-        toast({
+        toastHook({
           title: "Conflito de horário detectado",
           description: `Por favor, resolva os conflitos de horário para: ${conflictingPlates.join(', ')}. Escolha outro horário ou técnico.`,
           variant: "destructive"
@@ -782,18 +850,18 @@ export const ScheduleModal = ({
 
       // Show result toast
       if (schedulesCreated > 0 && schedulesSkipped > 0) {
-        toast({
+        toastHook({
           title: "Agendamentos criados parcialmente",
           description: `${schedulesCreated} agendamento(s) criado(s) com sucesso. ${schedulesSkipped} veículo(s) ignorado(s) por falta de homologação: ${skippedVehicles.join(', ')}.`,
           variant: "default"
         });
       } else if (schedulesCreated > 0) {
-        toast({
+        toastHook({
           title: "Agendamentos criados",
           description: `${schedulesCreated} agendamento(s) criado(s) com sucesso para ${selectedCustomer.name}.`
         });
       } else if (schedulesSkipped > 0) {
-        toast({
+        toastHook({
           title: "Nenhum agendamento criado",
           description: `Todos os ${schedulesSkipped} veículo(s) estão aguardando homologação de acessórios/insumos: ${skippedVehicles.join(', ')}.`,
           variant: "destructive"
@@ -803,7 +871,7 @@ export const ScheduleModal = ({
       }
 
       if (schedulesCreated === 0) {
-        toast({
+        toastHook({
           title: "Nenhum agendamento criado",
           description: "Preencha pelo menos uma data e técnico para os veículos prontos para criar o agendamento.",
           variant: "destructive"
@@ -815,7 +883,7 @@ export const ScheduleModal = ({
       onSuccess();
     } catch (error) {
       console.error('Error creating schedule:', error);
-      toast({
+      toastHook({
         title: "Erro",
         description: error instanceof Error ? error.message : "Erro ao criar agendamento",
         variant: "destructive"
@@ -1412,8 +1480,8 @@ export const ScheduleModal = ({
                                  <Button
                                    size="sm"
                                    onClick={() => {
-                                     // Prepare vehicle data to pass to scheduling page
-                                     const vehicleData = {
+                                     // Prepare vehicle data for the scheduling form modal
+                                     const vehicleData: PendingVehicleData = {
                                        plate: vehicleSchedule.plate,
                                        brand: vehicleSchedule.brand,
                                        model: vehicleSchedule.model,
@@ -1426,10 +1494,9 @@ export const ScheduleModal = ({
                                        customerPhone: selectedCustomer?.phone,
                                        customerAddress: selectedCustomer ? `${selectedCustomer.address_street}, ${selectedCustomer.address_number} - ${selectedCustomer.address_neighborhood}, ${selectedCustomer.address_city}/${selectedCustomer.address_state}` : ''
                                      };
-                                     // Store in sessionStorage and navigate
-                                     sessionStorage.setItem('pendingScheduleVehicle', JSON.stringify(vehicleData));
-                                     onClose();
-                                     navigate('/scheduling');
+                                     // Open the schedule form modal with vehicle data
+                                     setPendingVehicleData(vehicleData);
+                                     setIsScheduleFormOpen(true);
                                    }}
                                    className="flex items-center gap-2"
                                  >
@@ -1536,6 +1603,79 @@ export const ScheduleModal = ({
           )}
         </div>
       </DialogContent>
+
+      {/* Schedule Form Modal for individual vehicle scheduling */}
+      <ScheduleFormModal
+        open={isScheduleFormOpen}
+        onOpenChange={(open) => {
+          setIsScheduleFormOpen(open);
+          if (!open) {
+            setPendingVehicleData(null);
+          }
+        }}
+        selectedDate={new Date()}
+        selectedTime={null}
+        onSubmit={async (formData) => {
+          setIsSubmittingSchedule(true);
+          try {
+            // Save to installation_schedules
+            const { error } = await supabase
+              .from('installation_schedules')
+              .insert({
+                scheduled_date: format(formData.date, 'yyyy-MM-dd'),
+                scheduled_time: formData.time,
+                technician_name: formData.technician_name,
+                technician_whatsapp: formData.technician_whatsapp || '',
+                customer: formData.customer,
+                address: formData.address,
+                plate: formData.plate,
+                vehicle_model: formData.vehicle_model,
+                tracker_model: formData.tracker_model,
+                service: formData.service,
+                phone: formData.phone,
+                local_contact: formData.local_contact,
+                reference_point: formData.reference_point,
+                observation: formData.observation,
+                scheduled_by: formData.scheduled_by
+              });
+
+            if (error) throw error;
+
+            // Send WhatsApp notification
+            const whatsappResult = await sendTechnicianWhatsApp(
+              formData.technician_id,
+              {
+                date: format(formData.date, 'yyyy-MM-dd'),
+                time: formData.time,
+                customer: formData.customer,
+                address: formData.address,
+                local_contact: formData.local_contact,
+                phone: formData.phone
+              }
+            );
+
+            if (whatsappResult.success) {
+              toast.success(`Agendamento criado e notificação enviada para ${whatsappResult.technicianName}`);
+            } else {
+              toast.success('Agendamento criado com sucesso!');
+              if (whatsappResult.error) {
+                toast.warning(`Aviso: Notificação não enviada - ${whatsappResult.error}`);
+              }
+            }
+
+            setIsScheduleFormOpen(false);
+            setPendingVehicleData(null);
+            onSuccess();
+          } catch (error) {
+            console.error('Error creating schedule:', error);
+            toast.error(error instanceof Error ? error.message : 'Erro ao criar agendamento');
+          } finally {
+            setIsSubmittingSchedule(false);
+          }
+        }}
+        isLoading={isSubmittingSchedule}
+        initialVehicleData={pendingVehicleData}
+      />
     </Dialog>
   );
 };
