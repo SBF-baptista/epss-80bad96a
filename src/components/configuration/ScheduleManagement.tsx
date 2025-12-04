@@ -4,12 +4,14 @@ import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScheduleFormModal } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { getTechnicians, Technician } from '@/services/technicianService';
 
 const timeSlots = [
   '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
@@ -48,6 +50,8 @@ export const ScheduleManagement = () => {
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>('all');
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -67,9 +71,25 @@ export const ScheduleManagement = () => {
     }
   };
 
+  const fetchTechnicians = async () => {
+    try {
+      const data = await getTechnicians();
+      setTechnicians(data);
+    } catch (error) {
+      console.error('Error fetching technicians:', error);
+    }
+  };
+
   useEffect(() => {
     fetchSchedules();
+    fetchTechnicians();
   }, []);
+
+  // Filter schedules by selected technician
+  const filteredSchedules = useMemo(() => {
+    if (selectedTechnicianFilter === 'all') return schedules;
+    return schedules.filter(s => s.technician_name === selectedTechnicianFilter);
+  }, [schedules, selectedTechnicianFilter]);
 
   const handleDateSelect = (date: Date, time?: string) => {
     setSelectedDate(date);
@@ -177,7 +197,7 @@ export const ScheduleManagement = () => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const [slotHour, slotMinute] = timeSlot.split(':').map(Number);
     
-    return schedules.filter(schedule => {
+    return filteredSchedules.filter(schedule => {
       const [scheduleHour, scheduleMinute] = schedule.scheduled_time.split(':').map(Number);
       // Match if schedule falls within this 30-minute slot
       if (schedule.scheduled_date !== dateStr) return false;
@@ -264,12 +284,30 @@ export const ScheduleManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-2xl font-bold">Agendamento</h2>
             <p className="text-muted-foreground">
               Clique em uma data para criar ou em um card para editar
             </p>
+          </div>
+          
+          {/* Filtro de técnico */}
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedTechnicianFilter} onValueChange={setSelectedTechnicianFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por técnico" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os técnicos</SelectItem>
+                {technicians.map((tech) => (
+                  <SelectItem key={tech.id} value={tech.name}>
+                    {tech.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -404,7 +442,8 @@ export const ScheduleManagement = () => {
                               <span className="opacity-70">Cliente:</span>{' '}
                               <span className="font-medium">{schedule.customer}</span>
                             </div>
-                            <div className="truncate">
+                            <div className="flex items-center gap-1 truncate">
+                              <Wrench className="h-3 w-3 flex-shrink-0 opacity-70" />
                               <span className="opacity-70">Serviço:</span>{' '}
                               <span className="font-medium">{schedule.service}</span>
                             </div>
