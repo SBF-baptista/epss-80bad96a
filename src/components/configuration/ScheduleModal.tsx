@@ -1033,53 +1033,8 @@ export const ScheduleModal = ({
                                           </div>
                                         )}
                                         
-                                        {/* Selector for Homologated Accessories */}
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button variant="outline" size="sm" className="h-7 text-xs w-full">
-                                              <Package className="h-3 w-3 mr-1" />
-                                              {allAccessories.length > 0 ? 'Editar Acessórios' : 'Selecionar Acessórios'}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-[300px] p-3 max-h-[300px] overflow-y-auto z-50" align="start">
-                                            <div className="space-y-2">
-                                              <p className="text-xs font-semibold text-muted-foreground mb-2">
-                                                Acessórios Homologados ({homologatedAccessories.length})
-                                              </p>
-                                              {homologatedAccessories.length === 0 ? (
-                                                <p className="text-xs text-muted-foreground">Nenhum acessório homologado disponível</p>
-                                              ) : (
-                                                homologatedAccessories.map((acc) => {
-                                                  const isSelected = currentAccessories.some(
-                                                    a => normalizeName(a) === normalizeName(acc.item_name)
-                                                  );
-                                                  return (
-                                                    <div
-                                                      key={acc.id}
-                                                      className={cn(
-                                                        "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors",
-                                                        isSelected ? "bg-green-100 border border-green-300" : "hover:bg-muted"
-                                                      )}
-                                                      onClick={() => {
-                                                        const newAccessories = isSelected
-                                                          ? currentAccessories.filter(a => normalizeName(a) !== normalizeName(acc.item_name))
-                                                          : [...currentAccessories, acc.item_name];
-                                                        updateVehicleSchedule(vehicleSchedule.plate, 'accessories', newAccessories);
-                                                      }}
-                                                    >
-                                                      <Checkbox checked={isSelected} className="pointer-events-none" />
-                                                      <span className="text-xs flex-1">{acc.item_name}</span>
-                                                      {isSelected && <Check className="h-3 w-3 text-green-600" />}
-                                                    </div>
-                                                  );
-                                                })
-                                              )}
-                                            </div>
-                                          </PopoverContent>
-                                        </Popover>
-                                        
                                         {allAccessories.length === 0 && (
-                                          <span className="text-xs text-muted-foreground">Nenhum selecionado</span>
+                                          <span className="text-xs text-muted-foreground">Nenhum acessório</span>
                                         )}
                                       </>
                                     );
