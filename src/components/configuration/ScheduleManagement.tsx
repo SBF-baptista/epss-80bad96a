@@ -399,9 +399,14 @@ export const ScheduleManagement = () => {
                               <span className="opacity-70">Horário:</span>
                               <span>{schedule.scheduled_time}</span>
                             </div>
-                            <div className="truncate">
+                            <div className="flex items-center gap-1 truncate">
+                              <User className="h-3 w-3 flex-shrink-0 opacity-70" />
                               <span className="opacity-70">Cliente:</span>{' '}
                               <span className="font-medium">{schedule.customer}</span>
+                            </div>
+                            <div className="truncate">
+                              <span className="opacity-70">Serviço:</span>{' '}
+                              <span className="font-medium">{schedule.service}</span>
                             </div>
                             <div className="flex items-center gap-1 truncate">
                               <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />
