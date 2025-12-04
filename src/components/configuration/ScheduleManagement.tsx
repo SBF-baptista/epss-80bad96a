@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getTechnicians, Technician } from '@/services/technicianService';
 
-// Send WhatsApp notification to technician - returns success/failure info
+// Send WhatsApp notification to technician using Twilio template - returns success/failure info
 const sendTechnicianWhatsApp = async (
   technicianId: string,
   scheduleData: {
@@ -22,10 +22,11 @@ const sendTechnicianWhatsApp = async (
     customer: string;
     address: string;
     local_contact: string;
+    phone?: string;
   }
 ): Promise<{ success: boolean; technicianName?: string; error?: string }> => {
   try {
-    console.log('[WhatsApp] Starting notification for technician:', technicianId);
+    console.log('[WhatsApp Template] Starting notification for technician:', technicianId);
     
     const { data: technician, error: techError } = await supabase
       .from('technicians')
@@ -34,22 +35,20 @@ const sendTechnicianWhatsApp = async (
       .single();
 
     if (techError || !technician) {
-      console.error('[WhatsApp] Error fetching technician:', techError);
+      console.error('[WhatsApp Template] Error fetching technician:', techError);
       return { success: false, error: 'Técnico não encontrado' };
     }
 
-    console.log('[WhatsApp] Technician found:', technician.name, 'Phone:', technician.phone);
+    console.log('[WhatsApp Template] Technician found:', technician.name, 'Phone:', technician.phone);
 
     if (!technician.phone) {
-      console.log('[WhatsApp] No phone number, skipping');
+      console.log('[WhatsApp Template] No phone number, skipping');
       return { success: false, error: 'Técnico sem telefone cadastrado' };
     }
 
     const formattedDate = format(new Date(scheduleData.date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR });
-    
-    const message = `Olá ${technician.name}, você tem um serviço agendado para o dia ${formattedDate}, às ${scheduleData.time}, no cliente ${scheduleData.customer}, localizado em ${scheduleData.address}.\nO contato no local é: ${scheduleData.local_contact || 'Não informado'}.`;
 
-    console.log('[WhatsApp] Sending message to:', technician.phone);
+    console.log('[WhatsApp Template] Sending template to:', technician.phone);
 
     const { data, error } = await supabase.functions.invoke('send-whatsapp', {
       body: {
@@ -57,19 +56,27 @@ const sendTechnicianWhatsApp = async (
         orderNumber: `Agendamento - ${scheduleData.customer}`,
         recipientPhone: technician.phone,
         recipientName: technician.name,
-        customMessage: message
+        templateType: 'technician_schedule',
+        templateVariables: {
+          technicianName: technician.name,
+          scheduledDate: formattedDate,
+          scheduledTime: scheduleData.time,
+          customerName: scheduleData.customer,
+          address: scheduleData.address,
+          contactPhone: scheduleData.phone || scheduleData.local_contact || 'Não informado'
+        }
       }
     });
 
     if (error) {
-      console.error('[WhatsApp] Error sending:', error);
+      console.error('[WhatsApp Template] Error sending:', error);
       return { success: false, technicianName: technician.name, error: error.message || 'Erro ao enviar' };
     }
     
-    console.log('[WhatsApp] Response:', data);
+    console.log('[WhatsApp Template] Response:', data);
     return { success: true, technicianName: technician.name };
   } catch (error) {
-    console.error('[WhatsApp] Exception:', error);
+    console.error('[WhatsApp Template] Exception:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
   }
 };
@@ -207,7 +214,8 @@ export const ScheduleManagement = () => {
         time: scheduleData.scheduled_time,
         customer: scheduleData.customer,
         address: scheduleData.address,
-        local_contact: scheduleData.local_contact || ''
+        local_contact: scheduleData.local_contact || '',
+        phone: scheduleData.phone || ''
       });
 
       if (result.success) {
