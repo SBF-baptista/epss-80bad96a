@@ -17,6 +17,7 @@ export interface PendingItem {
     name: string;
     vehicles_count: number;
   }>;
+  vehicles_count?: number; // Count of vehicles using this accessory
 }
 
 export interface PendingItemsResponse {
@@ -95,6 +96,17 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       throw itemsError;
     }
 
+    // Get all vehicle accessories (from accessories table)
+    const { data: vehicleAccessories, error: accessoriesError } = await supabase
+      .from('accessories')
+      .select('name, quantity, categories, company_name, vehicle_id')
+      .not('categories', 'ilike', '%modulo%');
+
+    if (accessoriesError) {
+      console.error('Error fetching vehicle accessories:', accessoriesError);
+      throw accessoriesError;
+    }
+
     // Create a map of kit_id to kit info
     const kitsMap = new Map(
       kits?.map(kit => [kit.id, kit]) || []
@@ -106,9 +118,11 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       item_type: ItemType;
       totalQuantity: number;
       kits: Set<string>;
+      vehicles: Set<string>;
       last_pending_date?: string;
     }>();
 
+    // Process kit items
     kitItems?.forEach(item => {
       const normalizedName = normalizeItemName(item.item_name);
       
@@ -118,14 +132,11 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         const normalizedItemKey = `${normalizedName}|${item.item_type}`;
         const existingItem = pendingItemsMap.get(itemKey);
         
-        // Get last pending date from history only (no fallback to creation date)
-        // This ensures items without history show 0 days pending
         const lastPendingDate = lastPendingDateMap.get(normalizedItemKey);
         
         if (existingItem) {
           existingItem.totalQuantity += item.quantity;
           existingItem.kits.add(item.kit_id);
-          // Keep the most recent pending date if available
           if (lastPendingDate && (!existingItem.last_pending_date || lastPendingDate > existingItem.last_pending_date)) {
             existingItem.last_pending_date = lastPendingDate;
           }
@@ -135,6 +146,63 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
             item_type: item.item_type as ItemType,
             totalQuantity: item.quantity,
             kits: new Set([item.kit_id]),
+            vehicles: new Set(),
+            last_pending_date: lastPendingDate
+          });
+        }
+      }
+    });
+
+    // Process vehicle accessories - check if they are homologated
+    vehicleAccessories?.forEach(accessory => {
+      const normalizedName = normalizeItemName(accessory.name);
+      
+      // Check if accessory is not homologated (using flexible matching)
+      const isHomologated = homologatedItems?.some(hi => {
+        const hiNormalized = normalizeItemName(hi.item_name);
+        // Exact match
+        if (hiNormalized === normalizedName) return true;
+        // Substring match
+        if (hiNormalized.includes(normalizedName) || normalizedName.includes(hiNormalized)) return true;
+        // Synonym matching
+        const synonyms: Record<string, string[]> = {
+          'SIRENE': ['SIRENE', 'SIREN'],
+          'BLOQUEIO': ['BLOQUEIO', 'RELE', 'RELÉ', 'RELAY'],
+          'IBUTTON': ['IBUTTON', 'ID IBUTTON', 'IDENTIFICADOR IBUTTON'],
+          'RFID': ['RFID', 'LEITOR RFID', 'ID CONDUTOR RFID', 'ID RFID', 'IDENTIFICADOR RFID'],
+          'BLUETOOTH': ['BLUETOOTH', 'ID BLUETOOTH', 'IDENTIFICADOR BLUETOOTH'],
+          'CAMERA': ['CAMERA', 'CÂMERA', 'CAMERA EXTRA'],
+        };
+        for (const [, variations] of Object.entries(synonyms)) {
+          const accessoryMatches = variations.some(v => normalizedName.includes(v));
+          const homologatedMatches = variations.some(v => hiNormalized.includes(v));
+          if (accessoryMatches && homologatedMatches) return true;
+        }
+        return false;
+      });
+      
+      if (!isHomologated) {
+        const itemKey = `${accessory.name}|accessory`;
+        const normalizedItemKey = `${normalizedName}|accessory`;
+        const existingItem = pendingItemsMap.get(itemKey);
+        
+        const lastPendingDate = lastPendingDateMap.get(normalizedItemKey);
+        
+        if (existingItem) {
+          existingItem.totalQuantity += accessory.quantity;
+          if (accessory.vehicle_id) {
+            existingItem.vehicles.add(accessory.vehicle_id);
+          }
+          if (lastPendingDate && (!existingItem.last_pending_date || lastPendingDate > existingItem.last_pending_date)) {
+            existingItem.last_pending_date = lastPendingDate;
+          }
+        } else {
+          pendingItemsMap.set(itemKey, {
+            item_name: accessory.name,
+            item_type: 'accessory' as ItemType,
+            totalQuantity: accessory.quantity,
+            kits: new Set(),
+            vehicles: accessory.vehicle_id ? new Set([accessory.vehicle_id]) : new Set(),
             last_pending_date: lastPendingDate
           });
         }
@@ -149,7 +217,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       equipment: []
     };
 
-    // Add items from kits only
+    // Add items from kits and vehicles
     pendingItemsMap.forEach((pendingItem) => {
       const kitsForItem = Array.from(pendingItem.kits)
         .map(kitId => kitsMap.get(kitId))
@@ -166,7 +234,8 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
         quantity: pendingItem.totalQuantity,
         last_pending_date: pendingItem.last_pending_date,
         kits: kitsForItem,
-        customers: []
+        customers: [],
+        vehicles_count: pendingItem.vehicles.size
       };
 
       switch (pendingItem.item_type) {
