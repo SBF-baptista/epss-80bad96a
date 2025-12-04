@@ -31,6 +31,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getTechnicians, Technician } from '@/services/technicianService';
 import { MapPin } from 'lucide-react';
+import { VehicleBrandCombobox } from '@/components/scheduling/VehicleBrandCombobox';
+import { VehicleModelCombobox } from '@/components/scheduling/VehicleModelCombobox';
 
 const scheduleFormSchema = z.object({
   technician_id: z.string().min(1, 'Técnico é obrigatório'),
@@ -70,6 +72,8 @@ export const ScheduleFormModal = ({
   isLoading = false,
 }: ScheduleFormModalProps) => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [selectedBrandCode, setSelectedBrandCode] = useState<string>('');
+  const [selectedBrandName, setSelectedBrandName] = useState<string>('');
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),
@@ -108,6 +112,8 @@ export const ScheduleFormModal = ({
       }
     } else {
       form.reset();
+      setSelectedBrandCode('');
+      setSelectedBrandName('');
     }
   }, [open, selectedTime, form]);
 
@@ -249,6 +255,21 @@ export const ScheduleFormModal = ({
                 )}
               />
 
+              {/* Marca do Veículo (para seleção do modelo) */}
+              <FormItem>
+                <FormLabel>Marca do Veículo *</FormLabel>
+                <VehicleBrandCombobox
+                  value={selectedBrandCode}
+                  onValueChange={(code, name) => {
+                    setSelectedBrandCode(code);
+                    setSelectedBrandName(name);
+                    // Clear model when brand changes
+                    form.setValue('vehicle_model', '');
+                  }}
+                  placeholder="Selecione a marca..."
+                />
+              </FormItem>
+
               <FormField
                 control={form.control}
                 name="vehicle_model"
@@ -256,7 +277,14 @@ export const ScheduleFormModal = ({
                   <FormItem>
                     <FormLabel>Modelo do Veículo *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Modelo do veículo" {...field} />
+                      <VehicleModelCombobox
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        brandCode={selectedBrandCode}
+                        brandName={selectedBrandName}
+                        placeholder={selectedBrandCode ? 'Pesquisar modelo...' : 'Selecione a marca primeiro'}
+                        disabled={!selectedBrandCode}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
