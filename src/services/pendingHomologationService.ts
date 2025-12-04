@@ -96,11 +96,11 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       throw itemsError;
     }
 
-    // Get all vehicle accessories (from accessories table)
+    // Get all vehicle accessories (from accessories table) - exclude Módulos category
     const { data: vehicleAccessories, error: accessoriesError } = await supabase
       .from('accessories')
       .select('name, quantity, categories, company_name, vehicle_id')
-      .not('categories', 'ilike', '%modulo%');
+      .or('categories.is.null,categories.neq.Módulos');
 
     if (accessoriesError) {
       console.error('Error fetching vehicle accessories:', accessoriesError);
@@ -153,11 +153,12 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
       }
     });
 
-    // Process vehicle accessories - check if they are homologated
+    // Process vehicle accessories - check if they are homologated (skip Módulos)
     vehicleAccessories?.forEach(accessory => {
-      const normalizedName = normalizeItemName(accessory.name);
+      // Skip items with "Módulos" category
+      if (accessory.categories === 'Módulos') return;
       
-      // Check if accessory is not homologated (using flexible matching)
+      const normalizedName = normalizeItemName(accessory.name);
       const isHomologated = homologatedItems?.some(hi => {
         const hiNormalized = normalizeItemName(hi.item_name);
         // Exact match
