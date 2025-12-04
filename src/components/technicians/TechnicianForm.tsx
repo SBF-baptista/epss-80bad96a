@@ -11,9 +11,26 @@ import { createTechnician, updateTechnician, type Technician } from "@/services/
 import { fetchAddressByCEP, formatCEP, isValidCEP } from "@/services/cepService";
 import { Loader2 } from "lucide-react";
 
+// Format phone number for display (without +55 prefix)
+const formatPhoneForDisplay = (phone: string | null | undefined): string => {
+  if (!phone) return "";
+  return phone.replace(/^\+55/, "").replace(/\D/g, "");
+};
+
+// Format phone number for storage (with +55 prefix)
+const formatPhoneForStorage = (phone: string | undefined): string | null => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 0) return null;
+  return `+55${digits}`;
+};
+
 const technicianSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome deve ter no máximo 100 caracteres"),
-  phone: z.string().trim().optional(),
+  phone: z.string().trim()
+    .refine(val => !val || val.replace(/\D/g, "").length >= 10, "Telefone deve ter no mínimo 10 dígitos")
+    .refine(val => !val || val.replace(/\D/g, "").length <= 11, "Telefone deve ter no máximo 11 dígitos")
+    .optional(),
   postal_code: z.string().trim().min(8, "CEP é obrigatório (formato: 00000-000)"),
   address_street: z.string().trim().min(1, "Logradouro é obrigatório").max(200, "Logradouro deve ter no máximo 200 caracteres"),
   address_number: z.string().trim().min(1, "Número é obrigatório").max(20, "Número deve ter no máximo 20 caracteres"),
@@ -39,7 +56,7 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
     resolver: zodResolver(technicianSchema),
     defaultValues: {
       name: technician?.name || "",
-      phone: technician?.phone || "",
+      phone: formatPhoneForDisplay(technician?.phone),
       postal_code: technician?.postal_code || "",
       address_street: technician?.address_street || "",
       address_number: technician?.address_number || "",
@@ -80,7 +97,7 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
     try {
       const technicianData = {
         name: data.name,
-        phone: data.phone || null,
+        phone: formatPhoneForStorage(data.phone),
         postal_code: data.postal_code,
         address_street: data.address_street,
         address_number: data.address_number,
@@ -136,13 +153,23 @@ export const TechnicianForm = ({ technician, onSuccess, onCancel }: TechnicianFo
             </div>
 
             <div>
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                {...form.register("phone")}
-                placeholder="(00) 00000-0000"
-                className={form.formState.errors.phone ? "border-destructive" : ""}
-              />
+              <Label htmlFor="phone">Telefone (WhatsApp)</Label>
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                  +55
+                </span>
+                <Input
+                  id="phone"
+                  {...form.register("phone")}
+                  placeholder="11999999999"
+                  maxLength={11}
+                  className={`rounded-l-none ${form.formState.errors.phone ? "border-destructive" : ""}`}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    form.setValue("phone", digits);
+                  }}
+                />
+              </div>
               {form.formState.errors.phone && (
                 <span className="text-sm text-destructive">
                   {form.formState.errors.phone.message}
