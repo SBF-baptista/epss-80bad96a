@@ -13,6 +13,58 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getTechnicians, Technician } from '@/services/technicianService';
 
+// Send WhatsApp notification to technician
+const sendTechnicianWhatsApp = async (
+  technicianId: string,
+  scheduleData: {
+    date: string;
+    time: string;
+    customer: string;
+    address: string;
+    local_contact: string;
+  }
+): Promise<void> => {
+  try {
+    const { data: technician, error: techError } = await supabase
+      .from('technicians')
+      .select('name, phone')
+      .eq('id', technicianId)
+      .single();
+
+    if (techError || !technician) {
+      console.error('Error fetching technician for WhatsApp:', techError);
+      return;
+    }
+
+    if (!technician.phone) {
+      console.log('Technician has no phone number, skipping WhatsApp notification');
+      return;
+    }
+
+    const formattedDate = format(new Date(scheduleData.date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR });
+    
+    const message = `Olá ${technician.name}, você tem um serviço agendado para o dia ${formattedDate}, às ${scheduleData.time}, no cliente ${scheduleData.customer}, localizado em ${scheduleData.address}.\nO contato no local é: ${scheduleData.local_contact || 'Não informado'}.`;
+
+    const { error } = await supabase.functions.invoke('send-whatsapp', {
+      body: {
+        orderId: 'schedule-notification',
+        orderNumber: `Agendamento - ${scheduleData.customer}`,
+        recipientPhone: technician.phone,
+        recipientName: technician.name,
+        customMessage: message
+      }
+    });
+
+    if (error) {
+      console.error('Error sending WhatsApp to technician:', error);
+    } else {
+      console.log('WhatsApp notification sent to technician:', technician.name);
+    }
+  } catch (error) {
+    console.error('Error in sendTechnicianWhatsApp:', error);
+  }
+};
+
 const timeSlots = [
   '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
   '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
@@ -132,6 +184,19 @@ export const ScheduleManagement = () => {
       console.error('Error creating schedule:', error);
       toast.error('Erro ao criar agendamento');
       return;
+    }
+
+    // Send WhatsApp notification to technician (async, don't block)
+    if (data.technician_id) {
+      sendTechnicianWhatsApp(data.technician_id, {
+        date: scheduleData.scheduled_date,
+        time: scheduleData.scheduled_time,
+        customer: scheduleData.customer,
+        address: scheduleData.address,
+        local_contact: scheduleData.local_contact || ''
+      }).catch(err => {
+        console.error('Failed to send WhatsApp notification:', err);
+      });
     }
 
     await fetchSchedules();
