@@ -39,7 +39,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Car, Cpu, Package, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getTechnicians, Technician } from '@/services/technicianService';
 
@@ -101,6 +101,7 @@ export const ScheduleEditModal = ({
   isLoading = false,
 }: ScheduleEditModalProps) => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const form = useForm<ScheduleEditFormData>({
     resolver: zodResolver(scheduleFormSchema),
@@ -130,6 +131,7 @@ export const ScheduleEditModal = ({
     };
     if (open) {
       fetchTechnicians();
+      setIsEditMode(false); // Reset to view mode when opening
     }
   }, [open]);
 
@@ -174,6 +176,7 @@ export const ScheduleEditModal = ({
   const handleSubmit = async (data: ScheduleEditFormData) => {
     if (schedule) {
       await onUpdate(schedule.id, data);
+      setIsEditMode(false);
       onOpenChange(false);
     }
   };
@@ -185,44 +188,100 @@ export const ScheduleEditModal = ({
     }
   };
 
+  const handleClose = (openState: boolean) => {
+    if (!openState) {
+      setIsEditMode(false);
+    }
+    onOpenChange(openState);
+  };
+
   const formattedDate = schedule 
     ? format(new Date(schedule.scheduled_date + 'T12:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : '';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>
-              Editar Agendamento - {formattedDate}
+              {isEditMode ? 'Editar Agendamento' : 'Detalhes do Agendamento'} - {formattedDate}
             </DialogTitle>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="mr-6">
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Excluir
+            <div className="flex items-center gap-2 mr-6">
+              {!isEditMode && (
+                <Button variant="outline" size="sm" onClick={() => setIsEditMode(true)}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Editar
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-1" />
                     Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </DialogHeader>
         
         <ScrollArea className="max-h-[70vh] pr-4">
+          {/* Vehicle Header */}
+          {schedule && (
+            <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3">Dados do Veículo</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <Car className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Modelo</p>
+                    <p className="font-medium text-sm">{schedule.vehicle_model || '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-4 w-4 text-primary font-bold text-xs">ABC</span>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Placa</p>
+                    <p className="font-medium text-sm">{schedule.plate || '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Cpu className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rastreador</p>
+                    <p className="font-medium text-sm">{schedule.tracker_model || '-'}</p>
+                  </div>
+                </div>
+                {schedule.observation && schedule.observation.includes('Acessórios:') && (
+                  <div className="flex items-start gap-2 col-span-2 md:col-span-3">
+                    <Package className="h-4 w-4 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Acessórios</p>
+                      <p className="font-medium text-sm">
+                        {schedule.observation.split('Acessórios:')[1]?.split('\n')[0]?.trim() || '-'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -232,25 +291,31 @@ export const ScheduleEditModal = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Técnico *</FormLabel>
-                      <Select onValueChange={handleTechnicianChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Selecione o técnico" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="bg-background z-50">
-                          {technicians.map((tech) => (
-                            <SelectItem key={tech.id} value={tech.id}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{tech.name}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {getTechnicianLocation(tech)}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {isEditMode ? (
+                        <Select onValueChange={handleTechnicianChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="Selecione o técnico" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-background z-50">
+                            {technicians.map((tech) => (
+                              <SelectItem key={tech.id} value={tech.id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{tech.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {getTechnicianLocation(tech)}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                          {form.watch('technician_name') || '-'}
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -263,7 +328,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Horário *</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        {isEditMode ? (
+                          <Input type="time" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -277,7 +348,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Quem Agendou *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nome de quem agendou" {...field} />
+                        {isEditMode ? (
+                          <Input placeholder="Nome de quem agendou" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -293,7 +370,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Serviço *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tipo de serviço" {...field} />
+                        {isEditMode ? (
+                          <Input placeholder="Tipo de serviço" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -307,7 +390,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Placa *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Placa do veículo" {...field} />
+                        {isEditMode ? (
+                          <Input placeholder="Placa do veículo" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -323,7 +412,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Modelo do Veículo *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Modelo do veículo" {...field} />
+                        {isEditMode ? (
+                          <Input placeholder="Modelo do veículo" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -337,7 +432,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Modelo do Rastreador *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Modelo do rastreador" {...field} />
+                        {isEditMode ? (
+                          <Input placeholder="Modelo do rastreador" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -352,7 +453,13 @@ export const ScheduleEditModal = ({
                   <FormItem>
                     <FormLabel>Cliente *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome do cliente" {...field} />
+                      {isEditMode ? (
+                        <Input placeholder="Nome do cliente" {...field} />
+                      ) : (
+                        <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                          {field.value || '-'}
+                        </div>
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -366,7 +473,13 @@ export const ScheduleEditModal = ({
                   <FormItem>
                     <FormLabel>Endereço *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Endereço completo" {...field} />
+                      {isEditMode ? (
+                        <Input placeholder="Endereço completo" {...field} />
+                      ) : (
+                        <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                          {field.value || '-'}
+                        </div>
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -381,7 +494,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Ponto de Referência</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ponto de referência" {...field} />
+                        {isEditMode ? (
+                          <Input placeholder="Ponto de referência" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -395,7 +514,13 @@ export const ScheduleEditModal = ({
                     <FormItem>
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Telefone para contato" {...field} />
+                        {isEditMode ? (
+                          <Input placeholder="Telefone para contato" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -410,7 +535,13 @@ export const ScheduleEditModal = ({
                   <FormItem>
                     <FormLabel>Contato Local</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome do contato no local" {...field} />
+                      {isEditMode ? (
+                        <Input placeholder="Nome do contato no local" {...field} />
+                      ) : (
+                        <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                          {field.value || '-'}
+                        </div>
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -424,21 +555,37 @@ export const ScheduleEditModal = ({
                   <FormItem>
                     <FormLabel>Observação</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Observações sobre o agendamento" {...field} />
+                      {isEditMode ? (
+                        <Textarea placeholder="Observações sobre o agendamento" {...field} />
+                      ) : (
+                        <div className="flex min-h-[80px] w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm whitespace-pre-wrap">
+                          {field.value || '-'}
+                        </div>
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
-              </div>
+              {isEditMode && (
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsEditMode(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </div>
+              )}
+
+              {!isEditMode && (
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => handleClose(false)}>
+                    Fechar
+                  </Button>
+                </div>
+              )}
             </form>
           </Form>
         </ScrollArea>
