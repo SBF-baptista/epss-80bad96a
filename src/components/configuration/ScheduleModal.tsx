@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building, Check, X, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -256,6 +257,7 @@ export const ScheduleModal = ({
   onSuccess
 }: ScheduleModalProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer || null);
   const [vehicleSchedules, setVehicleSchedules] = useState<VehicleScheduleData[]>([]);
@@ -971,9 +973,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Kit</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Técnico *</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Data *</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Horário</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Ação</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1409,93 +1409,38 @@ export const ScheduleModal = ({
                                   })()}
                                </td>
                                <td className="px-4 py-3">
-                                 <div className="space-y-1">
-                                   <Select
-                                     value={vehicleSchedule.technician_ids[0] || ''} 
-                                     onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'technician_ids', [value])}
-                                     disabled={!vehicleReady}
-                                   >
-                                     <SelectTrigger className={cn(
-                                       "w-[180px]",
-                                       hasConflict && "border-red-500"
-                                     )}>
-                                       <SelectValue placeholder={vehicleReady ? "Selecionar" : "Aguardando homologação"} />
-                                     </SelectTrigger>
-                                     <SelectContent>
-                                       {technicians.map((technician) => (
-                                         <SelectItem key={technician.id} value={technician.id!}>
-                                           <div className="flex flex-col">
-                                             <span>{technician.name}</span>
-                                             {technician.address_city && technician.address_state && (
-                                               <span className="text-xs text-muted-foreground">
-                                                 {technician.address_city} - {technician.address_state}
-                                               </span>
-                                             )}
-                                           </div>
-                                         </SelectItem>
-                                       ))}
-                                     </SelectContent>
-                                   </Select>
-                                   {hasConflict && (
-                                     <p className="text-xs text-red-600 font-medium">
-                                       {scheduleConflicts.get(vehicleSchedule.plate)}
-                                     </p>
-                                   )}
-                                 </div>
-                               </td>
-                               <td className="px-4 py-3">
-                                 <Popover>
-                                   <PopoverTrigger asChild>
-                                     <Button
-                                       variant="outline"
-                                       disabled={!vehicleReady}
-                                       className={cn(
-                                         "w-[140px] pl-3 text-left font-normal",
-                                         !vehicleSchedule.scheduled_date && "text-muted-foreground"
-                                       )}
-                                     >
-                                       {vehicleSchedule.scheduled_date ? (
-                                         format(vehicleSchedule.scheduled_date, "dd/MM/yyyy")
-                                       ) : (
-                                         <span>{vehicleReady ? "Selecionar" : "Aguardando"}</span>
-                                       )}
-                                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                     </Button>
-                                   </PopoverTrigger>
-                                   <PopoverContent className="w-auto p-0" align="start">
-                                     <Calendar
-                                       mode="single"
-                                       selected={vehicleSchedule.scheduled_date || undefined}
-                                       onSelect={(date) => updateVehicleSchedule(vehicleSchedule.plate, 'scheduled_date', date)}
-                                       disabled={(date) => date < new Date()}
-                                       initialFocus
-                                       className="pointer-events-auto"
-                                     />
-                                   </PopoverContent>
-                                 </Popover>
-                               </td>
-                               <td className="px-4 py-3">
-                                 <Select 
-                                   value={vehicleSchedule.installation_time} 
-                                   onValueChange={(value) => updateVehicleSchedule(vehicleSchedule.plate, 'installation_time', value)}
-                                   disabled={!vehicleReady}
+                                 <Button
+                                   size="sm"
+                                   onClick={() => {
+                                     // Prepare vehicle data to pass to scheduling page
+                                     const vehicleData = {
+                                       plate: vehicleSchedule.plate,
+                                       brand: vehicleSchedule.brand,
+                                       model: vehicleSchedule.model,
+                                       year: vehicleSchedule.year,
+                                       accessories: vehicleSchedule.accessories,
+                                       configuration: configurationsByVehicle.get(vehicleSchedule.plate),
+                                       selectedKitIds: vehicleSchedule.selected_kit_ids,
+                                       customerId: selectedCustomer?.id,
+                                       customerName: selectedCustomer?.name,
+                                       customerPhone: selectedCustomer?.phone,
+                                       customerAddress: selectedCustomer ? `${selectedCustomer.address_street}, ${selectedCustomer.address_number} - ${selectedCustomer.address_neighborhood}, ${selectedCustomer.address_city}/${selectedCustomer.address_state}` : ''
+                                     };
+                                     // Store in sessionStorage and navigate
+                                     sessionStorage.setItem('pendingScheduleVehicle', JSON.stringify(vehicleData));
+                                     onClose();
+                                     navigate('/scheduling');
+                                   }}
+                                   className="flex items-center gap-2"
                                  >
-                                   <SelectTrigger className="w-[100px]">
-                                     <SelectValue placeholder="--:--" />
-                                   </SelectTrigger>
-                                   <SelectContent>
-                                     {timeSlots.map((time) => (
-                                       <SelectItem key={time} value={time}>
-                                         {time}
-                                       </SelectItem>
-                                     ))}
-                                   </SelectContent>
-                                 </Select>
+                                   <CalendarIcon className="w-4 h-4" />
+                                   Criar Agendamento
+                                 </Button>
                                 </td>
                              </tr>
                               {!vehicleReady && (
                                 <tr>
-                                  <td colSpan={11} className="px-4 py-2">
+                                  <td colSpan={8} className="px-4 py-2">
                                     {(() => {
                                       const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
                                       const vehicleId = vehicleIdMap.get(vehicleKey);
