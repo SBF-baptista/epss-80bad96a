@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, Calendar } from 'lucide-react';
 import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
 import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitScheduleService';
@@ -10,7 +10,7 @@ import { SchedulingSection } from './SchedulingSection';
 import { ScheduleManagement } from './ScheduleManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface ConfigurationDashboardProps {
   onNavigateToSection?: (section: string) => void;
@@ -168,28 +168,35 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden">
-        <Tabs defaultValue="kits" className="h-full flex flex-col">
-          <TabsList className="mb-4">
-            <TabsTrigger value="kits">Kits e Técnicos</TabsTrigger>
-            <TabsTrigger value="agendamento">Agendamento</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="kits" className="flex-1 overflow-auto">
-            <SchedulingSection
-              kits={kits}
-              technicians={technicians}
-              schedules={schedules}
-              homologationStatuses={homologationStatuses}
-              onRefresh={loadData}
-            />
-          </TabsContent>
-          
-          <TabsContent value="agendamento" className="flex-1 overflow-auto">
+      {/* Main Content */}
+      <div className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-auto space-y-6">
+        {/* Scheduling Section - Always visible */}
+        <SchedulingSection
+          kits={kits}
+          technicians={technicians}
+          schedules={schedules}
+          homologationStatuses={homologationStatuses}
+          onRefresh={loadData}
+        />
+
+        {/* Agendamento Dropdown */}
+        <Collapsible defaultOpen={false} className="w-full">
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full justify-between bg-card hover:bg-accent/50 border-border"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <span className="font-semibold">Agendamento</span>
+              </div>
+              <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4">
             <ScheduleManagement />
-          </TabsContent>
-        </Tabs>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );
