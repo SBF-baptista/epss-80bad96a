@@ -287,6 +287,9 @@ export const KickoffVehiclesTable = ({
                   <div className="text-sm text-muted-foreground">
                     {vehicle.brand} {vehicle.model} {vehicle.year && `(${vehicle.year})`}
                   </div>
+                  <Badge variant="secondary" className="text-xs mt-1">
+                    Produto: {vehicle.usage_type?.replace(/_/g, ' ') || "N/A"}
+                  </Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -687,6 +690,7 @@ export const KickoffVehiclesTable = ({
           <TableHeader>
             <TableRow>
               <TableHead className="whitespace-nowrap">Placa</TableHead>
+              <TableHead className="whitespace-nowrap">Produto</TableHead>
               <TableHead className="whitespace-nowrap">Marca</TableHead>
               <TableHead className="whitespace-nowrap">Modelo</TableHead>
               <TableHead className="whitespace-nowrap">Ano</TableHead>
@@ -715,6 +719,11 @@ export const KickoffVehiclesTable = ({
                     <span className={isPlateValidated ? "text-green-600 font-semibold" : ""}>
                       {vehicle.plate || "Não informada"}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs whitespace-nowrap">
+                      {vehicle.usage_type?.replace(/_/g, ' ') || "N/A"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
