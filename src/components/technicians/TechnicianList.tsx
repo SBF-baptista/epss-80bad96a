@@ -59,8 +59,11 @@ _Mensagem enviada automaticamente._`;
       
       const { data, error } = await supabase.functions.invoke('send-whatsapp', {
         body: {
-          to: technician.phone,
-          message: testMessage,
+          orderId: 'test',
+          orderNumber: 'TESTE',
+          recipientPhone: technician.phone,
+          recipientName: technician.name,
+          customMessage: testMessage,
         },
       });
 
