@@ -12,6 +12,7 @@ interface WhatsAppMessage {
   recipientPhone: string;
   recipientName: string;
   companyName?: string;
+  customMessage?: string; // Custom message to send (overrides template)
 }
 
 function normalizeToE164(phone: string): string | null {
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { orderId, orderNumber, trackingCode, recipientPhone, recipientName, companyName }: WhatsAppMessage = await req.json();
+    const { orderId, orderNumber, trackingCode, recipientPhone, recipientName, companyName, customMessage }: WhatsAppMessage = await req.json();
 
     const toPhone = normalizeToE164(recipientPhone);
     if (!toPhone) {
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Sending WhatsApp message for order:', orderNumber, 'to', toPhone, 'using', contentSid ? 'Content API' : 'Body message');
+    console.log('Sending WhatsApp message for order:', orderNumber, 'to', toPhone, 'using', customMessage ? 'Custom message' : contentSid ? 'Content API' : 'Body message');
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
 
@@ -74,7 +75,10 @@ Deno.serve(async (req) => {
     formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
     formData.append('To', `whatsapp:${toPhone}`);
 
-    if (contentSid) {
+    // If custom message is provided, use it directly
+    if (customMessage) {
+      formData.append('Body', customMessage);
+    } else if (contentSid) {
       // Use Twilio Content API via Messages with variables (numeric and named for flexibility)
       formData.append('ContentSid', contentSid);
       const variables = {
