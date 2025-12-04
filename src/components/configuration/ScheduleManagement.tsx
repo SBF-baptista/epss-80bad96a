@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScheduleFormModal } from './ScheduleFormModal';
+import { ScheduleFormModal, PendingVehicleData } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter } from 'lucide-react';
@@ -120,6 +120,7 @@ export const ScheduleManagement = () => {
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>('all');
+  const [pendingVehicleData, setPendingVehicleData] = useState<PendingVehicleData | null>(null);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -151,6 +152,22 @@ export const ScheduleManagement = () => {
   useEffect(() => {
     fetchSchedules();
     fetchTechnicians();
+
+    // Check for pending vehicle data from Planning page
+    const pendingData = sessionStorage.getItem('pendingScheduleVehicle');
+    if (pendingData) {
+      try {
+        const vehicleData = JSON.parse(pendingData) as PendingVehicleData;
+        setPendingVehicleData(vehicleData);
+        // Clear the sessionStorage
+        sessionStorage.removeItem('pendingScheduleVehicle');
+        // Open modal with vehicle data
+        setSelectedDate(new Date());
+        setIsModalOpen(true);
+      } catch (error) {
+        console.error('Error parsing pending vehicle data:', error);
+      }
+    }
   }, []);
 
   // Filter schedules by selected technician
@@ -554,10 +571,16 @@ export const ScheduleManagement = () => {
 
       <ScheduleFormModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) {
+            setPendingVehicleData(null);
+          }
+        }}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         onSubmit={handleFormSubmit}
+        initialVehicleData={pendingVehicleData}
       />
 
       <ScheduleEditModal

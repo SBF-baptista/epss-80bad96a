@@ -60,6 +60,20 @@ const scheduleFormSchema = z.object({
 
 export type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
 
+export interface PendingVehicleData {
+  plate?: string;
+  brand?: string;
+  model?: string;
+  year?: number;
+  accessories?: string[];
+  configuration?: string;
+  selectedKitIds?: string[];
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+}
+
 interface ScheduleFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -67,6 +81,7 @@ interface ScheduleFormModalProps {
   selectedTime: string | null;
   onSubmit: (data: ScheduleFormData & { date: Date }) => void;
   isLoading?: boolean;
+  initialVehicleData?: PendingVehicleData | null;
 }
 
 export const ScheduleFormModal = ({
@@ -76,6 +91,7 @@ export const ScheduleFormModal = ({
   selectedTime,
   onSubmit,
   isLoading = false,
+  initialVehicleData,
 }: ScheduleFormModalProps) => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
 
@@ -118,10 +134,39 @@ export const ScheduleFormModal = ({
       if (selectedDate) {
         form.setValue('date', selectedDate);
       }
+      // Pre-fill form with vehicle data from Planning page
+      if (initialVehicleData) {
+        if (initialVehicleData.plate) {
+          form.setValue('plate', initialVehicleData.plate);
+        }
+        if (initialVehicleData.brand && initialVehicleData.model) {
+          form.setValue('vehicle_model', `${initialVehicleData.brand} ${initialVehicleData.model}${initialVehicleData.year ? ` (${initialVehicleData.year})` : ''}`);
+        }
+        if (initialVehicleData.configuration) {
+          form.setValue('tracker_model', initialVehicleData.configuration);
+        }
+        if (initialVehicleData.customerName) {
+          form.setValue('customer', initialVehicleData.customerName);
+        }
+        if (initialVehicleData.customerPhone) {
+          form.setValue('phone', initialVehicleData.customerPhone);
+        }
+        if (initialVehicleData.customerAddress) {
+          form.setValue('address', initialVehicleData.customerAddress);
+        }
+        // Build observation with accessories info
+        const obsLines: string[] = [];
+        if (initialVehicleData.accessories && initialVehicleData.accessories.length > 0) {
+          obsLines.push(`Acessórios: ${initialVehicleData.accessories.join(', ')}`);
+        }
+        if (obsLines.length > 0) {
+          form.setValue('observation', obsLines.join('\n'));
+        }
+      }
     } else {
       form.reset();
     }
-  }, [open, selectedTime, selectedDate, form]);
+  }, [open, selectedTime, selectedDate, form, initialVehicleData]);
 
   const handleTechnicianChange = (technicianId: string) => {
     const technician = technicians.find(t => t.id === technicianId);

@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
 import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, CalendarCheck, Truck } from 'lucide-react';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
@@ -15,77 +14,8 @@ import type { HomologationStatus } from '@/services/kitHomologationService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
-import { ScheduleFormModal, ScheduleFormData } from './ScheduleFormModal';
 import { RescheduleModal } from '../customer-tracking/RescheduleModal';
 import { supabase } from '@/integrations/supabase/client';
-
-// Send WhatsApp notification to technician using Twilio template - returns success/failure info
-const sendTechnicianWhatsApp = async (
-  technicianId: string,
-  scheduleData: {
-    date: string;
-    time: string;
-    customer: string;
-    address: string;
-    local_contact: string;
-    phone?: string;
-  }
-): Promise<{ success: boolean; technicianName?: string; error?: string }> => {
-  try {
-    console.log('[WhatsApp Template] Starting notification for technician:', technicianId);
-    
-    const { data: technician, error: techError } = await supabase
-      .from('technicians')
-      .select('name, phone')
-      .eq('id', technicianId)
-      .single();
-
-    if (techError || !technician) {
-      console.error('[WhatsApp Template] Error fetching technician:', techError);
-      return { success: false, error: 'Técnico não encontrado' };
-    }
-
-    console.log('[WhatsApp Template] Technician found:', technician.name, 'Phone:', technician.phone);
-
-    if (!technician.phone) {
-      console.log('[WhatsApp Template] No phone number, skipping');
-      return { success: false, error: 'Técnico sem telefone cadastrado' };
-    }
-
-    const formattedDate = format(new Date(scheduleData.date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR });
-
-    console.log('[WhatsApp Template] Sending template to:', technician.phone);
-
-    const { data, error } = await supabase.functions.invoke('send-whatsapp', {
-      body: {
-        orderId: 'schedule-notification',
-        orderNumber: `Agendamento - ${scheduleData.customer}`,
-        recipientPhone: technician.phone,
-        recipientName: technician.name,
-        templateType: 'technician_schedule',
-        templateVariables: {
-          technicianName: technician.name,
-          scheduledDate: formattedDate,
-          scheduledTime: scheduleData.time,
-          customerName: scheduleData.customer,
-          address: scheduleData.address,
-          contactPhone: scheduleData.phone || scheduleData.local_contact || 'Não informado'
-        }
-      }
-    });
-
-    if (error) {
-      console.error('[WhatsApp Template] Error sending:', error);
-      return { success: false, technicianName: technician.name, error: error.message || 'Erro ao enviar' };
-    }
-    
-    console.log('[WhatsApp Template] Response:', data);
-    return { success: true, technicianName: technician.name };
-  } catch (error) {
-    console.error('[WhatsApp Template] Exception:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
-  }
-};
 
 interface SchedulingSectionProps {
   kits: HomologationKit[];
@@ -107,13 +37,10 @@ export const SchedulingSection = ({
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isDirectScheduleModalOpen, setIsDirectScheduleModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
 
   useEffect(() => {
     loadCustomers();
@@ -173,73 +100,6 @@ export const SchedulingSection = ({
     setIsScheduleModalOpen(true);
   };
 
-  // Handler para abrir modal de agendamento direto (mesmo formulário da página de agendamento)
-  const handleOpenDirectSchedule = () => {
-    setSelectedDate(new Date());
-    setIsDirectScheduleModalOpen(true);
-  };
-
-  // Handler para submit do formulário de agendamento direto
-  const handleDirectScheduleSubmit = async (data: ScheduleFormData & { date: Date }) => {
-    setIsSubmittingSchedule(true);
-    
-    const scheduleData = {
-      scheduled_date: format(data.date, 'yyyy-MM-dd'),
-      scheduled_time: data.time,
-      technician_name: data.technician_name,
-      technician_whatsapp: data.technician_whatsapp || '',
-      customer: data.customer,
-      address: data.address,
-      plate: data.plate,
-      service: data.service,
-      vehicle_model: data.vehicle_model,
-      tracker_model: data.tracker_model,
-      scheduled_by: data.scheduled_by,
-      reference_point: data.reference_point || null,
-      phone: data.phone || null,
-      local_contact: data.local_contact || null,
-      observation: data.observation || null,
-    };
-
-    const { error } = await supabase
-      .from('installation_schedules')
-      .insert(scheduleData)
-      .select()
-      .single();
-
-    setIsSubmittingSchedule(false);
-
-    if (error) {
-      console.error('Error creating schedule:', error);
-      sonnerToast.error('Erro ao criar agendamento');
-      return;
-    }
-
-    sonnerToast.success('Agendamento criado com sucesso!');
-    setIsDirectScheduleModalOpen(false);
-    onRefresh();
-
-    // Send WhatsApp notification to technician with feedback
-    if (data.technician_id) {
-      sonnerToast.loading('Enviando notificação WhatsApp...', { id: 'whatsapp-notification' });
-      
-      const result = await sendTechnicianWhatsApp(data.technician_id, {
-        date: scheduleData.scheduled_date,
-        time: scheduleData.scheduled_time,
-        customer: scheduleData.customer,
-        address: scheduleData.address,
-        local_contact: scheduleData.local_contact || '',
-        phone: scheduleData.phone || ''
-      });
-
-      if (result.success) {
-        sonnerToast.success(`WhatsApp enviado para ${result.technicianName}!`, { id: 'whatsapp-notification' });
-      } else {
-        sonnerToast.error(`Erro no WhatsApp: ${result.error}`, { id: 'whatsapp-notification' });
-      }
-    }
-  };
-
   const handleRescheduleCustomer = (customer: Customer, schedule: any) => {
     console.log('Rescheduling for customer:', customer.id, customer.name);
     setSelectedCustomer(customer);
@@ -275,24 +135,14 @@ export const SchedulingSection = ({
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button 
-            onClick={handleOpenDirectSchedule}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Criar Agendamento
-          </Button>
-          
-          <div className="relative w-full sm:w-auto sm:min-w-[300px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar cliente por nome, documento ou email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        <div className="relative w-full sm:w-auto sm:min-w-[300px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Buscar cliente por nome, documento ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 
@@ -556,16 +406,6 @@ export const SchedulingSection = ({
           }}
         />
       )}
-
-      {/* Direct Schedule Form Modal (mesmo formulário da página de Agendamento) */}
-      <ScheduleFormModal
-        open={isDirectScheduleModalOpen}
-        onOpenChange={setIsDirectScheduleModalOpen}
-        selectedDate={selectedDate}
-        selectedTime={null}
-        onSubmit={handleDirectScheduleSubmit}
-        isLoading={isSubmittingSchedule}
-      />
     </div>
   );
 };
