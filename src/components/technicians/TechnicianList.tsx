@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getTechnicians, deleteTechnician, type Technician } from "@/services/technicianService";
-import { Search, Plus, Edit, Trash2, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Search, Plus, Edit, Trash2, User, MessageCircle, Phone, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,59 @@ export const TechnicianList = ({ onEdit, onAdd, refreshKey }: TechnicianListProp
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [testingWhatsAppId, setTestingWhatsAppId] = useState<string | null>(null);
+
+  const handleTestWhatsApp = async (technician: Technician) => {
+    if (!technician.phone) {
+      toast({
+        title: "Erro",
+        description: "Este técnico não possui telefone cadastrado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingWhatsAppId(technician.id!);
+    
+    const testMessage = `Olá ${technician.name}! 👋
+
+Esta é uma mensagem de *teste* do sistema de agendamentos.
+
+Se você recebeu esta mensagem, a integração WhatsApp está funcionando corretamente! ✅
+
+_Mensagem enviada automaticamente._`;
+
+    try {
+      console.log("📤 Enviando WhatsApp de teste para:", technician.phone);
+      
+      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          to: technician.phone,
+          message: testMessage,
+        },
+      });
+
+      console.log("📨 Resposta do WhatsApp:", { data, error });
+
+      if (error) {
+        throw new Error(error.message || "Erro ao enviar WhatsApp");
+      }
+
+      toast({
+        title: "WhatsApp Enviado! ✅",
+        description: `Mensagem de teste enviada para ${technician.phone}. Status: ${data?.status || 'queued'}`,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao enviar WhatsApp de teste:", error);
+      toast({
+        title: "Erro ao enviar WhatsApp",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingWhatsAppId(null);
+    }
+  };
 
   const loadTechnicians = async () => {
     try {
@@ -143,6 +197,13 @@ export const TechnicianList = ({ onEdit, onAdd, refreshKey }: TechnicianListProp
               
               <CardContent className="pt-0">
                 <div className="space-y-2 text-sm text-muted-foreground">
+                  {technician.phone && (
+                    <p className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      <strong>Telefone:</strong> {technician.phone}
+                    </p>
+                  )}
+                  
                   {technician.postal_code && (
                     <p>
                       <strong>CEP:</strong> {technician.postal_code}
@@ -162,6 +223,29 @@ export const TechnicianList = ({ onEdit, onAdd, refreshKey }: TechnicianListProp
                     </p>
                   )}
                 </div>
+                
+                {/* Botão de Teste WhatsApp */}
+                {technician.phone && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTestWhatsApp(technician)}
+                    disabled={testingWhatsAppId === technician.id}
+                    className="w-full mt-3 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                  >
+                    {testingWhatsAppId === technician.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Testar WhatsApp
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 <div className="flex gap-2 mt-4 pt-4 border-t">
                   <Button
