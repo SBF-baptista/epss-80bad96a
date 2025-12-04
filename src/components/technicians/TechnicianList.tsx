@@ -33,6 +33,62 @@ export const TechnicianList = ({ onEdit, onAdd, refreshKey }: TechnicianListProp
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [testingWhatsAppId, setTestingWhatsAppId] = useState<string | null>(null);
+  const [testingTemplateId, setTestingTemplateId] = useState<string | null>(null);
+
+  const handleTestTemplate = async (technician: Technician) => {
+    if (!technician.phone) {
+      toast({
+        title: "Erro",
+        description: "Este técnico não possui telefone cadastrado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingTemplateId(technician.id!);
+    
+    try {
+      console.log("📤 Enviando template WhatsApp de teste para:", technician.phone);
+      
+      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          orderId: 'template-test',
+          orderNumber: 'TESTE-TEMPLATE',
+          recipientPhone: technician.phone,
+          recipientName: technician.name,
+          templateType: 'technician_schedule',
+          templateVariables: {
+            technicianName: technician.name,
+            scheduledDate: '05/12/2025 (quinta-feira)',
+            scheduledTime: '09:00',
+            customerName: 'Cliente Teste LTDA',
+            address: 'Av. Boa Viagem, 1234, Recife - PE',
+            contactPhone: '(81) 99999-9999',
+          },
+        },
+      });
+
+      console.log("📨 Resposta do template WhatsApp:", { data, error });
+
+      if (error) {
+        throw new Error(error.message || "Erro ao enviar template WhatsApp");
+      }
+
+      toast({
+        title: "Template WhatsApp Enviado! ✅",
+        description: `Mensagem com template enviada para ${technician.phone}`,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao enviar template WhatsApp:", error);
+      toast({
+        title: "Erro ao enviar template",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingTemplateId(null);
+    }
+  };
 
   const handleTestWhatsApp = async (technician: Technician) => {
     if (!technician.phone) {
@@ -227,27 +283,48 @@ _Mensagem enviada automaticamente._`;
                   )}
                 </div>
                 
-                {/* Botão de Teste WhatsApp */}
+                {/* Botões de Teste WhatsApp */}
                 {technician.phone && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleTestWhatsApp(technician)}
-                    disabled={testingWhatsAppId === technician.id}
-                    className="w-full mt-3 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
-                  >
-                    {testingWhatsAppId === technician.id ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Testar WhatsApp
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTestWhatsApp(technician)}
+                      disabled={testingWhatsAppId === technician.id}
+                      className="flex-1 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                    >
+                      {testingWhatsAppId === technician.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          Teste Simples
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTestTemplate(technician)}
+                      disabled={testingTemplateId === technician.id}
+                      className="flex-1 text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      {testingTemplateId === technician.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          Teste Template
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
 
                 <div className="flex gap-2 mt-4 pt-4 border-t">
