@@ -16,6 +16,7 @@ import CustomerTracking from "./pages/CustomerTracking";
 import AccessorySupplyHomologation from "./pages/AccessorySupplyHomologation";
 import TechnicianManagement from "./pages/TechnicianManagement";
 import Planning from "./pages/Planning";
+import Scheduling from "./pages/Scheduling";
 import Orders from "./pages/Orders";
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
@@ -137,6 +138,15 @@ function App() {
                   <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
                     <Layout>
                       <Planning />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/planning/agendamento" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
+                    <Layout>
+                      <Scheduling />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
