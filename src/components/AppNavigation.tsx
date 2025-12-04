@@ -114,6 +114,25 @@ const navigationGroups = {
         roles: ["admin"]
       }
     ]
+  },
+  planning: {
+    label: "Planejamento",
+    icon: Calendar,
+    roles: ["admin", "installer"],
+    items: [
+      { 
+        to: "/planning", 
+        label: "Kits e Técnicos", 
+        icon: Calendar,
+        roles: ["admin", "installer"]
+      },
+      { 
+        to: "/planning/agendamento", 
+        label: "Agendamento", 
+        icon: Clock,
+        roles: ["admin", "installer"]
+      }
+    ]
   }
 };
 
@@ -124,13 +143,6 @@ const singleNavigationItems = [
     label: "Kickoff", 
     icon: Rocket,
     description: "Kickoff e planejamento de projetos",
-    roles: ["admin", "installer"]
-  },
-  { 
-    to: "/planning", 
-    label: "Planejamento", 
-    icon: Calendar,
-    description: "Gestão de técnicos, kits e cronograma",
     roles: ["admin", "installer"]
   },
   { 
@@ -153,6 +165,7 @@ export function AppNavigation() {
   const [homologationOpen, setHomologationOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [configurationOpen, setConfigurationOpen] = useState(false);
+  const [planningOpen, setPlanningOpen] = useState(false);
 
   // Recolher todos os dropdowns quando o sidebar é fechado
   useEffect(() => {
@@ -160,8 +173,16 @@ export function AppNavigation() {
       setHomologationOpen(false);
       setOrdersOpen(false);
       setConfigurationOpen(false);
+      setPlanningOpen(false);
     }
   }, [isCollapsed]);
+
+  // Auto-abrir dropdown quando em rota do grupo
+  useEffect(() => {
+    if (location.pathname.startsWith('/planning')) {
+      setPlanningOpen(true);
+    }
+  }, [location.pathname]);
 
   // Função para expandir sidebar e abrir dropdown
   const handleDropdownToggle = (
@@ -290,27 +311,55 @@ export function AppNavigation() {
                 </SidebarMenuItem>
               )}
 
-              {/* Item: Planejamento */}
-              {singleNavigationItems
-                .filter(item => item.to === "/planning" && canAccessItem(item.roles))
-                .map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <SidebarMenuItem key={item.to}>
+              {/* Grupo Planejamento */}
+              {canAccessGroup(navigationGroups.planning.roles) && (
+                <SidebarMenuItem>
+                  <Collapsible open={planningOpen} onOpenChange={setPlanningOpen}>
+                    <CollapsibleTrigger asChild>
                       <SidebarMenuButton 
-                        asChild 
-                        isActive={isActive(item.to)}
-                        tooltip={isCollapsed ? item.label : undefined}
-                        className="touch-manipulation tap-target"
+                        className="w-full justify-between touch-manipulation tap-target"
+                        tooltip={isCollapsed ? navigationGroups.planning.label : undefined}
+                        onClick={(e) => {
+                          if (isCollapsed) {
+                            e.preventDefault();
+                            handleDropdownToggle(planningOpen, setPlanningOpen);
+                          }
+                        }}
                       >
-                        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                          <Icon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                        </NavLink>
+                        <div className="flex items-center gap-3">
+                          <navigationGroups.planning.icon className="h-4 w-4 flex-shrink-0" />
+                          {!isCollapsed && <span className="font-medium text-sm">{navigationGroups.planning.label}</span>}
+                        </div>
+                        {!isCollapsed && (
+                          planningOpen ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        )}
                       </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="ml-4">
+                      {navigationGroups.planning.items
+                        .filter(item => canAccessItem(item.roles))
+                        .map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+              )}
 
               {/* Grupo Esteira de Pedidos */}
               {canAccessGroup(navigationGroups.orders.roles) && (
