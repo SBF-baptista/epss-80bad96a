@@ -116,9 +116,11 @@ export const ScheduleFormModal = ({
     if (technician) {
       form.setValue('technician_id', technicianId);
       form.setValue('technician_name', technician.name);
-      form.setValue('technician_whatsapp', ''); // Can be added to technician table later
+      form.setValue('technician_whatsapp', technician.phone || '');
     }
   };
+
+  const selectedTechnicianPhone = form.watch('technician_whatsapp');
 
   const getTechnicianLocation = (technician: Technician) => {
     const parts = [technician.address_city, technician.address_state].filter(Boolean);
@@ -175,6 +177,21 @@ export const ScheduleFormModal = ({
                   </FormItem>
                 )}
               />
+
+              {/* Telefone do técnico (somente leitura) */}
+              {selectedTechnicianPhone && (
+                <div className="p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">WhatsApp do técnico:</span>
+                    <span className="font-medium text-primary">
+                      {selectedTechnicianPhone.startsWith('+') ? selectedTechnicianPhone : `+55${selectedTechnicianPhone}`}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Uma notificação será enviada para este número ao salvar o agendamento.
+                  </p>
+                </div>
+              )}
 
               <FormField
                 control={form.control}

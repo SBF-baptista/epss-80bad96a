@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getTechnicians, Technician } from '@/services/technicianService';
 
-// Send WhatsApp notification to technician
+// Send WhatsApp notification to technician - returns success/failure info
 const sendTechnicianWhatsApp = async (
   technicianId: string,
   scheduleData: {
@@ -23,8 +23,10 @@ const sendTechnicianWhatsApp = async (
     address: string;
     local_contact: string;
   }
-): Promise<void> => {
+): Promise<{ success: boolean; technicianName?: string; error?: string }> => {
   try {
+    console.log('[WhatsApp] Starting notification for technician:', technicianId);
+    
     const { data: technician, error: techError } = await supabase
       .from('technicians')
       .select('name, phone')
@@ -32,20 +34,24 @@ const sendTechnicianWhatsApp = async (
       .single();
 
     if (techError || !technician) {
-      console.error('Error fetching technician for WhatsApp:', techError);
-      return;
+      console.error('[WhatsApp] Error fetching technician:', techError);
+      return { success: false, error: 'Técnico não encontrado' };
     }
 
+    console.log('[WhatsApp] Technician found:', technician.name, 'Phone:', technician.phone);
+
     if (!technician.phone) {
-      console.log('Technician has no phone number, skipping WhatsApp notification');
-      return;
+      console.log('[WhatsApp] No phone number, skipping');
+      return { success: false, error: 'Técnico sem telefone cadastrado' };
     }
 
     const formattedDate = format(new Date(scheduleData.date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR });
     
     const message = `Olá ${technician.name}, você tem um serviço agendado para o dia ${formattedDate}, às ${scheduleData.time}, no cliente ${scheduleData.customer}, localizado em ${scheduleData.address}.\nO contato no local é: ${scheduleData.local_contact || 'Não informado'}.`;
 
-    const { error } = await supabase.functions.invoke('send-whatsapp', {
+    console.log('[WhatsApp] Sending message to:', technician.phone);
+
+    const { data, error } = await supabase.functions.invoke('send-whatsapp', {
       body: {
         orderId: 'schedule-notification',
         orderNumber: `Agendamento - ${scheduleData.customer}`,
@@ -56,12 +62,15 @@ const sendTechnicianWhatsApp = async (
     });
 
     if (error) {
-      console.error('Error sending WhatsApp to technician:', error);
-    } else {
-      console.log('WhatsApp notification sent to technician:', technician.name);
+      console.error('[WhatsApp] Error sending:', error);
+      return { success: false, technicianName: technician.name, error: error.message || 'Erro ao enviar' };
     }
+    
+    console.log('[WhatsApp] Response:', data);
+    return { success: true, technicianName: technician.name };
   } catch (error) {
-    console.error('Error in sendTechnicianWhatsApp:', error);
+    console.error('[WhatsApp] Exception:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
   }
 };
 
@@ -186,21 +195,27 @@ export const ScheduleManagement = () => {
       return;
     }
 
-    // Send WhatsApp notification to technician (async, don't block)
+    await fetchSchedules();
+    toast.success('Agendamento criado com sucesso!');
+
+    // Send WhatsApp notification to technician with feedback
     if (data.technician_id) {
-      sendTechnicianWhatsApp(data.technician_id, {
+      toast.loading('Enviando notificação WhatsApp...', { id: 'whatsapp-notification' });
+      
+      const result = await sendTechnicianWhatsApp(data.technician_id, {
         date: scheduleData.scheduled_date,
         time: scheduleData.scheduled_time,
         customer: scheduleData.customer,
         address: scheduleData.address,
         local_contact: scheduleData.local_contact || ''
-      }).catch(err => {
-        console.error('Failed to send WhatsApp notification:', err);
       });
-    }
 
-    await fetchSchedules();
-    toast.success('Agendamento criado com sucesso!');
+      if (result.success) {
+        toast.success(`WhatsApp enviado para ${result.technicianName}!`, { id: 'whatsapp-notification' });
+      } else {
+        toast.error(`Erro no WhatsApp: ${result.error}`, { id: 'whatsapp-notification' });
+      }
+    }
   };
 
   const handleUpdateSchedule = async (id: string, data: ScheduleEditFormData) => {
