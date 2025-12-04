@@ -122,7 +122,7 @@ const navigationGroups = {
     items: [
       { 
         to: "/planning", 
-        label: "Kits e Técnicos", 
+        label: "Planejamento", 
         icon: Calendar,
         roles: ["admin", "installer"]
       },
