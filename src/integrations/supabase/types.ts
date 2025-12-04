@@ -206,33 +206,6 @@ export type Database = {
         }
         Relationships: []
       }
-      custom_vehicle_models: {
-        Row: {
-          brand_code: string
-          brand_name: string
-          created_at: string
-          created_by: string | null
-          id: string
-          model_name: string
-        }
-        Insert: {
-          brand_code: string
-          brand_name: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          model_name: string
-        }
-        Update: {
-          brand_code?: string
-          brand_name?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          model_name?: string
-        }
-        Relationships: []
-      }
       customers: {
         Row: {
           accessories: string[] | null
