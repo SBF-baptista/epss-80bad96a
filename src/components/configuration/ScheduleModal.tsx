@@ -75,10 +75,11 @@ const isSimilarAccessoryName = (vehicleAccessory: string, homologatedAccessory: 
   // Common synonyms and variations
   const synonyms: Record<string, string[]> = {
     'SIRENE': ['SIRENE', 'SIREN'],
-    'BLOQUEIO': ['BLOQUEIO', 'RELE', 'RELÉ', 'RELAY'],
+    'BLOQUEIO': ['BLOQUEIO', 'RELE', 'RELÉ', 'RELAY', 'RELE 12V', 'RELE 24V'],
     'IBUTTON': ['IBUTTON', 'ID IBUTTON', 'IDENTIFICADOR IBUTTON'],
-    'RFID': ['RFID', 'LEITOR RFID', 'ID CONDUTOR RFID', 'ID RFID', 'IDENTIFICADOR RFID'],
+    'RFID': ['RFID', 'LEITOR RFID', 'ID CONDUTOR RFID', 'ID RFID', 'IDENTIFICADOR RFID', 'LEITOR RFID KNOV', 'LEITOR RFID SGBRAS'],
     'BLUETOOTH': ['BLUETOOTH', 'ID BLUETOOTH', 'IDENTIFICADOR BLUETOOTH'],
+    'CAMERA': ['CAMERA', 'CÂMERA', 'CAMERA EXTRA', 'CÂMERA EXTRA'],
   };
   
   for (const [key, variations] of Object.entries(synonyms)) {

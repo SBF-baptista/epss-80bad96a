@@ -181,6 +181,11 @@ export const PendingAccessoriesSection = () => {
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
                           {accessory.kits?.length || 0} {accessory.kits?.length === 1 ? 'kit' : 'kits'}
                         </Badge>
+                        {(accessory.vehicles_count ?? 0) > 0 && (
+                          <Badge variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
+                            {accessory.vehicles_count} {accessory.vehicles_count === 1 ? 'veículo' : 'veículos'}
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
                           Qtd total: {accessory.quantity}
                         </Badge>
