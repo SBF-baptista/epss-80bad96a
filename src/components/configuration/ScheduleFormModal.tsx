@@ -25,14 +25,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Calendar } from '@/components/ui/calendar';
 import { getTechnicians, Technician } from '@/services/technicianService';
-import { MapPin } from 'lucide-react';
+import { MapPin, CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const scheduleFormSchema = z.object({
+  date: z.date({ required_error: 'Data é obrigatória' }),
   technician_id: z.string().min(1, 'Técnico é obrigatório'),
   technician_name: z.string().min(1, 'Nome do técnico é obrigatório'),
   technician_whatsapp: z.string().optional(),
@@ -74,6 +82,7 @@ export const ScheduleFormModal = ({
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
+      date: selectedDate || new Date(),
       technician_id: '',
       technician_name: '',
       technician_whatsapp: '',
@@ -106,10 +115,13 @@ export const ScheduleFormModal = ({
       if (selectedTime) {
         form.setValue('time', selectedTime);
       }
+      if (selectedDate) {
+        form.setValue('date', selectedDate);
+      }
     } else {
       form.reset();
     }
-  }, [open, selectedTime, form]);
+  }, [open, selectedTime, selectedDate, form]);
 
   const handleTechnicianChange = (technicianId: string) => {
     const technician = technicians.find(t => t.id === technicianId);
@@ -121,6 +133,7 @@ export const ScheduleFormModal = ({
   };
 
   const selectedTechnicianPhone = form.watch('technician_whatsapp');
+  const watchedDate = form.watch('date');
 
   const getTechnicianLocation = (technician: Technician) => {
     const parts = [technician.address_city, technician.address_state].filter(Boolean);
@@ -128,8 +141,9 @@ export const ScheduleFormModal = ({
   };
 
   const handleSubmit = (data: ScheduleFormData) => {
-    if (selectedDate) {
-      onSubmit({ ...data, date: selectedDate });
+    const dateToUse = data.date || selectedDate;
+    if (dateToUse) {
+      onSubmit({ ...data, date: dateToUse });
       form.reset();
       onOpenChange(false);
     }
@@ -140,13 +154,55 @@ export const ScheduleFormModal = ({
       <DialogContent className="max-w-3xl max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
-            Novo Agendamento - {selectedDate ? format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : ''}
+            Novo Agendamento {watchedDate ? `- ${format(watchedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}` : ''}
           </DialogTitle>
         </DialogHeader>
         
         <ScrollArea className="max-h-[70vh] pr-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              {/* Date Picker Field */}
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data do Agendamento *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Selecione uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="technician_id"
