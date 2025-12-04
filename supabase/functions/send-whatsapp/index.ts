@@ -1,5 +1,3 @@
-// No Supabase client needed here
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -7,12 +5,22 @@ const corsHeaders = {
 
 interface WhatsAppMessage {
   orderId: string;
-  orderNumber: string; // human-friendly order number
-  trackingCode?: string; // Correios tracking code to map to template variable {{orderNumber}}
+  orderNumber: string;
+  trackingCode?: string;
   recipientPhone: string;
   recipientName: string;
   companyName?: string;
-  customMessage?: string; // Custom message to send (overrides template)
+  customMessage?: string;
+  // Template support
+  templateType?: 'order_shipped' | 'technician_schedule';
+  templateVariables?: {
+    technicianName?: string;
+    scheduledDate?: string;
+    scheduledTime?: string;
+    customerName?: string;
+    address?: string;
+    contactPhone?: string;
+  };
 }
 
 function normalizeToE164(phone: string): string | null {
@@ -46,7 +54,8 @@ Deno.serve(async (req) => {
     const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
-    const contentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
+    const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
+    const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || '';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
       console.error('Missing Twilio credentials');
@@ -56,7 +65,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { orderId, orderNumber, trackingCode, recipientPhone, recipientName, companyName, customMessage }: WhatsAppMessage = await req.json();
+    const { 
+      orderId, 
+      orderNumber, 
+      trackingCode, 
+      recipientPhone, 
+      recipientName, 
+      companyName, 
+      customMessage,
+      templateType,
+      templateVariables 
+    }: WhatsAppMessage = await req.json();
 
     const toPhone = normalizeToE164(recipientPhone);
     if (!toPhone) {
@@ -67,20 +86,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Sending WhatsApp message for order:', orderNumber, 'to', toPhone, 'using', customMessage ? 'Custom message' : contentSid ? 'Content API' : 'Body message');
+    console.log('Sending WhatsApp message for:', orderNumber, 'to', toPhone);
+    console.log('Template type:', templateType || 'none');
+    console.log('Has customMessage:', !!customMessage);
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-
     const formData = new URLSearchParams();
     formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
     formData.append('To', `whatsapp:${toPhone}`);
 
-    // If custom message is provided, use it directly
-    if (customMessage) {
-      formData.append('Body', customMessage);
-    } else if (contentSid) {
-      // Use Twilio Content API via Messages with variables (numeric and named for flexibility)
-      formData.append('ContentSid', contentSid);
+    // Determine which template/message to use
+    if (templateType === 'technician_schedule' && technicianScheduleContentSid) {
+      // Use technician schedule template
+      console.log('Using technician schedule template:', technicianScheduleContentSid);
+      formData.append('ContentSid', technicianScheduleContentSid);
+      
+      // Map variables to template placeholders (1-indexed)
+      const variables = {
+        '1': templateVariables?.technicianName || recipientName,
+        '2': templateVariables?.scheduledDate || '',
+        '3': templateVariables?.scheduledTime || 'A definir',
+        '4': templateVariables?.customerName || '',
+        '5': templateVariables?.address || '',
+        '6': templateVariables?.contactPhone || 'Não informado',
+      } as Record<string, string>;
+      formData.append('ContentVariables', JSON.stringify(variables));
+      
+    } else if (templateType === 'order_shipped' && orderShippedContentSid) {
+      // Use order shipped template
+      console.log('Using order shipped template:', orderShippedContentSid);
+      formData.append('ContentSid', orderShippedContentSid);
       const variables = {
         '1': orderNumber,
         '2': recipientName,
@@ -91,8 +126,30 @@ Deno.serve(async (req) => {
         company_name: companyName || '',
       } as Record<string, string>;
       formData.append('ContentVariables', JSON.stringify(variables));
+      
+    } else if (customMessage) {
+      // Use custom message (only works within 24h window)
+      console.log('Using custom message (freeform) - requires 24h window');
+      formData.append('Body', customMessage);
+      
+    } else if (orderShippedContentSid) {
+      // Fallback to order shipped template for backward compatibility
+      console.log('Fallback to order shipped template');
+      formData.append('ContentSid', orderShippedContentSid);
+      const variables = {
+        '1': orderNumber,
+        '2': recipientName,
+        '3': companyName || '',
+        order_number: orderNumber,
+        orderNumber: trackingCode || orderNumber,
+        recipient_name: recipientName,
+        company_name: companyName || '',
+      } as Record<string, string>;
+      formData.append('ContentVariables', JSON.stringify(variables));
+      
     } else {
-      // Fallback to plain Body if ContentSid is not configured
+      // No template available, use fallback body message (may fail outside 24h window)
+      console.warn('No template configured, using fallback body message');
       const message = `🚚 *Pedido Enviado - ${orderNumber}*\n\n` +
         `Olá ${recipientName}!\n\n` +
         `Seu pedido foi enviado e está a caminho! 📦\n\n` +
@@ -114,6 +171,7 @@ Deno.serve(async (req) => {
     });
 
     const resultText = await response.text();
+    console.log('Twilio response status:', response.status);
     console.log('Twilio response:', resultText);
 
     if (!response.ok) {
