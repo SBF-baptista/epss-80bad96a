@@ -52,9 +52,42 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchKitItemOptions, type KitItemOption } from '@/services/kitItemOptionsService';
 
-// Helper to normalize item names (remove quantity suffix, trim, uppercase)
+// Helper to normalize item names (remove quantity suffix, trim, uppercase, remove special chars)
 const normalizeName = (name: string): string => {
-  return name.replace(/\s*\(\d+x\)\s*$/i, '').trim().toUpperCase();
+  return name
+    .replace(/\s*\(\d+x\)\s*$/i, '') // Remove quantity suffix like "(3x)"
+    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+    .trim()
+    .toUpperCase();
+};
+
+// Helper to check if two accessory names are similar
+const isSimilarAccessoryName = (vehicleAccessory: string, homologatedAccessory: string): boolean => {
+  const normalizedVehicle = normalizeName(vehicleAccessory);
+  const normalizedHomologated = normalizeName(homologatedAccessory);
+  
+  // Exact match
+  if (normalizedVehicle === normalizedHomologated) return true;
+  
+  // One contains the other
+  if (normalizedVehicle.includes(normalizedHomologated) || normalizedHomologated.includes(normalizedVehicle)) return true;
+  
+  // Common synonyms and variations
+  const synonyms: Record<string, string[]> = {
+    'SIRENE': ['SIRENE', 'SIREN'],
+    'BLOQUEIO': ['BLOQUEIO', 'RELE', 'RELÉ', 'RELAY'],
+    'IBUTTON': ['IBUTTON', 'ID IBUTTON', 'IDENTIFICADOR IBUTTON'],
+    'RFID': ['RFID', 'LEITOR RFID', 'ID CONDUTOR RFID', 'ID RFID', 'IDENTIFICADOR RFID'],
+    'BLUETOOTH': ['BLUETOOTH', 'ID BLUETOOTH', 'IDENTIFICADOR BLUETOOTH'],
+  };
+  
+  for (const [key, variations] of Object.entries(synonyms)) {
+    const vehicleMatches = variations.some(v => normalizedVehicle.includes(v));
+    const homologatedMatches = variations.some(v => normalizedHomologated.includes(v));
+    if (vehicleMatches && homologatedMatches) return true;
+  }
+  
+  return false;
 };
 
 // Lista conhecida de módulos (não são acessórios físicos)
@@ -69,7 +102,7 @@ const KNOWN_MODULES = [
 // Helper para identificar se um item é um módulo
 const isModule = (itemName: string): boolean => {
   const normalized = normalizeName(itemName);
-  return KNOWN_MODULES.includes(normalized);
+  return KNOWN_MODULES.some(m => normalized.includes(normalizeName(m)));
 };
 
 // Helper to extract quantity from formatted name like "ITEM (3x)"
@@ -1013,7 +1046,7 @@ export const ScheduleModal = ({
                                             {allAccessories.map((formatted, i) => {
                                               const normalizedName = normalizeName(formatted);
                                               const isHomologated = homologationStatus.get(`${normalizedName}:accessory`) ?? 
-                                                homologatedAccessories.some(ha => normalizeName(ha.item_name) === normalizedName);
+                                                homologatedAccessories.some(ha => isSimilarAccessoryName(formatted, ha.item_name));
                                               return (
                                                 <div key={i} className="flex items-center gap-1">
                                                   {isHomologated ? (
