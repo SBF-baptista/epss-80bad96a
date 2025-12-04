@@ -198,59 +198,59 @@ export const ScheduleFormModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>
-            Novo Agendamento {watchedDate ? `- ${format(watchedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}` : ''}
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-4 sm:p-6" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base sm:text-lg">
+            Novo Agendamento {watchedDate ? `- ${format(watchedDate, "dd 'de' MMMM", { locale: ptBR })}` : ''}
           </DialogTitle>
         </DialogHeader>
 
         {/* Vehicle Data Header */}
         {initialVehicleData && (initialVehicleData.plate || initialVehicleData.model) && (
           <Card className="bg-muted/50 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Car className="h-5 w-5 text-primary" />
-                <span className="font-semibold text-lg">Dados do Veículo</span>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Car className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm sm:text-base">Dados do Veículo</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                 {initialVehicleData.model && (
                   <div>
                     <span className="text-xs text-muted-foreground block">Modelo</span>
-                    <span className="font-medium">{initialVehicleData.brand} {initialVehicleData.model}</span>
+                    <span className="font-medium text-xs sm:text-sm">{initialVehicleData.brand} {initialVehicleData.model}</span>
                   </div>
                 )}
                 {initialVehicleData.plate && (
                   <div>
                     <span className="text-xs text-muted-foreground block">Placa</span>
-                    <Badge variant="secondary">{initialVehicleData.plate}</Badge>
+                    <Badge variant="secondary" className="text-xs">{initialVehicleData.plate}</Badge>
                   </div>
                 )}
                 {initialVehicleData.year && (
                   <div>
                     <span className="text-xs text-muted-foreground block">Ano</span>
-                    <span className="font-medium">{initialVehicleData.year}</span>
+                    <span className="font-medium text-xs sm:text-sm">{initialVehicleData.year}</span>
                   </div>
                 )}
                 {initialVehicleData.configuration && (
                   <div>
-                    <span className="text-xs text-muted-foreground block">Configuração</span>
+                    <span className="text-xs text-muted-foreground block">Config.</span>
                     <div className="flex items-center gap-1">
                       <Cpu className="h-3 w-3 text-purple-600" />
-                      <span className="font-medium text-purple-700">{initialVehicleData.configuration}</span>
+                      <span className="font-medium text-xs sm:text-sm text-purple-700">{initialVehicleData.configuration}</span>
                     </div>
                   </div>
                 )}
               </div>
               {initialVehicleData.accessories && initialVehicleData.accessories.length > 0 && (
-                <div className="mt-3 pt-3 border-t">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Package className="h-4 w-4 text-muted-foreground" />
+                <div className="mt-2 pt-2 border-t">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Package className="h-3 w-3 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Acessórios</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {initialVehicleData.accessories.map((acc, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
+                      <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0">
                         {acc}
                       </Badge>
                     ))}
@@ -261,7 +261,7 @@ export const ScheduleFormModal = ({
           </Card>
         )}
         
-        <ScrollArea className="max-h-[70vh] pr-4">
+        <ScrollArea className="max-h-[60vh] sm:max-h-[70vh] pr-2 sm:pr-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               {/* Date Picker Field */}
@@ -352,179 +352,187 @@ export const ScheduleFormModal = ({
                 </div>
               )}
 
-              <FormField
-                control={form.control}
-                name="time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Horário *</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <FormField
+                  control={form.control}
+                  name="time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Horário *</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="scheduled_by"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quem Agendou *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome de quem agendou" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="scheduled_by"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Quem Agendou *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome de quem agendou" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="service"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Serviço *</FormLabel>
+                    <FormLabel className="text-sm">Serviço *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Tipo de serviço" {...field} />
+                      <Input placeholder="Tipo de serviço" {...field} className="h-9" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="plate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Placa *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Placa do veículo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <FormField
+                  control={form.control}
+                  name="plate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Placa *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Placa do veículo" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="vehicle_model"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modelo do Veículo *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Modelo do veículo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="vehicle_model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Modelo do Veículo *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Modelo do veículo" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="tracker_model"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Modelo do Rastreador *</FormLabel>
+                    <FormLabel className="text-sm">Modelo do Rastreador *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Modelo do rastreador" {...field} />
+                      <Input placeholder="Modelo do rastreador" {...field} className="h-9" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="customer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cliente *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do cliente" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <FormField
+                  control={form.control}
+                  name="customer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Cliente *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do cliente" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Telefone *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Telefone para contato" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Endereço *</FormLabel>
+                    <FormLabel className="text-sm">Endereço *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Endereço completo" {...field} />
+                      <Input placeholder="Endereço completo" {...field} className="h-9" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="reference_point"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ponto de Referência *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ponto de referência" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <FormField
+                  control={form.control}
+                  name="reference_point"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Ponto de Referência *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ponto de referência" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Telefone para contato" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="local_contact"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contato Local *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do contato no local" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="local_contact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Contato Local *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do contato no local" {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="observation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Observação *</FormLabel>
+                    <FormLabel className="text-sm">Observação *</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Observações sobre o agendamento" {...field} />
+                      <Textarea placeholder="Observações sobre o agendamento" {...field} className="min-h-[60px]" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                   {isLoading ? 'Salvando...' : 'Salvar Agendamento'}
                 </Button>
               </div>
