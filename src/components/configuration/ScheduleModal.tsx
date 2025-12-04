@@ -1618,28 +1618,39 @@ export const ScheduleModal = ({
         onSubmit={async (formData) => {
           setIsSubmittingSchedule(true);
           try {
-            // Save to installation_schedules
-            const { error } = await supabase
-              .from('installation_schedules')
-              .insert({
-                scheduled_date: format(formData.date, 'yyyy-MM-dd'),
-                scheduled_time: formData.time,
-                technician_name: formData.technician_name,
-                technician_whatsapp: formData.technician_whatsapp || '',
-                customer: formData.customer,
-                address: formData.address,
-                plate: formData.plate,
-                vehicle_model: formData.vehicle_model,
-                tracker_model: formData.tracker_model,
-                service: formData.service,
-                phone: formData.phone,
-                local_contact: formData.local_contact,
-                reference_point: formData.reference_point,
-                observation: formData.observation,
-                scheduled_by: formData.scheduled_by
-              });
+            // Resolve incoming_vehicle_id from pendingVehicleData
+            let incomingVehicleId: string | undefined;
+            if (pendingVehicleData) {
+              const vehicleKey = `${pendingVehicleData.brand}-${pendingVehicleData.model}-${pendingVehicleData.plate || 'pending'}`;
+              incomingVehicleId = vehicleIdMap.get(vehicleKey);
+            }
 
-            if (error) throw error;
+            // Save to kit_schedules (correct table for Kanban)
+            await createKitSchedule({
+              technician_id: formData.technician_id,
+              scheduled_date: format(formData.date, 'yyyy-MM-dd'),
+              installation_time: formData.time,
+              customer_name: formData.customer || 'Cliente não informado',
+              customer_phone: formData.phone || '',
+              customer_document_number: '',
+              customer_email: '',
+              customer_id: pendingVehicleData?.customerId,
+              vehicle_brand: pendingVehicleData?.brand,
+              vehicle_model: pendingVehicleData?.model || formData.vehicle_model,
+              vehicle_plate: formData.plate,
+              vehicle_year: pendingVehicleData?.year,
+              installation_address_street: formData.address || '',
+              installation_address_number: '',
+              installation_address_neighborhood: '',
+              installation_address_city: '',
+              installation_address_state: '',
+              installation_address_postal_code: '',
+              notes: formData.observation,
+              selected_kit_ids: pendingVehicleData?.selectedKitIds,
+              incoming_vehicle_id: incomingVehicleId,
+              configuration: pendingVehicleData?.configuration,
+              accessories: pendingVehicleData?.accessories
+            });
 
             // Send WhatsApp notification
             const whatsappResult = await sendTechnicianWhatsApp(
