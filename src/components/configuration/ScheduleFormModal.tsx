@@ -35,8 +35,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { getTechnicians, Technician } from '@/services/technicianService';
-import { MapPin, CalendarIcon } from 'lucide-react';
+import { MapPin, CalendarIcon, Car, Cpu, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const scheduleFormSchema = z.object({
@@ -202,6 +204,62 @@ export const ScheduleFormModal = ({
             Novo Agendamento {watchedDate ? `- ${format(watchedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}` : ''}
           </DialogTitle>
         </DialogHeader>
+
+        {/* Vehicle Data Header */}
+        {initialVehicleData && (initialVehicleData.plate || initialVehicleData.model) && (
+          <Card className="bg-muted/50 border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Car className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-lg">Dados do Veículo</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {initialVehicleData.model && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Modelo</span>
+                    <span className="font-medium">{initialVehicleData.brand} {initialVehicleData.model}</span>
+                  </div>
+                )}
+                {initialVehicleData.plate && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Placa</span>
+                    <Badge variant="secondary">{initialVehicleData.plate}</Badge>
+                  </div>
+                )}
+                {initialVehicleData.year && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Ano</span>
+                    <span className="font-medium">{initialVehicleData.year}</span>
+                  </div>
+                )}
+                {initialVehicleData.configuration && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Configuração</span>
+                    <div className="flex items-center gap-1">
+                      <Cpu className="h-3 w-3 text-purple-600" />
+                      <span className="font-medium text-purple-700">{initialVehicleData.configuration}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {initialVehicleData.accessories && initialVehicleData.accessories.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Acessórios</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {initialVehicleData.accessories.map((acc, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {acc}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
         
         <ScrollArea className="max-h-[70vh] pr-4">
           <Form {...form}>
