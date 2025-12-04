@@ -50,6 +50,7 @@ import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules, isMod
 import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchKitItemOptions, type KitItemOption } from '@/services/kitItemOptionsService';
 
 // Helper to normalize item names (remove quantity suffix, trim, uppercase)
 const normalizeName = (name: string): string => {
@@ -230,6 +231,24 @@ export const ScheduleModal = ({
   const [vehicleIdMap, setVehicleIdMap] = useState<Map<string, string>>(new Map());
   const [suggestedKitsByVehicle, setSuggestedKitsByVehicle] = useState<Map<string, HomologationKit[]>>(new Map());
   const [configurationsByVehicle, setConfigurationsByVehicle] = useState<Map<string, string>>(new Map());
+  const [homologatedAccessories, setHomologatedAccessories] = useState<KitItemOption[]>([]);
+
+  // Fetch homologated accessories from kit_item_options (synced with homologation section)
+  useEffect(() => {
+    const loadHomologatedAccessories = async () => {
+      try {
+        const accessories = await fetchKitItemOptions('accessory');
+        setHomologatedAccessories(accessories);
+        console.log('Loaded homologated accessories:', accessories.length);
+      } catch (error) {
+        console.error('Error loading homologated accessories:', error);
+      }
+    };
+    
+    if (isOpen) {
+      loadHomologatedAccessories();
+    }
+  }, [isOpen]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -479,6 +498,7 @@ export const ScheduleModal = ({
           ];
           
           // Se não há acessórios, considera pronto
+          // Acessórios selecionados da lista de homologados são automaticamente OK
           const allAccessoriesHomologated = vehicleAccessories.length === 0 ? true : 
             vehicleAccessories.every(acc => {
               const status = statusMap.get(`${acc}:accessory`);
@@ -493,6 +513,8 @@ export const ScheduleModal = ({
             allAccessoriesHomologated
           });
           
+          // Veículo é considerado pronto se todos os acessórios estão homologados
+          // OU se os acessórios selecionados vêm da lista de kit_item_options (já homologados)
           const vehicleReady = allAccessoriesHomologated;
           statusMap.set(`vehicle-ready:${vehicle.plate}`, vehicleReady);
         }
@@ -517,6 +539,29 @@ export const ScheduleModal = ({
       if (schedule && schedule.technician_ids.length > 0 && schedule.scheduled_date) {
         await checkVehicleConflicts(schedule);
       }
+    }
+    
+    // Recalculate vehicle-ready status when accessories change
+    if (field === 'accessories') {
+      const newAccessories = value as string[];
+      // Check if all selected accessories are from the homologated list
+      const allHomologated = newAccessories.length === 0 ? true : newAccessories.every(acc => {
+        const normalizedAcc = normalizeName(acc);
+        return homologatedAccessories.some(ha => normalizeName(ha.item_name) === normalizedAcc);
+      });
+      
+      setHomologationStatus(prev => {
+        const newMap = new Map(prev);
+        // Update individual accessory statuses
+        newAccessories.forEach(acc => {
+          const normalizedAcc = normalizeName(acc);
+          const isHomologated = homologatedAccessories.some(ha => normalizeName(ha.item_name) === normalizedAcc);
+          newMap.set(`${normalizedAcc}:accessory`, isHomologated);
+        });
+        // Update vehicle-ready status
+        newMap.set(`vehicle-ready:${plate}`, allHomologated);
+        return newMap;
+      });
     }
   };
 
@@ -950,58 +995,97 @@ export const ScheduleModal = ({
                                  })()}
                                </td>
               <td className="px-4 py-3">
-                                <div className="flex flex-col gap-1 max-w-[180px]">
+                                <div className="flex flex-col gap-2 max-w-[220px]">
                                   {(() => {
                                     const key = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
                                     const vehicleId = vehicleIdMap.get(key);
                                     const formattedAccessories = vehicleId ? accessoriesByVehicleId.get(vehicleId) || [] : [];
+                                    const currentAccessories = vehicleSchedule.accessories || [];
                                     
-                                    if (formattedAccessories.length > 0) {
-                                      return formattedAccessories.map((formatted, i) => {
-                                        const normalizedName = normalizeName(formatted);
-                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
-                                        return (
-                                          <div key={i} className="flex items-center gap-1">
-                                            {isHomologated ? (
-                                              <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                                            ) : (
-                                              <X className="h-3 w-3 text-red-600 flex-shrink-0" />
-                                            )}
-                                            <span className={cn(
-                                              "text-xs",
-                                              isHomologated ? "text-green-700" : "text-red-700"
-                                            )}>
-                                              {formatted}
-                                            </span>
+                                    // Merge vehicle accessories with selected accessories
+                                    const allAccessories = [...new Set([...formattedAccessories, ...currentAccessories])];
+                                    
+                                    return (
+                                      <>
+                                        {/* Current/Selected Accessories */}
+                                        {allAccessories.length > 0 && (
+                                          <div className="flex flex-col gap-1">
+                                            {allAccessories.map((formatted, i) => {
+                                              const normalizedName = normalizeName(formatted);
+                                              const isHomologated = homologationStatus.get(`${normalizedName}:accessory`) ?? 
+                                                homologatedAccessories.some(ha => normalizeName(ha.item_name) === normalizedName);
+                                              return (
+                                                <div key={i} className="flex items-center gap-1">
+                                                  {isHomologated ? (
+                                                    <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                                  ) : (
+                                                    <X className="h-3 w-3 text-red-600 flex-shrink-0" />
+                                                  )}
+                                                  <span className={cn(
+                                                    "text-xs",
+                                                    isHomologated ? "text-green-700" : "text-red-700"
+                                                  )}>
+                                                    {formatted}
+                                                  </span>
+                                                </div>
+                                              );
+                                            })}
                                           </div>
-                                        );
-                                      });
-                                    } else if (vehicleSchedule.accessories && vehicleSchedule.accessories.length > 0) {
-                                      return vehicleSchedule.accessories.map((acc, i) => {
-                                        const normalizedName = normalizeName(acc);
-                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
-                                        return (
-                                          <div key={i} className="flex items-center gap-1">
-                                            {isHomologated ? (
-                                              <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                                            ) : (
-                                              <X className="h-3 w-3 text-red-600 flex-shrink-0" />
-                                            )}
-                                            <span className={cn(
-                                              "text-xs",
-                                              isHomologated ? "text-green-700" : "text-red-700"
-                                            )}>
-                                              {acc}
-                                            </span>
-                                          </div>
-                                        );
-                                      });
-                                    } else {
-                                      return <span className="text-xs text-muted-foreground">-</span>;
-                                    }
-                                   })()}
-                                 </div>
-                               </td>
+                                        )}
+                                        
+                                        {/* Selector for Homologated Accessories */}
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button variant="outline" size="sm" className="h-7 text-xs w-full">
+                                              <Package className="h-3 w-3 mr-1" />
+                                              {allAccessories.length > 0 ? 'Editar Acessórios' : 'Selecionar Acessórios'}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-[300px] p-3 max-h-[300px] overflow-y-auto z-50" align="start">
+                                            <div className="space-y-2">
+                                              <p className="text-xs font-semibold text-muted-foreground mb-2">
+                                                Acessórios Homologados ({homologatedAccessories.length})
+                                              </p>
+                                              {homologatedAccessories.length === 0 ? (
+                                                <p className="text-xs text-muted-foreground">Nenhum acessório homologado disponível</p>
+                                              ) : (
+                                                homologatedAccessories.map((acc) => {
+                                                  const isSelected = currentAccessories.some(
+                                                    a => normalizeName(a) === normalizeName(acc.item_name)
+                                                  );
+                                                  return (
+                                                    <div
+                                                      key={acc.id}
+                                                      className={cn(
+                                                        "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors",
+                                                        isSelected ? "bg-green-100 border border-green-300" : "hover:bg-muted"
+                                                      )}
+                                                      onClick={() => {
+                                                        const newAccessories = isSelected
+                                                          ? currentAccessories.filter(a => normalizeName(a) !== normalizeName(acc.item_name))
+                                                          : [...currentAccessories, acc.item_name];
+                                                        updateVehicleSchedule(vehicleSchedule.plate, 'accessories', newAccessories);
+                                                      }}
+                                                    >
+                                                      <Checkbox checked={isSelected} className="pointer-events-none" />
+                                                      <span className="text-xs flex-1">{acc.item_name}</span>
+                                                      {isSelected && <Check className="h-3 w-3 text-green-600" />}
+                                                    </div>
+                                                  );
+                                                })
+                                              )}
+                                            </div>
+                                          </PopoverContent>
+                                        </Popover>
+                                        
+                                        {allAccessories.length === 0 && (
+                                          <span className="text-xs text-muted-foreground">Nenhum selecionado</span>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </td>
                                 <td className="px-4 py-3">
                                   {(() => {
                                     const suggestedKits = suggestedKitsByVehicle.get(vehicleSchedule.plate) || [];
