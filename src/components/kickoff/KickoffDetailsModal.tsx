@@ -81,8 +81,8 @@ export const KickoffDetailsModal = ({
     new Map(vehicles.map(v => [v.id, { hasSiren: false, quantity: 1 }]))
   );
 
-  const [vehicleVideoMonitoring, setVehicleVideoMonitoring] = useState<Map<string, boolean>>(
-    new Map(vehicles.map(v => [v.id, false]))
+  const [vehicleVideoMonitoring, setVehicleVideoMonitoring] = useState<Map<string, boolean | undefined>>(
+    new Map()
   );
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
@@ -354,6 +354,7 @@ export const KickoffDetailsModal = ({
         const modules = Array.from(selectedModules.get(vehicle.id) || []);
         const blocking = vehicleBlocking.get(vehicle.id) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 };
         const sirenData = vehicleSiren.get(vehicle.id) || { hasSiren: false, quantity: 1 };
+        const videoMonitoring = vehicleVideoMonitoring.get(vehicle.id);
         
         return {
           id: vehicle.id,
@@ -365,6 +366,7 @@ export const KickoffDetailsModal = ({
           selected_modules: modules,
           blocking_info: blocking,
           siren_info: sirenData,
+          has_video_monitoring: videoMonitoring,
           accessories: vehicle.modules.filter(m => {
             const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
             return normalize(m.categories || '') !== 'modulos';
@@ -557,7 +559,11 @@ export const KickoffDetailsModal = ({
               onVideoMonitoringChange={(vehicleId, value) => {
                 setVehicleVideoMonitoring(prev => {
                   const newMap = new Map(prev);
-                  newMap.set(vehicleId, value);
+                  if (value === undefined) {
+                    newMap.delete(vehicleId);
+                  } else {
+                    newMap.set(vehicleId, value);
+                  }
                   return newMap;
                 });
               }}
