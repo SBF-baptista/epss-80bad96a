@@ -745,18 +745,18 @@ export const KickoffVehiclesTable = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="whitespace-nowrap">Placa</TableHead>
-              <TableHead className="whitespace-nowrap">Produto</TableHead>
-              <TableHead className="whitespace-nowrap">Marca</TableHead>
-              <TableHead className="whitespace-nowrap">Modelo</TableHead>
-              <TableHead className="whitespace-nowrap">Ano</TableHead>
-              <TableHead className="whitespace-nowrap">Módulos</TableHead>
-              <TableHead className="whitespace-nowrap">Acessórios</TableHead>
-              <TableHead className="whitespace-nowrap">Bloqueio</TableHead>
-              <TableHead className="whitespace-nowrap">Sirene</TableHead>
-              <TableHead className="whitespace-nowrap">Videomonitoramento</TableHead>
-              <TableHead className="whitespace-nowrap">Editar</TableHead>
-              <TableHead className="whitespace-nowrap">FIPE</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Placa</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Produto</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Marca</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Modelo</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Ano</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Módulos</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Acessórios</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Bloqueio</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Sirene</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Videomonitoramento</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">Editar</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border">FIPE</TableHead>
               <TableHead className="whitespace-nowrap">Validação</TableHead>
             </TableRow>
           </TableHeader>
@@ -772,17 +772,17 @@ export const KickoffVehiclesTable = ({
               
               return (
                 <TableRow key={vehicle.id} className={isPlateValidated ? "opacity-60" : ""}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium border-r border-border">
                     <span className={isPlateValidated ? "text-green-600 font-semibold" : ""}>
                       {vehicle.plate || "Não informada"}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <Badge variant="outline" className="text-xs whitespace-nowrap">
                       {capitalizeWords(vehicle.usage_type || '')}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{vehicle.brand}</span>
                       {vehicle.quantity > 1 && (
@@ -792,13 +792,13 @@ export const KickoffVehiclesTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <span className="font-medium">{vehicle.model}</span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     {vehicle.year || <span className="text-muted-foreground">-</span>}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <div className="space-y-2 max-w-[250px]">
                       {modulesList.length > 0 ? (
                         <div className="space-y-2">
@@ -821,7 +821,7 @@ export const KickoffVehiclesTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <div className="max-w-[200px]">
                       {accessoriesList.length > 0 ? (
                         <div className="flex gap-1 flex-wrap">
@@ -836,7 +836,7 @@ export const KickoffVehiclesTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Checkbox
@@ -890,7 +890,7 @@ export const KickoffVehiclesTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -920,7 +920,7 @@ export const KickoffVehiclesTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -958,7 +958,7 @@ export const KickoffVehiclesTable = ({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <Button
                       type="button"
                       variant="ghost"
@@ -970,7 +970,7 @@ export const KickoffVehiclesTable = ({
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-r border-border">
                     <div className="flex items-center justify-center gap-2">
                       {isVehicleInvalid(vehicle) ? (
                         <Tooltip>
