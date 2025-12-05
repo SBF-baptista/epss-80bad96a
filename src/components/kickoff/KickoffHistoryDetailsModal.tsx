@@ -59,6 +59,7 @@ export const KickoffHistoryDetailsModal = ({
                     <TableHead>Módulos Selecionados</TableHead>
                     <TableHead>Bloqueio</TableHead>
                     <TableHead>Sirene</TableHead>
+                    <TableHead>Videomonitoramento</TableHead>
                     <TableHead>Acessórios</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -105,10 +106,21 @@ export const KickoffHistoryDetailsModal = ({
                         )}
                       </TableCell>
                       <TableCell>
-                        {vehicle.has_siren ? (
-                          <Badge variant="secondary" className="text-xs">Sim</Badge>
+                        {vehicle.siren_info?.hasSiren ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Sim ({vehicle.siren_info.quantity || 1}x)
+                          </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">Não</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {vehicle.has_video_monitoring === true ? (
+                          <Badge variant="secondary" className="text-xs">Sim</Badge>
+                        ) : vehicle.has_video_monitoring === false ? (
+                          <Badge variant="outline" className="text-xs">Não</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Não informado</span>
                         )}
                       </TableCell>
                       <TableCell>
