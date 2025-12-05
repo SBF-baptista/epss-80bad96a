@@ -33,6 +33,8 @@ interface KickoffVehiclesTableProps {
   onBlockingToggle: (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => void;
   vehicleSiren: Map<string, { hasSiren: boolean; quantity: number }>;
   onSirenToggle: (vehicleId: string, value: boolean) => void;
+  vehicleVideoMonitoring: Map<string, boolean>;
+  onVideoMonitoringChange: (vehicleId: string, value: boolean) => void;
   saleSummaryId: number;
   onVehicleUpdate: () => void;
   onBlockingQuantityChange: (vehicleId: string, quantity: number) => void;
@@ -40,6 +42,17 @@ interface KickoffVehiclesTableProps {
   validatedPlates: Set<string>;
   onPlateValidationChange: (vehicleId: string, validated: boolean) => void;
 }
+
+// Helper function to capitalize first letter of each word (PT-BR style)
+const capitalizeWords = (text: string): string => {
+  if (!text) return "N/A";
+  return text
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 export const KickoffVehiclesTable = ({ 
   vehicles, 
@@ -49,6 +62,8 @@ export const KickoffVehiclesTable = ({
   onBlockingToggle,
   vehicleSiren,
   onSirenToggle,
+  vehicleVideoMonitoring,
+  onVideoMonitoringChange,
   saleSummaryId,
   onVehicleUpdate,
   onBlockingQuantityChange,
@@ -288,7 +303,7 @@ export const KickoffVehiclesTable = ({
                     {vehicle.brand} {vehicle.model} {vehicle.year && `(${vehicle.year})`}
                   </div>
                   <Badge variant="secondary" className="text-xs mt-1">
-                    Produto: {vehicle.usage_type?.replace(/_/g, ' ') || "N/A"}
+                    Produto: {capitalizeWords(vehicle.usage_type || '')}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
@@ -473,6 +488,39 @@ export const KickoffVehiclesTable = ({
                       />
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Video Monitoring */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Veículo com Videomonitoramento?</Label>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`mobile-video-yes-${vehicle.id}`}
+                      checked={vehicleVideoMonitoring.get(vehicle.id) === true}
+                      onCheckedChange={(checked) => {
+                        if (checked) onVideoMonitoringChange(vehicle.id, true);
+                      }}
+                      disabled={isPlateValidated}
+                    />
+                    <Label htmlFor={`mobile-video-yes-${vehicle.id}`} className="text-sm cursor-pointer">
+                      Sim
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`mobile-video-no-${vehicle.id}`}
+                      checked={vehicleVideoMonitoring.get(vehicle.id) === false}
+                      onCheckedChange={(checked) => {
+                        if (checked) onVideoMonitoringChange(vehicle.id, false);
+                      }}
+                      disabled={isPlateValidated}
+                    />
+                    <Label htmlFor={`mobile-video-no-${vehicle.id}`} className="text-sm cursor-pointer">
+                      Não
+                    </Label>
+                  </div>
                 </div>
               </div>
 
@@ -698,6 +746,7 @@ export const KickoffVehiclesTable = ({
               <TableHead className="whitespace-nowrap">Acessórios</TableHead>
               <TableHead className="whitespace-nowrap">Bloqueio</TableHead>
               <TableHead className="whitespace-nowrap">Sirene</TableHead>
+              <TableHead className="whitespace-nowrap">Videomonitoramento</TableHead>
               <TableHead className="whitespace-nowrap">Editar</TableHead>
               <TableHead className="whitespace-nowrap">FIPE</TableHead>
               <TableHead className="whitespace-nowrap">Validação</TableHead>
@@ -722,7 +771,7 @@ export const KickoffVehiclesTable = ({
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs whitespace-nowrap">
-                      {vehicle.usage_type?.replace(/_/g, ' ') || "N/A"}
+                      {capitalizeWords(vehicle.usage_type || '')}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -831,6 +880,39 @@ export const KickoffVehiclesTable = ({
                           </div>
                         </>
                       )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium block mb-2">Videomonitoramento?</Label>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`video-yes-${vehicle.id}`}
+                            checked={vehicleVideoMonitoring.get(vehicle.id) === true}
+                            onCheckedChange={(checked) => {
+                              if (checked) onVideoMonitoringChange(vehicle.id, true);
+                            }}
+                            disabled={isPlateValidated}
+                          />
+                          <Label htmlFor={`video-yes-${vehicle.id}`} className="text-sm cursor-pointer">
+                            Sim
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`video-no-${vehicle.id}`}
+                            checked={vehicleVideoMonitoring.get(vehicle.id) === false}
+                            onCheckedChange={(checked) => {
+                              if (checked) onVideoMonitoringChange(vehicle.id, false);
+                            }}
+                            disabled={isPlateValidated}
+                          />
+                          <Label htmlFor={`video-no-${vehicle.id}`} className="text-sm cursor-pointer">
+                            Não
+                          </Label>
+                        </div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

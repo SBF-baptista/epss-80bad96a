@@ -81,6 +81,10 @@ export const KickoffDetailsModal = ({
     new Map(vehicles.map(v => [v.id, { hasSiren: false, quantity: 1 }]))
   );
 
+  const [vehicleVideoMonitoring, setVehicleVideoMonitoring] = useState<Map<string, boolean>>(
+    new Map(vehicles.map(v => [v.id, false]))
+  );
+
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
 
   // Load existing customer data when modal opens
@@ -549,6 +553,14 @@ export const KickoffDetailsModal = ({
               vehicleSiren={vehicleSiren}
               onSirenToggle={handleSirenToggle}
               onSirenQuantityChange={handleSirenQuantityChange}
+              vehicleVideoMonitoring={vehicleVideoMonitoring}
+              onVideoMonitoringChange={(vehicleId, value) => {
+                setVehicleVideoMonitoring(prev => {
+                  const newMap = new Map(prev);
+                  newMap.set(vehicleId, value);
+                  return newMap;
+                });
+              }}
               saleSummaryId={saleSummaryId}
               onVehicleUpdate={onSuccess}
               validatedPlates={validatedPlates}
