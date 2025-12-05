@@ -884,6 +884,36 @@ export const KickoffVehiclesTable = ({
                   </TableCell>
                   <TableCell>
                     <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`siren-${vehicle.id}`}
+                          checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
+                          onCheckedChange={(checked) => 
+                            onSirenToggle(vehicle.id, checked as boolean)
+                          }
+                          disabled={isPlateValidated}
+                        />
+                        <Label htmlFor={`siren-${vehicle.id}`} className="text-sm font-medium cursor-pointer">
+                          Possui Sirene
+                        </Label>
+                      </div>
+                      {vehicleSiren.get(vehicle.id)?.hasSiren && (
+                        <div className="flex items-center gap-2 ml-6">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">Quantidade:</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={vehicleSiren.get(vehicle.id)?.quantity || 1}
+                            onChange={(e) => onSirenQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
+                            className="w-16 h-8 text-xs"
+                            disabled={isPlateValidated}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-2">
                       <Label className="text-xs font-medium block mb-2">Videomonitoramento?</Label>
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center space-x-2">
@@ -913,36 +943,6 @@ export const KickoffVehiclesTable = ({
                           </Label>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`siren-${vehicle.id}`}
-                          checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
-                          onCheckedChange={(checked) => 
-                            onSirenToggle(vehicle.id, checked as boolean)
-                          }
-                          disabled={isPlateValidated}
-                        />
-                        <Label htmlFor={`siren-${vehicle.id}`} className="text-sm font-medium cursor-pointer">
-                          Possui Sirene
-                        </Label>
-                      </div>
-                      {vehicleSiren.get(vehicle.id)?.hasSiren && (
-                        <div className="flex items-center gap-2 ml-6">
-                          <Label className="text-xs text-muted-foreground whitespace-nowrap">Quantidade:</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={vehicleSiren.get(vehicle.id)?.quantity || 1}
-                            onChange={(e) => onSirenQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
-                            className="w-16 h-8 text-xs"
-                            disabled={isPlateValidated}
-                          />
-                        </div>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell>
