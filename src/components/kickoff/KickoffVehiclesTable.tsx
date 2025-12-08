@@ -742,22 +742,21 @@ export const KickoffVehiclesTable = ({
 
       {/* Desktop Table Layout */}
       <div className="hidden lg:block rounded-md border overflow-x-auto">
-        <Table>
+        <Table className="min-w-[1400px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="whitespace-nowrap border-r border-border">Placa</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Produto</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Marca</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Modelo</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Ano</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Módulos</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Acessórios</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Bloqueio</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Sirene</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Videomonitoramento</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">Editar</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border">FIPE</TableHead>
-              <TableHead className="whitespace-nowrap">Validação</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[100px]">Placa</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[120px]">Produto</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[100px]">Marca</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[120px]">Modelo</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[60px]">Ano</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[180px]">Módulos</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[150px]">Acessórios</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[180px]">Bloqueio</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[150px]">Sirene</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[60px]">Editar</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[140px]">FIPE</TableHead>
+              <TableHead className="whitespace-nowrap min-w-[100px]">Validação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -918,44 +917,6 @@ export const KickoffVehiclesTable = ({
                           />
                         </div>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="border-r border-border">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`video-yes-${vehicle.id}`}
-                          checked={vehicleVideoMonitoring.get(vehicle.id) === true}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              onVideoMonitoringChange(vehicle.id, true);
-                            } else if (vehicleVideoMonitoring.get(vehicle.id) === true) {
-                              onVideoMonitoringChange(vehicle.id, undefined);
-                            }
-                          }}
-                          disabled={isPlateValidated}
-                        />
-                        <Label htmlFor={`video-yes-${vehicle.id}`} className="text-sm cursor-pointer">
-                          Sim
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`video-no-${vehicle.id}`}
-                          checked={vehicleVideoMonitoring.get(vehicle.id) === false}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              onVideoMonitoringChange(vehicle.id, false);
-                            } else if (vehicleVideoMonitoring.get(vehicle.id) === false) {
-                              onVideoMonitoringChange(vehicle.id, undefined);
-                            }
-                          }}
-                          disabled={isPlateValidated}
-                        />
-                        <Label htmlFor={`video-no-${vehicle.id}`} className="text-sm cursor-pointer">
-                          Não
-                        </Label>
-                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="border-r border-border">

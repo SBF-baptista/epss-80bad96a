@@ -341,8 +341,8 @@ export const KickoffDetailsModal = ({
         .update({
           contacts: contacts.filter(c => c.name) as any,
           installation_locations: installationLocations.filter(loc => loc.city) as any,
-          has_installation_particularity: hasParticularity,
-          installation_particularity_details: hasParticularity ? particularityDetails : null,
+          has_installation_particularity: !!particularityDetails,
+          installation_particularity_details: particularityDetails || null,
           kickoff_notes: notes || null,
         })
         .eq("sale_summary_id", saleSummaryId);
@@ -454,8 +454,8 @@ export const KickoffDetailsModal = ({
           total_vehicles: validatedVehicles.length,
           contacts: contacts.filter(c => c.name) as any,
           installation_locations: installationLocations.filter(loc => loc.city) as any,
-          has_installation_particularity: hasParticularity,
-          installation_particularity_details: hasParticularity ? particularityDetails : null,
+          has_installation_particularity: !!particularityDetails,
+          installation_particularity_details: particularityDetails || null,
           kickoff_notes: notes || null,
           vehicles_data: vehiclesData as any,
           approved_by: user?.id || null,
@@ -700,24 +700,12 @@ export const KickoffDetailsModal = ({
               <Settings className="h-5 w-5 text-primary" />
               <h3 className="font-bold text-lg">Particularidades da Instalação</h3>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="has-particularity"
-                checked={hasParticularity}
-                onCheckedChange={(checked) => setHasParticularity(checked as boolean)}
-              />
-              <Label htmlFor="has-particularity">
-                Disponibilidade para Instalação Especial
-              </Label>
-            </div>
-            {hasParticularity && (
-              <Textarea
-                value={particularityDetails}
-                onChange={(e) => setParticularityDetails(e.target.value)}
-                placeholder="Descreva as particularidades de instalação..."
-                rows={4}
-              />
-            )}
+            <Textarea
+              value={particularityDetails}
+              onChange={(e) => setParticularityDetails(e.target.value)}
+              placeholder="Descreva as particularidades de instalação..."
+              rows={4}
+            />
           </div>
 
           {/* Observações */}
