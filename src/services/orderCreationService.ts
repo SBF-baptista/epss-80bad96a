@@ -11,6 +11,7 @@ export const createOrder = async (orderData: {
   trackers: Array<{ model: string, quantity: number }>
   accessories?: Array<{ name: string, quantity: number }>
   configurationType: string
+  companyName?: string
 }): Promise<Order> => {
   console.log('Creating order:', orderData)
   
@@ -30,8 +31,9 @@ export const createOrder = async (orderData: {
       usuario_id: user.user.id,
       numero_pedido: orderNumber,
       configuracao: orderData.configurationType,
-      status: 'novos', // Changed default status to match original flow
-      data: new Date().toISOString()
+      status: 'novos', // Status 'novos' = coluna "Pedidos" no Kanban
+      data: new Date().toISOString(),
+      company_name: orderData.companyName || null
     })
     .select()
     .single()

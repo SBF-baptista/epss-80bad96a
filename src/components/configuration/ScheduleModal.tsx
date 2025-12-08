@@ -809,7 +809,7 @@ export const ScheduleModal = ({
           }
         }
 
-        // Create order in pedidos table (send to esteira)
+        // Create order in pedidos table (send to esteira) with status 'novos'
         await createOrder({
           vehicles: [{
             brand: vehicleSchedule.brand,
@@ -825,7 +825,8 @@ export const ScheduleModal = ({
             name: acc,
             quantity: 1
           })),
-          configurationType: vehicleConfiguration || configurationsByVehicle.get(vehicleSchedule.plate) || 'FMS250'
+          configurationType: vehicleConfiguration || configurationsByVehicle.get(vehicleSchedule.plate) || 'FMS250',
+          companyName: selectedCustomer.company_name || selectedCustomer.name
         });
         
         schedulesCreated++;
