@@ -196,6 +196,22 @@ export const aggregateAccessories = (accessories: VehicleAccessory[]): string[] 
 };
 
 /**
+ * Agrega acessórios retornando objetos com nome e quantidade (sem duplicar formato)
+ */
+export const aggregateAccessoriesToObjects = (accessories: VehicleAccessory[]): { name: string; quantity: number }[] => {
+  const aggregated = new Map<string, number>();
+  
+  accessories.forEach(acc => {
+    const current = aggregated.get(acc.name) || 0;
+    aggregated.set(acc.name, current + acc.quantity);
+  });
+
+  return Array.from(aggregated.entries())
+    .map(([name, quantity]) => ({ name, quantity }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+/**
  * Filtra módulos e agrega apenas acessórios reais
  * Módulos são identificados por categories='modulos' ou 'Módulos'
  */
@@ -204,4 +220,12 @@ export const aggregateAccessoriesWithoutModules = (accessories: VehicleAccessory
   const realAccessories = accessories.filter(acc => !isModuleCategory(acc.categories));
   
   return aggregateAccessories(realAccessories);
+};
+
+/**
+ * Filtra módulos e agrega apenas acessórios reais retornando objetos
+ */
+export const aggregateAccessoriesWithoutModulesToObjects = (accessories: VehicleAccessory[]): { name: string; quantity: number }[] => {
+  const realAccessories = accessories.filter(acc => !isModuleCategory(acc.categories));
+  return aggregateAccessoriesToObjects(realAccessories);
 };

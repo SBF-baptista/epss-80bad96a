@@ -10,20 +10,10 @@ import { RescheduleModal } from "./RescheduleModal";
 import { StatusHistory } from "./StatusHistory";
 import { supabase } from "@/integrations/supabase/client";
 
+import { CustomerKitData } from "@/pages/CustomerTracking";
+
 interface KitSectionProps {
-  kitData: {
-    id: string;
-    kit_id: string;
-    technician_id: string;
-    scheduled_date: string;
-    installation_time?: string;
-    status: string;
-    notes?: string;
-    customer_name: string;
-    technician_name?: string;
-    kit?: any;
-    homologationStatus?: any;
-  };
+  kitData: CustomerKitData;
   onUpdate: () => void;
 }
 
@@ -266,41 +256,67 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
-          {/* Bloco de Configurações */}
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h5 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Configurações do Kit
-            </h5>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-gray-600">ID do Kit:</span>
-                <p className="font-medium text-gray-900">{kitData.kit_id}</p>
+          {/* Vehicle Info */}
+          {(kitData.vehicle_brand || kitData.vehicle_model) && (
+            <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
+              <h5 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                🚗 Veículo
+              </h5>
+              <div className="text-sm space-y-1">
+                <p><strong>Marca/Modelo:</strong> {kitData.vehicle_brand} {kitData.vehicle_model}</p>
+                {kitData.vehicle_plate && <p><strong>Placa:</strong> {kitData.vehicle_plate}</p>}
+                {kitData.vehicle_year && <p><strong>Ano:</strong> {kitData.vehicle_year}</p>}
               </div>
-              <div>
-                <span className="text-gray-600">Status Atual:</span>
-                <p className="font-medium text-gray-900">{statusInfo.label}</p>
-              </div>
-              <div>
-                <span className="text-gray-600">Data de Criação:</span>
-                <p className="font-medium text-gray-900">
-                  {kitData.kit?.created_at 
-                    ? new Date(kitData.kit.created_at).toLocaleDateString('pt-BR')
-                    : 'N/A'}
-                </p>
-              </div>
-              <div>
-                <span className="text-gray-600">Dias no Status:</span>
-                <p className="font-medium text-gray-900">{statusDaysInfo.days} dias</p>
-              </div>
-              {kitData.kit?.configuration && (
-                <div className="sm:col-span-2">
-                  <span className="text-gray-600">Configuração:</span>
-                  <p className="font-medium text-gray-900">{kitData.kit.configuration}</p>
-                </div>
-              )}
             </div>
-          </div>
+          )}
+
+          {/* Selected Kits */}
+          {kitData.selected_kit_names && kitData.selected_kit_names.length > 0 && (
+            <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h5 className="text-sm font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                📦 Kits Selecionados
+              </h5>
+              <div className="flex flex-wrap gap-2">
+                {kitData.selected_kit_names.map((kitName, idx) => (
+                  <Badge key={idx} variant="secondary" className="bg-purple-100 text-purple-800">
+                    {kitName}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Accessories */}
+          {kitData.accessories && kitData.accessories.length > 0 && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h5 className="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
+                🔧 Acessórios
+              </h5>
+              <div className="flex flex-wrap gap-2">
+                {kitData.accessories.map((acc, idx) => (
+                  <Badge key={idx} variant="outline" className="border-green-300 text-green-800">
+                    {acc.name} ({acc.quantity}x)
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Supplies */}
+          {kitData.supplies && kitData.supplies.length > 0 && (
+            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <h5 className="text-sm font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                📋 Insumos
+              </h5>
+              <div className="flex flex-wrap gap-2">
+                {kitData.supplies.map((supply, idx) => (
+                  <Badge key={idx} variant="outline" className="border-orange-300 text-orange-800">
+                    {supply}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Histórico de Status */}
           <div className="mt-4 pt-4 border-t">
