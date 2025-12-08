@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { User, Mail, Phone, MapPin, FileText, AlertCircle } from "lucide-react";
 
 interface KickoffHistoryDetailsModalProps {
   open: boolean;
@@ -32,7 +33,7 @@ export const KickoffHistoryDetailsModal = ({
 
         <div className="space-y-6">
           {/* Summary */}
-          <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
             <div>
               <p className="text-sm text-muted-foreground">Data de Aprovação</p>
               <p className="font-medium">
@@ -45,22 +46,36 @@ export const KickoffHistoryDetailsModal = ({
               <p className="text-sm text-muted-foreground">Total de Veículos</p>
               <p className="font-medium">{record.total_vehicles}</p>
             </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Locais de Instalação</p>
+              <p className="font-medium">
+                {Array.isArray(record.installation_locations) ? record.installation_locations.length : 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Contatos</p>
+              <p className="font-medium">
+                {Array.isArray(record.contacts) ? record.contacts.length : 0}
+              </p>
+            </div>
           </div>
 
-          {/* Vehicles */}
+          {/* Vehicles Table */}
           <div>
-            <h3 className="font-semibold mb-3">Veículos</h3>
-            <div className="rounded-md border">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Validação da Frota
+            </h3>
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Veículo</TableHead>
-                    <TableHead>Placa</TableHead>
-                    <TableHead>Módulos Selecionados</TableHead>
-                    <TableHead>Bloqueio</TableHead>
-                    <TableHead>Sirene</TableHead>
-                    <TableHead>Videomonitoramento</TableHead>
-                    <TableHead>Acessórios</TableHead>
+                    <TableHead className="min-w-[180px]">Veículo</TableHead>
+                    <TableHead className="min-w-[100px]">Placa</TableHead>
+                    <TableHead className="min-w-[150px]">Módulos Selecionados</TableHead>
+                    <TableHead className="min-w-[120px]">Bloqueio</TableHead>
+                    <TableHead className="min-w-[80px]">Sirene</TableHead>
+                    <TableHead className="min-w-[150px]">Acessórios</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -93,13 +108,17 @@ export const KickoffHistoryDetailsModal = ({
                       <TableCell>
                         {vehicle.blocking_info?.needsBlocking ? (
                           <div className="space-y-1">
-                            <Badge variant="destructive" className="text-xs">Sim</Badge>
-                            {vehicle.blocking_info.engineBlocking && (
-                              <Badge variant="outline" className="text-xs ml-1">Partida</Badge>
-                            )}
-                            {vehicle.blocking_info.fuelBlocking && (
-                              <Badge variant="outline" className="text-xs ml-1">Combustível</Badge>
-                            )}
+                            <Badge variant="destructive" className="text-xs">
+                              Sim ({vehicle.blocking_info.quantity || 1}x)
+                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {vehicle.blocking_info.engineBlocking && (
+                                <Badge variant="outline" className="text-xs">Partida</Badge>
+                              )}
+                              {vehicle.blocking_info.fuelBlocking && (
+                                <Badge variant="outline" className="text-xs">Combustível</Badge>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <Badge variant="outline" className="text-xs">Não</Badge>
@@ -112,15 +131,6 @@ export const KickoffHistoryDetailsModal = ({
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">Não</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {vehicle.has_video_monitoring === true ? (
-                          <Badge variant="secondary" className="text-xs">Sim</Badge>
-                        ) : vehicle.has_video_monitoring === false ? (
-                          <Badge variant="outline" className="text-xs">Não</Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Não informado</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -146,27 +156,36 @@ export const KickoffHistoryDetailsModal = ({
           {/* Contacts */}
           {Array.isArray(record.contacts) && record.contacts.length > 0 && (
             <div>
-              <h3 className="font-semibold mb-3">Contatos</h3>
-              <div className="space-y-2">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Contatos
+              </h3>
+              <div className="grid gap-3 md:grid-cols-2">
                 {record.contacts.map((contact: any, idx: number) => (
                   <div key={idx} className="p-3 border rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="secondary">{contact.type}</Badge>
                       <span className="font-medium">{contact.name}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Função: </span>
-                        {contact.role}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Email: </span>
-                        {contact.email}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Telefone: </span>
-                        {contact.phone}
-                      </div>
+                    <div className="space-y-1 text-sm">
+                      {contact.role && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Função:</span>
+                          <span>{contact.role}</span>
+                        </div>
+                      )}
+                      {contact.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          <span>{contact.email}</span>
+                        </div>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span>{contact.phone}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -177,10 +196,13 @@ export const KickoffHistoryDetailsModal = ({
           {/* Installation Locations */}
           {Array.isArray(record.installation_locations) && record.installation_locations.length > 0 && (
             <div>
-              <h3 className="font-semibold mb-3">Locais de Instalação</h3>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Locais de Instalação
+              </h3>
               <div className="flex gap-2 flex-wrap">
                 {record.installation_locations.map((loc: any, idx: number) => (
-                  <Badge key={idx} variant="outline">
+                  <Badge key={idx} variant="outline" className="text-sm py-1 px-3">
                     {loc.city}/{loc.state}
                   </Badge>
                 ))}
@@ -189,10 +211,13 @@ export const KickoffHistoryDetailsModal = ({
           )}
 
           {/* Particularity */}
-          {record.has_installation_particularity && record.installation_particularity_details && (
+          {record.installation_particularity_details && (
             <div>
-              <h3 className="font-semibold mb-3">Particularidade de Instalação</h3>
-              <p className="text-sm p-3 bg-muted rounded-lg">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Particularidades da Instalação
+              </h3>
+              <p className="text-sm p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
                 {record.installation_particularity_details}
               </p>
             </div>
@@ -201,8 +226,11 @@ export const KickoffHistoryDetailsModal = ({
           {/* Notes */}
           {record.kickoff_notes && (
             <div>
-              <h3 className="font-semibold mb-3">Observações</h3>
-              <p className="text-sm p-3 bg-muted rounded-lg">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Observações Gerais
+              </h3>
+              <p className="text-sm p-3 bg-muted rounded-lg whitespace-pre-wrap">
                 {record.kickoff_notes}
               </p>
             </div>

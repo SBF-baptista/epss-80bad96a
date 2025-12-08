@@ -8,19 +8,7 @@ import { Customer, formatCPF, formatCNPJ, formatPhone } from "@/services/custome
 import { KitSection } from "./KitSection";
 import { CustomerEditModal } from "./CustomerEditModal";
 
-interface CustomerKitData {
-  id: string;
-  kit_id: string;
-  technician_id: string;
-  scheduled_date: string;
-  installation_time?: string;
-  status: string;
-  notes?: string;
-  customer_name: string;
-  technician_name?: string;
-  kit?: any;
-  homologationStatus?: any;
-}
+import { CustomerKitData } from "@/pages/CustomerTracking";
 
 interface CustomerCardProps {
   customer: Customer;

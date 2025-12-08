@@ -7,7 +7,7 @@ import { HomologationKit } from "@/types/homologationKit";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessoriesWithoutModules } from "@/services/vehicleAccessoryService";
+import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessoriesWithoutModulesToObjects, VehicleAccessory } from "@/services/vehicleAccessoryService";
 import { logKanbanMove } from "@/services/logService";
 
 interface KanbanBoardProps {
@@ -31,14 +31,14 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
-  const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
+  const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, VehicleAccessory[]>>(new Map());
   const [orders, setOrders] = useState<Order[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch real accessories from database by vehicle IDs and fallback to plates
   useEffect(() => {
     const fetchAccessories = async () => {
-      const formattedMap = new Map<string, string[]>();
+      const formattedMap = new Map<string, VehicleAccessory[]>();
       
       // First, try to fetch by incoming_vehicle_id
       const vehicleIds = schedules
@@ -48,9 +48,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       if (vehicleIds.length > 0) {
         try {
           const accessoriesMap = await fetchAccessoriesByVehicleIds(vehicleIds);
-          
           accessoriesMap.forEach((accessories, vehicleId) => {
-            formattedMap.set(vehicleId, aggregateAccessoriesWithoutModules(accessories));
+            formattedMap.set(vehicleId, accessories);
           });
         } catch (error) {
           console.error('Error fetching accessories by vehicle IDs:', error);
@@ -70,9 +69,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             if (schedule.vehicle_plate) {
               const accessories = accessoriesByPlate.get(schedule.vehicle_plate);
               if (accessories) {
-                // Use a synthetic key since we don't have incoming_vehicle_id
                 const syntheticKey = `plate-${schedule.vehicle_plate}`;
-                formattedMap.set(syntheticKey, aggregateAccessoriesWithoutModules(accessories));
+                formattedMap.set(syntheticKey, accessories);
               }
             }
           });
@@ -95,30 +93,18 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
     
     // Priority 1: Get from incoming_vehicle_id
     if (schedule.incoming_vehicle_id) {
-      const formattedAccessories = accessoriesByVehicleId.get(schedule.incoming_vehicle_id) || [];
-      
-      if (formattedAccessories.length > 0) {
-        accessoriesList = formattedAccessories.map((formatted) => {
-          const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
-          return match
-            ? { name: match[1], quantity: parseInt(match[2]) }
-            : { name: formatted, quantity: 1 };
-        });
+      const rawAccessories = accessoriesByVehicleId.get(schedule.incoming_vehicle_id) || [];
+      if (rawAccessories.length > 0) {
+        accessoriesList = aggregateAccessoriesWithoutModulesToObjects(rawAccessories);
       }
     }
     
     // Priority 2: Fallback to plate-based lookup ONLY if no incoming_vehicle_id data
     if (accessoriesList.length === 0 && schedule.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente') {
       const syntheticKey = `plate-${schedule.vehicle_plate}`;
-      const formattedAccessories = accessoriesByVehicleId.get(syntheticKey) || [];
-      
-      if (formattedAccessories.length > 0) {
-        accessoriesList = formattedAccessories.map((formatted) => {
-          const match = formatted.match(/^(.+?)\s*\((\d+)x\)$/);
-          return match
-            ? { name: match[1], quantity: parseInt(match[2]) }
-            : { name: formatted, quantity: 1 };
-        });
+      const rawAccessories = accessoriesByVehicleId.get(syntheticKey) || [];
+      if (rawAccessories.length > 0) {
+        accessoriesList = aggregateAccessoriesWithoutModulesToObjects(rawAccessories);
       }
     }
     

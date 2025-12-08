@@ -6,9 +6,11 @@ import { getCustomers, Customer } from "@/services/customerService";
 import { getKitSchedules, KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { fetchHomologationKits, HomologationKit } from "@/services/homologationKitService";
 import { checkMultipleKitsHomologation } from "@/services/kitHomologationService";
+import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModulesToObjects, VehicleAccessory } from "@/services/vehicleAccessoryService";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
-interface CustomerKitData {
+export interface CustomerKitData {
   id: string;
   kit_id: string;
   technician_id: string;
@@ -20,6 +22,18 @@ interface CustomerKitData {
   technician_name?: string;
   kit?: any;
   homologationStatus?: any;
+  // Vehicle data
+  vehicle_brand?: string;
+  vehicle_model?: string;
+  vehicle_plate?: string;
+  vehicle_year?: number;
+  // Accessories and supplies
+  accessories?: { name: string; quantity: number }[];
+  supplies?: string[];
+  // Selected kits (multiple)
+  selected_kit_ids?: string[];
+  selected_kit_names?: string[];
+  configuration?: string;
 }
 
 const CustomerTracking = () => {
@@ -29,6 +43,7 @@ const CustomerTracking = () => {
   const [kitSchedules, setKitSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [homologationKits, setHomologationKits] = useState<HomologationKit[]>([]);
   const [kitHomologationStatus, setKitHomologationStatus] = useState<Map<string, any>>(new Map());
+  const [accessoriesByVehicle, setAccessoriesByVehicle] = useState<Map<string, VehicleAccessory[]>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -54,6 +69,16 @@ const CustomerTracking = () => {
       if (safeKitsData.length > 0) {
         const homologationMap = await checkMultipleKitsHomologation(safeKitsData);
         setKitHomologationStatus(homologationMap);
+      }
+
+      // Fetch accessories for all vehicles in schedules
+      const vehicleIds = safeSchedulesData
+        .map(s => s.incoming_vehicle_id)
+        .filter((id): id is string => !!id);
+      
+      if (vehicleIds.length > 0) {
+        const accessoriesMap = await fetchAccessoriesByVehicleIds(vehicleIds);
+        setAccessoriesByVehicle(accessoriesMap);
       }
     } catch (error) {
       console.error('Error loading customer tracking data:', error);
@@ -94,6 +119,23 @@ const CustomerTracking = () => {
     return customerSchedules.map(schedule => {
       const kit = homologationKits.find(k => k.id === schedule.kit_id);
       const homologationStatus = kit ? kitHomologationStatus.get(kit.id) : null;
+      
+      // Get accessories for this vehicle
+      let vehicleAccessories: { name: string; quantity: number }[] = [];
+      if (schedule.incoming_vehicle_id) {
+        const rawAccessories = accessoriesByVehicle.get(schedule.incoming_vehicle_id) || [];
+        vehicleAccessories = aggregateAccessoriesWithoutModulesToObjects(rawAccessories);
+      }
+
+      // Get selected kit names
+      const scheduleWithIds = schedule as any;
+      let selectedKitNames: string[] = [];
+      if (scheduleWithIds.selected_kit_ids && Array.isArray(scheduleWithIds.selected_kit_ids)) {
+        selectedKitNames = scheduleWithIds.selected_kit_ids
+          .map((kitId: string) => homologationKits.find(k => k.id === kitId)?.name || 'Kit desconhecido')
+          .filter((name: string) => name !== 'Kit desconhecido');
+      }
+
       return {
         id: schedule.id || "",
         kit_id: schedule.kit_id,
@@ -105,7 +147,19 @@ const CustomerTracking = () => {
         customer_name: schedule.customer_name || "",
         technician_name: schedule.technician?.name,
         kit,
-        homologationStatus
+        homologationStatus,
+        // Vehicle data
+        vehicle_brand: schedule.vehicle_brand,
+        vehicle_model: schedule.vehicle_model,
+        vehicle_plate: schedule.vehicle_plate,
+        vehicle_year: schedule.vehicle_year,
+        // Accessories and supplies
+        accessories: vehicleAccessories,
+        supplies: schedule.supplies || [],
+        // Selected kits
+        selected_kit_ids: scheduleWithIds.selected_kit_ids,
+        selected_kit_names: selectedKitNames,
+        configuration: scheduleWithIds.configuration
       };
     });
   };
