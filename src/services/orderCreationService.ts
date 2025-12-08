@@ -7,6 +7,7 @@ import { logCreate } from './logService'
 
 export const createOrder = async (orderData: {
   numero_pedido?: string
+  company_name?: string
   vehicles: Array<{ brand: string, model: string, quantity: number, year?: string }>
   trackers: Array<{ model: string, quantity: number }>
   accessories?: Array<{ name: string, quantity: number }>
@@ -30,7 +31,8 @@ export const createOrder = async (orderData: {
       usuario_id: user.user.id,
       numero_pedido: orderNumber,
       configuracao: orderData.configurationType,
-      status: 'novos', // Changed default status to match original flow
+      company_name: orderData.company_name || null,
+      status: 'novos',
       data: new Date().toISOString()
     })
     .select()
@@ -108,6 +110,7 @@ export const createOrder = async (orderData: {
   return {
     id: pedido.id,
     number: pedido.numero_pedido,
+    company_name: pedido.company_name,
     vehicles: orderData.vehicles,
     trackers: orderData.trackers,
     accessories: orderData.accessories || [],
