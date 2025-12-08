@@ -1,39 +1,195 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import KanbanColumn from "./KanbanColumn";
 import OrderModal from "./OrderModal";
+import { KitScheduleWithDetails } from "@/services/kitScheduleService";
+import { HomologationKit } from "@/types/homologationKit";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessoriesWithoutModulesToObjects, VehicleAccessory } from "@/services/vehicleAccessoryService";
 import { logKanbanMove } from "@/services/logService";
 
 interface KanbanBoardProps {
-  orders: Order[];
+  schedules: KitScheduleWithDetails[];
+  kits: HomologationKit[];
   onOrderUpdate: () => void;
   onScanClick?: (order: Order) => void;
   onShipmentClick?: (order: Order) => void;
 }
 
 const columns = [
-  { id: "novos", title: "Pedidos", color: "border-primary/30 bg-primary/5" },
-  { id: "producao", title: "Em Produção", color: "border-warning/30 bg-warning-light/30" },
-  { id: "aguardando", title: "Aguardando Envio", color: "border-warning/30 bg-warning-light/30" },
-  { id: "enviado", title: "Enviado", color: "border-success/30 bg-success-light/30" },
+  { id: "scheduled", title: "Pedidos", color: "border-primary/30 bg-primary/5" },
+  { id: "in_progress", title: "Em Produção", color: "border-warning/30 bg-warning-light/30" },
+  { id: "completed", title: "Aguardando Envio", color: "border-warning/30 bg-warning-light/30" },
+  { id: "shipped", title: "Enviado", color: "border-success/30 bg-success-light/30" },
 ];
 
-const KanbanBoard = ({ orders, onOrderUpdate, onScanClick, onShipmentClick }: KanbanBoardProps) => {
+const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentClick }: KanbanBoardProps) => {
   const { toast } = useToast();
-  const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
+  const [draggedSchedules, setDraggedSchedules] = useState<KitScheduleWithDetails[]>([]);
+  const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
+  const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, VehicleAccessory[]>>(new Map());
+  const [orders, setOrders] = useState<Order[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch real accessories from database by vehicle IDs and fallback to plates
+  useEffect(() => {
+    const fetchAccessories = async () => {
+      const formattedMap = new Map<string, VehicleAccessory[]>();
+      
+      // First, try to fetch by incoming_vehicle_id
+      const vehicleIds = schedules
+        .map(s => s.incoming_vehicle_id)
+        .filter((id): id is string => !!id);
+      
+      if (vehicleIds.length > 0) {
+        try {
+          const accessoriesMap = await fetchAccessoriesByVehicleIds(vehicleIds);
+          accessoriesMap.forEach((accessories, vehicleId) => {
+            formattedMap.set(vehicleId, accessories);
+          });
+        } catch (error) {
+          console.error('Error fetching accessories by vehicle IDs:', error);
+        }
+      }
+      
+      // Fallback: fetch by plates for schedules without incoming_vehicle_id
+      const schedulesWithoutVehicleId = schedules.filter(s => !s.incoming_vehicle_id && s.vehicle_plate && s.vehicle_plate !== 'Placa pendente');
+      const plates = schedulesWithoutVehicleId.map(s => s.vehicle_plate!);
+      
+      if (plates.length > 0) {
+        try {
+          const accessoriesByPlate = await fetchAccessoriesByPlates(plates);
+          
+          // Map plate-based accessories to schedules
+          schedulesWithoutVehicleId.forEach(schedule => {
+            if (schedule.vehicle_plate) {
+              const accessories = accessoriesByPlate.get(schedule.vehicle_plate);
+              if (accessories) {
+                const syntheticKey = `plate-${schedule.vehicle_plate}`;
+                formattedMap.set(syntheticKey, accessories);
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Error fetching accessories by plates:', error);
+        }
+      }
+      
+      setAccessoriesByVehicleId(formattedMap);
+    };
+
+    fetchAccessories();
+  }, [schedules]);
+
+  const convertScheduleToOrder = async (schedule: KitScheduleWithDetails): Promise<Order> => {
+    const kit = kits.find(k => k.id === schedule.kit_id);
+    
+    // Get real accessories from database - use ONLY ONE source to avoid duplication
+    let accessoriesList: { name: string; quantity: number }[] = [];
+    
+    // Priority 1: Get from incoming_vehicle_id
+    if (schedule.incoming_vehicle_id) {
+      const rawAccessories = accessoriesByVehicleId.get(schedule.incoming_vehicle_id) || [];
+      if (rawAccessories.length > 0) {
+        accessoriesList = aggregateAccessoriesWithoutModulesToObjects(rawAccessories);
+      }
+    }
+    
+    // Priority 2: Fallback to plate-based lookup ONLY if no incoming_vehicle_id data
+    if (accessoriesList.length === 0 && schedule.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente') {
+      const syntheticKey = `plate-${schedule.vehicle_plate}`;
+      const rawAccessories = accessoriesByVehicleId.get(syntheticKey) || [];
+      if (rawAccessories.length > 0) {
+        accessoriesList = aggregateAccessoriesWithoutModulesToObjects(rawAccessories);
+      }
+    }
+    
+    // Priority 3: Use schedule.accessories ONLY if no database data found
+    if (accessoriesList.length === 0 && Array.isArray(schedule.accessories) && schedule.accessories.length > 0) {
+      // Detect corrupted arrays (duplicated data) - ignore if > 10 items
+      const isCorruptedArray = schedule.accessories.length > 10;
+      
+      if (!isCorruptedArray) {
+        accessoriesList = schedule.accessories.map((name) => ({ name, quantity: 1 }));
+      }
+    }
+    
+    // Fetch selected kit names if selected_kit_ids exists
+    let selectedKitNames: string[] = [];
+    const scheduleWithIds = schedule as any;
+    if (scheduleWithIds.selected_kit_ids && Array.isArray(scheduleWithIds.selected_kit_ids) && scheduleWithIds.selected_kit_ids.length > 0) {
+      const kitNames = await Promise.all(
+        scheduleWithIds.selected_kit_ids.map(async (kitId: string) => {
+          const { data } = await supabase
+            .from('homologation_kits')
+            .select('name')
+            .eq('id', kitId)
+            .single();
+          return data?.name || 'Kit desconhecido';
+        })
+      );
+      selectedKitNames = kitNames;
+    }
+
+    return {
+      id: schedule.id || '',
+      number: schedule.id?.slice(0, 8) || '',
+      company_name: schedule.customer_name || 'Cliente',
+      status: schedule.status === 'scheduled' ? 'novos' : 
+              schedule.status === 'in_progress' ? 'producao' : 
+              schedule.status === 'completed' ? 'aguardando' : 'enviado',
+      configurationType: (schedule as any).configuration || kit?.name || 'N/A',
+      selectedKitNames,
+      createdAt: schedule.created_at || new Date().toISOString(),
+      vehicles: schedule.vehicle_brand && schedule.vehicle_model ? [{
+        brand: schedule.vehicle_brand,
+        model: schedule.vehicle_model,
+        quantity: 1,
+        year: schedule.vehicle_year?.toString(),
+      }] : [],
+      trackers: kit?.equipment?.map((eq) => ({
+        model: eq.item_name,
+        quantity: eq.quantity,
+      })) || [],
+      accessories: accessoriesList,
+      technicianName: schedule.technician?.name,
+    };
+  };
+
+  // Convert schedules to orders asynchronously
+  useEffect(() => {
+    const convertSchedules = async () => {
+      const convertedOrders = await Promise.all(schedules.map(convertScheduleToOrder));
+      setOrders(convertedOrders);
+    };
+    
+    convertSchedules();
+  }, [schedules, kits, accessoriesByVehicleId]);
+
+  // Convert selected schedule to order when it changes
+  useEffect(() => {
+    const convertSelected = async () => {
+      if (selectedSchedule) {
+        const order = await convertScheduleToOrder(selectedSchedule);
+        setSelectedOrder(order);
+      } else {
+        setSelectedOrder(null);
+      }
+    };
+    
+    convertSelected();
+  }, [selectedSchedule, kits, accessoriesByVehicleId]);
 
   // Handle scroll to update active indicator
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       const scrollLeft = container.scrollLeft;
-      const cardWidth = 320;
+      const cardWidth = 320; // w-80 = 320px + gap
       const activeIndex = Math.round(scrollLeft / cardWidth);
       setActiveScrollIndex(Math.min(activeIndex, columns.length - 1));
     }
@@ -51,7 +207,10 @@ const KanbanBoard = ({ orders, onOrderUpdate, onScanClick, onShipmentClick }: Ka
   };
 
   const handleDragStart = (order: Order) => {
-    setDraggedOrder(order);
+    // Find all schedules with the same customer_name (same group)
+    const customerName = order.company_name;
+    const groupSchedules = schedules.filter(s => s.customer_name === customerName);
+    setDraggedSchedules(groupSchedules);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -59,48 +218,72 @@ const KanbanBoard = ({ orders, onOrderUpdate, onScanClick, onShipmentClick }: Ka
   };
 
   const handleDrop = async (columnId: string) => {
-    if (draggedOrder) {
+    if (draggedSchedules.length > 0) {
       try {
-        const previousStatus = draggedOrder.status;
+        const statusMap: Record<string, string> = {
+          'scheduled': 'scheduled',
+          'in_progress': 'in_progress',
+          'completed': 'completed',
+          'shipped': 'shipped',
+        };
+        
+        const newStatus = statusMap[columnId] || 'scheduled';
+        const previousStatus = draggedSchedules[0].status;
         const targetColumn = columns.find(c => c.id === columnId);
-        const previousColumn = columns.find(c => c.id === previousStatus);
+        const previousColumn = columns.find(c => {
+          const reverseMap: Record<string, string> = {
+            'scheduled': 'scheduled',
+            'in_progress': 'in_progress',
+            'completed': 'completed',
+            'shipped': 'shipped',
+          };
+          return reverseMap[previousStatus] === c.id;
+        });
         
-        // Update the order status in pedidos table
-        const { error } = await supabase
-          .from('pedidos')
-          .update({ status: columnId as any })
-          .eq('id', draggedOrder.id);
-
-        if (error) throw error;
+        // Update all schedules in the group
+        const scheduleIds = draggedSchedules.map(s => s.id);
+        await supabase
+          .from('kit_schedules')
+          .update({ status: newStatus })
+          .in('id', scheduleIds);
         
-        // Log the movement
-        await logKanbanMove(
-          "Pedidos",
-          draggedOrder.id,
-          previousColumn?.title || previousStatus,
-          targetColumn?.title || columnId,
-          draggedOrder.company_name || "Cliente não identificado"
-        );
+        // Log each movement
+        for (const schedule of draggedSchedules) {
+          await logKanbanMove(
+            "Pedidos",
+            schedule.id,
+            previousColumn?.title || previousStatus,
+            targetColumn?.title || columnId,
+            schedule.customer_name || "Cliente não identificado"
+          );
+        }
         
         onOrderUpdate();
         toast({
           title: "Status atualizado",
-          description: `Pedido movido para ${targetColumn?.title}`
+          description: `${draggedSchedules.length} pedido${draggedSchedules.length > 1 ? 's movidos' : ' movido'} para ${columns.find(c => c.id === columnId)?.title}`
         });
       } catch (error) {
-        console.error("Error updating order status:", error);
+        console.error("Error updating schedule status:", error);
         toast({
           title: "Erro",
-          description: "Erro ao atualizar status do pedido",
+          description: "Erro ao atualizar status dos pedidos",
           variant: "destructive"
         });
       }
     }
-    setDraggedOrder(null);
+    setDraggedSchedules([]);
   };
 
   const getOrdersByStatus = (status: string) => {
-    return orders.filter(order => order.status === status);
+    const statusMap: Record<string, string> = {
+      'scheduled': 'novos',
+      'in_progress': 'producao',
+      'completed': 'aguardando',
+      'shipped': 'enviado',
+    };
+    
+    return orders.filter(order => order.status === statusMap[status]);
   };
 
   return (
@@ -115,7 +298,10 @@ const KanbanBoard = ({ orders, onOrderUpdate, onScanClick, onShipmentClick }: Ka
             color={column.color}
             onDragOver={handleDragOver}
             onDrop={() => handleDrop(column.id)}
-            onOrderClick={(order) => setSelectedOrder(order)}
+            onOrderClick={(order) => {
+              const schedule = schedules.find(s => s.id === order.id);
+              if (schedule) setSelectedSchedule(schedule);
+            }}
             onDragStart={handleDragStart}
             onScanClick={onScanClick}
             onShipmentClick={onShipmentClick}
@@ -138,7 +324,10 @@ const KanbanBoard = ({ orders, onOrderUpdate, onScanClick, onShipmentClick }: Ka
                 color={column.color}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(column.id)}
-                onOrderClick={(order) => setSelectedOrder(order)}
+                onOrderClick={(order) => {
+                  const schedule = schedules.find(s => s.id === order.id);
+                  if (schedule) setSelectedSchedule(schedule);
+                }}
                 onDragStart={handleDragStart}
                 onScanClick={onScanClick}
                 onShipmentClick={onShipmentClick}
@@ -164,12 +353,14 @@ const KanbanBoard = ({ orders, onOrderUpdate, onScanClick, onShipmentClick }: Ka
         </div>
       </div>
 
-      {selectedOrder && (
+      {selectedSchedule && selectedOrder && (
         <OrderModal
           order={selectedOrder}
-          isOpen={!!selectedOrder}
-          onClose={() => setSelectedOrder(null)}
+          isOpen={!!selectedSchedule}
+          onClose={() => setSelectedSchedule(null)}
           onUpdate={onOrderUpdate}
+          schedule={selectedSchedule}
+          kit={kits.find(k => k.id === selectedSchedule.kit_id)}
         />
       )}
     </>
