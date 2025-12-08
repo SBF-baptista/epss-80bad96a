@@ -270,37 +270,6 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
-          {/* Selected Kits */}
-          {kitData.selected_kit_names && kitData.selected_kit_names.length > 0 && (
-            <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <h5 className="text-sm font-semibold text-purple-900 mb-2 flex items-center gap-2">
-                📦 Kits Selecionados
-              </h5>
-              <div className="flex flex-wrap gap-2">
-                {kitData.selected_kit_names.map((kitName, idx) => (
-                  <Badge key={idx} variant="secondary" className="bg-purple-100 text-purple-800">
-                    {kitName}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Accessories */}
-          {kitData.accessories && kitData.accessories.length > 0 && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h5 className="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
-                🔧 Acessórios
-              </h5>
-              <div className="flex flex-wrap gap-2">
-                {kitData.accessories.map((acc, idx) => (
-                  <Badge key={idx} variant="outline" className="border-green-300 text-green-800">
-                    {acc.name} ({acc.quantity}x)
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Supplies */}
           {kitData.supplies && kitData.supplies.length > 0 && (

@@ -44,6 +44,7 @@ import type { Technician } from '@/services/technicianService';
 import { createHomologationKit, type HomologationKit } from '@/services/homologationKitService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
+import { createOrder } from '@/services/orderCreationService';
 import { checkItemHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
@@ -730,15 +731,16 @@ export const ScheduleModal = ({
   };
 
 
-  // Check if button should be enabled
+  // Check if button should be enabled - requires kit selection for at least one vehicle
   const isButtonEnabled = () => {
-    // Must have at least one vehicle ready for scheduling with all required fields
-    const hasReadyVehicle = vehicleSchedules.some(vehicle => {
+    // Must have at least one vehicle with kit selected
+    const hasVehicleWithKit = vehicleSchedules.some(vehicle => {
       const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicle.plate}`);
-      return vehicleReady && vehicle.scheduled_date && vehicle.technician_ids.length > 0;
+      const hasKitSelected = vehicle.selected_kit_ids && vehicle.selected_kit_ids.length > 0;
+      return vehicleReady && hasKitSelected;
     });
     
-    return hasReadyVehicle;
+    return hasVehicleWithKit;
   };
 
   const onSubmit = async () => {
@@ -754,116 +756,97 @@ export const ScheduleModal = ({
     try {
       setIsSubmitting(true);
 
-      // Kit is now optional - use first available if exists, otherwise null
-      const selectedKit: HomologationKit | null = kits.length > 0 ? kits[0] : null;
-
       let schedulesCreated = 0;
       let schedulesSkipped = 0;
       const skippedVehicles: string[] = [];
 
-      // Check for any remaining conflicts before submitting
-      const conflictingPlates: string[] = [];
-      for (const vehicleSchedule of vehicleSchedules) {
-        if (scheduleConflicts.has(vehicleSchedule.plate)) {
-          conflictingPlates.push(vehicleSchedule.plate);
-        }
-      }
-
-      if (conflictingPlates.length > 0) {
-        toastHook({
-          title: "Conflito de horário detectado",
-          description: `Por favor, resolva os conflitos de horário para: ${conflictingPlates.join(', ')}. Escolha outro horário ou técnico.`,
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
       // Process each vehicle schedule
       for (const vehicleSchedule of vehicleSchedules) {
-        // Check if this vehicle is ready for scheduling (all items homologated)
+        // Check if this vehicle is ready for scheduling (all items homologated) and has kit selected
         const vehicleReady = homologationStatus.get(`vehicle-ready:${vehicleSchedule.plate}`);
+        const hasKitSelected = vehicleSchedule.selected_kit_ids && vehicleSchedule.selected_kit_ids.length > 0;
         
-        // Skip vehicles that are not ready or don't have required data
-        if (!vehicleReady || !vehicleSchedule.scheduled_date || vehicleSchedule.technician_ids.length === 0) {
+        // Skip vehicles that are not ready or don't have kit selected
+        if (!vehicleReady || !hasKitSelected) {
           if (!vehicleReady) {
             schedulesSkipped++;
             skippedVehicles.push(vehicleSchedule.plate);
             console.log(`Skipping vehicle ${vehicleSchedule.plate} - not all items are homologated`);
+          } else if (!hasKitSelected) {
+            schedulesSkipped++;
+            skippedVehicles.push(vehicleSchedule.plate);
+            console.log(`Skipping vehicle ${vehicleSchedule.plate} - no kit selected`);
           }
           continue;
         }
 
-        // Create schedule for each technician
-        for (const technicianId of vehicleSchedule.technician_ids) {
-          // Resolve incoming_vehicle_id for this vehicle
-          const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
-          const incomingVehicleId = vehicleIdMap.get(vehicleKey);
+        // Resolve incoming_vehicle_id for this vehicle
+        const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
+        const incomingVehicleId = vehicleIdMap.get(vehicleKey);
+        
+        // Get configuration from homologation
+        let vehicleConfiguration: string | undefined;
+        if (incomingVehicleId) {
+          const { data: homologationData } = await supabase
+            .from('homologation_cards')
+            .select('configuration')
+            .eq('incoming_vehicle_id', incomingVehicleId)
+            .eq('status', 'homologado')
+            .single();
           
-          // Buscar configuração da homologação do veículo
-          let vehicleConfiguration: string | undefined;
-          if (incomingVehicleId) {
-            const { data: homologationData } = await supabase
-              .from('homologation_cards')
-              .select('configuration')
-              .eq('incoming_vehicle_id', incomingVehicleId)
-              .eq('status', 'homologado')
-              .single();
-            
-            if (homologationData?.configuration) {
-              vehicleConfiguration = homologationData.configuration;
-            }
+          if (homologationData?.configuration) {
+            vehicleConfiguration = homologationData.configuration;
           }
-
-          await createKitSchedule({
-            kit_id: selectedKit?.id || null,
-            technician_id: technicianId,
-            scheduled_date: vehicleSchedule.scheduled_date.toISOString().split('T')[0],
-            installation_time: vehicleSchedule.installation_time || undefined,
-            notes: vehicleSchedule.notes || undefined,
-            configuration: vehicleConfiguration,
-            selected_kit_ids: vehicleSchedule.selected_kit_ids || [],
-            customer_id: selectedCustomer.id,
-            customer_name: selectedCustomer.name,
-            customer_document_number: selectedCustomer.document_number,
-            customer_phone: selectedCustomer.phone,
-            customer_email: selectedCustomer.email,
-            installation_address_street: selectedCustomer.address_street,
-            installation_address_number: selectedCustomer.address_number,
-            installation_address_neighborhood: selectedCustomer.address_neighborhood,
-            installation_address_city: selectedCustomer.address_city,
-            installation_address_state: selectedCustomer.address_state,
-            installation_address_postal_code: selectedCustomer.address_postal_code,
-            installation_address_complement: selectedCustomer.address_complement || undefined,
-            vehicle_plate: vehicleSchedule.plate,
-            vehicle_brand: vehicleSchedule.brand,
-            vehicle_model: vehicleSchedule.model,
-            vehicle_year: vehicleSchedule.year,
-            incoming_vehicle_id: incomingVehicleId || undefined,
-            // Persist per-placa items (módulos não são mais salvos)
-            accessories: vehicleSchedule.accessories || [],
-            supplies: [] // Não salvar módulos
-          });
-          schedulesCreated++;
         }
+
+        // Get selected kit details to find tracker model
+        let trackerModel = 'Ruptella Smart5'; // Default tracker
+        if (vehicleSchedule.selected_kit_ids && vehicleSchedule.selected_kit_ids.length > 0) {
+          const selectedKit = kits.find(k => vehicleSchedule.selected_kit_ids.includes(k.id!));
+          if (selectedKit?.equipment && selectedKit.equipment.length > 0) {
+            // Use first equipment as tracker
+            trackerModel = selectedKit.equipment[0].item_name;
+          }
+        }
+
+        // Create order in pedidos table (send to esteira)
+        await createOrder({
+          vehicles: [{
+            brand: vehicleSchedule.brand,
+            model: vehicleSchedule.model,
+            quantity: 1,
+            year: vehicleSchedule.year?.toString()
+          }],
+          trackers: [{
+            model: trackerModel,
+            quantity: 1
+          }],
+          accessories: (vehicleSchedule.accessories || []).map(acc => ({
+            name: acc,
+            quantity: 1
+          })),
+          configurationType: vehicleConfiguration || configurationsByVehicle.get(vehicleSchedule.plate) || 'FMS250'
+        });
+        
+        schedulesCreated++;
       }
 
       // Show result toast
       if (schedulesCreated > 0 && schedulesSkipped > 0) {
         toastHook({
-          title: "Agendamentos criados parcialmente",
-          description: `${schedulesCreated} agendamento(s) criado(s) com sucesso. ${schedulesSkipped} veículo(s) ignorado(s) por falta de homologação: ${skippedVehicles.join(', ')}.`,
+          title: "Enviado parcialmente para esteira",
+          description: `${schedulesCreated} veículo(s) enviado(s) para a esteira de pedidos. ${schedulesSkipped} veículo(s) ignorado(s): ${skippedVehicles.join(', ')}.`,
           variant: "default"
         });
       } else if (schedulesCreated > 0) {
         toastHook({
-          title: "Agendamentos criados",
-          description: `${schedulesCreated} agendamento(s) criado(s) com sucesso para ${selectedCustomer.name}.`
+          title: "Enviado para esteira de pedidos",
+          description: `${schedulesCreated} veículo(s) de ${selectedCustomer.name} enviado(s) para a esteira de pedidos.`
         });
       } else if (schedulesSkipped > 0) {
         toastHook({
-          title: "Nenhum agendamento criado",
-          description: `Todos os ${schedulesSkipped} veículo(s) estão aguardando homologação de acessórios/insumos: ${skippedVehicles.join(', ')}.`,
+          title: "Nenhum veículo enviado",
+          description: `Todos os ${schedulesSkipped} veículo(s) precisam ter kit selecionado ou estão aguardando homologação: ${skippedVehicles.join(', ')}.`,
           variant: "destructive"
         });
         setIsSubmitting(false);
@@ -872,8 +855,8 @@ export const ScheduleModal = ({
 
       if (schedulesCreated === 0) {
         toastHook({
-          title: "Nenhum agendamento criado",
-          description: "Preencha pelo menos uma data e técnico para os veículos prontos para criar o agendamento.",
+          title: "Nenhum veículo enviado",
+          description: "Selecione pelo menos um kit para os veículos prontos para enviar à esteira.",
           variant: "destructive"
         });
         setIsSubmitting(false);
@@ -882,10 +865,10 @@ export const ScheduleModal = ({
 
       onSuccess();
     } catch (error) {
-      console.error('Error creating schedule:', error);
+      console.error('Error sending to order pipeline:', error);
       toastHook({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao criar agendamento",
+        description: error instanceof Error ? error.message : "Erro ao enviar para esteira de pedidos",
         variant: "destructive"
       });
     } finally {
@@ -917,7 +900,7 @@ export const ScheduleModal = ({
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Novo Agendamento de Instalação</DialogTitle>
           <DialogDescription>
-            Selecione o cliente, kit, técnico e configure os detalhes da instalação.
+            Selecione o cliente, escolha os kits para cada veículo e envie para a esteira de pedidos.
           </DialogDescription>
         </DialogHeader>
 
@@ -1041,7 +1024,6 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Kit</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Ação</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1476,38 +1458,10 @@ export const ScheduleModal = ({
                                     );
                                   })()}
                                </td>
-                               <td className="px-4 py-3">
-                                 <Button
-                                   size="sm"
-                                   onClick={() => {
-                                     // Prepare vehicle data for the scheduling form modal
-                                     const vehicleData: PendingVehicleData = {
-                                       plate: vehicleSchedule.plate,
-                                       brand: vehicleSchedule.brand,
-                                       model: vehicleSchedule.model,
-                                       year: vehicleSchedule.year,
-                                       accessories: vehicleSchedule.accessories,
-                                       configuration: configurationsByVehicle.get(vehicleSchedule.plate),
-                                       selectedKitIds: vehicleSchedule.selected_kit_ids,
-                                       customerId: selectedCustomer?.id,
-                                       customerName: selectedCustomer?.name,
-                                       customerPhone: selectedCustomer?.phone,
-                                       customerAddress: selectedCustomer ? `${selectedCustomer.address_street}, ${selectedCustomer.address_number} - ${selectedCustomer.address_neighborhood}, ${selectedCustomer.address_city}/${selectedCustomer.address_state}` : ''
-                                     };
-                                     // Open the schedule form modal with vehicle data
-                                     setPendingVehicleData(vehicleData);
-                                     setIsScheduleFormOpen(true);
-                                   }}
-                                   className="flex items-center gap-2"
-                                 >
-                                   <CalendarIcon className="w-4 h-4" />
-                                   Criar Agendamento
-                                 </Button>
-                                </td>
                              </tr>
                               {!vehicleReady && (
                                 <tr>
-                                  <td colSpan={8} className="px-4 py-2">
+                                  <td colSpan={7} className="px-4 py-2">
                                     {(() => {
                                       const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
                                       const vehicleId = vehicleIdMap.get(vehicleKey);
@@ -1593,8 +1547,10 @@ export const ScheduleModal = ({
                         type="button" 
                         onClick={onSubmit} 
                         disabled={isSubmitting || !isButtonEnabled()}
+                        className="flex items-center gap-2"
                       >
-                        {isSubmitting ? "Criando Agendamentos..." : "Criar Agendamentos"}
+                        <Truck className="w-4 h-4" />
+                        {isSubmitting ? "Enviando para esteira..." : "Enviar para esteira de pedidos"}
                       </Button>
                     </DialogFooter>
                   </div>

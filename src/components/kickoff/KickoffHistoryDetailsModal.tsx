@@ -72,6 +72,7 @@ export const KickoffHistoryDetailsModal = ({
                   <TableRow>
                     <TableHead className="min-w-[180px]">Veículo</TableHead>
                     <TableHead className="min-w-[100px]">Placa</TableHead>
+                    <TableHead className="min-w-[120px]">Produto</TableHead>
                     <TableHead className="min-w-[150px]">Módulos Selecionados</TableHead>
                     <TableHead className="min-w-[120px]">Bloqueio</TableHead>
                     <TableHead className="min-w-[80px]">Sirene</TableHead>
@@ -91,6 +92,18 @@ export const KickoffHistoryDetailsModal = ({
                       </TableCell>
                       <TableCell>
                         {vehicle.plate || <span className="text-muted-foreground">Não informada</span>}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {vehicle.usage_type ? 
+                            vehicle.usage_type
+                              .replace(/_/g, ' ')
+                              .toLowerCase()
+                              .split(' ')
+                              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(' ')
+                            : 'Não informado'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {Array.isArray(vehicle.selected_modules) && vehicle.selected_modules.length > 0 ? (
