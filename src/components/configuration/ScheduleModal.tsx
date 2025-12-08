@@ -811,6 +811,7 @@ export const ScheduleModal = ({
 
         // Create order in pedidos table (send to esteira)
         await createOrder({
+          company_name: selectedCustomer.name,
           vehicles: [{
             brand: vehicleSchedule.brand,
             model: vehicleSchedule.model,
