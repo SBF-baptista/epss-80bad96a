@@ -44,7 +44,7 @@ import type { Technician } from '@/services/technicianService';
 import { createHomologationKit, type HomologationKit } from '@/services/homologationKitService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { createKitSchedule, checkScheduleConflict } from '@/services/kitScheduleService';
-import { createOrder } from '@/services/orderCreationService';
+
 import { checkItemHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
@@ -809,24 +809,34 @@ export const ScheduleModal = ({
           }
         }
 
-        // Create order in pedidos table (send to esteira) with status 'novos'
-        await createOrder({
-          vehicles: [{
-            brand: vehicleSchedule.brand,
-            model: vehicleSchedule.model,
-            quantity: 1,
-            year: vehicleSchedule.year?.toString()
-          }],
-          trackers: [{
-            model: trackerModel,
-            quantity: 1
-          }],
-          accessories: (vehicleSchedule.accessories || []).map(acc => ({
-            name: acc,
-            quantity: 1
-          })),
-          configurationType: vehicleConfiguration || configurationsByVehicle.get(vehicleSchedule.plate) || 'FMS250',
-          companyName: selectedCustomer.company_name || selectedCustomer.name
+        // Create kit schedule with status 'scheduled' (appears in Kanban "Pedidos" column)
+        await createKitSchedule({
+          technician_id: vehicleSchedule.technician_ids[0] || technicians[0]?.id || '',
+          scheduled_date: vehicleSchedule.scheduled_date 
+            ? format(vehicleSchedule.scheduled_date, 'yyyy-MM-dd')
+            : format(new Date(), 'yyyy-MM-dd'),
+          installation_time: vehicleSchedule.installation_time || undefined,
+          notes: vehicleSchedule.notes || '',
+          configuration: vehicleConfiguration || configurationsByVehicle.get(vehicleSchedule.plate) || 'FMS250',
+          selected_kit_ids: vehicleSchedule.selected_kit_ids,
+          customer_id: selectedCustomer.id,
+          customer_name: selectedCustomer.company_name || selectedCustomer.name,
+          customer_document_number: selectedCustomer.document_number,
+          customer_phone: selectedCustomer.phone,
+          customer_email: selectedCustomer.email,
+          installation_address_street: selectedCustomer.address_street,
+          installation_address_number: selectedCustomer.address_number,
+          installation_address_neighborhood: selectedCustomer.address_neighborhood,
+          installation_address_city: selectedCustomer.address_city,
+          installation_address_state: selectedCustomer.address_state,
+          installation_address_postal_code: selectedCustomer.address_postal_code,
+          installation_address_complement: selectedCustomer.address_complement || undefined,
+          vehicle_plate: vehicleSchedule.plate,
+          vehicle_brand: vehicleSchedule.brand,
+          vehicle_model: vehicleSchedule.model,
+          vehicle_year: vehicleSchedule.year,
+          accessories: vehicleSchedule.accessories || [],
+          incoming_vehicle_id: incomingVehicleId
         });
         
         schedulesCreated++;
