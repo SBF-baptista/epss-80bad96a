@@ -1,6 +1,6 @@
 
 import { useState, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import HomologationColumn from "./HomologationColumn";
 import HomologationModal from "./HomologationModal";
 import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
@@ -19,8 +19,6 @@ const columns = [
   { id: "em_homologacao", title: "Em Homologação", color: "bg-warning-light border-warning-border" },
   { id: "agendamento_teste", title: "Agendamento de Teste", color: "bg-warning-light border-warning-border" },
   { id: "execucao_teste", title: "Execução de Teste", color: "bg-purple-100 border-purple-200" },
-  { id: "em_testes_finais", title: "Em Testes Finais", color: "bg-primary/10 border-primary/20" },
-  { id: "armazenamento_plataforma", title: "Armazenamento na Plataforma", color: "bg-teal-100 border-teal-200" },
   { id: "homologado", title: "Homologado", color: "bg-success-light border-success-border" }
 ];
 

@@ -503,7 +503,7 @@ export const KickoffDetailsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0" aria-describedby="kickoff-details-desc">
+      <DialogContent className="max-w-[95vw] xl:max-w-[90vw] 2xl:max-w-[85vw] h-[90vh] flex flex-col p-0" aria-describedby="kickoff-details-desc">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
         </DialogHeader>

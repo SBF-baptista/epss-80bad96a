@@ -742,7 +742,7 @@ export const KickoffVehiclesTable = ({
 
       {/* Desktop Table Layout */}
       <div className="hidden lg:block rounded-md border overflow-x-auto">
-        <Table className="min-w-[1400px]">
+        <Table className="min-w-[1200px]">
           <TableHeader>
             <TableRow>
               <TableHead className="whitespace-nowrap border-r border-border min-w-[100px]">Placa</TableHead>
@@ -754,8 +754,7 @@ export const KickoffVehiclesTable = ({
               <TableHead className="whitespace-nowrap border-r border-border min-w-[150px]">Acessórios</TableHead>
               <TableHead className="whitespace-nowrap border-r border-border min-w-[180px]">Bloqueio</TableHead>
               <TableHead className="whitespace-nowrap border-r border-border min-w-[150px]">Sirene</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[60px]">Editar</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[140px]">FIPE</TableHead>
+              <TableHead className="whitespace-nowrap border-r border-border min-w-[180px]">FIPE</TableHead>
               <TableHead className="whitespace-nowrap min-w-[100px]">Validação</TableHead>
             </TableRow>
           </TableHeader>
@@ -920,19 +919,7 @@ export const KickoffVehiclesTable = ({
                     </div>
                   </TableCell>
                   <TableCell className="border-r border-border">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEditClick(vehicle)}
-                      title="Editar marca, modelo e ano"
-                      disabled={isPlateValidated}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                  <TableCell className="border-r border-border">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       {isVehicleInvalid(vehicle) ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -972,6 +959,16 @@ export const KickoffVehiclesTable = ({
                           </Badge>
                         </div>
                       )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditClick(vehicle)}
+                        title="Editar marca, modelo e ano"
+                        disabled={isPlateValidated}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                   <TableCell>

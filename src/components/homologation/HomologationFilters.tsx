@@ -94,8 +94,7 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
   const hasActiveFilters = filters.brand || filters.year || filters.searchText || filters.category;
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border mb-4">
-      <div className="flex flex-col space-y-4">
+    <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -371,7 +370,6 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
           </div>
         )}
       </div>
-    </div>
   );
 };
 
