@@ -114,9 +114,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   };
 
   return (
-    <div className="bg-white p-3 md:p-4 lg:p-6 rounded-lg shadow-sm border">
-      <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Criar Nova Homologação</h2>
-      <div className="space-y-4">
+    <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -382,7 +380,6 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
           </Button>
         </div>
       </div>
-    </div>
   );
 };
 
