@@ -257,11 +257,11 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
           {/* Container do Kanban com scroll horizontal apenas */}
           <div 
             ref={scrollContainerRef}
-            className="w-full overflow-x-auto no-scrollbar homologation-kanban-scroll"
+            className="w-full overflow-x-auto no-scrollbar homologation-kanban-scroll px-2 sm:px-4 lg:px-8"
             onScroll={handleScroll}
             style={{ scrollBehavior: 'smooth' }}
           >
-            <div className="flex gap-2 sm:gap-4 lg:gap-6 pb-4" style={{ minWidth: 'max-content' }}>
+            <div className="flex gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pb-4" style={{ minWidth: 'max-content' }}>
               {columns.map(column => (
                 <HomologationColumn
                   key={column.id}

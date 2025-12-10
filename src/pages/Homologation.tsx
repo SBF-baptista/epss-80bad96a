@@ -80,7 +80,7 @@ const Homologation = () => {
   return (
     <HomologationErrorBoundary>
       <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">
-        <div className="w-full max-w-[1600px] mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
+        <div className="w-full max-w-[1920px] mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <HomologationHeader />
             
@@ -91,7 +91,7 @@ const Homologation = () => {
                   Criar nova homologação
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Nova Homologação</DialogTitle>
                 </DialogHeader>
