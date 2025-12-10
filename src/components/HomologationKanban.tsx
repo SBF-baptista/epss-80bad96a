@@ -219,89 +219,25 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
 
   return (
     <HomologationErrorBoundary>
-      <div className="w-full relative">
-        {/* Botões de navegação lateral */}
-        <div className="relative">
-          {/* Botão de navegação esquerda */}
-          <Button
-            variant="outline"
-            size="icon"
-            className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
-              canNavigateLeft 
-                ? 'opacity-100' 
-                : 'opacity-40 cursor-not-allowed'
-            }`}
-            onClick={navigateLeft}
-            disabled={!canNavigateLeft}
-            aria-label="Navegar para a esquerda"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          {/* Botão de navegação direita */}
-          <Button
-            variant="outline"
-            size="icon"
-            className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
-              canNavigateRight 
-                ? 'opacity-100' 
-                : 'opacity-40 cursor-not-allowed'
-            }`}
-            onClick={navigateRight}
-            disabled={!canNavigateRight}
-            aria-label="Navegar para a direita"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-
-          {/* Container do Kanban com scroll horizontal apenas */}
-          <div 
-            ref={scrollContainerRef}
-            className="w-full overflow-x-auto no-scrollbar homologation-kanban-scroll px-2 sm:px-4 lg:px-8"
-            onScroll={handleScroll}
-            style={{ scrollBehavior: 'smooth' }}
-          >
-            <div className="flex gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pb-4" style={{ minWidth: 'max-content' }}>
-              {columns.map(column => (
-                <HomologationColumn
-                  key={column.id}
-                  title={column.title}
-                  cards={getCardsByStatus(column.id)}
-                  color={column.color}
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(column.id)}
-                  onCardClick={handleCardClick}
-                  onDragStart={handleDragStart}
-                  onUpdate={handleUpdate}
-                  isUpdating={isUpdating}
-                />
-              ))}
-            </div>
+      <div className="w-full">
+        {/* Container do Kanban - todas as colunas visíveis */}
+        <div className="w-full px-2">
+          <div className="grid grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+            {columns.map(column => (
+              <HomologationColumn
+                key={column.id}
+                title={column.title}
+                cards={getCardsByStatus(column.id)}
+                color={column.color}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(column.id)}
+                onCardClick={handleCardClick}
+                onDragStart={handleDragStart}
+                onUpdate={handleUpdate}
+                isUpdating={isUpdating}
+              />
+            ))}
           </div>
-        </div>
-
-        {/* Indicadores de navegação */}
-        <div className="flex justify-center mt-4 gap-2">
-          {columns.map((column, index) => (
-            <button
-              key={index}
-              onClick={() => scrollToColumn(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-110 ${
-                index === activeScrollIndex 
-                  ? "bg-primary w-6 shadow-md" 
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-              }`}
-              title={column.title}
-              aria-label={`Navegar para ${column.title}`}
-            />
-          ))}
-        </div>
-
-        {/* Dica de navegação */}
-        <div className="text-center mt-2">
-          <p className="text-xs text-muted-foreground">
-            Use as setas laterais ou clique nos indicadores para navegar
-          </p>
         </div>
       </div>
 
