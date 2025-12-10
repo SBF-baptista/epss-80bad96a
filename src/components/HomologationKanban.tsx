@@ -257,11 +257,11 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
           {/* Container do Kanban */}
           <div 
             ref={scrollContainerRef}
-            className="w-full overflow-x-auto no-scrollbar homologation-kanban-scroll"
+            className="overflow-x-auto no-scrollbar homologation-kanban-scroll"
             onScroll={handleScroll}
-            style={{ scrollBehavior: 'smooth' }}
+            style={{ scrollBehavior: 'smooth', width: 'fit-content', maxWidth: '100%' }}
           >
-            <div className="flex gap-4 pb-4 w-full">
+            <div className="flex gap-3 pb-4" style={{ width: 'fit-content' }}>
               {columns.map(column => (
                 <HomologationColumn
                   key={column.id}
