@@ -261,7 +261,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
             onScroll={handleScroll}
             style={{ scrollBehavior: 'smooth' }}
           >
-            <div className="flex gap-3 pb-4 w-full min-w-max">
+            <div className="flex gap-4 pb-4 w-full">
               {columns.map(column => (
                 <HomologationColumn
                   key={column.id}
