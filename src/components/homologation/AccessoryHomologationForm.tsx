@@ -19,7 +19,11 @@ const accessoryFormSchema = z.object({
 
 type AccessoryFormData = z.infer<typeof accessoryFormSchema>;
 
-export const AccessoryHomologationForm = () => {
+interface AccessoryHomologationFormProps {
+  onSuccess?: () => void;
+}
+
+export const AccessoryHomologationForm = ({ onSuccess }: AccessoryHomologationFormProps = {}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,8 +68,9 @@ export const AccessoryHomologationForm = () => {
         description: "Acessório homologado cadastrado com sucesso.",
       });
 
-      // Reset form
+      // Reset form and call onSuccess
       form.reset();
+      onSuccess?.();
     } catch (error) {
       console.error('Error creating accessory:', error);
       toast({

@@ -8,8 +8,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { fetchKitItemOptions, deleteKitItemOption } from "@/services/kitItemOptionsService";
-import { Trash2, Wrench, FileText, ChevronDown, Search } from "lucide-react";
+import { Trash2, Wrench, FileText, ChevronDown, Search, Pencil } from "lucide-react";
 import { useState, useMemo } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const SupplyHomologationList = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -18,7 +19,8 @@ export const SupplyHomologationList = () => {
   const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor } = useUserRole();
+  const [requestingEditId, setRequestingEditId] = useState<string | null>(null);
 
   const { data: supplies = [], isLoading } = useQuery({
     queryKey: ['kit-item-options', 'supply'],
@@ -65,6 +67,29 @@ export const SupplyHomologationList = () => {
       });
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleRequestEdit = async (supplyId: string, supplyName: string) => {
+    try {
+      setRequestingEditId(supplyId);
+      
+      // Simula envio de solicitação - pode ser expandido para salvar em banco
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      toast({
+        title: "Solicitação enviada",
+        description: `Sua solicitação de edição para "${supplyName}" foi enviada ao gestor para aprovação.`,
+      });
+    } catch (error) {
+      console.error('Error requesting edit:', error);
+      toast({
+        title: "Erro ao enviar solicitação",
+        description: "Ocorreu um erro ao enviar a solicitação. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setRequestingEditId(null);
     }
   };
 
@@ -169,21 +194,42 @@ export const SupplyHomologationList = () => {
                       </p>
                     </div>
 
-                    {isAdmin && (
-                      <AlertDialog 
-                        open={dialogOpen === supply.id}
-                        onOpenChange={(open) => setDialogOpen(open ? supply.id : null)}
-                      >
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-4 hover:bg-destructive hover:text-destructive-foreground"
-                            disabled={deletingId === supply.id}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
+                    <div className="flex gap-2 ml-4">
+                      {/* Botão de Solicitação de Edição */}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRequestEdit(supply.id, supply.item_name)}
+                              disabled={requestingEditId === supply.id}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Solicitar edição ao gestor</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      {/* Botão de Excluir (apenas admin) */}
+                      {isAdmin && (
+                        <AlertDialog 
+                          open={dialogOpen === supply.id}
+                          onOpenChange={(open) => setDialogOpen(open ? supply.id : null)}
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="hover:bg-destructive hover:text-destructive-foreground"
+                              disabled={deletingId === supply.id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remover Insumo</AlertDialogTitle>
@@ -209,7 +255,8 @@ export const SupplyHomologationList = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

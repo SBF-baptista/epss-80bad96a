@@ -19,7 +19,11 @@ const supplyFormSchema = z.object({
 
 type SupplyFormData = z.infer<typeof supplyFormSchema>;
 
-export const SupplyHomologationForm = () => {
+interface SupplyHomologationFormProps {
+  onSuccess?: () => void;
+}
+
+export const SupplyHomologationForm = ({ onSuccess }: SupplyHomologationFormProps = {}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,8 +68,9 @@ export const SupplyHomologationForm = () => {
         description: "Insumo homologado cadastrado com sucesso.",
       });
 
-      // Reset form
+      // Reset form and call onSuccess
       form.reset();
+      onSuccess?.();
     } catch (error) {
       console.error('Error creating supply:', error);
       toast({

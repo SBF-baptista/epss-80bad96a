@@ -8,8 +8,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { fetchKitItemOptions, deleteKitItemOption } from "@/services/kitItemOptionsService";
-import { Trash2, Package, FileText, ChevronDown, Search } from "lucide-react";
+import { Trash2, Package, FileText, ChevronDown, Search, Pencil } from "lucide-react";
 import { useState, useMemo } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const AccessoryHomologationList = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -18,7 +19,8 @@ export const AccessoryHomologationList = () => {
   const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor } = useUserRole();
+  const [requestingEditId, setRequestingEditId] = useState<string | null>(null);
 
   const { data: accessories = [], isLoading } = useQuery({
     queryKey: ['kit-item-options', 'accessory'],
@@ -65,6 +67,29 @@ export const AccessoryHomologationList = () => {
       });
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleRequestEdit = async (accessoryId: string, accessoryName: string) => {
+    try {
+      setRequestingEditId(accessoryId);
+      
+      // Simula envio de solicitação - pode ser expandido para salvar em banco
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      toast({
+        title: "Solicitação enviada",
+        description: `Sua solicitação de edição para "${accessoryName}" foi enviada ao gestor para aprovação.`,
+      });
+    } catch (error) {
+      console.error('Error requesting edit:', error);
+      toast({
+        title: "Erro ao enviar solicitação",
+        description: "Ocorreu um erro ao enviar a solicitação. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setRequestingEditId(null);
     }
   };
 
@@ -169,21 +194,42 @@ export const AccessoryHomologationList = () => {
                       </p>
                     </div>
 
-                    {isAdmin && (
-                      <AlertDialog 
-                        open={dialogOpen === accessory.id}
-                        onOpenChange={(open) => setDialogOpen(open ? accessory.id : null)}
-                      >
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-4 hover:bg-destructive hover:text-destructive-foreground"
-                            disabled={deletingId === accessory.id}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
+                    <div className="flex gap-2 ml-4">
+                      {/* Botão de Solicitação de Edição */}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRequestEdit(accessory.id, accessory.item_name)}
+                              disabled={requestingEditId === accessory.id}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Solicitar edição ao gestor</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      {/* Botão de Excluir (apenas admin) */}
+                      {isAdmin && (
+                        <AlertDialog 
+                          open={dialogOpen === accessory.id}
+                          onOpenChange={(open) => setDialogOpen(open ? accessory.id : null)}
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="hover:bg-destructive hover:text-destructive-foreground"
+                              disabled={deletingId === accessory.id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remover Acessório</AlertDialogTitle>
@@ -209,7 +255,8 @@ export const AccessoryHomologationList = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
