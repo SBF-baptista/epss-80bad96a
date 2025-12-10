@@ -61,7 +61,7 @@ const HomologationColumn = ({
 
   return (
     <div 
-      className={`flex-shrink-0 w-72 sm:w-80 lg:w-96 ${color} border rounded-lg p-2 sm:p-3 lg:p-4 relative flex flex-col`}
+      className={`flex-shrink-0 w-80 sm:w-[340px] lg:w-[380px] xl:w-[420px] 2xl:w-[460px] ${color} border rounded-lg p-2 sm:p-3 lg:p-4 relative flex flex-col`}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
