@@ -33,7 +33,7 @@ const HomologationColumn = ({
   if (isCollapsed) {
     return (
       <div 
-        className={`flex-shrink-0 w-12 ${color} border rounded-lg p-2 relative flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity`}
+        className={`w-full min-w-0 h-12 ${color} border rounded-lg p-2 relative flex items-center justify-center gap-2 cursor-pointer hover:opacity-80 transition-opacity`}
         onClick={() => setIsCollapsed(false)}
         onDragOver={onDragOver}
         onDrop={onDrop}
@@ -41,7 +41,7 @@ const HomologationColumn = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 mb-2"
+          className="h-6 w-6"
           onClick={(e) => {
             e.stopPropagation();
             setIsCollapsed(false);
@@ -49,19 +49,19 @@ const HomologationColumn = ({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
-        <span className="bg-card text-muted-foreground px-2 py-1 rounded-full text-xs font-medium">
+        <span className="text-xs font-semibold text-foreground truncate">
+          {title}
+        </span>
+        <span className="bg-card text-muted-foreground px-2 py-1 rounded-full text-xs font-medium flex-shrink-0">
           {cards.length}
         </span>
-        <div className="writing-mode-vertical text-xs font-semibold text-foreground mt-2 whitespace-nowrap" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-          {title}
-        </div>
       </div>
     );
   }
 
   return (
     <div 
-      className={`flex-shrink-0 w-80 sm:w-[340px] lg:w-[380px] xl:w-[420px] 2xl:w-[460px] ${color} border rounded-lg p-2 sm:p-3 lg:p-4 relative flex flex-col`}
+      className={`w-full min-w-0 ${color} border rounded-lg p-2 sm:p-3 lg:p-4 relative flex flex-col`}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
