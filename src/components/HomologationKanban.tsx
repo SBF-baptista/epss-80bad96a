@@ -219,14 +219,14 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
 
   return (
     <HomologationErrorBoundary>
-      <div className="w-full relative min-h-[500px]">
+      <div className="w-full relative">
         {/* Botões de navegação lateral */}
-        <div className="relative w-full">
+        <div className="relative">
           {/* Botão de navegação esquerda */}
           <Button
             variant="outline"
             size="icon"
-            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
               canNavigateLeft 
                 ? 'opacity-100' 
                 : 'opacity-40 cursor-not-allowed'
@@ -242,7 +242,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
           <Button
             variant="outline"
             size="icon"
-            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 kanban-nav-button ${
               canNavigateRight 
                 ? 'opacity-100' 
                 : 'opacity-40 cursor-not-allowed'
@@ -254,14 +254,14 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
             <ChevronRight className="h-4 w-4" />
           </Button>
 
-          {/* Container do Kanban com scroll horizontal */}
+          {/* Container do Kanban com scroll horizontal apenas */}
           <div 
             ref={scrollContainerRef}
-            className="w-full overflow-x-auto no-scrollbar homologation-kanban-scroll px-8 sm:px-10 lg:px-12"
+            className="w-full overflow-x-auto no-scrollbar homologation-kanban-scroll px-2 sm:px-4 lg:px-8"
             onScroll={handleScroll}
             style={{ scrollBehavior: 'smooth' }}
           >
-            <div className="flex gap-4 pb-4" style={{ minWidth: 'max-content' }}>
+            <div className="flex gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pb-4" style={{ minWidth: 'max-content' }}>
               {columns.map(column => (
                 <HomologationColumn
                   key={column.id}

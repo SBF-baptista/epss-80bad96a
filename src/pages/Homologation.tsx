@@ -79,8 +79,8 @@ const Homologation = () => {
 
   return (
     <HomologationErrorBoundary>
-      <div className="min-h-screen bg-gray-50 px-2 sm:px-4 lg:px-6">
-        <div className="w-full mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
+      <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">
+        <div className="w-full max-w-[1920px] mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <HomologationHeader />
             
