@@ -171,7 +171,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         </Button>
       </div>
 
-      <div className="space-y-2 max-h-40 overflow-y-auto">
+      <div className="space-y-2 max-h-52 overflow-y-auto">
         {items.map((item, index) => {
           const itemKey = `${type}-${index}`;
           const isNonHomologated = nonHomologatedItems.has(itemKey);
@@ -236,7 +236,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="w-5 h-5" />
@@ -245,7 +245,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex-1 space-y-6 overflow-y-auto pr-2">
+          <div className="flex-1 space-y-6 overflow-y-auto pr-2 pb-4">
             {/* Basic Info */}
             <div className="space-y-4">
               <div className="space-y-2">
