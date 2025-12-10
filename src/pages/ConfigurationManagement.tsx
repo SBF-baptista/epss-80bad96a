@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Search, Filter } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -175,15 +175,17 @@ const ConfigurationManagement = () => {
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-4 sm:mb-6">
-          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-4">
-            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-              <Filter className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-              <span className="truncate">Filtros e Busca</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
+      </div>
+
+      {/* Rules Table - Fixed height with internal scroll */}
+      <div className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden">
+        <Card className="h-full flex flex-col">
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-4 flex-none space-y-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm sm:text-base">Regras de Automação ({filteredRules.length})</CardTitle>
+            </div>
+            
+            {/* Filters */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
               <div className="relative sm:col-span-2">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -240,15 +242,6 @@ const ConfigurationManagement = () => {
                 Limpar Filtros
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Rules Table - Fixed height with internal scroll */}
-      <div className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden">
-        <Card className="h-full flex flex-col">
-          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-4 flex-none">
-            <CardTitle className="text-sm sm:text-base">Regras de Automação ({filteredRules.length})</CardTitle>
           </CardHeader>
           <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4 flex-1 overflow-hidden">
             {isLoading ? (
