@@ -347,7 +347,30 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             <Label className="block text-sm font-medium text-gray-700 mb-3">
               Como deseja prosseguir? *
             </Label>
-...
+            <RadioGroup
+              value={nextStep}
+              onValueChange={(value: "queue" | "execute") => setNextStep(value)}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            >
+              <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="queue" id="queue" className="mt-0.5" />
+                <Label htmlFor="queue" className="cursor-pointer flex-1">
+                  <span className="font-medium block">Adicionar à fila</span>
+                  <span className="text-sm text-muted-foreground">
+                    O card será adicionado à fila de homologação para revisão
+                  </span>
+                </Label>
+              </div>
+              <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="execute" id="execute" className="mt-0.5" />
+                <Label htmlFor="execute" className="cursor-pointer flex-1">
+                  <span className="font-medium block">Executar agora</span>
+                  <span className="text-sm text-muted-foreground">
+                    O card será movido diretamente para execução de testes
+                  </span>
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
         )}
         
