@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
-import { AccessoryHomologationForm, AccessoryHomologationList } from "@/components/homologation";
-import { SupplyHomologationForm } from "@/components/homologation/SupplyHomologationForm";
+import { AccessoryHomologationList } from "@/components/homologation";
 import { SupplyHomologationList } from "@/components/homologation/SupplyHomologationList";
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
@@ -87,13 +86,11 @@ const AccessorySupplyHomologation = () => {
             
             <TabsContent value="accessories" className="space-y-6 mt-6">
               <PendingAccessoriesSection />
-              <AccessoryHomologationForm />
               <AccessoryHomologationList />
             </TabsContent>
             
             <TabsContent value="supplies" className="space-y-6 mt-6">
               <PendingSuppliesSection />
-              <SupplyHomologationForm />
               <SupplyHomologationList />
             </TabsContent>
           </Tabs>

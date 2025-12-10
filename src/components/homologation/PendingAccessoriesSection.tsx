@@ -111,21 +111,45 @@ export const PendingAccessoriesSection = () => {
 
   if (accessories.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
-            <Package className="h-5 w-5 text-green-500" />
-            Acessórios Pendentes de Homologação
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-green-500" />
-            <p className="text-lg font-medium mb-2">Todos os acessórios homologados!</p>
-            <p className="text-sm">Não há acessórios pendentes de homologação nos kits cadastrados.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <>
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
+                <Package className="h-5 w-5 text-green-500" />
+                Acessórios Pendentes de Homologação
+              </CardTitle>
+              <Button
+                onClick={() => setIsFormModalOpen(true)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Cadastrar Acessório
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-muted-foreground">
+              <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-green-500" />
+              <p className="text-lg font-medium mb-2">Todos os acessórios homologados!</p>
+              <p className="text-sm">Não há acessórios pendentes de homologação nos kits cadastrados.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Modal para cadastrar novo acessório */}
+        <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Cadastrar Novo Acessório
+              </DialogTitle>
+            </DialogHeader>
+            <AccessoryHomologationForm onSuccess={() => setIsFormModalOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -264,7 +288,7 @@ export const PendingAccessoriesSection = () => {
                 className="bg-primary hover:bg-primary/90"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Novo Acessório
+                Cadastrar Acessório
               </Button>
             </div>
           </CardContent>
