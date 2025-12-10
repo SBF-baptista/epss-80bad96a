@@ -2,15 +2,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchPendingHomologationItems, type PendingItem } from "@/services/pendingHomologationService";
-import { AlertTriangle, Wrench, ChevronDown, Clock, Cog, CheckCircle } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Clock, Cog, CheckCircle, Plus } from "lucide-react";
 import { useState } from "react";
+import { SupplyHomologationForm } from "./SupplyHomologationForm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export const PendingSuppliesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [approvingItems, setApprovingItems] = useState<Set<string>>(new Set());
@@ -246,18 +249,38 @@ export const PendingSuppliesSection = () => {
               ))}
             </div>
 
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-start gap-2">
                 <Cog className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium">Como homologar:</p>
-                  <p>Clique no botão "Homologar" ao lado de cada item ou use o formulário acima para cadastrar estes insumos como homologados. Depois que forem homologados, os kits correspondentes ficarão disponíveis para distribuição.</p>
+                  <p>Clique no botão "Homologar" ao lado de cada item ou cadastre um novo insumo.</p>
                 </div>
               </div>
+              <Button
+                onClick={() => setIsFormModalOpen(true)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Cadastrar Novo Insumo
+              </Button>
             </div>
           </CardContent>
         </CollapsibleContent>
       </Card>
+
+      {/* Modal para cadastrar novo insumo */}
+      <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              Cadastrar Novo Insumo
+            </DialogTitle>
+          </DialogHeader>
+          <SupplyHomologationForm onSuccess={() => setIsFormModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </Collapsible>
   );
 };

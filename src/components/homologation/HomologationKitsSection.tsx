@@ -32,6 +32,7 @@ import { SelectOrCreateInput } from '@/components/kit-items';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { supabase } from '@/integrations/supabase/client';
 import KitImportModal from './KitImportModal';
+import { KitCreationModal } from '@/components/configuration/KitCreationModal';
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
@@ -65,6 +66,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isKitModalOpen, setIsKitModalOpen] = useState(false);
 
   // Load kits on component mount
   useEffect(() => {
@@ -563,7 +565,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                     <FileUp className="h-4 w-4 mr-2" />
                     Importar TXT
                   </Button>
-                  <Button onClick={() => setIsCreating(true)} className="shrink-0">
+                  <Button onClick={() => setIsKitModalOpen(true)} className="shrink-0">
                     <Plus className="h-4 w-4 mr-2" />
                     Novo Kit
                   </Button>
@@ -969,6 +971,16 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
         onOpenChange={setIsImportModalOpen}
         onKitsImported={loadKits}
         homologationCardId={homologationCardId}
+      />
+
+      {/* Kit Creation Modal */}
+      <KitCreationModal
+        isOpen={isKitModalOpen}
+        onClose={() => setIsKitModalOpen(false)}
+        onSuccess={() => {
+          loadKits();
+          setIsKitModalOpen(false);
+        }}
       />
     </Card>
   );
