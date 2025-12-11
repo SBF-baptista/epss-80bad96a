@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, CalendarCheck, Truck } from 'lucide-react';
+import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, Truck } from 'lucide-react';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
@@ -14,7 +12,6 @@ import type { HomologationStatus } from '@/services/kitHomologationService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
-import { RescheduleModal } from '../customer-tracking/RescheduleModal';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SchedulingSectionProps {
@@ -23,6 +20,7 @@ interface SchedulingSectionProps {
   schedules: KitScheduleWithDetails[];
   homologationStatuses: Map<string, HomologationStatus>;
   onRefresh: () => void;
+  isCompletedView?: boolean;
 }
 
 export const SchedulingSection = ({
@@ -30,17 +28,16 @@ export const SchedulingSection = ({
   technicians,
   schedules,
   homologationStatuses,
-  onRefresh
+  onRefresh,
+  isCompletedView = false
 }: SchedulingSectionProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
 
   useEffect(() => {
     loadCustomers();
@@ -100,13 +97,6 @@ export const SchedulingSection = ({
     setIsScheduleModalOpen(true);
   };
 
-  const handleRescheduleCustomer = (customer: Customer, schedule: any) => {
-    console.log('Rescheduling for customer:', customer.id, customer.name);
-    setSelectedCustomer(customer);
-    setSelectedSchedule(schedule);
-    setIsRescheduleModalOpen(true);
-  };
-
   const getCustomerSchedules = (customerId: string) => {
     return schedules.filter(schedule => schedule.customer_id === customerId);
   };
@@ -126,19 +116,12 @@ export const SchedulingSection = ({
 
   return (
     <div className="h-full space-y-4">
-      {/* Header */}
+      {/* Header - Only show search */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div>
-          <h3 className="text-lg font-semibold">Agendamento de Instalações</h3>
-          <p className="text-sm text-muted-foreground">
-            Vincule kits homologados aos clientes e agende instalações
-          </p>
-        </div>
-        
         <div className="relative w-full sm:w-auto sm:min-w-[300px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder="Buscar cliente por nome, documento ou email..."
+            placeholder="Buscar por nome, documento ou email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -152,8 +135,8 @@ export const SchedulingSection = ({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total de Clientes</p>
-                <p className="text-2xl font-bold">{customers.length}</p>
+                <p className="text-sm text-muted-foreground">Total de Veículos</p>
+                <p className="text-2xl font-bold">{customers.reduce((acc, c) => acc + (c.vehicles?.length || 0), 0)}</p>
                 <button 
                   onClick={loadCustomers}
                   className="text-xs text-blue-600 hover:underline mt-1"
@@ -161,7 +144,7 @@ export const SchedulingSection = ({
                   Atualizar
                 </button>
               </div>
-              <User className="w-8 h-8 text-primary" />
+              <Truck className="w-8 h-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -182,7 +165,7 @@ export const SchedulingSection = ({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Agendamentos Ativos</p>
+                <p className="text-sm text-muted-foreground">Aguardando Envio</p>
                 <p className="text-2xl font-bold">
                   {schedules.filter(s => ['scheduled', 'in_progress'].includes(s.status)).length}
                 </p>
@@ -196,7 +179,7 @@ export const SchedulingSection = ({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Instalações Completas</p>
+                <p className="text-sm text-muted-foreground">Enviados para Esteira</p>
                 <p className="text-2xl font-bold">
                   {schedules.filter(s => s.status === 'completed').length}
                 </p>
@@ -211,7 +194,7 @@ export const SchedulingSection = ({
       <div className="flex-1 overflow-hidden">
         <Card className="h-full">
           <CardHeader>
-            <CardTitle>Clientes Cadastrados</CardTitle>
+            <CardTitle>{isCompletedView ? 'Veículos Enviados para Esteira' : 'Veículos'}</CardTitle>
           </CardHeader>
           <CardContent className="p-4 h-full overflow-auto max-h-[calc(100vh-400px)]">
             {isLoading ? (
@@ -222,13 +205,13 @@ export const SchedulingSection = ({
               <div className="text-center py-8">
                 <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                  {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+                  {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum veículo cadastrado'}
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm ? 'Tente ajustar os termos de busca.' : 'Nenhum cliente encontrado.'}
+                  {searchTerm ? 'Tente ajustar os termos de busca.' : 'Nenhum veículo encontrado.'}
                 </p>
                 <Button onClick={loadCustomers} variant="outline">
-                  Recarregar Clientes
+                  Recarregar
                 </Button>
               </div>
             ) : (
@@ -241,6 +224,9 @@ export const SchedulingSection = ({
                   const completedSchedules = customerSchedules.filter(s => 
                     s.status === 'completed'
                   );
+
+                  // Check if vehicle has accessories
+                  const hasAccessories = customer.accessories && customer.accessories.length > 0;
 
                   return (
                     <Card key={customer.id} className="hover:shadow-md transition-shadow">
@@ -315,44 +301,38 @@ export const SchedulingSection = ({
                             {completedSchedules.length > 0 && (
                               <div className="bg-green-50 border border-green-200 p-2 rounded-md">
                                 <p className="text-xs font-semibold text-green-800">
-                                  {completedSchedules.length} instalação(ões) concluída(s)
+                                  {completedSchedules.length} veículo(s) enviado(s) para esteira
                                 </p>
                               </div>
                             )}
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="space-y-2">
-                            {/* Show "New Schedule" button for customers with pending vehicles or no schedules */}
-                            {(() => {
-                              const scheduledPlates = activeSchedules.map(s => s.vehicle_plate);
-                              const hasUnscheduledVehicles = customer.vehicles?.some(v => !scheduledPlates.includes(v.plate));
-                              
-                              return hasUnscheduledVehicles || activeSchedules.length === 0 ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleScheduleCustomer(customer)}
-                                  className="w-full"
-                                >
-                                  <Plus className="w-4 h-4 mr-2" />
-                                  Novo Agendamento de Instalação
-                                </Button>
-                              ) : null;
-                            })()}
-                            
-                            {activeSchedules.length > 0 && (
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={() => handleRescheduleCustomer(customer, activeSchedules[0])}
-                                className="w-full"
-                              >
-                                <CalendarCheck className="w-4 h-4 mr-2" />
-                                Reagendar Instalação
-                              </Button>
-                            )}
-                          </div>
+                          {/* Action Buttons - Only show in non-completed view */}
+                          {!isCompletedView && (
+                            <div className="space-y-2">
+                              {/* Check if vehicle has accessories before showing button */}
+                              {!hasAccessories ? (
+                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                                  Veículo sem acessórios vinculados. Vincule acessórios para prosseguir.
+                                </div>
+                              ) : (() => {
+                                const scheduledPlates = activeSchedules.map(s => s.vehicle_plate);
+                                const hasUnscheduledVehicles = customer.vehicles?.some(v => !scheduledPlates.includes(v.plate));
+                                
+                                return hasUnscheduledVehicles || activeSchedules.length === 0 ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleScheduleCustomer(customer)}
+                                    className="w-full"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Enviar para esteira de pedidos
+                                  </Button>
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -386,26 +366,6 @@ export const SchedulingSection = ({
           loadCustomers();
         }}
       />
-
-      {/* Reschedule Modal */}
-      {selectedSchedule && (
-        <RescheduleModal
-          schedule={{
-            ...selectedSchedule,
-            customer_id: selectedCustomer?.id
-          }}
-          isOpen={isRescheduleModalOpen}
-          onClose={() => {
-            setIsRescheduleModalOpen(false);
-            setSelectedSchedule(null);
-            setSelectedCustomer(null);
-          }}
-          onUpdate={() => {
-            onRefresh();
-            loadCustomers();
-          }}
-        />
-      )}
     </div>
   );
 };

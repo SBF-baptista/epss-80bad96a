@@ -142,7 +142,7 @@ function App() {
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/planning/agendamento" element={
+              <Route path="/scheduling" element={
                 <ProtectedRoute>
                   <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
                     <Layout>

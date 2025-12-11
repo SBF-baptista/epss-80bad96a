@@ -1032,6 +1032,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Produto</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Kit</th>
@@ -1069,6 +1070,23 @@ export const ScheduleModal = ({
                                 <Badge variant="secondary">{vehicleSchedule.plate}</Badge>
                               </td>
                               <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
+                              <td className="px-4 py-3">
+                                {(() => {
+                                  // Get the tracker/product from selected kit
+                                  const selectedKitIds = vehicleSchedule.selected_kit_ids || [];
+                                  const selectedKit = kits.find(k => selectedKitIds.includes(k.id!));
+                                  const trackerModel = selectedKit?.equipment?.[0]?.item_name || 'Não definido';
+                                  
+                                  return (
+                                    <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg min-w-[120px]">
+                                      <div className="flex items-center gap-2">
+                                        <Cpu className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                        <span className="text-xs text-blue-900 font-medium">{trackerModel}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
                                <td className="px-4 py-3">
                                  {(() => {
                                    const vehicleConfiguration = configurationsByVehicle.get(vehicleSchedule.plate);
