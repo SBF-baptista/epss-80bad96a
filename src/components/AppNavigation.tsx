@@ -331,28 +331,6 @@ export function AppNavigation() {
                   );
                 })}
 
-              {/* Item: Agendamento - Separate from Planning */}
-              {canAccessGroup(navigationGroups.scheduling.roles) && navigationGroups.scheduling.items
-                .filter(item => canAccessItem(item.roles))
-                .map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <SidebarMenuItem key={item.to}>
-                      <SidebarMenuButton 
-                        asChild 
-                        isActive={isActive(item.to)}
-                        tooltip={isCollapsed ? item.label : undefined}
-                        className="touch-manipulation tap-target"
-                      >
-                        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                          <Icon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-
               {/* Grupo Esteira de Pedidos */}
               {canAccessGroup(navigationGroups.orders.roles) && (
                 <SidebarMenuItem>
@@ -402,6 +380,28 @@ export function AppNavigation() {
                   </Collapsible>
                 </SidebarMenuItem>
               )}
+
+              {/* Item: Agendamento - Abaixo de Esteira de Pedidos */}
+              {canAccessGroup(navigationGroups.scheduling.roles) && navigationGroups.scheduling.items
+                .filter(item => canAccessItem(item.roles))
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(item.to)}
+                        tooltip={isCollapsed ? item.label : undefined}
+                        className="touch-manipulation tap-target"
+                      >
+                        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                          <Icon className="h-4 w-4 flex-shrink-0" />
+                          {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
 
               {/* Item: Acompanhamento de Clientes */}
               {singleNavigationItems
