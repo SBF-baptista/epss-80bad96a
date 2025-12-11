@@ -108,12 +108,6 @@ export const SchedulingSection = ({
     });
   };
 
-  // Helper to check if a customer has at least one vehicle with accessories
-  const customerHasVehiclesWithAccessories = (customer: Customer) => {
-    // If customer has accessories array populated, they have accessories
-    return customer.accessories && customer.accessories.length > 0;
-  };
-
   // Filter customers: for pending view, only show those with at least one vehicle with accessories
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,8 +119,8 @@ export const SchedulingSection = ({
     // For completed view, show all customers that match search
     if (isCompletedView) return true;
     
-    // For pending view, only show customers with at least one vehicle with accessories
-    return customerHasVehiclesWithAccessories(customer);
+    // For pending view, only show customers with linked accessories (from accessories table or customer.accessories array)
+    return customer.hasLinkedAccessories === true;
   });
 
   return (
