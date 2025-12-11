@@ -108,11 +108,26 @@ export const SchedulingSection = ({
     });
   };
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.document_number.includes(searchTerm) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Helper to check if a customer has at least one vehicle with accessories
+  const customerHasVehiclesWithAccessories = (customer: Customer) => {
+    // If customer has accessories array populated, they have accessories
+    return customer.accessories && customer.accessories.length > 0;
+  };
+
+  // Filter customers: for pending view, only show those with at least one vehicle with accessories
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.document_number.includes(searchTerm) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // For completed view, show all customers that match search
+    if (isCompletedView) return true;
+    
+    // For pending view, only show customers with at least one vehicle with accessories
+    return customerHasVehiclesWithAccessories(customer);
+  });
 
   return (
     <div className="h-full space-y-4">
