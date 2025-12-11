@@ -10,21 +10,9 @@ import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
 import type { HomologationStatus } from '@/services/kitHomologationService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
-import type { VehicleAccessory } from '@/services/vehicleAccessoryService';
 import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
 import { supabase } from '@/integrations/supabase/client';
-
-// Vehicle info type for plate mapping
-interface IncomingVehicleInfo {
-  id: string;
-  plate: string | null;
-  brand: string;
-  vehicle: string;
-  year: number | null;
-  company_name: string | null;
-  sale_summary_id: number | null;
-}
 
 interface SchedulingSectionProps {
   kits: HomologationKit[];
@@ -32,8 +20,6 @@ interface SchedulingSectionProps {
   schedules: KitScheduleWithDetails[];
   homologationStatuses: Map<string, HomologationStatus>;
   accessoriesByPlate: Map<string, number>;
-  allAccessoriesByVehicleId: Map<string, VehicleAccessory[]>;
-  vehiclePlateMapping: Map<string, IncomingVehicleInfo>;
   onRefresh: () => void;
   isCompletedView?: boolean;
 }
@@ -44,8 +30,6 @@ export const SchedulingSection = ({
   schedules,
   homologationStatuses,
   accessoriesByPlate,
-  allAccessoriesByVehicleId,
-  vehiclePlateMapping,
   onRefresh,
   isCompletedView = false
 }: SchedulingSectionProps) => {
@@ -476,8 +460,6 @@ export const SchedulingSection = ({
         technicians={technicians}
         homologationStatuses={homologationStatuses}
         existingSchedules={schedules}
-        allAccessoriesByVehicleId={allAccessoriesByVehicleId}
-        vehiclePlateMapping={vehiclePlateMapping}
         onSuccess={() => {
           onRefresh();
           setIsScheduleModalOpen(false);

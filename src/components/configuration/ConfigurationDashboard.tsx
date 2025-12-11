@@ -10,21 +10,9 @@ import { SchedulingSection } from './SchedulingSection';
 import { supabase } from '@/integrations/supabase/client';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { fetchAllVehicleAccessories, type VehicleAccessory } from '@/services/vehicleAccessoryService';
 
 interface ConfigurationDashboardProps {
   onNavigateToSection?: (section: string) => void;
-}
-
-// Vehicle info type for plate mapping
-interface IncomingVehicleInfo {
-  id: string;
-  plate: string | null;
-  brand: string;
-  vehicle: string;
-  year: number | null;
-  company_name: string | null;
-  sale_summary_id: number | null;
 }
 
 // Helper function to load accessories counts by plate
@@ -51,28 +39,6 @@ const loadAccessoriesCounts = async (): Promise<Map<string, number>> => {
   return counts;
 };
 
-// Helper to load vehicle plate mapping
-const loadVehiclePlateMapping = async (): Promise<Map<string, IncomingVehicleInfo>> => {
-  const { data, error } = await supabase
-    .from('incoming_vehicles')
-    .select('id, plate, brand, vehicle, year, company_name, sale_summary_id')
-    .not('plate', 'is', null);
-
-  if (error) {
-    console.error('Error loading vehicle plate mapping:', error);
-    return new Map();
-  }
-
-  const mapping = new Map<string, IncomingVehicleInfo>();
-  data?.forEach((v) => {
-    if (v.plate) {
-      const normalizedPlate = v.plate.trim().toUpperCase();
-      mapping.set(normalizedPlate, v as IncomingVehicleInfo);
-    }
-  });
-  return mapping;
-};
-
 export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDashboardProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,10 +50,6 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, number>>(new Map());
   
-  // Pre-loaded data for instant modal display
-  const [allAccessoriesByVehicleId, setAllAccessoriesByVehicleId] = useState<Map<string, VehicleAccessory[]>>(new Map());
-  const [vehiclePlateMapping, setVehiclePlateMapping] = useState<Map<string, IncomingVehicleInfo>>(new Map());
-  
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
 
@@ -96,14 +58,12 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     try {
       setIsLoading(true);
       
-      // Load all base data in parallel - including pre-loaded accessories for instant modal
-      const [techniciansData, kitsData, schedulesData, accessoriesData, allAccessoriesData, plateMappingData] = await Promise.all([
+      // Load all base data in parallel
+      const [techniciansData, kitsData, schedulesData, accessoriesData] = await Promise.all([
         getTechnicians(),
         fetchHomologationKits(),
         getKitSchedules(),
-        loadAccessoriesCounts(),
-        fetchAllVehicleAccessories(),
-        loadVehiclePlateMapping()
+        loadAccessoriesCounts()
       ]);
 
       // Load homologation statuses (depends on kitsData)
@@ -117,8 +77,6 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
       setSchedules(schedulesData);
       setAccessoriesByPlate(accessoriesData);
       setHomologationStatuses(homologationStatusesData);
-      setAllAccessoriesByVehicleId(allAccessoriesData);
-      setVehiclePlateMapping(plateMappingData);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -249,8 +207,6 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
               schedules={schedules}
               homologationStatuses={homologationStatuses}
               accessoriesByPlate={accessoriesByPlate}
-              allAccessoriesByVehicleId={allAccessoriesByVehicleId}
-              vehiclePlateMapping={vehiclePlateMapping}
               onRefresh={loadData}
             />
           </TabsContent>
@@ -262,8 +218,6 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
               schedules={schedules.filter(s => ['scheduled', 'in_progress', 'completed', 'shipped', 'sent_to_pipeline'].includes(s.status))}
               homologationStatuses={homologationStatuses}
               accessoriesByPlate={accessoriesByPlate}
-              allAccessoriesByVehicleId={allAccessoriesByVehicleId}
-              vehiclePlateMapping={vehiclePlateMapping}
               onRefresh={loadData}
               isCompletedView={true}
             />
