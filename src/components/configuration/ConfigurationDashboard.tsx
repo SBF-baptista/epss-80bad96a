@@ -15,6 +15,30 @@ interface ConfigurationDashboardProps {
   onNavigateToSection?: (section: string) => void;
 }
 
+// Helper function to load accessories counts by plate
+const loadAccessoriesCounts = async (): Promise<Map<string, number>> => {
+  const { data, error } = await supabase
+    .from('accessories')
+    .select('vehicle_id, incoming_vehicles!accessories_vehicle_id_fkey(plate)')
+    .not('vehicle_id', 'is', null);
+
+  if (error) {
+    console.error('Error loading accessories counts:', error);
+    return new Map();
+  }
+
+  const counts = new Map<string, number>();
+  data?.forEach((acc: any) => {
+    const plate = acc.incoming_vehicles?.plate;
+    if (plate) {
+      const normalizedPlate = plate.trim().toUpperCase();
+      const current = counts.get(normalizedPlate) || 0;
+      counts.set(normalizedPlate, current + 1);
+    }
+  });
+  return counts;
+};
+
 export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDashboardProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,43 +48,35 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   const [kits, setKits] = useState<HomologationKit[]>([]);
   const [schedules, setSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
+  const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, number>>(new Map());
   
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load homologation statuses
-  const loadHomologationStatuses = async (kitsData: HomologationKit[]) => {
-    try {
-      if (kitsData.length > 0) {
-        const statuses = await checkMultipleKitsHomologation(kitsData);
-        setHomologationStatuses(statuses);
-      }
-    } catch (error) {
-      console.error('Error loading homologation statuses:', error);
-      toast({
-        title: "Erro de sincronização",
-        description: "Não foi possível sincronizar o status de homologação dos kits.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Load all data
+  // Load all data in parallel - including homologation statuses and accessories
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [techniciansData, kitsData, schedulesData] = await Promise.all([
+      
+      // Load all base data in parallel
+      const [techniciansData, kitsData, schedulesData, accessoriesData] = await Promise.all([
         getTechnicians(),
         fetchHomologationKits(),
-        getKitSchedules()
+        getKitSchedules(),
+        loadAccessoriesCounts()
       ]);
 
+      // Load homologation statuses (depends on kitsData)
+      const homologationStatusesData = kitsData.length > 0 
+        ? await checkMultipleKitsHomologation(kitsData)
+        : new Map<string, HomologationStatus>();
+
+      // Update all states at once to minimize re-renders
       setTechnicians(techniciansData);
       setKits(kitsData);
       setSchedules(schedulesData);
-      
-      // Load homologation statuses after kits are loaded
-      await loadHomologationStatuses(kitsData);
+      setAccessoriesByPlate(accessoriesData);
+      setHomologationStatuses(homologationStatusesData);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -77,7 +93,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     loadData();
   }, []);
 
-  // Set up real-time subscription for kit_item_options changes
+  // Set up real-time subscription for kit_item_options and accessories changes
   useEffect(() => {
     const channel = supabase
       .channel('planning-kit-sync')
@@ -88,12 +104,21 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
           schema: 'public',
           table: 'kit_item_options'
         },
-        (payload) => {
-          console.log('Kit item option changed in Planning:', payload);
-          // Reload homologation statuses when kit_item_options changes
-          if (kits.length > 0) {
-            loadHomologationStatuses(kits);
-          }
+        () => {
+          console.log('Kit item option changed in Planning, reloading...');
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accessories'
+        },
+        () => {
+          console.log('Accessories changed, reloading...');
+          loadData();
         }
       )
       .subscribe();
@@ -101,7 +126,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [kits]);
+  }, []);
 
   // Filter data based on search
   const filteredKits = kits.filter(kit => 
@@ -181,6 +206,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
               technicians={technicians}
               schedules={schedules}
               homologationStatuses={homologationStatuses}
+              accessoriesByPlate={accessoriesByPlate}
               onRefresh={loadData}
             />
           </TabsContent>
@@ -191,6 +217,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
               technicians={technicians}
               schedules={schedules.filter(s => ['scheduled', 'in_progress', 'completed', 'shipped', 'sent_to_pipeline'].includes(s.status))}
               homologationStatuses={homologationStatuses}
+              accessoriesByPlate={accessoriesByPlate}
               onRefresh={loadData}
               isCompletedView={true}
             />
