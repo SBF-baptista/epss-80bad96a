@@ -65,11 +65,13 @@ export const SchedulingSection = ({
       const counts = new Map<string, number>();
       data?.forEach(acc => {
         if (acc.company_name) {
-          const current = counts.get(acc.company_name) || 0;
-          counts.set(acc.company_name, current + 1);
+          // Normalize company name for comparison (uppercase and trimmed)
+          const normalizedName = acc.company_name.trim().toUpperCase();
+          const current = counts.get(normalizedName) || 0;
+          counts.set(normalizedName, current + 1);
         }
       });
-      console.log('Accessories counts by company:', Object.fromEntries(counts));
+      console.log('Accessories counts by company (normalized):', Object.fromEntries(counts));
       setAccessoriesByCompany(counts);
     } catch (error) {
       console.error('Error loading accessories counts:', error);
@@ -151,15 +153,15 @@ export const SchedulingSection = ({
 
   // Helper to check if a customer has at least one vehicle with accessories (from accessories table)
   const customerHasVehiclesWithAccessories = (customer: Customer) => {
-    // Check in accessories table by company_name or customer name
-    const companyName = customer.company_name || customer.name;
+    // Check in accessories table by company_name or customer name (normalized for comparison)
+    const companyName = (customer.company_name || customer.name || '').trim().toUpperCase();
     const count = accessoriesByCompany.get(companyName) || 0;
     return count > 0;
   };
 
   // Get accessory count for a customer
   const getCustomerAccessoryCount = (customer: Customer) => {
-    const companyName = customer.company_name || customer.name;
+    const companyName = (customer.company_name || customer.name || '').trim().toUpperCase();
     return accessoriesByCompany.get(companyName) || 0;
   };
 
