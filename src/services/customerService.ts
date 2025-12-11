@@ -40,8 +40,6 @@ export interface Customer {
   vehicles?: VehicleInfo[];
   accessories?: string[];
   modules?: string[];
-  // Flag calculada indicando se tem acessórios na tabela accessories
-  hasLinkedAccessories?: boolean;
 }
 
 export interface CreateCustomerData {
@@ -208,37 +206,14 @@ export const getCustomers = async (search?: string): Promise<Customer[]> => {
     console.error('Error fetching customers:', error);
     throw new Error(error.message);
   }
-
-  // Buscar todos os company_names que têm acessórios na tabela accessories
-  const { data: accessoriesData } = await supabase
-    .from('accessories')
-    .select('company_name')
-    .not('company_name', 'is', null);
   
-  // Criar um Set com os company_names que têm acessórios
-  const companiesWithAccessories = new Set(
-    accessoriesData?.map(a => a.company_name?.toUpperCase().trim()) || []
-  );
-  
-  const processedCustomers = data?.map(customer => {
-    // Verificar se o cliente tem acessórios:
-    // 1. No array accessories do próprio customer
-    // 2. OU na tabela accessories pelo company_name ou name
-    const hasAccessoriesInCustomer = customer.accessories && customer.accessories.length > 0;
-    const customerCompanyName = customer.company_name?.toUpperCase().trim();
-    const customerName = customer.name?.toUpperCase().trim();
-    const hasAccessoriesInTable = companiesWithAccessories.has(customerCompanyName) || 
-                                   companiesWithAccessories.has(customerName);
-    
-    return {
-      ...customer,
-      document_type: customer.document_type as 'cpf' | 'cnpj',
-      vehicles: Array.isArray(customer.vehicles) 
-        ? customer.vehicles 
-        : (customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined),
-      hasLinkedAccessories: hasAccessoriesInCustomer || hasAccessoriesInTable
-    };
-  }) || [];
+  const processedCustomers = data?.map(customer => ({
+    ...customer,
+    document_type: customer.document_type as 'cpf' | 'cnpj',
+    vehicles: Array.isArray(customer.vehicles) 
+      ? customer.vehicles 
+      : (customer.vehicles ? JSON.parse(customer.vehicles as string) : undefined)
+  })) || [];
   
   return processedCustomers;
 };
