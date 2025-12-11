@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, Truck } from 'lucide-react';
+import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, Truck, Eye } from 'lucide-react';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
@@ -335,16 +335,18 @@ export const SchedulingSection = ({
                                 {customer.document_type === 'cpf' ? 'CPF' : 'CNPJ'}: {customer.document_number}
                               </p>
                             </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <Badge variant={activeSchedules.length > 0 ? 'default' : 'outline'}>
-                                {activeSchedules.length > 0 ? 'Ativo' : 'Disponível'}
-                              </Badge>
-                              {accessoryCount > 0 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {accessoryCount} acessório(s)
-                                </Badge>
-                              )}
-                            </div>
+                            {/* View Details Button - Only in completed view */}
+                            {isCompletedView && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleScheduleCustomer(customer)}
+                                className="h-8 w-8 p-0"
+                                title="Ver detalhes"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
 
                           {/* Contact Info */}
