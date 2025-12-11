@@ -404,8 +404,8 @@ export const SchedulingSection = ({
 
                           {/* Schedules Info - Show scheduled vehicles and technicians */}
                           <div className="space-y-2">
-                            {/* Scheduled Vehicles with Details */}
-                            {activeSchedules.length > 0 && (
+                            {/* Scheduled Vehicles with Details - Only show in completed view */}
+                            {isCompletedView && activeSchedules.length > 0 && (
                               <div className="space-y-2">
                                 {activeSchedules.map((schedule) => (
                                   <div key={schedule.id} className="bg-blue-50 border border-blue-200 p-3 rounded-md">
@@ -443,7 +443,7 @@ export const SchedulingSection = ({
                               </div>
                             )}
 
-                            {completedSchedules.length > 0 && (
+                            {isCompletedView && completedSchedules.length > 0 && (
                               <div className="bg-green-50 border border-green-200 p-2 rounded-md">
                                 <p className="text-xs font-semibold text-green-800">
                                   {completedSchedules.length} veículo(s) enviado(s) para esteira
