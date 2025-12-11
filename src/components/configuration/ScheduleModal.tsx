@@ -332,6 +332,7 @@ export const ScheduleModal = ({
   const [suggestedKitsByVehicle, setSuggestedKitsByVehicle] = useState<Map<string, HomologationKit[]>>(new Map());
   const [configurationsByVehicle, setConfigurationsByVehicle] = useState<Map<string, string>>(new Map());
   const [homologatedAccessories, setHomologatedAccessories] = useState<KitItemOption[]>([]);
+  const [isLoadingAccessories, setIsLoadingAccessories] = useState(false);
   
   // State for the scheduling form modal
   const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
@@ -376,6 +377,8 @@ export const ScheduleModal = ({
 
     if (!selectedCustomer) {
       setVehicleSchedules([]);
+      setAccessoriesByVehicleId(new Map());
+      setIsLoadingAccessories(false);
       form.reset({ vehicles: [] });
       return;
     }
@@ -438,6 +441,7 @@ export const ScheduleModal = ({
 
     // ID-first: Resolve incoming_vehicle_id for each vehicle and fetch accessories
     if (selectedCustomer) {
+      setIsLoadingAccessories(true);
       (async () => {
         try {
           const vehicleIdMapping = new Map<string, string>();
@@ -523,6 +527,8 @@ export const ScheduleModal = ({
           }
         } catch (error) {
           console.error('Error loading accessories by vehicle IDs:', error);
+        } finally {
+          setIsLoadingAccessories(false);
         }
       })();
     }
@@ -1146,8 +1152,12 @@ export const ScheduleModal = ({
                                           </div>
                                         )}
                                         
-                                        {allAccessories.length === 0 && (
+                                        {allAccessories.length === 0 && !isLoadingAccessories && (
                                           <span className="text-xs text-muted-foreground">Nenhum acessório</span>
+                                        )}
+                                        
+                                        {isLoadingAccessories && (
+                                          <span className="text-xs text-muted-foreground animate-pulse">Carregando...</span>
                                         )}
                                       </>
                                     );
