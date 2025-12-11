@@ -38,14 +38,43 @@ export const SchedulingSection = ({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
+  const [accessoriesByCompany, setAccessoriesByCompany] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     loadCustomers();
+    loadAccessoriesCounts();
   }, []);
 
   useEffect(() => {
     loadCustomers();
   }, [searchTerm]);
+
+  // Load accessories counts by company_name from accessories table
+  const loadAccessoriesCounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('accessories')
+        .select('company_name')
+        .not('company_name', 'is', null);
+
+      if (error) {
+        console.error('Error loading accessories counts:', error);
+        return;
+      }
+
+      const counts = new Map<string, number>();
+      data?.forEach(acc => {
+        if (acc.company_name) {
+          const current = counts.get(acc.company_name) || 0;
+          counts.set(acc.company_name, current + 1);
+        }
+      });
+      console.log('Accessories counts by company:', Object.fromEntries(counts));
+      setAccessoriesByCompany(counts);
+    } catch (error) {
+      console.error('Error loading accessories counts:', error);
+    }
+  };
 
   // Real-time subscription for customers table
   useEffect(() => {
@@ -62,6 +91,18 @@ export const SchedulingSection = ({
         (payload) => {
           console.log('Customer changed in Planning:', payload);
           loadCustomers();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accessories'
+        },
+        (payload) => {
+          console.log('Accessories changed:', payload);
+          loadAccessoriesCounts();
         }
       )
       .subscribe();
@@ -108,10 +149,18 @@ export const SchedulingSection = ({
     });
   };
 
-  // Helper to check if a customer has at least one vehicle with accessories
+  // Helper to check if a customer has at least one vehicle with accessories (from accessories table)
   const customerHasVehiclesWithAccessories = (customer: Customer) => {
-    // If customer has accessories array populated, they have accessories
-    return customer.accessories && customer.accessories.length > 0;
+    // Check in accessories table by company_name or customer name
+    const companyName = customer.company_name || customer.name;
+    const count = accessoriesByCompany.get(companyName) || 0;
+    return count > 0;
+  };
+
+  // Get accessory count for a customer
+  const getCustomerAccessoryCount = (customer: Customer) => {
+    const companyName = customer.company_name || customer.name;
+    return accessoriesByCompany.get(companyName) || 0;
   };
 
   // Filter customers: for pending view, only show those with at least one vehicle with accessories
@@ -240,8 +289,9 @@ export const SchedulingSection = ({
                     s.status === 'completed'
                   );
 
-                  // Check if vehicle has accessories
-                  const hasAccessories = customer.accessories && customer.accessories.length > 0;
+                  // Check if customer has accessories (from accessories table)
+                  const hasAccessories = customerHasVehiclesWithAccessories(customer);
+                  const accessoryCount = getCustomerAccessoryCount(customer);
 
                   return (
                     <Card key={customer.id} className="hover:shadow-md transition-shadow">
@@ -255,9 +305,16 @@ export const SchedulingSection = ({
                                 {customer.document_type === 'cpf' ? 'CPF' : 'CNPJ'}: {customer.document_number}
                               </p>
                             </div>
-                            <Badge variant={activeSchedules.length > 0 ? 'default' : 'outline'}>
-                              {activeSchedules.length > 0 ? 'Ativo' : 'Disponível'}
-                            </Badge>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant={activeSchedules.length > 0 ? 'default' : 'outline'}>
+                                {activeSchedules.length > 0 ? 'Ativo' : 'Disponível'}
+                              </Badge>
+                              {accessoryCount > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {accessoryCount} acessório(s)
+                                </Badge>
+                              )}
+                            </div>
                           </div>
 
                           {/* Contact Info */}
