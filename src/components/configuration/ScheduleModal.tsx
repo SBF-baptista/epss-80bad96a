@@ -49,12 +49,22 @@ import { checkItemHomologation, type HomologationStatus } from '@/services/kitHo
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules, isModuleCategory } from '@/services/vehicleAccessoryService';
-import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
+import { aggregateAccessoriesWithoutModules, isModuleCategory, type VehicleAccessory } from '@/services/vehicleAccessoryService';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchKitItemOptions, type KitItemOption } from '@/services/kitItemOptionsService';
 import { ScheduleFormModal, ScheduleFormData, PendingVehicleData } from './ScheduleFormModal';
+
+// Vehicle info type for plate mapping (from Dashboard)
+interface IncomingVehicleInfo {
+  id: string;
+  plate: string | null;
+  brand: string;
+  vehicle: string;
+  year: number | null;
+  company_name: string | null;
+  sale_summary_id: number | null;
+}
 
 // Send WhatsApp notification to technician using Twilio template
 const sendTechnicianWhatsApp = async (
@@ -307,6 +317,8 @@ interface ScheduleModalProps {
   technicians: Technician[];
   homologationStatuses: Map<string, HomologationStatus>;
   existingSchedules?: any[];
+  allAccessoriesByVehicleId: Map<string, VehicleAccessory[]>;
+  vehiclePlateMapping: Map<string, IncomingVehicleInfo>;
   onSuccess: () => void;
 }
 
@@ -319,6 +331,8 @@ export const ScheduleModal = ({
   technicians,
   homologationStatuses,
   existingSchedules = [],
+  allAccessoriesByVehicleId,
+  vehiclePlateMapping,
   onSuccess
 }: ScheduleModalProps) => {
   const { toast: toastHook } = useToast();
@@ -419,119 +433,81 @@ export const ScheduleModal = ({
       return;
     }
 
-    // Initialize schedules with EMPTY dates - manual input required
-    const initialSchedules = unscheduledVehicles.map((vehicle, index) => ({
-      plate: vehicle.plate,
-      brand: vehicle.brand,
-      model: vehicle.model,
-      year: vehicle.year,
-      technician_ids: [],
-      scheduled_date: null,
-      installation_time: '',
-      notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
-      // Per-placa accessories from customer (módulos não são considerados)
-      accessories: [...(selectedCustomer.accessories || [])],
-      modules: [], // Módulos não são mais utilizados
-      selected_kit_ids: [] // Nenhum kit selecionado inicialmente
-    }));
+    // Use pre-loaded data for INSTANT display - no async loading needed
+    const vehicleIdMapping = new Map<string, string>();
+    const formattedMap = new Map<string, string[]>();
+    const configurationsMap = new Map<string, string>();
+    const suggestedKitsMap = new Map<string, HomologationKit[]>();
 
-    console.log('Initial schedules created:', initialSchedules);
+    // Resolve vehicle IDs from pre-loaded plate mapping (instant)
+    for (const v of unscheduledVehicles) {
+      const normalizedPlate = v.plate?.trim().toUpperCase();
+      if (normalizedPlate) {
+        const vehicleInfo = vehiclePlateMapping.get(normalizedPlate);
+        if (vehicleInfo) {
+          const key = `${v.brand}-${v.model}-${v.plate || 'pending'}`;
+          vehicleIdMapping.set(key, vehicleInfo.id);
+          
+          // Get accessories from pre-loaded data (instant)
+          const vehicleAccessories = allAccessoriesByVehicleId.get(vehicleInfo.id) || [];
+          const aggregatedAccessories = aggregateAccessoriesWithoutModules(vehicleAccessories);
+          formattedMap.set(vehicleInfo.id, aggregatedAccessories);
+          
+          // Calculate suggested kits based on accessories
+          const matchedKits = matchKitsToAccessories(aggregatedAccessories, kits);
+          suggestedKitsMap.set(v.plate, matchedKits);
+        }
+      }
+    }
+
+    setVehicleIdMap(vehicleIdMapping);
+    setAccessoriesByVehicleId(formattedMap);
+    setSuggestedKitsByVehicle(suggestedKitsMap);
+
+    // Load configurations in background (non-blocking) - this is quick
+    (async () => {
+      for (const [key, vehicleId] of vehicleIdMapping.entries()) {
+        const { data: homologationData } = await supabase
+          .from('homologation_cards')
+          .select('configuration')
+          .eq('incoming_vehicle_id', vehicleId)
+          .eq('status', 'homologado')
+          .single();
+        
+        if (homologationData?.configuration) {
+          const plate = key.split('-').pop()?.replace('pending', '') || '';
+          configurationsMap.set(plate, homologationData.configuration);
+        }
+      }
+      setConfigurationsByVehicle(configurationsMap);
+    })();
+
+    // Initialize schedules with accessories from pre-loaded data
+    const initialSchedules = unscheduledVehicles.map((vehicle) => {
+      const normalizedPlate = vehicle.plate?.trim().toUpperCase();
+      const vehicleInfo = normalizedPlate ? vehiclePlateMapping.get(normalizedPlate) : undefined;
+      const vehicleAccessories = vehicleInfo 
+        ? formattedMap.get(vehicleInfo.id) || [] 
+        : [...(selectedCustomer.accessories || [])];
+
+      return {
+        plate: vehicle.plate,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year,
+        technician_ids: [],
+        scheduled_date: null,
+        installation_time: '',
+        notes: `Veículo: ${vehicle.brand} ${vehicle.model} (${vehicle.year}) - Placa: ${vehicle.plate}`,
+        accessories: vehicleAccessories,
+        modules: [],
+        selected_kit_ids: []
+      };
+    });
+
+    console.log('Initial schedules created with pre-loaded accessories:', initialSchedules);
     setVehicleSchedules(initialSchedules);
     form.reset({ vehicles: initialSchedules });
-
-    // ID-first: Resolve incoming_vehicle_id for each vehicle and fetch accessories
-    if (selectedCustomer) {
-      setIsLoadingAccessories(true);
-      (async () => {
-        try {
-          const vehicleIdMapping = new Map<string, string>();
-          const resolvedIds: string[] = [];
-
-          for (const v of unscheduledVehicles) {
-            const vehicleId = await resolveIncomingVehicleId(
-              selectedCustomer.company_name,
-              selectedCustomer.sale_summary_id,
-              {
-                plate: v.plate,
-                brand: v.brand,
-                model: v.model,
-                year: v.year
-              }
-            );
-
-            if (vehicleId) {
-              const key = `${v.brand}-${v.model}-${v.plate || 'pending'}`;
-              vehicleIdMapping.set(key, vehicleId);
-              resolvedIds.push(vehicleId);
-            }
-          }
-
-          setVehicleIdMap(vehicleIdMapping);
-
-          // Fetch accessories and configurations by resolved IDs
-          if (resolvedIds.length > 0) {
-            const accessoriesMap = await fetchAccessoriesByVehicleIds(resolvedIds);
-            const formattedMap = new Map<string, string[]>();
-            const configurationsMap = new Map<string, string>();
-
-            // Fetch configurations for each vehicle
-            for (const [key, vehicleId] of vehicleIdMapping.entries()) {
-              const { data: homologationData } = await supabase
-                .from('homologation_cards')
-                .select('configuration')
-                .eq('incoming_vehicle_id', vehicleId)
-                .eq('status', 'homologado')
-                .single();
-              
-              if (homologationData?.configuration) {
-                const plate = key.split('-').pop()?.replace('pending', '') || '';
-                configurationsMap.set(plate, homologationData.configuration);
-              }
-            }
-
-            setConfigurationsByVehicle(configurationsMap);
-
-            accessoriesMap.forEach((accessories, vehicleId) => {
-              formattedMap.set(vehicleId, aggregateAccessoriesWithoutModules(accessories));
-            });
-
-            setAccessoriesByVehicleId(formattedMap);
-
-            // Update vehicle schedules with accessories and suggest kits
-            setVehicleSchedules(prev => {
-              const updated = prev.map(s => {
-                const key = `${s.brand}-${s.model}-${s.plate || 'pending'}`;
-                const vehicleId = vehicleIdMapping.get(key);
-                if (vehicleId) {
-                  const accessories = formattedMap.get(vehicleId) || [];
-                  return { ...s, accessories };
-                }
-                return s;
-              });
-              form.setValue('vehicles', updated);
-              return updated;
-            });
-
-            // Calcular kits sugeridos para cada veículo baseado nos acessórios
-            const suggestedKitsMap = new Map<string, HomologationKit[]>();
-            for (const v of unscheduledVehicles) {
-              const key = `${v.brand}-${v.model}-${v.plate || 'pending'}`;
-              const vehicleId = vehicleIdMapping.get(key);
-              if (vehicleId) {
-                const vehicleAccessories = formattedMap.get(vehicleId) || [];
-                const matchedKits = matchKitsToAccessories(vehicleAccessories, kits);
-                suggestedKitsMap.set(v.plate, matchedKits);
-              }
-            }
-            setSuggestedKitsByVehicle(suggestedKitsMap);
-          }
-        } catch (error) {
-          console.error('Error loading accessories by vehicle IDs:', error);
-        } finally {
-          setIsLoadingAccessories(false);
-        }
-      })();
-    }
 
     // 2) Fire-and-forget: check homologation in background and update icons
     (async () => {
@@ -551,39 +527,17 @@ export const ScheduleModal = ({
           })
         );
         
-        // Check overall homologation status for each unscheduled vehicle
-        const scheduledPlates = existingSchedules
-          .filter(s => s.customer_id === selectedCustomer.id && ['scheduled', 'in_progress'].includes(s.status))
-          .map(s => s.vehicle_plate);
-        
-        const unscheduledVehicles = selectedCustomer.vehicles?.filter(
-          vehicle => !scheduledPlates.includes(vehicle.plate)
-        ) || [];
-        
-        // Check vehicle-specific accessories from the accessories table
+        // Check overall homologation status for each unscheduled vehicle using pre-loaded data
         for (const vehicle of unscheduledVehicles) {
-          // Resolve incoming_vehicle_id
-          const vehicleId = await resolveIncomingVehicleId(
-            selectedCustomer.company_name,
-            selectedCustomer.sale_summary_id,
-            {
-              plate: vehicle.plate,
-              brand: vehicle.brand,
-              model: vehicle.model,
-              year: vehicle.year
-            }
-          );
-
-          // Fetch vehicle-specific accessories from accessories table (excluindo módulos)
+          const normalizedPlate = vehicle.plate?.trim().toUpperCase();
+          const vehicleInfo = normalizedPlate ? vehiclePlateMapping.get(normalizedPlate) : undefined;
+          
+          // Get vehicle-specific accessories from pre-loaded data (excluindo módulos)
           let vehicleSpecificAccessories: string[] = [];
-          if (vehicleId) {
-            const { data: vehicleAccessories } = await supabase
-              .from('accessories')
-              .select('name, categories')
-              .eq('vehicle_id', vehicleId);
-
+          if (vehicleInfo) {
+            const vehicleAccessories = allAccessoriesByVehicleId.get(vehicleInfo.id) || [];
             // Filtrar módulos usando categories E nome conhecido
-            vehicleSpecificAccessories = (vehicleAccessories || [])
+            vehicleSpecificAccessories = vehicleAccessories
               .filter(a => !isModuleCategory(a.categories) && !isModule(a.name))
               .map(a => a.name);
 
@@ -635,7 +589,7 @@ export const ScheduleModal = ({
         console.warn('Falha ao checar homologação de itens:', e);
       }
     })();
-  }, [selectedCustomer, homologationStatuses, form, toast]);
+  }, [selectedCustomer, homologationStatuses, form, toast, vehiclePlateMapping, allAccessoriesByVehicleId]);
 
   const updateVehicleSchedule = async (plate: string, field: keyof VehicleScheduleData, value: any) => {
     const updatedSchedules = vehicleSchedules.map(schedule => 
