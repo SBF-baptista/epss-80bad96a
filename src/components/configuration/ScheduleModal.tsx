@@ -1503,7 +1503,8 @@ export const ScheduleModal = ({
                                       vehicleAccessories.forEach(formatted => {
                                         const normalizedName = normalizeName(formatted);
                                         const quantity = extractQuantity(formatted);
-                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`) ?? 
+                                          homologatedAccessories.some(ha => isSimilarAccessoryName(formatted, ha.item_name));
                                         
                                         if (!isHomologated) {
                                           const currentQty = nonHomologatedMap.get(normalizedName) || 0;
@@ -1514,7 +1515,8 @@ export const ScheduleModal = ({
                                       // Process customer accessories (only if not already in map from vehicle)
                                       (vehicleSchedule.accessories || []).forEach(acc => {
                                         const normalizedName = normalizeName(acc);
-                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:accessory`) ?? 
+                                          homologatedAccessories.some(ha => isSimilarAccessoryName(acc, ha.item_name));
                                         
                                         if (!isHomologated && !nonHomologatedMap.has(normalizedName)) {
                                           nonHomologatedMap.set(normalizedName, 1);
@@ -1524,7 +1526,8 @@ export const ScheduleModal = ({
                                       // Process modules (equipment)
                                       (vehicleSchedule.modules || []).forEach(mod => {
                                         const normalizedName = normalizeName(mod);
-                                        const isHomologated = homologationStatus.get(`${normalizedName}:equipment`);
+                                        const isHomologated = homologationStatus.get(`${normalizedName}:equipment`) ?? 
+                                          homologatedAccessories.some(ha => isSimilarAccessoryName(mod, ha.item_name));
                                         
                                         if (!isHomologated && !nonHomologatedMap.has(normalizedName)) {
                                           nonHomologatedMap.set(normalizedName, 1);
