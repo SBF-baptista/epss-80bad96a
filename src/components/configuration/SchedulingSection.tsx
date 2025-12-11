@@ -12,6 +12,7 @@ import type { HomologationStatus } from '@/services/kitHomologationService';
 import type { Customer, VehicleInfo } from '@/services/customerService';
 import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
+import { ScheduleHistoryModal } from './ScheduleHistoryModal';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SchedulingSectionProps {
@@ -38,6 +39,7 @@ export const SchedulingSection = ({
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
 
@@ -97,6 +99,12 @@ export const SchedulingSection = ({
     setSelectedVehicle(vehicle || null);
     // Open directly without intermediate tab
     setIsScheduleModalOpen(true);
+  };
+
+  const handleViewHistory = (customer: Customer) => {
+    console.log('Viewing history for customer:', customer.id, customer.name);
+    setSelectedCustomer(customer);
+    setIsHistoryModalOpen(true);
   };
 
   const getCustomerSchedules = (customerId: string) => {
@@ -335,14 +343,14 @@ export const SchedulingSection = ({
                                 {customer.document_type === 'cpf' ? 'CPF' : 'CNPJ'}: {customer.document_number}
                               </p>
                             </div>
-                            {/* View Details Button - Only in completed view */}
+                            {/* View History Button - Only in completed view */}
                             {isCompletedView && (
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleScheduleCustomer(customer)}
+                                onClick={() => handleViewHistory(customer)}
                                 className="h-8 w-8 p-0"
-                                title="Ver detalhes"
+                                title="Ver histórico"
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -448,7 +456,7 @@ export const SchedulingSection = ({
         </Card>
       </div>
 
-      {/* Schedule Modal */}
+      {/* Schedule Modal - For new schedules */}
       <ScheduleModal
         isOpen={isScheduleModalOpen}
         onClose={() => {
@@ -469,6 +477,17 @@ export const SchedulingSection = ({
           setSelectedVehicle(null);
           loadCustomers();
         }}
+      />
+
+      {/* History Modal - For viewing completed schedules */}
+      <ScheduleHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => {
+          setIsHistoryModalOpen(false);
+          setSelectedCustomer(null);
+        }}
+        customer={selectedCustomer}
+        schedules={schedules}
       />
     </div>
   );
