@@ -153,26 +153,62 @@ export const SchedulingSection = ({
     });
   };
 
-  // Helper to check if a customer has at least one vehicle with accessories (by plate)
-  const customerHasVehiclesWithAccessories = (customer: Customer) => {
-    // Check if any of the customer's vehicles have accessories linked by plate
+  // Helper to check if a vehicle has accessories (by plate)
+  const vehicleHasAccessories = (plate: string | undefined) => {
+    if (!plate) return false;
+    const normalizedPlate = plate.trim().toUpperCase();
+    return (accessoriesByPlate.get(normalizedPlate) || 0) > 0;
+  };
+
+  // Helper to check if a vehicle is scheduled (has active or completed schedule)
+  const isVehicleScheduled = (plate: string | undefined, customerId: string) => {
+    if (!plate) return false;
+    const normalizedPlate = plate.trim().toUpperCase();
+    return schedules.some(s => 
+      s.customer_id === customerId && 
+      s.vehicle_plate?.trim().toUpperCase() === normalizedPlate
+    );
+  };
+
+  // Helper to check if a vehicle schedule is completed (sent to orders pipeline)
+  const isVehicleCompleted = (plate: string | undefined, customerId: string) => {
+    if (!plate) return false;
+    const normalizedPlate = plate.trim().toUpperCase();
+    return schedules.some(s => 
+      s.customer_id === customerId && 
+      s.vehicle_plate?.trim().toUpperCase() === normalizedPlate &&
+      s.status === 'completed'
+    );
+  };
+
+  // Check if customer has at least one vehicle with accessories that is NOT yet scheduled (for pending view)
+  const customerHasPendingVehiclesWithAccessories = (customer: Customer) => {
     if (!customer.vehicles || customer.vehicles.length === 0) return false;
     
     return customer.vehicles.some(vehicle => {
-      if (!vehicle.plate) return false;
-      const normalizedPlate = vehicle.plate.trim().toUpperCase();
-      const count = accessoriesByPlate.get(normalizedPlate) || 0;
-      return count > 0;
+      const hasAccessories = vehicleHasAccessories(vehicle.plate);
+      const isScheduled = isVehicleScheduled(vehicle.plate, customer.id!);
+      // For pending view: has accessories AND not scheduled yet
+      return hasAccessories && !isScheduled;
     });
   };
 
-  // Get total accessory count for a customer's vehicles
-  const getCustomerAccessoryCount = (customer: Customer) => {
+  // Check if customer has at least one vehicle that has been scheduled/completed (for completed view)
+  const customerHasScheduledVehicles = (customer: Customer) => {
+    if (!customer.vehicles || customer.vehicles.length === 0) return false;
+    
+    return customer.vehicles.some(vehicle => {
+      return isVehicleScheduled(vehicle.plate, customer.id!);
+    });
+  };
+
+  // Get total accessory count for a customer's pending vehicles (not scheduled)
+  const getCustomerPendingAccessoryCount = (customer: Customer) => {
     if (!customer.vehicles || customer.vehicles.length === 0) return 0;
     
     let total = 0;
     customer.vehicles.forEach(vehicle => {
-      if (vehicle.plate) {
+      if (vehicle.plate && !isVehicleScheduled(vehicle.plate, customer.id!)) {
         const normalizedPlate = vehicle.plate.trim().toUpperCase();
         total += accessoriesByPlate.get(normalizedPlate) || 0;
       }
@@ -180,7 +216,21 @@ export const SchedulingSection = ({
     return total;
   };
 
-  // Filter customers: for pending view, only show those with at least one vehicle with accessories
+  // Get total accessory count for a customer's scheduled vehicles
+  const getCustomerScheduledAccessoryCount = (customer: Customer) => {
+    if (!customer.vehicles || customer.vehicles.length === 0) return 0;
+    
+    let total = 0;
+    customer.vehicles.forEach(vehicle => {
+      if (vehicle.plate && isVehicleScheduled(vehicle.plate, customer.id!)) {
+        const normalizedPlate = vehicle.plate.trim().toUpperCase();
+        total += accessoriesByPlate.get(normalizedPlate) || 0;
+      }
+    });
+    return total;
+  };
+
+  // Filter customers based on view type
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.document_number.includes(searchTerm) ||
@@ -188,11 +238,13 @@ export const SchedulingSection = ({
     
     if (!matchesSearch) return false;
     
-    // For completed view, show all customers that match search
-    if (isCompletedView) return true;
+    if (isCompletedView) {
+      // For completed view: show customers that have at least one vehicle scheduled
+      return customerHasScheduledVehicles(customer);
+    }
     
-    // For pending view, only show customers with at least one vehicle with accessories
-    return customerHasVehiclesWithAccessories(customer);
+    // For pending view: only show customers with at least one vehicle with accessories AND not scheduled
+    return customerHasPendingVehiclesWithAccessories(customer);
   });
 
   return (
@@ -306,9 +358,13 @@ export const SchedulingSection = ({
                     s.status === 'completed'
                   );
 
-                  // Check if customer has accessories (from accessories table)
-                  const hasAccessories = customerHasVehiclesWithAccessories(customer);
-                  const accessoryCount = getCustomerAccessoryCount(customer);
+                  // Check if customer has pending accessories (based on view type)
+                  const hasAccessories = isCompletedView 
+                    ? customerHasScheduledVehicles(customer) 
+                    : customerHasPendingVehiclesWithAccessories(customer);
+                  const accessoryCount = isCompletedView 
+                    ? getCustomerScheduledAccessoryCount(customer) 
+                    : getCustomerPendingAccessoryCount(customer);
 
                   return (
                     <Card key={customer.id} className="hover:shadow-md transition-shadow">
