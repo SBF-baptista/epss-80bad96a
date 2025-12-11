@@ -676,20 +676,93 @@ export const ScheduleModal = ({
     }
   };
 
-  const toggleKitSelection = (plate: string, kitId: string) => {
-    const updatedSchedules = vehicleSchedules.map(schedule => {
-      if (schedule.plate === plate) {
-        const currentSelection = schedule.selected_kit_ids || [];
-        const isSelected = currentSelection.includes(kitId);
+  // Função para buscar configuração baseada no modelo do veículo e modelo do rastreador
+  const findConfigurationForVehicleAndTracker = async (
+    vehicleBrand: string,
+    vehicleModel: string,
+    trackerModel: string
+  ): Promise<string | null> => {
+    try {
+      console.log('🔍 Buscando configuração para:', { vehicleBrand, vehicleModel, trackerModel });
+      
+      const { data, error } = await supabase
+        .from('automation_rules_extended')
+        .select('configuration')
+        .ilike('brand', vehicleBrand)
+        .ilike('model', `%${vehicleModel}%`)
+        .ilike('tracker_model', `%${trackerModel}%`)
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Erro ao buscar configuração:', error);
+        return null;
+      }
+      
+      if (data?.configuration) {
+        console.log('✅ Configuração encontrada:', data.configuration);
+        return data.configuration;
+      }
+      
+      console.log('⚠️ Nenhuma configuração encontrada para esta combinação');
+      return null;
+    } catch (error) {
+      console.error('Erro ao buscar configuração:', error);
+      return null;
+    }
+  };
+
+  const toggleKitSelection = async (plate: string, kitId: string) => {
+    const schedule = vehicleSchedules.find(s => s.plate === plate);
+    if (!schedule) return;
+    
+    const currentSelection = schedule.selected_kit_ids || [];
+    const isRemoving = currentSelection.includes(kitId);
+    
+    // Ao selecionar um kit, buscar configuração automaticamente
+    if (!isRemoving) {
+      const selectedKit = kits.find(k => k.id === kitId);
+      // Pegar o modelo do rastreador do equipment do kit
+      const trackerModel = selectedKit?.equipment?.[0]?.item_name;
+      
+      if (trackerModel) {
+        const configuration = await findConfigurationForVehicleAndTracker(
+          schedule.brand,
+          schedule.model,
+          trackerModel
+        );
         
+        if (configuration) {
+          setConfigurationsByVehicle(prev => {
+            const newMap = new Map(prev);
+            newMap.set(plate, configuration);
+            return newMap;
+          });
+          
+          toastHook({
+            title: "Configuração definida",
+            description: `Configuração "${configuration}" aplicada para ${schedule.brand} ${schedule.model} com ${trackerModel}`,
+          });
+        } else {
+          toastHook({
+            title: "Configuração não encontrada",
+            description: `Não foi encontrada uma regra de automação para ${schedule.brand} ${schedule.model} com ${trackerModel}. A configuração padrão será utilizada.`,
+            variant: "default"
+          });
+        }
+      }
+    }
+    
+    const updatedSchedules = vehicleSchedules.map(s => {
+      if (s.plate === plate) {
         return {
-          ...schedule,
-          selected_kit_ids: isSelected
+          ...s,
+          selected_kit_ids: isRemoving
             ? currentSelection.filter(id => id !== kitId)
             : [...currentSelection, kitId]
         };
       }
-      return schedule;
+      return s;
     });
     
     setVehicleSchedules(updatedSchedules);

@@ -172,7 +172,6 @@ export function AppNavigation() {
   const [homologationOpen, setHomologationOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [configurationOpen, setConfigurationOpen] = useState(false);
-  const [planningOpen, setPlanningOpen] = useState(false);
 
   // Recolher todos os dropdowns quando o sidebar é fechado
   useEffect(() => {
@@ -180,16 +179,8 @@ export function AppNavigation() {
       setHomologationOpen(false);
       setOrdersOpen(false);
       setConfigurationOpen(false);
-      setPlanningOpen(false);
     }
   }, [isCollapsed]);
-
-  // Auto-abrir dropdown quando em rota do grupo
-  useEffect(() => {
-    if (location.pathname.startsWith('/planning')) {
-      setPlanningOpen(true);
-    }
-  }, [location.pathname]);
 
   // Função para expandir sidebar e abrir dropdown
   const handleDropdownToggle = (
@@ -318,55 +309,27 @@ export function AppNavigation() {
                 </SidebarMenuItem>
               )}
 
-              {/* Grupo Planejamento */}
-              {canAccessGroup(navigationGroups.planning.roles) && (
-                <SidebarMenuItem>
-                  <Collapsible open={planningOpen} onOpenChange={setPlanningOpen}>
-                    <CollapsibleTrigger asChild>
+              {/* Item: Planejamento (item simples sem dropdown) */}
+              {canAccessGroup(navigationGroups.planning.roles) && navigationGroups.planning.items
+                .filter(item => canAccessItem(item.roles))
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.to}>
                       <SidebarMenuButton 
-                        className="w-full justify-between touch-manipulation tap-target"
-                        tooltip={isCollapsed ? navigationGroups.planning.label : undefined}
-                        onClick={(e) => {
-                          if (isCollapsed) {
-                            e.preventDefault();
-                            handleDropdownToggle(planningOpen, setPlanningOpen);
-                          }
-                        }}
+                        asChild 
+                        isActive={isActive(item.to)}
+                        tooltip={isCollapsed ? item.label : undefined}
+                        className="touch-manipulation tap-target"
                       >
-                        <div className="flex items-center gap-3">
-                          <navigationGroups.planning.icon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && <span className="font-medium text-sm">{navigationGroups.planning.label}</span>}
-                        </div>
-                        {!isCollapsed && (
-                          planningOpen ? 
-                          <ChevronDown className="h-4 w-4" /> : 
-                          <ChevronRight className="h-4 w-4" />
-                        )}
+                        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                          <Icon className="h-4 w-4 flex-shrink-0" />
+                          {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                        </NavLink>
                       </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="ml-4">
-                      {navigationGroups.planning.items
-                        .filter(item => canAccessItem(item.roles))
-                        .map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <SidebarMenuButton
-                              key={item.to}
-                              asChild
-                              isActive={isActive(item.to)}
-                              className="touch-manipulation tap-target"
-                            >
-                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                                <Icon className="h-4 w-4 flex-shrink-0" />
-                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                              </NavLink>
-                            </SidebarMenuButton>
-                          );
-                        })}
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuItem>
-              )}
+                    </SidebarMenuItem>
+                  );
+                })}
 
               {/* Item: Agendamento - Separate from Planning */}
               {canAccessGroup(navigationGroups.scheduling.roles) && navigationGroups.scheduling.items
