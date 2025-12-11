@@ -179,7 +179,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
             <SchedulingSection
               kits={kits}
               technicians={technicians}
-              schedules={schedules.filter(s => !['completed', 'sent_to_pipeline'].includes(s.status))}
+              schedules={schedules}
               homologationStatuses={homologationStatuses}
               onRefresh={loadData}
             />
@@ -189,7 +189,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
             <SchedulingSection
               kits={kits}
               technicians={technicians}
-              schedules={schedules.filter(s => ['completed', 'sent_to_pipeline'].includes(s.status))}
+              schedules={schedules.filter(s => ['scheduled', 'in_progress', 'completed', 'shipped', 'sent_to_pipeline'].includes(s.status))}
               homologationStatuses={homologationStatuses}
               onRefresh={loadData}
               isCompletedView={true}
