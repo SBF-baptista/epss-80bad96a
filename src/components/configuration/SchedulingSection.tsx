@@ -38,7 +38,7 @@ export const SchedulingSection = ({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
-  const [accessoriesByCompany, setAccessoriesByCompany] = useState<Map<string, number>>(new Map());
+  const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     loadCustomers();
@@ -49,13 +49,14 @@ export const SchedulingSection = ({
     loadCustomers();
   }, [searchTerm]);
 
-  // Load accessories counts by company_name from accessories table
+  // Load accessories counts by vehicle plate from accessories table (via incoming_vehicles)
   const loadAccessoriesCounts = async () => {
     try {
+      // Get all accessories with their linked vehicle's plate
       const { data, error } = await supabase
         .from('accessories')
-        .select('company_name')
-        .not('company_name', 'is', null);
+        .select('vehicle_id, incoming_vehicles!accessories_vehicle_id_fkey(plate)')
+        .not('vehicle_id', 'is', null);
 
       if (error) {
         console.error('Error loading accessories counts:', error);
@@ -63,16 +64,17 @@ export const SchedulingSection = ({
       }
 
       const counts = new Map<string, number>();
-      data?.forEach(acc => {
-        if (acc.company_name) {
-          // Normalize company name for comparison (uppercase and trimmed)
-          const normalizedName = acc.company_name.trim().toUpperCase();
-          const current = counts.get(normalizedName) || 0;
-          counts.set(normalizedName, current + 1);
+      data?.forEach((acc: any) => {
+        const plate = acc.incoming_vehicles?.plate;
+        if (plate) {
+          // Normalize plate for comparison (uppercase and trimmed)
+          const normalizedPlate = plate.trim().toUpperCase();
+          const current = counts.get(normalizedPlate) || 0;
+          counts.set(normalizedPlate, current + 1);
         }
       });
-      console.log('Accessories counts by company (normalized):', Object.fromEntries(counts));
-      setAccessoriesByCompany(counts);
+      console.log('Accessories counts by plate (normalized):', Object.fromEntries(counts));
+      setAccessoriesByPlate(counts);
     } catch (error) {
       console.error('Error loading accessories counts:', error);
     }
@@ -151,18 +153,31 @@ export const SchedulingSection = ({
     });
   };
 
-  // Helper to check if a customer has at least one vehicle with accessories (from accessories table)
+  // Helper to check if a customer has at least one vehicle with accessories (by plate)
   const customerHasVehiclesWithAccessories = (customer: Customer) => {
-    // Check in accessories table by company_name or customer name (normalized for comparison)
-    const companyName = (customer.company_name || customer.name || '').trim().toUpperCase();
-    const count = accessoriesByCompany.get(companyName) || 0;
-    return count > 0;
+    // Check if any of the customer's vehicles have accessories linked by plate
+    if (!customer.vehicles || customer.vehicles.length === 0) return false;
+    
+    return customer.vehicles.some(vehicle => {
+      if (!vehicle.plate) return false;
+      const normalizedPlate = vehicle.plate.trim().toUpperCase();
+      const count = accessoriesByPlate.get(normalizedPlate) || 0;
+      return count > 0;
+    });
   };
 
-  // Get accessory count for a customer
+  // Get total accessory count for a customer's vehicles
   const getCustomerAccessoryCount = (customer: Customer) => {
-    const companyName = (customer.company_name || customer.name || '').trim().toUpperCase();
-    return accessoriesByCompany.get(companyName) || 0;
+    if (!customer.vehicles || customer.vehicles.length === 0) return 0;
+    
+    let total = 0;
+    customer.vehicles.forEach(vehicle => {
+      if (vehicle.plate) {
+        const normalizedPlate = vehicle.plate.trim().toUpperCase();
+        total += accessoriesByPlate.get(normalizedPlate) || 0;
+      }
+    });
+    return total;
   };
 
   // Filter customers: for pending view, only show those with at least one vehicle with accessories
