@@ -19,6 +19,7 @@ interface SchedulingSectionProps {
   technicians: Technician[];
   schedules: KitScheduleWithDetails[];
   homologationStatuses: Map<string, HomologationStatus>;
+  accessoriesByPlate: Map<string, number>;
   onRefresh: () => void;
   isCompletedView?: boolean;
 }
@@ -28,6 +29,7 @@ export const SchedulingSection = ({
   technicians,
   schedules,
   homologationStatuses,
+  accessoriesByPlate,
   onRefresh,
   isCompletedView = false
 }: SchedulingSectionProps) => {
@@ -38,47 +40,14 @@ export const SchedulingSection = ({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
-  const [accessoriesByPlate, setAccessoriesByPlate] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     loadCustomers();
-    loadAccessoriesCounts();
   }, []);
 
   useEffect(() => {
     loadCustomers();
   }, [searchTerm]);
-
-  // Load accessories counts by vehicle plate from accessories table (via incoming_vehicles)
-  const loadAccessoriesCounts = async () => {
-    try {
-      // Get all accessories with their linked vehicle's plate
-      const { data, error } = await supabase
-        .from('accessories')
-        .select('vehicle_id, incoming_vehicles!accessories_vehicle_id_fkey(plate)')
-        .not('vehicle_id', 'is', null);
-
-      if (error) {
-        console.error('Error loading accessories counts:', error);
-        return;
-      }
-
-      const counts = new Map<string, number>();
-      data?.forEach((acc: any) => {
-        const plate = acc.incoming_vehicles?.plate;
-        if (plate) {
-          // Normalize plate for comparison (uppercase and trimmed)
-          const normalizedPlate = plate.trim().toUpperCase();
-          const current = counts.get(normalizedPlate) || 0;
-          counts.set(normalizedPlate, current + 1);
-        }
-      });
-      console.log('Accessories counts by plate (normalized):', Object.fromEntries(counts));
-      setAccessoriesByPlate(counts);
-    } catch (error) {
-      console.error('Error loading accessories counts:', error);
-    }
-  };
 
   // Real-time subscription for customers table
   useEffect(() => {
@@ -95,18 +64,6 @@ export const SchedulingSection = ({
         (payload) => {
           console.log('Customer changed in Planning:', payload);
           loadCustomers();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'accessories'
-        },
-        (payload) => {
-          console.log('Accessories changed:', payload);
-          loadAccessoriesCounts();
         }
       )
       .subscribe();
