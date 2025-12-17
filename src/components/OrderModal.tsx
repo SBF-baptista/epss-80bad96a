@@ -238,48 +238,41 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
-        {/* Client Header - Full Width */}
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 -m-6 mb-0 p-6 border-b">
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="text-xl mb-1">
-                Pedido de Instalação - {order.company_name}
-              </DialogTitle>
-              <DialogDescription className="text-sm">
-                Detalhes completos do pedido
-              </DialogDescription>
-            </div>
-            <Badge className={getStatusColor(order.status)}>
-              {getStatusLabel(order.status)}
-            </Badge>
+        <DialogHeader>
+          <div>
+            <DialogTitle className="text-xl">
+              Pedido de Instalação - {order.company_name}
+            </DialogTitle>
+            <DialogDescription>
+              Detalhes completos do pedido
+            </DialogDescription>
           </div>
-          
-          {/* Client Contact Info */}
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
-              <span className="font-medium">{order.company_name}</span>
-            </div>
-            {schedule?.customer_phone && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span>📞 {schedule.customer_phone}</span>
-              </div>
-            )}
-            {schedule?.customer_email && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span>✉️ {schedule.customer_email}</span>
-              </div>
-            )}
-            {schedule?.customer_document_number && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span>📄 {schedule.customer_document_number}</span>
-              </div>
-            )}
-          </div>
-        </div>
+        </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh] pr-4 pt-4">
+        <ScrollArea className="max-h-[70vh] pr-4">
           <div className="space-y-6">
+            {/* Status */}
+            <div className="flex items-center space-x-3">
+              <Badge className={getStatusColor(order.status)}>
+                {getStatusLabel(order.status)}
+              </Badge>
+            </div>
+
+            <Separator />
+
+            {/* Customer Info */}
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              <h3 className="font-semibold text-base mb-2 text-primary">Cliente</h3>
+              <p className="font-medium text-foreground">{order.company_name}</p>
+              {schedule?.customer_phone && (
+                <p className="text-sm text-muted-foreground mt-1">Tel: {schedule.customer_phone}</p>
+              )}
+              {schedule?.customer_email && (
+                <p className="text-sm text-muted-foreground">Email: {schedule.customer_email}</p>
+              )}
+            </div>
+
+            <Separator />
 
             {/* 1. Consolidated Totals Section */}
             {allSchedules.length > 0 && (
@@ -337,9 +330,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                           {sortedItems.map(([itemName, quantity]) => (
                             <div key={itemName} className="flex items-center justify-between p-3 bg-card border rounded-lg">
                               <span className="font-medium text-sm text-foreground">{itemName}</span>
-                              {quantity > 1 && (
-                                <Badge variant="secondary" className="ml-2">{quantity}x</Badge>
-                              )}
+                              <Badge variant="secondary" className="ml-2">{quantity}</Badge>
                             </div>
                           ))}
                         </div>
@@ -450,9 +441,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                                 <div key={itemName} className="flex items-center gap-2 text-sm">
                                   <span className="text-muted-foreground">•</span>
                                   <span className="text-foreground">{itemName}</span>
-                                  {quantity > 1 && (
-                                    <Badge variant="secondary" className="text-xs">{quantity}x</Badge>
-                                  )}
+                                  <Badge variant="secondary" className="text-xs">{quantity}x</Badge>
                                 </div>
                               ))}
                             </div>
@@ -465,59 +454,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
               </>
             )}
 
-            {/* 3. Configurations Block */}
-            {allSchedules.length > 0 && (
-              <>
-                <Separator className="my-6" />
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg text-primary">
-                    Configurações Escolhidas
-                  </h3>
-                  <div className="bg-muted/30 p-4 rounded-lg border">
-                    {(() => {
-                      // Collect unique configurations from schedules
-                      const configurations = new Map<string, string[]>();
-                      
-                      allSchedules.forEach((sched) => {
-                        const config = sched.configuration || 'N/A';
-                        const vehicleLabel = `${sched.vehicle_brand || ''} ${sched.vehicle_model || ''} - ${sched.vehicle_plate || 'Sem placa'}`.trim();
-                        
-                        if (!configurations.has(config)) {
-                          configurations.set(config, []);
-                        }
-                        configurations.get(config)?.push(vehicleLabel);
-                      });
-
-                      return configurations.size > 0 ? (
-                        <div className="space-y-3">
-                          {Array.from(configurations.entries()).map(([config, vehicles]) => (
-                            <div key={config} className="p-3 bg-card border rounded-lg">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="secondary" className="font-semibold">
-                                  {config}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  ({vehicles.length} {vehicles.length === 1 ? 'veículo' : 'veículos'})
-                                </span>
-                              </div>
-                              <div className="text-xs text-muted-foreground space-y-1">
-                                {vehicles.map((v, i) => (
-                                  <div key={i}>• {v}</div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Nenhuma configuração definida</p>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* 4. All Vehicles/Plates Section */}
+            {/* 3. All Vehicles/Plates Section */}
             {loading ? (
               <>
                 <Separator className="my-6" />
@@ -705,11 +642,9 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
                                         <p className="text-xs text-muted-foreground">{item.description}</p>
                                       )}
                                     </div>
-                                    {item.quantity > 1 && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        {item.quantity}x
-                                      </Badge>
-                                    )}
+                                    <Badge variant="secondary" className="text-xs">
+                                      {item.quantity}x
+                                    </Badge>
                                   </div>
                                 </div>
                               ))}
