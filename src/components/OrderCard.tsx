@@ -123,23 +123,6 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
             </div>
             
             <div>
-              <span className="text-muted-foreground font-medium">Kits:</span>
-              {order.selectedKitNames && order.selectedKitNames.length > 0 ? (
-                <div className="mt-1 space-y-1">
-                  {order.selectedKitNames.map((kitName, index) => (
-                    <div key={index} className="text-xs text-foreground">
-                      • {kitName}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-1">
-                  <span className="text-xs text-muted-foreground italic">Nenhum kit selecionado</span>
-                </div>
-              )}
-            </div>
-
-            <div>
               <span className="text-muted-foreground font-medium">Rastreadores ({totalTrackers}):</span>
               <div className="mt-1 space-y-1">
                 {order.trackers.map((tracker, index) => (
@@ -169,23 +152,10 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               )}
             </div>
             
-            {/* Vehicle Configuration Details */}
-            <div className="p-2 bg-muted/30 border border-border rounded-md">
-              <span className="text-muted-foreground font-medium text-xs">Detalhamento:</span>
-              <div className="mt-1 space-y-1">
-                {order.vehicles.map((vehicle, index) => {
-                  const trackerModel = order.trackers[0]?.model ? cleanItemName(order.trackers[0].model) : 'N/A';
-                  return (
-                    <div key={index} className="text-xs text-foreground">
-                      <span className="text-primary font-medium">{vehicle.brand} {vehicle.model}</span>
-                      <span className="text-muted-foreground"> → </span>
-                      <span className="text-success font-medium">{trackerModel}</span>
-                      <span className="text-muted-foreground"> → </span>
-                      <span className="text-foreground font-medium">{order.configurationType || 'Config Padrão'}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Configuration */}
+            <div>
+              <span className="text-muted-foreground font-medium">Configuração: </span>
+              <span className="text-foreground font-medium">{order.configurationType || 'N/A'}</span>
             </div>
           </div>
 

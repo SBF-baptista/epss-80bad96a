@@ -128,50 +128,13 @@ const GroupedOrderCard = ({
             </div>
           </div>
           
-          {/* Configurations */}
-          <div className="space-y-2">
-            <span className="text-muted-foreground font-medium text-xs md:text-sm">Configurações:</span>
-            <div className="flex flex-wrap gap-1">
-              {groupedOrder.configurations.slice(0, 4).map((config, index) => (
-                <Badge key={index} variant="outline" className="text-[10px] md:text-xs px-1.5 py-0.5">
-                  {config}
-                </Badge>
-              ))}
-              {groupedOrder.configurations.length > 4 && (
-                <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 py-0.5">
-                  +{groupedOrder.configurations.length - 4} mais
-                </Badge>
-              )}
-            </div>
+          {/* Configuration */}
+          <div className="text-xs">
+            <span className="text-muted-foreground font-medium">Configuração: </span>
+            <span className="text-foreground font-medium">
+              {groupedOrder.orders[0]?.configurationType || 'N/A'}
+            </span>
           </div>
-
-          {/* Vehicle Configuration Details */}
-          {groupedOrder.orders.length > 0 && (
-            <div className="space-y-1.5 p-2 bg-muted/30 border border-border rounded-md">
-              <span className="text-muted-foreground font-medium text-xs">Detalhamento:</span>
-              <div className="space-y-1">
-                {groupedOrder.orders.flatMap(order => 
-                  order.vehicles.map((vehicle, vIdx) => {
-                    const trackerModel = order.trackers[0]?.model || 'N/A';
-                    return (
-                      <div key={`${order.id}-${vIdx}`} className="text-xs text-foreground">
-                        <span className="text-primary font-medium">{vehicle.brand} {vehicle.model}</span>
-                        <span className="text-muted-foreground"> → </span>
-                        <span className="text-success font-medium">{trackerModel}</span>
-                        <span className="text-muted-foreground"> → </span>
-                        <span className="text-foreground font-medium">{order.configurationType || 'Config Padrão'}</span>
-                      </div>
-                    );
-                  })
-                ).slice(0, 5)}
-                {groupedOrder.orders.reduce((acc, order) => acc + order.vehicles.length, 0) > 5 && (
-                  <div className="text-xs text-muted-foreground italic">
-                    +{groupedOrder.orders.reduce((acc, order) => acc + order.vehicles.length, 0) - 5} veículo(s) adicional(is)
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
           {/* Expandable details */}
           <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
             <CollapsibleContent className="space-y-2">
