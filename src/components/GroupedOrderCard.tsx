@@ -5,6 +5,11 @@ import { Scan, Truck, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
+// Utility to remove quantity pattern like "(1x)" or "(2x)" from item names
+const cleanItemName = (name: string): string => {
+  return name.replace(/\s*\(\d+x\)\s*$/i, '').trim();
+};
+
 interface GroupedOrderCardProps {
   groupedOrder: GroupedOrder;
   onClick: () => void;
@@ -140,13 +145,40 @@ const GroupedOrderCard = ({
             </div>
           </div>
 
+          {/* Vehicle Configuration Details */}
+          {groupedOrder.orders.length > 0 && (
+            <div className="space-y-1.5 p-2 bg-muted/30 border border-border rounded-md">
+              <span className="text-muted-foreground font-medium text-xs">Detalhamento:</span>
+              <div className="space-y-1">
+                {groupedOrder.orders.flatMap(order => 
+                  order.vehicles.map((vehicle, vIdx) => {
+                    const trackerModel = order.trackers[0]?.model || 'N/A';
+                    return (
+                      <div key={`${order.id}-${vIdx}`} className="text-xs text-foreground">
+                        <span className="text-primary font-medium">{vehicle.brand} {vehicle.model}</span>
+                        <span className="text-muted-foreground"> → </span>
+                        <span className="text-success font-medium">{trackerModel}</span>
+                        <span className="text-muted-foreground"> → </span>
+                        <span className="text-foreground font-medium">{order.configurationType || 'Config Padrão'}</span>
+                      </div>
+                    );
+                  })
+                ).slice(0, 5)}
+                {groupedOrder.orders.reduce((acc, order) => acc + order.vehicles.length, 0) > 5 && (
+                  <div className="text-xs text-muted-foreground italic">
+                    +{groupedOrder.orders.reduce((acc, order) => acc + order.vehicles.length, 0) - 5} veículo(s) adicional(is)
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {/* Expandable details */}
           <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
             <CollapsibleContent className="space-y-2">
               <div className="border-t border-border pt-2 mt-2">
                 <div className="text-xs text-muted-foreground mb-2">Detalhes dos pedidos:</div>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {groupedOrder.orders.map((order, index) => (
+                  {groupedOrder.orders.map((order) => (
                     <div key={order.id} className="bg-muted/50 border border-border p-2 rounded text-xs">
                       <div className="font-medium text-foreground mb-1">Pedido {order.number}</div>
                       <div className="space-y-1 text-[11px]">
@@ -158,14 +190,14 @@ const GroupedOrderCard = ({
                         ))}
                         {order.trackers.map((tracker, tIndex) => (
                           <div key={tIndex} className="flex justify-between items-center">
-                            <span className="text-success truncate pr-2">{tracker.model}</span>
+                            <span className="text-success truncate pr-2">{cleanItemName(tracker.model)}</span>
                             <span className="bg-success-light text-success px-1.5 py-0.5 rounded text-[10px]">{tracker.quantity}x</span>
                           </div>
                         ))}
                         {order.accessories && order.accessories.length > 0 && (
                           order.accessories.map((accessory, aIndex) => (
                             <div key={aIndex} className="flex justify-between items-center">
-                              <span className="text-purple-600 truncate pr-2">{accessory.name}</span>
+                              <span className="text-purple-600 truncate pr-2">{cleanItemName(accessory.name)}</span>
                               <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">{accessory.quantity}x</span>
                             </div>
                           ))
