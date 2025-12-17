@@ -152,11 +152,6 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               )}
             </div>
             
-            {/* Configuration */}
-            <div>
-              <span className="text-muted-foreground font-medium">Configuração: </span>
-              <span className="text-foreground font-medium">{order.configurationType || 'N/A'}</span>
-            </div>
           </div>
 
           {isStandby && (
