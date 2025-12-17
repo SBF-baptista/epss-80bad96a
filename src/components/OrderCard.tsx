@@ -1,9 +1,12 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/services/orderService";
 import { Scan, Truck } from "lucide-react";
 
+// Utility to remove quantity pattern like "(1x)" or "(2x)" from item names
+const cleanItemName = (name: string): string => {
+  return name.replace(/\s*\(\d+x\)\s*$/i, '').trim();
+};
 interface OrderCardProps {
   order: Order;
   onClick: () => void;
@@ -141,7 +144,7 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               <div className="mt-1 space-y-1">
                 {order.trackers.map((tracker, index) => (
                   <div key={index} className="flex justify-between text-xs">
-                    <span className="text-foreground">{tracker.model}</span>
+                    <span className="text-foreground">{cleanItemName(tracker.model)}</span>
                     <span className="font-medium">{tracker.quantity}x</span>
                   </div>
                 ))}
@@ -154,8 +157,8 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
                 <div className="mt-1 space-y-1">
                   {order.accessories.map((accessory, index) => (
                     <div key={index} className="flex justify-between text-xs">
-                      <span className="text-foreground">{accessory.name}</span>
-                      <span className="font-medium">x{accessory.quantity}</span>
+                      <span className="text-foreground">{cleanItemName(accessory.name)}</span>
+                      <span className="font-medium">{accessory.quantity}x</span>
                     </div>
                   ))}
                 </div>
@@ -166,13 +169,24 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               )}
             </div>
             
-            {order.configurationType && (
-              <div className="p-2 bg-primary/5 border border-primary/20 rounded-md">
-                <p className="text-xs font-medium text-primary">
-                  📋 Configuração: {order.configurationType}
-                </p>
+            {/* Vehicle Configuration Details */}
+            <div className="p-2 bg-muted/30 border border-border rounded-md">
+              <span className="text-muted-foreground font-medium text-xs">Detalhamento:</span>
+              <div className="mt-1 space-y-1">
+                {order.vehicles.map((vehicle, index) => {
+                  const trackerModel = order.trackers[0]?.model ? cleanItemName(order.trackers[0].model) : 'N/A';
+                  return (
+                    <div key={index} className="text-xs text-foreground">
+                      <span className="text-primary font-medium">{vehicle.brand} {vehicle.model}</span>
+                      <span className="text-muted-foreground"> → </span>
+                      <span className="text-success font-medium">{trackerModel}</span>
+                      <span className="text-muted-foreground"> → </span>
+                      <span className="text-foreground font-medium">{order.configurationType || 'Config Padrão'}</span>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
           </div>
 
           {isStandby && (
