@@ -128,13 +128,6 @@ const GroupedOrderCard = ({
             </div>
           </div>
           
-          {/* Configuration */}
-          <div className="text-xs">
-            <span className="text-muted-foreground font-medium">Configuração: </span>
-            <span className="text-foreground font-medium">
-              {groupedOrder.orders[0]?.configurationType || 'N/A'}
-            </span>
-          </div>
           {/* Expandable details */}
           <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
             <CollapsibleContent className="space-y-2">
