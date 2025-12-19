@@ -1,12 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Search, Check, ChevronsUpDown } from "lucide-react";
 import { useFipeBrands, useFipeModels, useFipeYears } from "@/hooks/useFipeData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface EditVehicleModalProps {
   open: boolean;
@@ -36,6 +40,11 @@ export const EditVehicleModal = ({
   const [selectedYearCode, setSelectedYearCode] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<number | undefined>(currentYear);
   const [saving, setSaving] = useState(false);
+  
+  // Popover states
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [modelOpen, setModelOpen] = useState(false);
+  const [yearOpen, setYearOpen] = useState(false);
 
   const { brands, loading: loadingBrands } = useFipeBrands();
   const { models, loading: loadingModels } = useFipeModels(selectedBrandCode);
@@ -99,6 +108,7 @@ export const EditVehicleModal = ({
     setSelectedModel("");
     setSelectedYearCode("");
     setSelectedYear(undefined);
+    setBrandOpen(false);
   };
 
   const handleModelChange = (modelCode: string) => {
@@ -110,6 +120,7 @@ export const EditVehicleModal = ({
     // Reset year when model changes
     setSelectedYearCode("");
     setSelectedYear(undefined);
+    setModelOpen(false);
   };
 
   const handleYearChange = (yearCode: string) => {
@@ -122,6 +133,7 @@ export const EditVehicleModal = ({
         setSelectedYear(parseInt(yearMatch[0]));
       }
     }
+    setYearOpen(false);
   };
 
   const handleSave = async () => {
@@ -163,72 +175,173 @@ export const EditVehicleModal = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Brand Selector with Search */}
           <div className="space-y-2">
             <Label>Marca</Label>
-            <Select
-              value={selectedBrandCode}
-              onValueChange={handleBrandChange}
-              disabled={loadingBrands}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={loadingBrands ? "Carregando..." : "Selecione a marca"} />
-              </SelectTrigger>
-              <SelectContent>
-                {brands.map((brand) => (
-                  <SelectItem key={brand.code} value={brand.code}>
-                    {brand.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={brandOpen} onOpenChange={setBrandOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={brandOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={loadingBrands}
+                >
+                  {loadingBrands ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando...
+                    </span>
+                  ) : selectedBrand ? (
+                    selectedBrand
+                  ) : (
+                    "Selecione a marca"
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Pesquisar marca..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma marca encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      <ScrollArea className="h-[200px]">
+                        {brands.map((brand) => (
+                          <CommandItem
+                            key={brand.code}
+                            value={brand.name}
+                            onSelect={() => handleBrandChange(brand.code)}
+                          >
+                            {brand.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedBrandCode === brand.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </ScrollArea>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
+          {/* Model Selector with Search */}
           <div className="space-y-2">
             <Label>Modelo</Label>
-            <Select
-              value={selectedModelCode}
-              onValueChange={handleModelChange}
-              disabled={!selectedBrandCode || loadingModels}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={
-                  !selectedBrandCode ? "Selecione uma marca primeiro" :
-                  loadingModels ? "Carregando..." :
-                  "Selecione o modelo"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {models.map((model) => (
-                  <SelectItem key={model.code} value={model.code}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={modelOpen} onOpenChange={setModelOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={modelOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={!selectedBrandCode || loadingModels}
+                >
+                  {!selectedBrandCode ? (
+                    "Selecione uma marca primeiro"
+                  ) : loadingModels ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando...
+                    </span>
+                  ) : selectedModel ? (
+                    selectedModel
+                  ) : (
+                    "Selecione o modelo"
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Pesquisar modelo..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum modelo encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <ScrollArea className="h-[200px]">
+                        {models.map((model) => (
+                          <CommandItem
+                            key={model.code}
+                            value={model.name}
+                            onSelect={() => handleModelChange(model.code)}
+                          >
+                            {model.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedModelCode === model.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </ScrollArea>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
+          {/* Year Selector with Search */}
           <div className="space-y-2">
             <Label>Ano (opcional)</Label>
-            <Select
-              value={selectedYearCode}
-              onValueChange={handleYearChange}
-              disabled={!selectedModelCode || loadingYears}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={
-                  !selectedModelCode ? "Selecione um modelo primeiro" :
-                  loadingYears ? "Carregando..." :
-                  "Selecione o ano"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year.code} value={year.code}>
-                    {year.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={yearOpen} onOpenChange={setYearOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={yearOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={!selectedModelCode || loadingYears}
+                >
+                  {!selectedModelCode ? (
+                    "Selecione um modelo primeiro"
+                  ) : loadingYears ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando...
+                    </span>
+                  ) : selectedYear ? (
+                    years.find(y => y.code === selectedYearCode)?.name || selectedYear.toString()
+                  ) : (
+                    "Selecione o ano"
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Pesquisar ano..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum ano encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <ScrollArea className="h-[200px]">
+                        {years.map((year) => (
+                          <CommandItem
+                            key={year.code}
+                            value={year.name}
+                            onSelect={() => handleYearChange(year.code)}
+                          >
+                            {year.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedYearCode === year.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </ScrollArea>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="rounded-lg bg-muted/50 p-3 space-y-1 border">
