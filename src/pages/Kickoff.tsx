@@ -134,33 +134,48 @@ const Kickoff = () => {
         <TabsContent value="pending" className="space-y-4">
           <h2 className="text-2xl font-semibold">Kickoff Cliente</h2>
           {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <Skeleton className="h-32" />
             <Skeleton className="h-32" />
             <Skeleton className="h-32" />
             <Skeleton className="h-32" />
           </div>
         ) : kickoffData && kickoffData.clients.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {kickoffData.clients.map((client) => {
               const daysInKickoff = getDaysInKickoff(client.sale_summary_id);
+              
+              // Colorimetria dinâmica: amarelo 0-5, laranja 6-10, vermelho >10
+              const getPendencyBadgeStyles = () => {
+                if (daysInKickoff <= 5) {
+                  return "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700";
+                } else if (daysInKickoff <= 10) {
+                  return "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-700";
+                } else {
+                  return "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700";
+                }
+              };
+              
               return (
-              <Card key={client.sale_summary_id} className="relative">
-                <CardHeader>
-                  <div className="flex items-center gap-2 mb-2">
-                    <CardTitle className="text-lg">{client.company_name}</CardTitle>
-                    {daysInKickoff > 0 && (
-                      <Badge variant="outline" className="text-xs flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Kickoff pendente há {daysInKickoff} {daysInKickoff === 1 ? 'dia' : 'dias'}
-                      </Badge>
-                    )}
-                  </div>
+              <Card key={client.sale_summary_id} className="relative flex flex-col">
+                <CardHeader className="pb-2">
+                  {/* Nome do cliente no topo */}
+                  <CardTitle className="text-lg leading-tight">{client.company_name}</CardTitle>
+                  
+                  {/* Tag de pendência logo abaixo do nome */}
+                  {daysInKickoff > 0 && (
+                    <Badge variant="outline" className={`text-xs flex items-center gap-1 w-fit mt-2 ${getPendencyBadgeStyles()}`}>
+                      <Clock className="h-3 w-3" />
+                      Pendente há {daysInKickoff} {daysInKickoff === 1 ? 'dia' : 'dias'}
+                    </Badge>
+                  )}
                 </CardHeader>
                 
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
+                <CardContent className="space-y-3 flex-1 flex flex-col">
+                  {/* Quantidade de veículos abaixo da tag */}
+                  <div className="flex items-center text-sm">
                     <span className="text-muted-foreground">Veículos:</span>
-                    <span className="font-semibold">{client.total_vehicles} {client.total_vehicles === 1 ? 'veículo' : 'veículos'}</span>
+                    <span className="font-semibold ml-2">{client.total_vehicles} {client.total_vehicles === 1 ? 'veículo' : 'veículos'}</span>
                   </div>
                   
                   {client.needs_blocking && (
@@ -171,14 +186,14 @@ const Kickoff = () => {
                     </div>
                   )}
 
-                  <div className="flex justify-end pt-2">
+                  <div className="flex justify-end pt-2 mt-auto">
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={() => handleEditKickoff(client.sale_summary_id, client.company_name)}
+                      className="bg-[#1d7eb5] hover:bg-[#1a6fa0] text-white"
                     >
                       <Edit className="h-4 w-4 mr-2" />
-                      Editar Kickoff
+                      Realizar Kickoff
                     </Button>
                   </div>
                 </CardContent>
