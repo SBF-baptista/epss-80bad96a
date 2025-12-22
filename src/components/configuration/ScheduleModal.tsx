@@ -1019,7 +1019,7 @@ export const ScheduleModal = ({
                       <Truck className="w-4 h-4" />
                       <span className="text-sm font-medium text-muted-foreground">Veículos</span>
                     </div>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                         {selectedCustomer.vehicles.map((vehicle, index) => (
                           <div key={index} className="p-3 border rounded-lg">
                             <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
@@ -1316,14 +1316,13 @@ export const ScheduleModal = ({
                                              <Package className="h-4 w-4" />
                                              <div className="flex flex-col items-start flex-1">
                                                <span className="text-xs font-medium">
-                                                 {selectedKitIds.length > 0 
-                                                   ? `${selectedKitIds.length} selecionado${selectedKitIds.length > 1 ? 's' : ''}`
-                                                   : `${suggestedKits.length} compatível${suggestedKits.length > 1 ? 'eis' : ''}`
-                                                 }
+                                                 Selecionar Kits
                                                </span>
-                                               <span className="text-xs text-muted-foreground">
-                                                 {selectedKitIds.length > 0 ? 'Editar seleção' : 'Selecionar kits'}
-                                               </span>
+                                               {selectedKitIds.length > 0 && (
+                                                 <span className="text-xs text-muted-foreground">
+                                                   {selectedKitIds.length} selecionado{selectedKitIds.length > 1 ? 's' : ''}
+                                                 </span>
+                                               )}
                                              </div>
                                            </Button>
                                          </PopoverTrigger>
@@ -1662,10 +1661,10 @@ export const ScheduleModal = ({
                         type="button" 
                         onClick={onSubmit} 
                         disabled={isSubmitting || !isButtonEnabled()}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 bg-[#1d7eb5] hover:bg-[#1a6fa0] text-white"
                       >
                         <Truck className="w-4 h-4" />
-                        {isSubmitting ? "Enviando para esteira..." : "Enviar para esteira de pedidos"}
+                        {isSubmitting ? "Iniciando planejamento..." : "Iniciar planejamento"}
                       </Button>
                     </DialogFooter>
                   </div>
