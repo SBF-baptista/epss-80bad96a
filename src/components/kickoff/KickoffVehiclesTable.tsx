@@ -745,17 +745,17 @@ export const KickoffVehiclesTable = ({
         <Table className="w-full table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[7%] border-r border-border">Placa</TableHead>
-              <TableHead className="w-[8%] border-r border-border">Produto</TableHead>
-              <TableHead className="w-[8%] border-r border-border">Marca</TableHead>
-              <TableHead className="w-[10%] border-r border-border">Modelo</TableHead>
-              <TableHead className="w-[5%] border-r border-border">Ano</TableHead>
+              <TableHead className="w-[6%] border-r border-border">Placa</TableHead>
+              <TableHead className="w-[10%] border-r border-border">Produto</TableHead>
+              <TableHead className="w-[7%] border-r border-border">Marca</TableHead>
+              <TableHead className="w-[9%] border-r border-border">Modelo</TableHead>
+              <TableHead className="w-[4%] border-r border-border">Ano</TableHead>
               <TableHead className="w-[14%] border-r border-border">Módulos</TableHead>
               <TableHead className="w-[12%] border-r border-border">Acessórios</TableHead>
               <TableHead className="w-[12%] border-r border-border">Bloqueio</TableHead>
               <TableHead className="w-[8%] border-r border-border">Sirene</TableHead>
               <TableHead className="w-[10%] border-r border-border">FIPE</TableHead>
-              <TableHead className="w-[6%]">Validação</TableHead>
+              <TableHead className="w-[8%]">Validação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -775,10 +775,10 @@ export const KickoffVehiclesTable = ({
                       {vehicle.plate || "Não informada"}
                     </span>
                   </TableCell>
-                  <TableCell className="border-r border-border">
-                    <Badge variant="outline" className="text-xs whitespace-nowrap">
+                  <TableCell className="border-r border-border align-top">
+                    <span className="text-xs break-words inline-block">
                       {capitalizeWords(vehicle.usage_type || '')}
-                    </Badge>
+                    </span>
                   </TableCell>
                   <TableCell className="border-r border-border">
                     <div className="flex items-center gap-2">
