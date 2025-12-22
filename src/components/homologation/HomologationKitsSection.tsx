@@ -554,22 +554,12 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                 </div>
               )}
               
-              {/* Add Kit and Import Buttons */}
+              {/* Add Kit Button */}
               {!isCreating && (
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsImportModalOpen(true)} 
-                    className="shrink-0"
-                  >
-                    <FileUp className="h-4 w-4 mr-2" />
-                    Importar TXT
-                  </Button>
-                  <Button onClick={() => setIsKitModalOpen(true)} className="shrink-0">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Novo Kit
-                  </Button>
-                </div>
+                <Button onClick={() => setIsKitModalOpen(true)} className="shrink-0">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Kit
+                </Button>
               )}
             </div>
 

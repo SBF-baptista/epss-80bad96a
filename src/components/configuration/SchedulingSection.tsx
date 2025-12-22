@@ -434,12 +434,11 @@ export const SchedulingSection = ({
                                 return hasUnscheduledVehicles || activeSchedules.length === 0 ? (
                                   <Button
                                     size="sm"
-                                    variant="outline"
                                     onClick={() => handleScheduleCustomer(customer)}
-                                    className="w-full"
+                                    className="w-full bg-[#1d7eb5] hover:bg-[#1a6fa0] text-white"
                                   >
                                     <Plus className="w-4 h-4 mr-2" />
-                                    Enviar para esteira de pedidos
+                                    Iniciar planejamento
                                   </Button>
                                 ) : null;
                               })()}
