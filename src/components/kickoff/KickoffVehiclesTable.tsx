@@ -741,21 +741,21 @@ export const KickoffVehiclesTable = ({
       </div>
 
       {/* Desktop Table Layout */}
-      <div className="hidden lg:block rounded-md border overflow-x-auto">
-        <Table className="min-w-[1200px]">
+      <div className="hidden lg:block rounded-md border">
+        <Table className="w-full table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[100px]">Placa</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[120px]">Produto</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[100px]">Marca</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[120px]">Modelo</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[60px]">Ano</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[180px]">Módulos</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[150px]">Acessórios</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[180px]">Bloqueio</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[150px]">Sirene</TableHead>
-              <TableHead className="whitespace-nowrap border-r border-border min-w-[180px]">FIPE</TableHead>
-              <TableHead className="whitespace-nowrap min-w-[100px]">Validação</TableHead>
+              <TableHead className="w-[7%] border-r border-border">Placa</TableHead>
+              <TableHead className="w-[8%] border-r border-border">Produto</TableHead>
+              <TableHead className="w-[8%] border-r border-border">Marca</TableHead>
+              <TableHead className="w-[10%] border-r border-border">Modelo</TableHead>
+              <TableHead className="w-[5%] border-r border-border">Ano</TableHead>
+              <TableHead className="w-[14%] border-r border-border">Módulos</TableHead>
+              <TableHead className="w-[12%] border-r border-border">Acessórios</TableHead>
+              <TableHead className="w-[12%] border-r border-border">Bloqueio</TableHead>
+              <TableHead className="w-[8%] border-r border-border">Sirene</TableHead>
+              <TableHead className="w-[10%] border-r border-border">FIPE</TableHead>
+              <TableHead className="w-[6%]">Validação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -796,21 +796,22 @@ export const KickoffVehiclesTable = ({
                   <TableCell className="border-r border-border">
                     {vehicle.year || <span className="text-muted-foreground">-</span>}
                   </TableCell>
-                  <TableCell className="border-r border-border">
-                    <div className="space-y-2 max-w-[250px]">
+                  <TableCell className="border-r border-border align-top">
+                    <div className="space-y-1">
                       {modulesList.length > 0 ? (
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {modulesList.map((module, idx) => (
-                            <div key={`mod-${idx}`} className="flex items-center space-x-2">
+                            <div key={`mod-${idx}`} className="flex items-start gap-1">
                               <Checkbox
                                 id={`${vehicle.id}-${module.name}`}
                                 checked={vehicleModules.has(module.name)}
                                 onCheckedChange={() => onModuleToggle(vehicle.id, module.name)}
                                 disabled={isPlateValidated}
+                                className="mt-0.5 shrink-0"
                               />
-                              <Badge variant="outline" className="text-xs flex-1">
+                              <span className="text-xs break-words">
                                 {module.name} ({module.quantity}x)
-                              </Badge>
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -819,14 +820,14 @@ export const KickoffVehiclesTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="border-r border-border">
-                    <div className="max-w-[200px]">
+                  <TableCell className="border-r border-border align-top">
+                    <div>
                       {accessoriesList.length > 0 ? (
                         <div className="flex gap-1 flex-wrap">
                           {accessoriesList.map((item, idx) => (
-                            <Badge key={`acc-${idx}`} variant="outline" className="text-xs">
+                            <span key={`acc-${idx}`} className="text-xs bg-muted px-1.5 py-0.5 rounded break-words">
                               {item.name} ({item.quantity}x)
-                            </Badge>
+                            </span>
                           ))}
                         </div>
                       ) : (
@@ -834,63 +835,58 @@ export const KickoffVehiclesTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="border-r border-border">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
+                  <TableCell className="border-r border-border align-top">
+                    <div className="space-y-1">
+                      <div className="flex items-start gap-1">
                         <Checkbox
                           id={`${vehicle.id}-blocking`}
                           checked={blocking.needsBlocking}
                           onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'needsBlocking', checked as boolean)}
                           disabled={isPlateValidated}
+                          className="mt-0.5 shrink-0"
                         />
-                        <Label htmlFor={`${vehicle.id}-blocking`} className="text-sm cursor-pointer">
-                          Necessita de bloqueio
-                        </Label>
+                        <span className="text-xs break-words">Necessita bloqueio</span>
                       </div>
                       {blocking.needsBlocking && (
-                        <>
-                          <div className="flex items-center gap-2 ml-6">
-                            <Label className="text-xs text-muted-foreground whitespace-nowrap">Quantidade:</Label>
+                        <div className="ml-5 space-y-1">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">Qtd:</span>
                             <Input
                               type="number"
                               min="1"
                               value={blocking.quantity}
                               onChange={(e) => onBlockingQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
-                              className="w-16 h-8 text-xs"
+                              className="w-12 h-6 text-xs px-1"
                               disabled={isPlateValidated}
                             />
                           </div>
-                          <div className="ml-6 space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`${vehicle.id}-engine`}
-                                checked={blocking.engineBlocking}
-                                onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'engineBlocking', checked as boolean)}
-                                disabled={isPlateValidated}
-                              />
-                              <Label htmlFor={`${vehicle.id}-engine`} className="text-xs cursor-pointer">
-                                Bloqueio de partida
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`${vehicle.id}-fuel`}
-                                checked={blocking.fuelBlocking}
-                                onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'fuelBlocking', checked as boolean)}
-                                disabled={isPlateValidated}
-                              />
-                              <Label htmlFor={`${vehicle.id}-fuel`} className="text-xs cursor-pointer">
-                                Bloqueio de combustível
-                              </Label>
-                            </div>
+                          <div className="flex items-start gap-1">
+                            <Checkbox
+                              id={`${vehicle.id}-engine`}
+                              checked={blocking.engineBlocking}
+                              onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'engineBlocking', checked as boolean)}
+                              disabled={isPlateValidated}
+                              className="mt-0.5 shrink-0"
+                            />
+                            <span className="text-xs break-words">Partida</span>
                           </div>
-                        </>
+                          <div className="flex items-start gap-1">
+                            <Checkbox
+                              id={`${vehicle.id}-fuel`}
+                              checked={blocking.fuelBlocking}
+                              onCheckedChange={(checked) => onBlockingToggle(vehicle.id, 'fuelBlocking', checked as boolean)}
+                              disabled={isPlateValidated}
+                              className="mt-0.5 shrink-0"
+                            />
+                            <span className="text-xs break-words">Combustível</span>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="border-r border-border">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
+                  <TableCell className="border-r border-border align-top">
+                    <div className="space-y-1">
+                      <div className="flex items-start gap-1">
                         <Checkbox
                           id={`siren-${vehicle.id}`}
                           checked={vehicleSiren.get(vehicle.id)?.hasSiren || false}
@@ -898,67 +894,62 @@ export const KickoffVehiclesTable = ({
                             onSirenToggle(vehicle.id, checked as boolean)
                           }
                           disabled={isPlateValidated}
+                          className="mt-0.5 shrink-0"
                         />
-                        <Label htmlFor={`siren-${vehicle.id}`} className="text-sm font-medium cursor-pointer">
-                          Possui Sirene
-                        </Label>
+                        <span className="text-xs break-words">Possui Sirene</span>
                       </div>
                       {vehicleSiren.get(vehicle.id)?.hasSiren && (
-                        <div className="flex items-center gap-2 ml-6">
-                          <Label className="text-xs text-muted-foreground whitespace-nowrap">Quantidade:</Label>
+                        <div className="flex items-center gap-1 ml-5">
+                          <span className="text-xs text-muted-foreground">Qtd:</span>
                           <Input
                             type="number"
                             min="1"
                             value={vehicleSiren.get(vehicle.id)?.quantity || 1}
                             onChange={(e) => onSirenQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
-                            className="w-16 h-8 text-xs"
+                            className="w-12 h-6 text-xs px-1"
                             disabled={isPlateValidated}
                           />
                         </div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="border-r border-border">
-                    <div className="flex items-center justify-between gap-2">
-                      {isVehicleInvalid(vehicle) ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2 cursor-help">
-                              <AlertTriangle className="h-5 w-5 text-error" />
-                              <div className="flex flex-col items-start">
-                                <Badge variant="outline" className="bg-error-light text-error border-error-border">
-                                  Fora do padrão
-                                </Badge>
+                  <TableCell className="border-r border-border align-top">
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="flex-1 min-w-0">
+                        {isVehicleInvalid(vehicle) ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1 cursor-help">
+                                <AlertTriangle className="h-4 w-4 text-error shrink-0" />
+                                <span className="text-xs text-error break-words">Fora do padrão</span>
                               </div>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-sm">
-                            <div className="space-y-2">
-                              <p className="font-semibold text-error">
-                                {getVehicleValidationDetails(vehicle)?.error}
-                              </p>
-                              {getVehicleValidationDetails(vehicle)?.suggestion && (
-                                <div className="text-xs">
-                                  <p className="font-medium mb-1">Sugestões da FIPE:</p>
-                                  <p className="text-muted-foreground">
-                                    {getVehicleValidationDetails(vehicle)?.suggestion}
-                                  </p>
-                                </div>
-                              )}
-                              <p className="text-xs text-muted-foreground mt-2">
-                                Clique no botão de edição para corrigir
-                              </p>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-success" />
-                          <Badge variant="outline" className="bg-success-light text-success border-success-border">
-                            Dentro do padrão
-                          </Badge>
-                        </div>
-                      )}
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-sm">
+                              <div className="space-y-2">
+                                <p className="font-semibold text-error">
+                                  {getVehicleValidationDetails(vehicle)?.error}
+                                </p>
+                                {getVehicleValidationDetails(vehicle)?.suggestion && (
+                                  <div className="text-xs">
+                                    <p className="font-medium mb-1">Sugestões da FIPE:</p>
+                                    <p className="text-muted-foreground">
+                                      {getVehicleValidationDetails(vehicle)?.suggestion}
+                                    </p>
+                                  </div>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Clique no botão de edição para corrigir
+                                </p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="h-4 w-4 text-success shrink-0" />
+                            <span className="text-xs text-success break-words">OK</span>
+                          </div>
+                        )}
+                      </div>
                       <Button
                         type="button"
                         variant="ghost"
@@ -966,12 +957,13 @@ export const KickoffVehiclesTable = ({
                         onClick={() => handleEditClick(vehicle)}
                         title="Editar marca, modelo e ano"
                         disabled={isPlateValidated}
+                        className="h-6 w-6 shrink-0"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="align-top">
                     <PlateValidationCheckbox
                       vehicleId={vehicle.id}
                       plate={vehicle.plate || ""}
