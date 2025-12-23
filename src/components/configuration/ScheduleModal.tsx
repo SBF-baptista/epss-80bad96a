@@ -1687,8 +1687,8 @@ export const ScheduleModal = ({
                         disabled={isSubmitting || !isButtonEnabled()}
                         className="flex items-center gap-2 bg-[#1d7eb5] hover:bg-[#1a6fa0] text-white"
                       >
-                        <Truck className="w-4 h-4" />
-                        {isSubmitting ? "Iniciando planejamento..." : "Iniciar planejamento"}
+                        <Check className="w-4 h-4" />
+                        {isSubmitting ? "Concluindo..." : "Concluir"}
                       </Button>
                     </DialogFooter>
                   </div>
