@@ -178,7 +178,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           <div>
             <h3 className="font-semibold text-foreground mb-3 md:mb-4 text-sm md:text-base">Ações do Fluxo de Trabalho</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
-              {(card.status === 'em_homologacao' || card.status === 'agendamento_teste') && (
+              {card.status === 'em_homologacao' && (
                 <Button
                   variant="outline"
                   onClick={() => setShowTestScheduling(true)}
@@ -188,6 +188,21 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                   <Calendar className="h-4 w-4" />
                   {card.test_scheduled_date ? 'Reagendar Teste' : 'Agendar Teste'}
                 </Button>
+              )}
+
+              {card.status === 'agendamento_teste' && card.test_scheduled_date && (
+                <div className="flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-md px-3 py-2 text-sm">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    Agendado para: {new Date(card.test_scheduled_date).toLocaleString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
               )}
               
               {(card.status === 'agendamento_teste' || card.status === 'execucao_teste') && 
