@@ -13,9 +13,10 @@ interface TestSchedulingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  onCloseParent?: () => void;
 }
 
-const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate }: TestSchedulingModalProps) => {
+const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: TestSchedulingModalProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,6 +45,7 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate }: TestScheduling
       });
       onUpdate();
       onClose();
+      onCloseParent?.();
     } catch (error) {
       console.error('Error scheduling test:', error);
       toast({

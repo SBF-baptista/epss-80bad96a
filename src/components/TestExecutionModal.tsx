@@ -19,6 +19,7 @@ interface TestExecutionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  onCloseParent?: () => void;
 }
 
 const DEFAULT_CHECKLIST = [
@@ -39,7 +40,7 @@ const CONFIGURATION_OPTIONS = [
   'Outros'
 ];
 
-const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionModalProps) => {
+const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: TestExecutionModalProps) => {
   const { showSuccess, showError, showWarning } = useHomologationToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -302,6 +303,7 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
       
       onUpdate();
       onClose();
+      onCloseParent?.();
     } catch (error) {
       console.error('Error updating test execution:', error);
       

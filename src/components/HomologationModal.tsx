@@ -42,6 +42,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
         title: "Teste iniciado",
         description: "O card foi movido para 'Em Homologação'"
       });
+      onClose();
     } catch (error) {
       console.error("Error starting test:", error);
       toast({
@@ -66,7 +67,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
         title: "Execução iniciada",
         description: "O card foi movido para 'Execução de Teste'"
       });
-      setShowTestExecution(true);
+      onClose();
     } catch (error) {
       console.error("Error executing test:", error);
       toast({
@@ -401,6 +402,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           isOpen={showTestScheduling}
           onClose={() => setShowTestScheduling(false)}
           onUpdate={onUpdate}
+          onCloseParent={onClose}
         />
       )}
 
@@ -410,6 +412,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           isOpen={showTestExecution}
           onClose={() => setShowTestExecution(false)}
           onUpdate={onUpdate}
+          onCloseParent={onClose}
         />
       )}
     </Dialog>
