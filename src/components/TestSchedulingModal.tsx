@@ -134,9 +134,9 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }:
               </SelectTrigger>
               <SelectContent className="bg-background border z-50">
                 {technicians.length === 0 ? (
-                  <SelectItem value="" disabled>
+                  <div className="px-2 py-4 text-sm text-muted-foreground text-center">
                     Nenhum técnico cadastrado
-                  </SelectItem>
+                  </div>
                 ) : (
                   technicians.map((tech) => (
                     <SelectItem key={tech.id} value={tech.name}>
