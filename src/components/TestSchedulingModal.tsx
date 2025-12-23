@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, MapPin, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { scheduleTest, HomologationCard } from "@/services/homologationService";
+import { getTechnicians, Technician } from "@/services/technicianService";
 
 interface TestSchedulingModalProps {
   card: HomologationCard;
@@ -19,11 +21,27 @@ interface TestSchedulingModalProps {
 const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: TestSchedulingModalProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [formData, setFormData] = useState({
     testDate: card.test_scheduled_date?.slice(0, 16) || '',
     location: card.test_location || '',
     technician: card.test_technician || ''
   });
+
+  useEffect(() => {
+    const loadTechnicians = async () => {
+      try {
+        const data = await getTechnicians();
+        setTechnicians(data);
+      } catch (error) {
+        console.error('Error loading technicians:', error);
+      }
+    };
+    
+    if (isOpen) {
+      loadTechnicians();
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,9 +87,9 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }:
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="font-medium text-gray-900">{card.brand} {card.model}</p>
-            {card.year && <p className="text-sm text-gray-600">Ano: {card.year}</p>}
+          <div className="bg-muted p-3 rounded-lg">
+            <p className="font-medium">{card.brand} {card.model}</p>
+            {card.year && <p className="text-sm text-muted-foreground">Ano: {card.year}</p>}
           </div>
 
           <div className="space-y-2">
@@ -103,17 +121,31 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }:
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="technician" className="flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Técnico Responsável *
             </Label>
-            <Input
-              id="technician"
+            <Select
               value={formData.technician}
-              onChange={(e) => setFormData({ ...formData, technician: e.target.value })}
-              placeholder="Nome do técnico"
-              required
-            />
+              onValueChange={(value) => setFormData({ ...formData, technician: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um técnico" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border z-50">
+                {technicians.length === 0 ? (
+                  <SelectItem value="" disabled>
+                    Nenhum técnico cadastrado
+                  </SelectItem>
+                ) : (
+                  technicians.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.name}>
+                      {tech.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-2 pt-4">
