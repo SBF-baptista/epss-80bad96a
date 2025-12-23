@@ -1111,6 +1111,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Técnico</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Produto</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
@@ -1149,6 +1150,29 @@ export const ScheduleModal = ({
                                 <Badge variant="secondary">{vehicleSchedule.plate}</Badge>
                               </td>
                               <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
+                              <td className="px-4 py-3">
+                                <Select
+                                  value={vehicleSchedule.technician_ids?.[0] || ''}
+                                  onValueChange={(value) => {
+                                    setVehicleSchedules(prev => prev.map(vs =>
+                                      vs.plate === vehicleSchedule.plate
+                                        ? { ...vs, technician_ids: [value] }
+                                        : vs
+                                    ));
+                                  }}
+                                >
+                                  <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Selecionar técnico" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {technicians.map((tech) => (
+                                      <SelectItem key={tech.id} value={tech.id}>
+                                        {tech.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </td>
                               <td className="px-4 py-3">
                                 {(() => {
                                   // Get the tracker/product from selected kit
@@ -1572,7 +1596,7 @@ export const ScheduleModal = ({
                              </tr>
                               {!vehicleReady && (
                                 <tr>
-                                  <td colSpan={7} className="px-4 py-2">
+                                  <td colSpan={9} className="px-4 py-2">
                                     {(() => {
                                       const vehicleKey = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
                                       const vehicleId = vehicleIdMap.get(vehicleKey);
