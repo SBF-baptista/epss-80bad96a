@@ -496,7 +496,7 @@ export const updateTestExecution = async (
     electrical_connection_type: electricalConnectionType,
     technical_observations: technicalObservations,
     test_checklist: testChecklist,
-    status: 'execucao_teste'
+    status: 'homologado' // Etapa 4: Ao salvar execução, move para 'homologado'
   };
 
   // Only update configuration if it's provided and different from current
