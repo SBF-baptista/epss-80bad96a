@@ -218,17 +218,6 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                 </Button>
               )}
 
-              {card.status === 'execucao_teste' && (
-                <Button
-                  variant="outline"
-                  disabled
-                  className="flex items-center gap-2 w-full justify-start text-sm"
-                  size="sm"
-                >
-                  <Database className="h-4 w-4" />
-                  Armazenar na Plataforma
-                </Button>
-              )}
             </div>
           </div>
 
@@ -276,12 +265,6 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
 
                   {/* Vehicle Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    {card.chassis_info && (
-                      <div>
-                        <span className="font-medium text-muted-foreground">Chassi: </span>
-                        <span className="text-foreground">{card.chassis_info}</span>
-                      </div>
-                    )}
                     {card.manufacture_year && (
                       <div>
                         <span className="font-medium text-muted-foreground">Ano de Fabricação: </span>
