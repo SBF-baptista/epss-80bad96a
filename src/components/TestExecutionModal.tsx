@@ -454,16 +454,6 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
               <CardContent className="space-y-3 md:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="chassisInfo" className="text-sm">Informações do Chassi</Label>
-                    <Input
-                      id="chassisInfo"
-                      value={formData.chassisInfo}
-                      onChange={(e) => setFormData({ ...formData, chassisInfo: e.target.value })}
-                      placeholder="Número do chassi, tipo, etc."
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="manufactureYear" className="text-sm">Ano de Fabricação</Label>
                     <Input
                       id="manufactureYear"
@@ -622,49 +612,6 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate }: TestExecutionMo
                     )}
                   </div>
 
-                  {/* Chassis Photo */}
-                  <div className="space-y-2">
-                    <Label>Foto do Chassi</Label>
-                    {chassisPhoto ? (
-                      <div className="relative">
-                        <img 
-                          src={chassisPhoto} 
-                          alt="Foto do chassi" 
-                          className="w-full max-w-md h-48 object-cover rounded-lg border"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removePhoto('chassis')}
-                          className="absolute top-2 right-2"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handlePhotoUpload(e, 'chassis')}
-                          disabled={isUploadingPhoto}
-                          className="hidden"
-                          id="chassis-photo-upload"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => document.getElementById('chassis-photo-upload')?.click()}
-                          disabled={isUploadingPhoto}
-                          className="flex items-center gap-2"
-                        >
-                          <Upload className="h-4 w-4" />
-                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Chassi"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </CardContent>
             </Card>
