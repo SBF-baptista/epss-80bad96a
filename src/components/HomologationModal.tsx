@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, TestTube, Database, Edit } from "lucide-react";
-import { HomologationCard, updateHomologationNotes } from "@/services/homologationService";
+import { Calendar, TestTube, Edit, Play } from "lucide-react";
+import { HomologationCard, updateHomologationNotes, updateHomologationStatus } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
 import HomologationPhotos from "./HomologationPhotos";
 import TestSchedulingModal from "./TestSchedulingModal";
@@ -27,6 +27,57 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTestScheduling, setShowTestScheduling] = useState(false);
   const [showTestExecution, setShowTestExecution] = useState(false);
+  const [isStartingTest, setIsStartingTest] = useState(false);
+  const [isExecutingTest, setIsExecutingTest] = useState(false);
+
+  const handleStartTest = async () => {
+    if (!card) return;
+    
+    setIsStartingTest(true);
+    try {
+      await updateHomologationStatus(card.id, 'em_homologacao');
+      await logUpdate("Homologação", "status", card.id, "Iniciou teste - Status alterado para Em Homologação");
+      onUpdate();
+      toast({
+        title: "Teste iniciado",
+        description: "O card foi movido para 'Em Homologação'"
+      });
+    } catch (error) {
+      console.error("Error starting test:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao iniciar o teste",
+        variant: "destructive"
+      });
+    } finally {
+      setIsStartingTest(false);
+    }
+  };
+
+  const handleExecuteTest = async () => {
+    if (!card) return;
+    
+    setIsExecutingTest(true);
+    try {
+      await updateHomologationStatus(card.id, 'execucao_teste');
+      await logUpdate("Homologação", "status", card.id, "Executar teste - Status alterado para Execução de Teste");
+      onUpdate();
+      toast({
+        title: "Execução iniciada",
+        description: "O card foi movido para 'Execução de Teste'"
+      });
+      setShowTestExecution(true);
+    } catch (error) {
+      console.error("Error executing test:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao iniciar a execução do teste",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExecutingTest(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -178,6 +229,21 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           <div>
             <h3 className="font-semibold text-foreground mb-3 md:mb-4 text-sm md:text-base">Ações do Fluxo de Trabalho</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
+              {/* Etapa 1: Botão Iniciar Teste no status 'homologar' */}
+              {card.status === 'homologar' && (
+                <Button
+                  variant="outline"
+                  onClick={handleStartTest}
+                  disabled={isStartingTest}
+                  className="flex items-center gap-2 w-full justify-start text-sm"
+                  size="sm"
+                >
+                  <Play className="h-4 w-4" />
+                  {isStartingTest ? 'Iniciando...' : 'Iniciar Teste'}
+                </Button>
+              )}
+
+              {/* Etapa 2: Botão Agendar Teste no status 'em_homologacao' */}
               {card.status === 'em_homologacao' && (
                 <Button
                   variant="outline"
@@ -190,23 +256,36 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                 </Button>
               )}
 
+              {/* Etapa 3: Exibir data agendada e botão Executar Teste no status 'agendamento_teste' */}
               {card.status === 'agendamento_teste' && card.test_scheduled_date && (
-                <div className="flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-md px-3 py-2 text-sm">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    Agendado para: {new Date(card.test_scheduled_date).toLocaleString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
+                <>
+                  <div className="flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-md px-3 py-2 text-sm">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      Agendado para: {new Date(card.test_scheduled_date).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleExecuteTest}
+                    disabled={isExecutingTest}
+                    className="flex items-center gap-2 w-full justify-start text-sm"
+                    size="sm"
+                  >
+                    <TestTube className="h-4 w-4" />
+                    {isExecutingTest ? 'Iniciando...' : 'Executar Teste'}
+                  </Button>
+                </>
               )}
-              
-              {(card.status === 'agendamento_teste' || card.status === 'execucao_teste') && 
-               !card.test_checklist && (
+
+              {/* No status 'execucao_teste', mostrar apenas botão de editar execução se já tiver checklist */}
+              {card.status === 'execucao_teste' && !card.test_checklist && (
                 <Button
                   variant="outline"
                   onClick={() => setShowTestExecution(true)}
@@ -214,10 +293,9 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                   size="sm"
                 >
                   <TestTube className="h-4 w-4" />
-                  Executar Teste
+                  Registrar Execução
                 </Button>
               )}
-
             </div>
           </div>
 
