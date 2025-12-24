@@ -10,52 +10,65 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [isValidPedido, setIsValidPedido] = useState(false);
+  const [realPedidoId, setRealPedidoId] = useState<string | null>(null);
 
-  // Check if order.id is a valid pedido in the database
-  const checkPedidoExists = async () => {
-    if (!order) {
-      setIsValidPedido(false);
-      return false;
-    }
+  // Ensure a pedido exists for this order/schedule, create one if needed
+  const ensurePedidoExists = async (): Promise<string | null> => {
+    if (!order) return null;
     
     try {
-      const { data, error } = await supabase
+      // First check if order.id is already a valid pedido
+      const { data: existingPedido } = await supabase
         .from('pedidos')
         .select('id')
         .eq('id', order.id)
         .maybeSingle();
       
-      if (error) {
-        console.error('Error checking pedido existence:', error);
-        setIsValidPedido(false);
-        return false;
+      if (existingPedido) {
+        setRealPedidoId(existingPedido.id);
+        return existingPedido.id;
       }
       
-      const exists = !!data;
-      setIsValidPedido(exists);
-      return exists;
+      // If not, create a new pedido for this schedule
+      const { data: user } = await supabase.auth.getUser();
+      
+      const { data: newPedido, error } = await supabase
+        .from('pedidos')
+        .insert({
+          numero_pedido: `PROD-${order.number || order.id.slice(0, 8)}`,
+          configuracao: order.configurationType || 'Padrão',
+          company_name: order.company_name,
+          status: 'producao',
+          usuario_id: user.user?.id || null
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating pedido:', error);
+        return null;
+      }
+      
+      setRealPedidoId(newPedido.id);
+      return newPedido.id;
     } catch (error) {
-      console.error('Error checking pedido existence:', error);
-      setIsValidPedido(false);
-      return false;
+      console.error('Error ensuring pedido exists:', error);
+      return null;
     }
   };
 
   const loadProductionItems = async () => {
     if (!order) return;
     
-    // Only load if it's a valid pedido
-    const exists = await checkPedidoExists();
-    if (!exists) return;
-    
     try {
       setIsLoading(true);
-      const items = await getProductionItems(order.id);
-      setProductionItems(items);
+      const pedidoId = await ensurePedidoExists();
+      if (pedidoId) {
+        const items = await getProductionItems(pedidoId);
+        setProductionItems(items);
+      }
     } catch (error) {
       console.error('Error loading production items:', error);
-      // Silently fail if pedido doesn't exist
     } finally {
       setIsLoading(false);
     }
@@ -71,19 +84,21 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
       return false;
     }
 
-    // Check if pedido exists before trying to insert
-    if (!isValidPedido) {
-      toast({
-        title: "Pedido não encontrado",
-        description: "Este agendamento não possui um pedido de produção associado. O scanner está disponível apenas para pedidos reais.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
     try {
       setIsScanning(true);
-      await addProductionItem(order.id, imei.trim(), productionLineCode.trim());
+      
+      // Ensure we have a valid pedido_id
+      const pedidoId = realPedidoId || await ensurePedidoExists();
+      if (!pedidoId) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível criar o pedido de produção",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      await addProductionItem(pedidoId, imei.trim(), productionLineCode.trim());
       
       toast({
         title: "Item adicionado com sucesso",
@@ -91,25 +106,16 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
       });
 
       // Reload items
-      await loadProductionItems();
+      const items = await getProductionItems(pedidoId);
+      setProductionItems(items);
       return true;
     } catch (error: any) {
       console.error('Error scanning item:', error);
-      
-      // Provide a better error message for FK constraint violations
-      if (error?.code === '23503') {
-        toast({
-          title: "Pedido não encontrado",
-          description: "Este agendamento não possui um pedido de produção associado.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Erro",
-          description: "Erro ao adicionar item à produção",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar item à produção",
+        variant: "destructive"
+      });
       return false;
     } finally {
       setIsScanning(false);
@@ -119,17 +125,11 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
   const handleStartProduction = async () => {
     if (!order) return;
     
-    if (!isValidPedido) {
-      toast({
-        title: "Pedido não encontrado",
-        description: "Este agendamento não possui um pedido de produção associado.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    
     try {
-      await updateProductionStatus(order.id, 'started');
+      const pedidoId = realPedidoId || await ensurePedidoExists();
+      if (!pedidoId) return false;
+      
+      await updateProductionStatus(pedidoId, 'started');
       toast({
         title: "Produção iniciada",
         description: `Produção do pedido ${order.number} foi iniciada`
@@ -149,17 +149,11 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
   const handleCompleteProduction = async () => {
     if (!order) return;
     
-    if (!isValidPedido) {
-      toast({
-        title: "Pedido não encontrado",
-        description: "Este agendamento não possui um pedido de produção associado.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    
     try {
-      await updateProductionStatus(order.id, 'completed');
+      const pedidoId = realPedidoId || await ensurePedidoExists();
+      if (!pedidoId) return false;
+      
+      await updateProductionStatus(pedidoId, 'completed');
       toast({
         title: "Produção concluída",
         description: `Produção do pedido ${order.number} foi concluída`
@@ -186,11 +180,9 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
     productionItems,
     isLoading,
     isScanning,
-    isValidPedido,
     loadProductionItems,
     handleScanItem,
     handleStartProduction,
     handleCompleteProduction,
   };
 };
-
