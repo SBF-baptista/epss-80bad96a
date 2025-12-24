@@ -71,9 +71,6 @@ const GroupedOrderCard = ({
               <h4 className="font-semibold text-foreground text-sm md:text-base truncate">
                 {groupedOrder.company_name || 'Cliente'}
               </h4>
-              <Badge variant="secondary" className="text-xs mt-1">
-                {groupedOrder.orders.length} pedido{groupedOrder.orders.length > 1 ? 's' : ''}
-              </Badge>
             </div>
             
             {/* Action buttons */}
