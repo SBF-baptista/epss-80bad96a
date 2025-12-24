@@ -376,9 +376,64 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
               </>
             )}
 
+            {/* "Enviado" (scanner mode): Show Shipment Info read-only */}
+            {order.status === "enviado" && viewMode === "scanner" && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg text-primary">Informações de Envio</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
+                    {/* Recipient Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Endereço</p>
+                        <p className="font-medium text-foreground">
+                          {order.shipment_address_street 
+                            ? `${order.shipment_address_street}, ${order.shipment_address_number}${order.shipment_address_complement ? ` - ${order.shipment_address_complement}` : ''}`
+                            : 'Não informado'}
+                        </p>
+                        {order.shipment_address_neighborhood && (
+                          <p className="text-sm text-muted-foreground">{order.shipment_address_neighborhood}</p>
+                        )}
+                        {order.shipment_address_city && order.shipment_address_state && (
+                          <p className="text-sm text-muted-foreground">
+                            {order.shipment_address_city} - {order.shipment_address_state}
+                          </p>
+                        )}
+                        {order.shipment_address_postal_code && (
+                          <p className="text-sm text-muted-foreground">CEP: {order.shipment_address_postal_code}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Código de Rastreamento</p>
+                        <p className="font-medium text-foreground">
+                          {order.trackingCode || 'Não informado'}
+                        </p>
+                        {order.shipment_prepared_at && (
+                          <>
+                            <p className="text-sm text-muted-foreground mt-2">Data de Envio</p>
+                            <p className="text-sm text-foreground">
+                              {new Date(order.shipment_prepared_at).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* For non-scanner modes or other statuses: show full detail sections */}
             {!(order.status === "producao" && viewMode === "scanner") && 
-             !(order.status === "aguardando" && viewMode === "scanner") && (
+             !(order.status === "aguardando" && viewMode === "scanner") &&
+             !(order.status === "enviado" && viewMode === "scanner") && (
               <>
                 <Separator />
 
