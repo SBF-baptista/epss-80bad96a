@@ -382,49 +382,78 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 <Separator />
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg text-primary">Informações de Envio</h3>
-                  <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
-                    {/* Recipient Info */}
+                  <div className="bg-muted/30 p-4 rounded-lg border space-y-4">
+                    {/* Address Section */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Endereço</p>
+                        <p className="text-sm text-muted-foreground">Rua</p>
                         <p className="font-medium text-foreground">
-                          {order.shipment_address_street 
-                            ? `${order.shipment_address_street}, ${order.shipment_address_number}${order.shipment_address_complement ? ` - ${order.shipment_address_complement}` : ''}`
-                            : 'Não informado'}
+                          {order.shipment_address_street || 'N/A'}
                         </p>
-                        {order.shipment_address_neighborhood && (
-                          <p className="text-sm text-muted-foreground">{order.shipment_address_neighborhood}</p>
-                        )}
-                        {order.shipment_address_city && order.shipment_address_state && (
-                          <p className="text-sm text-muted-foreground">
-                            {order.shipment_address_city} - {order.shipment_address_state}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Número</p>
+                          <p className="font-medium text-foreground">
+                            {order.shipment_address_number || 'N/A'}
                           </p>
-                        )}
-                        {order.shipment_address_postal_code && (
-                          <p className="text-sm text-muted-foreground">CEP: {order.shipment_address_postal_code}</p>
-                        )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Complemento</p>
+                          <p className="font-medium text-foreground">
+                            {order.shipment_address_complement || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Bairro</p>
+                        <p className="font-medium text-foreground">
+                          {order.shipment_address_neighborhood || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Cidade</p>
+                        <p className="font-medium text-foreground">
+                          {order.shipment_address_city || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Estado</p>
+                        <p className="font-medium text-foreground">
+                          {order.shipment_address_state || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">CEP</p>
+                        <p className="font-medium text-foreground">
+                          {order.shipment_address_postal_code || 'N/A'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Código de Rastreamento</p>
                         <p className="font-medium text-foreground">
-                          {order.trackingCode || 'Não informado'}
+                          {order.trackingCode || 'N/A'}
                         </p>
-                        {order.shipment_prepared_at && (
-                          <>
-                            <p className="text-sm text-muted-foreground mt-2">Data de Envio</p>
-                            <p className="text-sm text-foreground">
-                              {new Date(order.shipment_prepared_at).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </>
-                        )}
                       </div>
                     </div>
+                    {order.shipment_prepared_at && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Data de Envio</p>
+                        <p className="font-medium text-foreground">
+                          {new Date(order.shipment_prepared_at).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
