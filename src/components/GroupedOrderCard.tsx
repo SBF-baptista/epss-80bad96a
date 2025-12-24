@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GroupedOrder } from "@/types/groupedOrder";
-import { Truck, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import { Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
@@ -106,14 +106,14 @@ const GroupedOrderCard = ({
                   <Eye className="h-3.5 w-3.5" />
                 </button>
               )}
-              {/* "Enviado" - Truck icon to view shipment info */}
-              {isShipped && onShipmentClick && (
+              {/* "Enviado" - Eye icon to view details (same as others) */}
+              {isShipped && onViewDetailsClick && (
                 <button
-                  onClick={handleShipmentClick}
+                  onClick={handleViewDetailsClick}
                   className="p-1.5 rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"
-                  title="Ver Informações de Envio"
+                  title="Visualizar detalhes"
                 >
-                  <Truck className="h-3.5 w-3.5" />
+                  <Eye className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
