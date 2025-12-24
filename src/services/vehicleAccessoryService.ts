@@ -229,3 +229,18 @@ export const aggregateAccessoriesWithoutModulesToObjects = (accessories: Vehicle
   const realAccessories = accessories.filter(acc => !isModuleCategory(acc.categories));
   return aggregateAccessoriesToObjects(realAccessories);
 };
+
+/**
+ * Filtra e agrega APENAS módulos (categories='Módulos')
+ */
+export const aggregateModulesOnly = (accessories: VehicleAccessory[]): string[] => {
+  const modules = accessories.filter(acc => isModuleCategory(acc.categories));
+  const aggregated = new Map<string, number>();
+  
+  modules.forEach(acc => {
+    const current = aggregated.get(acc.name) || 0;
+    aggregated.set(acc.name, current + acc.quantity);
+  });
+
+  return Array.from(aggregated.keys()).sort();
+};
