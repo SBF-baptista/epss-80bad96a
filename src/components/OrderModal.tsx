@@ -514,6 +514,30 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
              !(order.status === "aguardando" && viewMode === "scanner") &&
              !(order.status === "enviado" && viewMode === "scanner") && (
               <>
+                {/* Show scanned IMEIs in details view */}
+                {productionItems.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg text-primary">
+                        IMEIs Escaneados ({productionItems.length})
+                      </h3>
+                      <div className="bg-muted/30 rounded-lg border p-4">
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {productionItems.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center text-sm bg-background p-2 rounded">
+                              <span className="font-mono">{item.imei}</span>
+                              <span className="text-muted-foreground text-xs">
+                                Linha: {item.production_line_code}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <Separator />
 
                 {/* 1. Consolidated Totals Section */}
