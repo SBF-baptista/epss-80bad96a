@@ -32,10 +32,11 @@ interface OrderModalProps {
   onUpdate?: () => void;
   schedule?: KitScheduleWithDetails;
   kit?: HomologationKit;
+  viewMode?: "scanner" | "details";
   onOpenScanner?: () => void;
 }
 
-const OrderModal = ({ order, isOpen, onClose, schedule, kit, onOpenScanner }: OrderModalProps) => {
+const OrderModal = ({ order, isOpen, onClose, schedule, kit, viewMode = "scanner", onOpenScanner }: OrderModalProps) => {
   const [allSchedules, setAllSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<{
@@ -261,16 +262,16 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit, onOpenScanner }: Or
                 </Badge>
               </div>
               
-              {/* Scanner button for "Em produção" status */}
-              {order.status === "producao" && onOpenScanner && (
-                <Button 
-                  onClick={onOpenScanner}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  <Scan className="h-4 w-4 mr-2" />
-                  Scanner
-                </Button>
-              )}
+            {/* Scanner button for "Em produção" status (scanner mode only) */}
+            {order.status === "producao" && viewMode === "scanner" && onOpenScanner && (
+              <Button 
+                onClick={onOpenScanner}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Scan className="h-4 w-4 mr-2" />
+                Scanner
+              </Button>
+            )}
             </div>
 
             <Separator />
@@ -287,8 +288,10 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit, onOpenScanner }: Or
               )}
             </div>
 
-            {/* For "producao" status, only show customer info and scanner button - details are on the card */}
-            {order.status !== "producao" && (
+            {/* For "producao" status: 
+                - scanner mode shows only customer + scanner button
+                - details mode shows the full detail sections */}
+            {!(order.status === "producao" && viewMode === "scanner") && (
               <>
                 <Separator />
 

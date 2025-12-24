@@ -30,6 +30,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const [draggedSchedules, setDraggedSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [modalMode, setModalMode] = useState<"scanner" | "details">("scanner");
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, VehicleAccessory[]>>(new Map());
   const [orders, setOrders] = useState<Order[]>([]);
@@ -300,7 +301,17 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             onDrop={() => handleDrop(column.id)}
             onOrderClick={(order) => {
               const schedule = schedules.find(s => s.id === order.id);
-              if (schedule) setSelectedSchedule(schedule);
+              if (schedule) {
+                setModalMode("scanner");
+                setSelectedSchedule(schedule);
+              }
+            }}
+            onOrderViewDetailsClick={(order) => {
+              const schedule = schedules.find(s => s.id === order.id);
+              if (schedule) {
+                setModalMode("details");
+                setSelectedSchedule(schedule);
+              }
             }}
             onDragStart={handleDragStart}
             onScanClick={onScanClick}
@@ -326,7 +337,17 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 onDrop={() => handleDrop(column.id)}
                 onOrderClick={(order) => {
                   const schedule = schedules.find(s => s.id === order.id);
-                  if (schedule) setSelectedSchedule(schedule);
+                  if (schedule) {
+                    setModalMode("scanner");
+                    setSelectedSchedule(schedule);
+                  }
+                }}
+                onOrderViewDetailsClick={(order) => {
+                  const schedule = schedules.find(s => s.id === order.id);
+                  if (schedule) {
+                    setModalMode("details");
+                    setSelectedSchedule(schedule);
+                  }
                 }}
                 onDragStart={handleDragStart}
                 onScanClick={onScanClick}
@@ -361,7 +382,12 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
           onUpdate={onOrderUpdate}
           schedule={selectedSchedule}
           kit={kits.find(k => k.id === selectedSchedule.kit_id)}
-          onOpenScanner={selectedOrder.status === "producao" && onScanClick ? () => onScanClick(selectedOrder) : undefined}
+          viewMode={modalMode}
+          onOpenScanner={
+            selectedOrder.status === "producao" && modalMode === "scanner" && onScanClick
+              ? () => onScanClick(selectedOrder)
+              : undefined
+          }
         />
       )}
     </>
