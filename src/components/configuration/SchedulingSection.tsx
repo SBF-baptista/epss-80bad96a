@@ -410,13 +410,6 @@ export const SchedulingSection = ({
                               </div>
                             )}
 
-                            {isCompletedView && completedSchedules.length > 0 && (
-                              <div className="bg-green-50 border border-green-200 p-2 rounded-md">
-                                <p className="text-xs font-semibold text-green-800">
-                                  {completedSchedules.length} veículo(s) enviado(s) para esteira
-                                </p>
-                              </div>
-                            )}
                           </div>
 
                           {/* Action Buttons - Only show in non-completed view */}
