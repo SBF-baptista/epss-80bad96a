@@ -1121,6 +1121,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Técnico</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Previsão de Instalação</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Produto</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
@@ -1181,6 +1182,21 @@ export const ScheduleModal = ({
                                     ))}
                                   </SelectContent>
                                 </Select>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Input
+                                  type="date"
+                                  value={vehicleSchedule.scheduled_date ? format(vehicleSchedule.scheduled_date, 'yyyy-MM-dd') : ''}
+                                  onChange={(e) => {
+                                    const dateValue = e.target.value ? new Date(e.target.value + 'T12:00:00') : null;
+                                    setVehicleSchedules(prev => prev.map(vs =>
+                                      vs.plate === vehicleSchedule.plate
+                                        ? { ...vs, scheduled_date: dateValue }
+                                        : vs
+                                    ));
+                                  }}
+                                  className="w-[150px]"
+                                />
                               </td>
                               <td className="px-4 py-3">
                                  {(() => {
