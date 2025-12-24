@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Trash2, Edit, Package, Wrench, Box, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { cleanItemName } from '@/utils/itemNormalization';
 import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, UpdateKitRequest } from '@/types/homologationKit';
 import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
 
@@ -452,7 +453,7 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
                         <div className="pl-4 space-y-1">
                           {kit.equipment.map((item, index) => (
                             <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
-                              <span>{item.item_name}</span>
+                              <span>{cleanItemName(item.item_name)}</span>
                               <Badge variant="secondary" className="text-xs">
                                 {item.quantity}x
                               </Badge>
@@ -472,7 +473,7 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
                         <div className="pl-4 space-y-1">
                           {kit.accessories.map((item, index) => (
                             <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
-                              <span>{item.item_name}</span>
+                              <span>{cleanItemName(item.item_name)}</span>
                               <Badge variant="secondary" className="text-xs">
                                 {item.quantity}x
                               </Badge>
@@ -492,7 +493,7 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
                         <div className="pl-4 space-y-1">
                           {kit.supplies.map((item, index) => (
                             <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs">
-                              <span>{item.item_name}</span>
+                              <span>{cleanItemName(item.item_name)}</span>
                               <Badge variant="secondary" className="text-xs">
                                 {item.quantity}x
                               </Badge>

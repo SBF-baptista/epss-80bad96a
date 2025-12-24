@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { cleanItemName } from "@/utils/itemNormalization";
 
 export const PendingEquipmentSection = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -144,7 +145,7 @@ export const PendingEquipmentSection = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-purple-600" />
-                        <h4 className="font-medium text-purple-900">{item.item_name}</h4>
+                        <h4 className="font-medium text-purple-900">{cleanItemName(item.item_name)}</h4>
                         <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-300">
                           <Clock className="h-3 w-3 mr-1" />
                           Pendente

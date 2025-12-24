@@ -10,6 +10,7 @@ import { SupplyHomologationForm } from "./SupplyHomologationForm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { cleanItemName } from "@/utils/itemNormalization";
 
 export const PendingSuppliesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -196,7 +197,7 @@ export const PendingSuppliesSection = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Wrench className="h-4 w-4 text-orange-600" />
-                        <h4 className="font-medium text-orange-900">{item.item_name}</h4>
+                        <h4 className="font-medium text-orange-900">{cleanItemName(item.item_name)}</h4>
                         <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300">
                           <Clock className="h-3 w-3 mr-1" />
                           Pendente

@@ -25,7 +25,7 @@ import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitSc
 import { HomologationKit } from "@/types/homologationKit";
 import { Calendar, User, MapPin, Eye, EyeOff, Scan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeItemName } from "@/utils/itemNormalization";
+import { cleanItemName, normalizeItemName } from "@/utils/itemNormalization";
 import ProductionForm from "./production/ProductionForm";
 import ProductionItemsList from "./production/ProductionItemsList";
 import { useProductionItems } from "@/hooks/useProductionItems";
@@ -503,40 +503,33 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                       <div className="bg-muted/30 p-4 rounded-lg border">
                         {(() => {
                           const totals: Record<string, number> = {};
-                          
+
                           allSchedules.forEach((sched) => {
                             // Equipment/Trackers
                             (sched.kit?.equipment || []).forEach((item: any) => {
-                              totals[item.item_name] = (totals[item.item_name] || 0) + item.quantity;
+                              const key = cleanItemName(item.item_name);
+                              totals[key] = (totals[key] || 0) + item.quantity;
                             });
-                            
+
                             // Accessories - Parse "NAME (qty: X)" format
                             if (Array.isArray(sched.accessories)) {
                               sched.accessories.forEach((accessoryStr: string) => {
                                 const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
-                                if (match) {
-                                  const itemName = match[1].trim();
-                                  const quantity = parseInt(match[2], 10);
-                                  totals[itemName] = (totals[itemName] || 0) + quantity;
-                                } else {
-                                  // Fallback if format doesn't match
-                                  totals[accessoryStr] = (totals[accessoryStr] || 0) + 1;
-                                }
+                                const rawName = match ? match[1].trim() : accessoryStr.trim();
+                                const quantity = match ? parseInt(match[2], 10) : 1;
+                                const key = cleanItemName(rawName);
+                                totals[key] = (totals[key] || 0) + quantity;
                               });
                             }
-                            
+
                             // Supplies - Parse "NAME (qty: X)" format
                             if (Array.isArray(sched.supplies)) {
                               sched.supplies.forEach((supplyStr: string) => {
                                 const match = supplyStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
-                                if (match) {
-                                  const itemName = match[1].trim();
-                                  const quantity = parseInt(match[2], 10);
-                                  totals[itemName] = (totals[itemName] || 0) + quantity;
-                                } else {
-                                  // Fallback if format doesn't match
-                                  totals[supplyStr] = (totals[supplyStr] || 0) + 1;
-                                }
+                                const rawName = match ? match[1].trim() : supplyStr.trim();
+                                const quantity = match ? parseInt(match[2], 10) : 1;
+                                const key = cleanItemName(rawName);
+                                totals[key] = (totals[key] || 0) + quantity;
                               });
                             }
                           });
@@ -593,36 +586,29 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                               if (normalizedName === 'fmc150' || normalizedName === 'fmc 150') {
                                 return;
                               }
-                              techTotals[item.item_name] = (techTotals[item.item_name] || 0) + item.quantity;
+                              const key = cleanItemName(item.item_name);
+                              techTotals[key] = (techTotals[key] || 0) + item.quantity;
                             });
-                            
+
                             // Accessories - Parse "NAME (qty: X)" format
                             if (Array.isArray(sched.accessories)) {
                               sched.accessories.forEach((accessoryStr: string) => {
                                 const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
-                                if (match) {
-                                  const itemName = match[1].trim();
-                                  const quantity = parseInt(match[2], 10);
-                                  techTotals[itemName] = (techTotals[itemName] || 0) + quantity;
-                                } else {
-                                  // Fallback if format doesn't match
-                                  techTotals[accessoryStr] = (techTotals[accessoryStr] || 0) + 1;
-                                }
+                                const rawName = match ? match[1].trim() : accessoryStr.trim();
+                                const quantity = match ? parseInt(match[2], 10) : 1;
+                                const key = cleanItemName(rawName);
+                                techTotals[key] = (techTotals[key] || 0) + quantity;
                               });
                             }
-                            
+
                             // Supplies - Parse "NAME (qty: X)" format
                             if (Array.isArray(sched.supplies)) {
                               sched.supplies.forEach((supplyStr: string) => {
                                 const match = supplyStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
-                                if (match) {
-                                  const itemName = match[1].trim();
-                                  const quantity = parseInt(match[2], 10);
-                                  techTotals[itemName] = (techTotals[itemName] || 0) + quantity;
-                                } else {
-                                  // Fallback if format doesn't match
-                                  techTotals[supplyStr] = (techTotals[supplyStr] || 0) + 1;
-                                }
+                                const rawName = match ? match[1].trim() : supplyStr.trim();
+                                const quantity = match ? parseInt(match[2], 10) : 1;
+                                const key = cleanItemName(rawName);
+                                techTotals[key] = (techTotals[key] || 0) + quantity;
                               });
                             }
                           });
@@ -658,7 +644,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                   {sortedTechItems.map(([itemName, quantity]) => (
                                     <div key={itemName} className="flex items-center gap-2 text-sm">
                                       <span className="text-muted-foreground">•</span>
-                                      <span className="text-foreground">{itemName}</span>
+                                      <span className="text-foreground">{cleanItemName(itemName)}</span>
                                       <Badge variant="secondary" className="text-xs">{quantity}x</Badge>
                                     </div>
                                   ))}
@@ -697,35 +683,36 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                           if (dbAccessories.length > 0) {
                             accessoriesItems = dbAccessories.map((acc, i) => ({
                               id: `${sched.id}-acc-${i}`,
-                              item_name: acc.name,
+                              item_name: cleanItemName(acc.name),
                               quantity: acc.quantity
                             }));
-                          } 
+                          }
                           // Priority 2: Schedule accessories (only if no DB data)
                           else if (Array.isArray(sched.accessories) && sched.accessories.length > 0) {
                             // Create a map to aggregate quantities
                             const accessoryMap: Record<string, number> = {};
-                            
+
                             sched.accessories.forEach((accessoryStr: string) => {
                               const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
-                              const itemName = match ? match[1].trim() : accessoryStr.trim();
+                              const rawName = match ? match[1].trim() : accessoryStr.trim();
                               const quantity = match ? parseInt(match[2], 10) : 1;
-                              
-                              accessoryMap[itemName] = (accessoryMap[itemName] || 0) + quantity;
+                              const key = cleanItemName(rawName);
+
+                              accessoryMap[key] = (accessoryMap[key] || 0) + quantity;
                             });
-                            
+
                             accessoriesItems = Object.entries(accessoryMap).map(([name, quantity], i) => ({
                               id: `${sched.id}-acc-${i}`,
                               item_name: name,
                               quantity
                             }));
                           }
-                          
+
                           const suppliesItems = Array.isArray(sched.supplies) && sched.supplies.length > 0
-                            ? sched.supplies.map((name: string, i: number) => ({ 
-                                id: `${sched.id}-sup-${i}`, 
-                                item_name: name, 
-                                quantity: 1 
+                            ? sched.supplies.map((name: string, i: number) => ({
+                                id: `${sched.id}-sup-${i}`,
+                                item_name: cleanItemName(name),
+                                quantity: 1
                               }))
                             : [];
                           
@@ -852,7 +839,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                       <div key={index} className="p-2 bg-muted/30 rounded border text-sm">
                                         <div className="flex justify-between items-center">
                                           <div>
-                                            <p className="font-medium text-foreground">{item.item_name}</p>
+                                            <p className="font-medium text-foreground">{cleanItemName(item.item_name)}</p>
                                             {item.description && (
                                               <p className="text-xs text-muted-foreground">{item.description}</p>
                                             )}
@@ -876,7 +863,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                   <div className="flex flex-wrap gap-2">
                                     {accessoriesItems.map((item, index) => (
                                       <div key={item.id || index} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-md text-sm border border-primary/20">
-                                        <span className="font-medium">✓ {item.item_name}</span>
+                                        <span className="font-medium">✓ {cleanItemName(item.item_name)}</span>
                                         {item.quantity > 1 && (
                                           <Badge variant="secondary" className="text-xs h-5">{item.quantity}x</Badge>
                                         )}
@@ -895,7 +882,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                   <div className="flex flex-wrap gap-2">
                                     {suppliesItems.map((item, index) => (
                                       <div key={item.id || index} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 text-secondary-foreground rounded-md text-sm border border-secondary/20">
-                                        <span className="font-medium">✓ {item.item_name}</span>
+                                        <span className="font-medium">✓ {cleanItemName(item.item_name)}</span>
                                         {item.quantity > 1 && (
                                           <Badge variant="secondary" className="text-xs h-5">{item.quantity}x</Badge>
                                         )}

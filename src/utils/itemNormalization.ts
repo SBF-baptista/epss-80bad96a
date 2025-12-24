@@ -16,11 +16,17 @@
  * - "ID BLUETOOTH  (1x)" -> "ID BLUETOOTH"
  */
 export function cleanItemName(name: string): string {
-  if (!name) return '';
-  
+  if (!name) return "";
+
   return name
-    .replace(/\s*\(\d+x\)\s*$/i, '')      // Remove (1x), (2x), etc.
-    .replace(/\s*\(qty:\s*\d+\)\s*$/i, '') // Remove (qty: 1), (qty: 2), etc.
+    .toString()
+    // Normalize whitespace/newlines early
+    .replace(/\s+/g, " ")
+    // Remove leading bullets or list markers
+    .replace(/^[\s•\-–—·\u2022]+/g, "")
+    // Remove embedded quantity patterns anywhere in the string
+    .replace(/\(\s*\d+\s*x\s*\)/gi, "")
+    .replace(/\(\s*qty\s*:\s*\d+\s*\)/gi, "")
     .trim();
 }
 

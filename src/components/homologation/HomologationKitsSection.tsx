@@ -7,16 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Plus, 
-  Trash2, 
-  Edit, 
-  Package, 
-  Wrench, 
-  Box, 
-  Loader2, 
-  Search, 
-  ChevronDown, 
+import {
+  Plus,
+  Trash2,
+  Edit,
+  Package,
+  Wrench,
+  Box,
+  Loader2,
+  Search,
+  ChevronDown,
   ChevronRight,
   Copy,
   AlertTriangle,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
+import { cleanItemName } from '@/utils/itemNormalization';
 import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, UpdateKitRequest } from '@/types/homologationKit';
 import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
 import { SelectOrCreateInput } from '@/components/kit-items';
@@ -678,13 +679,13 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                   </div>
                                   <div className="text-xs text-warning space-y-1">
                                     {homologationStatus.pendingItems.equipment.length > 0 && (
-                                      <p>• {homologationStatus.pendingItems.equipment.length} equipamento(s): {homologationStatus.pendingItems.equipment.map(item => item.item_name).join(', ')}</p>
+                                      <p>• {homologationStatus.pendingItems.equipment.length} equipamento(s): {homologationStatus.pendingItems.equipment.map(item => cleanItemName(item.item_name)).join(', ')}</p>
                                     )}
                                     {homologationStatus.pendingItems.accessories.length > 0 && (
-                                      <p>• {homologationStatus.pendingItems.accessories.length} acessório(s): {homologationStatus.pendingItems.accessories.map(item => item.item_name).join(', ')}</p>
+                                      <p>• {homologationStatus.pendingItems.accessories.length} acessório(s): {homologationStatus.pendingItems.accessories.map(item => cleanItemName(item.item_name)).join(', ')}</p>
                                     )}
                                     {homologationStatus.pendingItems.supplies.length > 0 && (
-                                      <p>• {homologationStatus.pendingItems.supplies.length} insumo(s): {homologationStatus.pendingItems.supplies.map(item => item.item_name).join(', ')}</p>
+                                      <p>• {homologationStatus.pendingItems.supplies.length} insumo(s): {homologationStatus.pendingItems.supplies.map(item => cleanItemName(item.item_name)).join(', ')}</p>
                                     )}
                                   </div>
                                   <p className="text-xs text-warning mt-2 font-medium">
