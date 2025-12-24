@@ -140,6 +140,16 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       id: schedule.id || '',
       number: schedule.id?.slice(0, 8) || '',
       company_name: schedule.customer_name || 'Cliente',
+      customer_phone: schedule.customer_phone,
+      customer_email: schedule.customer_email,
+      customer_document_number: schedule.customer_document_number,
+      installation_address_street: schedule.installation_address_street,
+      installation_address_number: schedule.installation_address_number,
+      installation_address_neighborhood: schedule.installation_address_neighborhood,
+      installation_address_city: schedule.installation_address_city,
+      installation_address_state: schedule.installation_address_state,
+      installation_address_postal_code: schedule.installation_address_postal_code,
+      installation_address_complement: schedule.installation_address_complement,
       status: schedule.status === 'scheduled' ? 'novos' : 
               schedule.status === 'in_progress' ? 'producao' : 
               schedule.status === 'completed' ? 'aguardando' : 'enviado',

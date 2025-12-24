@@ -3,6 +3,16 @@ export interface Order {
   id: string
   number: string
   company_name?: string
+  customer_phone?: string
+  customer_email?: string
+  customer_document_number?: string
+  installation_address_street?: string
+  installation_address_number?: string
+  installation_address_neighborhood?: string
+  installation_address_city?: string
+  installation_address_state?: string
+  installation_address_postal_code?: string
+  installation_address_complement?: string
   vehicles: Array<{
     brand: string
     model: string
