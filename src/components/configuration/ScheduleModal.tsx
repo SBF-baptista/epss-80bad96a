@@ -50,7 +50,7 @@ import { checkItemHomologation, type HomologationStatus } from '@/services/kitHo
 import { CustomerSelector } from '@/components/customers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules, isModuleCategory } from '@/services/vehicleAccessoryService';
+import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModules, aggregateModulesOnly, isModuleCategory } from '@/services/vehicleAccessoryService';
 import { getIncomingVehiclesBySaleSummary, resolveIncomingVehicleId } from '@/services/incomingVehiclesService';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
@@ -329,6 +329,7 @@ export const ScheduleModal = ({
   const [homologationStatus, setHomologationStatus] = useState<Map<string, boolean>>(new Map());
   const [scheduleConflicts, setScheduleConflicts] = useState<Map<string, string>>(new Map());
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
+  const [modulesByVehicleId, setModulesByVehicleId] = useState<Map<string, string[]>>(new Map());
   const [vehicleIdMap, setVehicleIdMap] = useState<Map<string, string>>(new Map());
   const [suggestedKitsByVehicle, setSuggestedKitsByVehicle] = useState<Map<string, HomologationKit[]>>(new Map());
   const [configurationsByVehicle, setConfigurationsByVehicle] = useState<Map<string, string>>(new Map());
@@ -469,11 +470,18 @@ export const ScheduleModal = ({
 
           setVehicleIdMap(vehicleIdMapping);
 
-          // Fetch accessories and configurations by resolved IDs
+          // Fetch accessories, modules, and configurations by resolved IDs
           if (resolvedIds.length > 0) {
             const accessoriesMap = await fetchAccessoriesByVehicleIds(resolvedIds);
             const formattedMap = new Map<string, string[]>();
+            const modulesMap = new Map<string, string[]>();
             const configurationsMap = new Map<string, string>();
+
+            // Extract modules for each vehicle
+            accessoriesMap.forEach((accessories, vehicleId) => {
+              modulesMap.set(vehicleId, aggregateModulesOnly(accessories));
+            });
+            setModulesByVehicleId(modulesMap);
 
             // Fetch configurations for each vehicle
             for (const [key, vehicleId] of vehicleIdMapping.entries()) {
@@ -1176,17 +1184,24 @@ export const ScheduleModal = ({
                               </td>
                               <td className="px-4 py-3">
                                 {(() => {
-                                  // Get the tracker/product from selected kit
-                                  const selectedKitIds = vehicleSchedule.selected_kit_ids || [];
-                                  const selectedKit = kits.find(k => selectedKitIds.includes(k.id!));
-                                  const trackerModel = selectedKit?.equipment?.[0]?.item_name || 'Não definido';
+                                  // Get modules for this vehicle
+                                  const key = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
+                                  const vehicleId = vehicleIdMap.get(key);
+                                  const modules = vehicleId ? modulesByVehicleId.get(vehicleId) || [] : [];
+                                  
+                                  if (modules.length === 0) {
+                                    return (
+                                      <span className="text-xs text-muted-foreground">Nenhum módulo</span>
+                                    );
+                                  }
                                   
                                   return (
-                                    <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg min-w-[120px]">
-                                      <div className="flex items-center gap-2">
-                                        <Cpu className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                        <span className="text-xs text-blue-900 font-medium">{trackerModel}</span>
-                                      </div>
+                                    <div className="flex flex-col gap-1 min-w-[150px]">
+                                      {modules.map((mod, idx) => (
+                                        <div key={idx} className="p-1.5 bg-purple-50 border border-purple-200 rounded text-xs text-purple-900">
+                                          {cleanItemName(mod)}
+                                        </div>
+                                      ))}
                                     </div>
                                   );
                                 })()}
