@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
-import { Calendar, User, MapPin, Eye, EyeOff, Scan } from "lucide-react";
+import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cleanItemName, normalizeItemName } from "@/utils/itemNormalization";
 import ProductionForm from "./production/ProductionForm";
@@ -325,14 +325,59 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
 
             {/* Customer Info - Always show */}
             <div className="bg-muted/30 p-4 rounded-lg border">
-              <h3 className="font-semibold text-base mb-2 text-primary">Cliente</h3>
-              <p className="font-medium text-foreground">{order.company_name}</p>
-              {schedule?.customer_phone && (
-                <p className="text-sm text-muted-foreground mt-1">Tel: {schedule.customer_phone}</p>
-              )}
-              {schedule?.customer_email && (
-                <p className="text-sm text-muted-foreground">Email: {schedule.customer_email}</p>
-              )}
+              <h3 className="font-semibold text-base mb-3 text-primary">Cliente</h3>
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">{order.company_name}</p>
+                
+                {schedule?.customer_document_number && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <FileText className="h-4 w-4 flex-shrink-0" />
+                    <span>{schedule.customer_document_number}</span>
+                  </div>
+                )}
+                
+                {schedule?.customer_phone && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4 flex-shrink-0" />
+                    <span>{schedule.customer_phone}</span>
+                  </div>
+                )}
+                
+                {schedule?.customer_email && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4 flex-shrink-0" />
+                    <span>{schedule.customer_email}</span>
+                  </div>
+                )}
+                
+                {/* Installation Address */}
+                {(schedule?.installation_address_street || schedule?.installation_address_city) && (
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground mt-2 pt-2 border-t border-border/50">
+                    <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      {schedule?.installation_address_street && (
+                        <p>
+                          {schedule.installation_address_street}
+                          {schedule.installation_address_number && `, ${schedule.installation_address_number}`}
+                          {schedule.installation_address_complement && ` - ${schedule.installation_address_complement}`}
+                        </p>
+                      )}
+                      {schedule?.installation_address_neighborhood && (
+                        <p>{schedule.installation_address_neighborhood}</p>
+                      )}
+                      {(schedule?.installation_address_city || schedule?.installation_address_state) && (
+                        <p>
+                          {schedule.installation_address_city}
+                          {schedule.installation_address_state && ` - ${schedule.installation_address_state}`}
+                        </p>
+                      )}
+                      {schedule?.installation_address_postal_code && (
+                        <p>CEP: {schedule.installation_address_postal_code}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* "Em produção" (scanner mode): Show Scanner + Processed Items */}

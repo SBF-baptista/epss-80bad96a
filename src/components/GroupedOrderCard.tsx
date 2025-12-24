@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { GroupedOrder } from "@/types/groupedOrder";
-import { Eye, Phone, Mail, MapPin, FileText } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
@@ -29,23 +29,6 @@ const GroupedOrderCard = ({
   const isInProduction = groupedOrder.status === "producao";
   const isAwaitingShipment = groupedOrder.status === "aguardando";
   const isShipped = groupedOrder.status === "enviado";
-
-  // Get customer data from the first order
-  const firstOrder = groupedOrder.orders[0];
-  const customerPhone = firstOrder?.customer_phone;
-  const customerEmail = firstOrder?.customer_email;
-  const customerDocument = firstOrder?.customer_document_number;
-  
-  // Build address string
-  const addressParts = [
-    firstOrder?.installation_address_street,
-    firstOrder?.installation_address_number,
-    firstOrder?.installation_address_neighborhood,
-    firstOrder?.installation_address_city,
-    firstOrder?.installation_address_state,
-  ].filter(Boolean);
-  const fullAddress = addressParts.join(', ');
-  const postalCode = firstOrder?.installation_address_postal_code;
 
   const handleShipmentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -122,37 +105,6 @@ const GroupedOrderCard = ({
                 </button>
               )}
             </div>
-          </div>
-
-          {/* Customer details */}
-          <div className="space-y-1.5 text-xs text-muted-foreground">
-            {customerDocument && (
-              <div className="flex items-center gap-1.5">
-                <FileText className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{customerDocument}</span>
-              </div>
-            )}
-            {customerPhone && (
-              <div className="flex items-center gap-1.5">
-                <Phone className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{customerPhone}</span>
-              </div>
-            )}
-            {customerEmail && (
-              <div className="flex items-center gap-1.5">
-                <Mail className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{customerEmail}</span>
-              </div>
-            )}
-            {fullAddress && (
-              <div className="flex items-start gap-1.5">
-                <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                <span className="line-clamp-2">
-                  {fullAddress}
-                  {postalCode && ` - CEP: ${postalCode}`}
-                </span>
-              </div>
-            )}
           </div>
           
           {/* Expandable details (non-production only) */}
