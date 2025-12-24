@@ -2,71 +2,45 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
-import { addProductionItem, getProductionItems, updateProductionStatus, ProductionItem } from "@/services/productionService";
 import { supabase } from "@/integrations/supabase/client";
 
-export const useProductionItems = (order: Order | null, isOpen: boolean) => {
+export interface ProductionItem {
+  id: string;
+  pedido_id: string | null;
+  kit_schedule_id: string | null;
+  imei: string;
+  production_line_code: string;
+  scanned_at: string;
+  created_by?: string;
+}
+
+export const useProductionItems = (order: Order | null, isOpen: boolean, scheduleId?: string) => {
   const { toast } = useToast();
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [realPedidoId, setRealPedidoId] = useState<string | null>(null);
 
-  // Ensure a pedido exists for this order/schedule, create one if needed
-  const ensurePedidoExists = async (): Promise<string | null> => {
-    if (!order) return null;
-    
-    try {
-      // First check if order.id is already a valid pedido
-      const { data: existingPedido } = await supabase
-        .from('pedidos')
-        .select('id')
-        .eq('id', order.id)
-        .maybeSingle();
-      
-      if (existingPedido) {
-        setRealPedidoId(existingPedido.id);
-        return existingPedido.id;
-      }
-      
-      // If not, create a new pedido for this schedule
-      const { data: user } = await supabase.auth.getUser();
-      
-      const { data: newPedido, error } = await supabase
-        .from('pedidos')
-        .insert({
-          numero_pedido: `PROD-${order.number || order.id.slice(0, 8)}`,
-          configuracao: order.configurationType || 'Padrão',
-          company_name: order.company_name,
-          status: 'producao',
-          usuario_id: user.user?.id || null
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error creating pedido:', error);
-        return null;
-      }
-      
-      setRealPedidoId(newPedido.id);
-      return newPedido.id;
-    } catch (error) {
-      console.error('Error ensuring pedido exists:', error);
-      return null;
-    }
-  };
+  // Get the schedule ID - either passed directly or from order.id
+  const getScheduleId = () => scheduleId || order?.id || null;
 
   const loadProductionItems = async () => {
-    if (!order) return;
+    const currentScheduleId = getScheduleId();
+    if (!currentScheduleId) return;
     
     try {
       setIsLoading(true);
-      const pedidoId = await ensurePedidoExists();
-      if (pedidoId) {
-        const items = await getProductionItems(pedidoId);
-        setProductionItems(items);
+      const { data, error } = await supabase
+        .from('production_items')
+        .select('*')
+        .eq('kit_schedule_id', currentScheduleId)
+        .order('scanned_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error loading production items:', error);
+        return;
       }
+      
+      setProductionItems(data || []);
     } catch (error) {
       console.error('Error loading production items:', error);
     } finally {
@@ -75,7 +49,9 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
   };
 
   const handleScanItem = async (imei: string, productionLineCode: string) => {
-    if (!order || !imei.trim() || !productionLineCode.trim()) {
+    const currentScheduleId = getScheduleId();
+    
+    if (!currentScheduleId || !imei.trim() || !productionLineCode.trim()) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha o IMEI e código da linha de produção",
@@ -87,18 +63,26 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
     try {
       setIsScanning(true);
       
-      // Ensure we have a valid pedido_id
-      const pedidoId = realPedidoId || await ensurePedidoExists();
-      if (!pedidoId) {
+      const { data: user } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('production_items')
+        .insert({
+          kit_schedule_id: currentScheduleId,
+          imei: imei.trim(),
+          production_line_code: productionLineCode.trim(),
+          created_by: user.user?.id
+        });
+      
+      if (error) {
+        console.error('Error adding production item:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível criar o pedido de produção",
+          description: "Erro ao adicionar item à produção",
           variant: "destructive"
         });
         return false;
       }
-      
-      await addProductionItem(pedidoId, imei.trim(), productionLineCode.trim());
       
       toast({
         title: "Item adicionado com sucesso",
@@ -106,10 +90,9 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
       });
 
       // Reload items
-      const items = await getProductionItems(pedidoId);
-      setProductionItems(items);
+      await loadProductionItems();
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error scanning item:', error);
       toast({
         title: "Erro",
@@ -123,58 +106,26 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
   };
 
   const handleStartProduction = async () => {
-    if (!order) return;
-    
-    try {
-      const pedidoId = realPedidoId || await ensurePedidoExists();
-      if (!pedidoId) return false;
-      
-      await updateProductionStatus(pedidoId, 'started');
-      toast({
-        title: "Produção iniciada",
-        description: `Produção do pedido ${order.number} foi iniciada`
-      });
-      return true;
-    } catch (error) {
-      console.error('Error starting production:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao iniciar produção",
-        variant: "destructive"
-      });
-      return false;
-    }
+    toast({
+      title: "Produção iniciada",
+      description: `Produção foi iniciada`
+    });
+    return true;
   };
 
   const handleCompleteProduction = async () => {
-    if (!order) return;
-    
-    try {
-      const pedidoId = realPedidoId || await ensurePedidoExists();
-      if (!pedidoId) return false;
-      
-      await updateProductionStatus(pedidoId, 'completed');
-      toast({
-        title: "Produção concluída",
-        description: `Produção do pedido ${order.number} foi concluída`
-      });
-      return true;
-    } catch (error) {
-      console.error('Error completing production:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao concluir produção",
-        variant: "destructive"
-      });
-      return false;
-    }
+    toast({
+      title: "Produção concluída",
+      description: `Produção foi concluída`
+    });
+    return true;
   };
 
   useEffect(() => {
-    if (order && isOpen) {
+    if ((order || scheduleId) && isOpen) {
       loadProductionItems();
     }
-  }, [order, isOpen]);
+  }, [order, scheduleId, isOpen]);
 
   return {
     productionItems,
@@ -185,4 +136,20 @@ export const useProductionItems = (order: Order | null, isOpen: boolean) => {
     handleStartProduction,
     handleCompleteProduction,
   };
+};
+
+// Standalone function to fetch production items by schedule ID
+export const getProductionItemsByScheduleId = async (scheduleId: string): Promise<ProductionItem[]> => {
+  const { data, error } = await supabase
+    .from('production_items')
+    .select('*')
+    .eq('kit_schedule_id', scheduleId)
+    .order('scanned_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching production items:', error);
+    return [];
+  }
+  
+  return data || [];
 };

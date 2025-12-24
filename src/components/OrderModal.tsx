@@ -367,7 +367,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
               </>
             )}
 
-            {/* "Aguardando envio" (scanner mode): Show Shipment Form embedded */}
+            {/* "Aguardando envio" (scanner mode): Show Shipment Form embedded + Production Items */}
             {order.status === "aguardando" && viewMode === "scanner" && (
               <>
                 <Separator />
@@ -375,6 +375,30 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                   <h3 className="font-semibold text-lg text-primary">Preparar Envio</h3>
                   <ShipmentFormEmbedded order={order} onUpdate={onUpdate} />
                 </div>
+                
+                {/* Show scanned IMEIs */}
+                {productionItems.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg text-primary">
+                        IMEIs Escaneados ({productionItems.length})
+                      </h3>
+                      <div className="bg-muted/30 rounded-lg border p-4">
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {productionItems.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center text-sm bg-background p-2 rounded">
+                              <span className="font-mono">{item.imei}</span>
+                              <span className="text-muted-foreground text-xs">
+                                Linha: {item.production_line_code}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
