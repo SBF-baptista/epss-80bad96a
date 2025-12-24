@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GroupedOrder } from "@/types/groupedOrder";
-import { Scan, Truck, ChevronDown, ChevronRight } from "lucide-react";
+import { Truck, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 // Utility to remove quantity pattern like "(1x)" or "(2x)" from item names
 const cleanItemName = (name: string): string => {
@@ -31,11 +31,6 @@ const GroupedOrderCard = ({
   const isInProduction = groupedOrder.status === "producao";
   const isAwaitingShipment = groupedOrder.status === "aguardando";
   const isShipped = groupedOrder.status === "enviado";
-
-  const handleScanClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onScanClick?.();
-  };
 
   const handleShipmentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -84,13 +79,13 @@ const GroupedOrderCard = ({
             
             {/* Action buttons */}
             <div className="flex items-center gap-1 flex-shrink-0">
-              {isInProduction && onScanClick && (
+              {isInProduction && (
                 <button
-                  onClick={handleScanClick}
+                  onClick={handleToggleExpand}
                   className="p-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                  title="Abrir Scanner de Produção"
+                  title={isExpanded ? "Ocultar detalhes" : "Visualizar detalhes"}
                 >
-                  <Scan className="h-3.5 w-3.5" />
+                  {isExpanded ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </button>
               )}
               {(isAwaitingShipment || isShipped) && onShipmentClick && (
@@ -102,69 +97,66 @@ const GroupedOrderCard = ({
                   <Truck className="h-3.5 w-3.5" />
                 </button>
               )}
-              <button
-                onClick={handleToggleExpand}
-                className="p-1.5 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
-                title={isExpanded ? "Recolher detalhes" : "Expandir detalhes"}
-              >
-                {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-              </button>
             </div>
           </div>
           
-          {/* Stats grid - responsive */}
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-primary/10 border border-primary/20 p-2 rounded-md">
-              <div className="text-primary font-bold text-sm md:text-base">{groupedOrder.totalVehicles}</div>
-              <div className="text-[10px] md:text-xs text-primary leading-tight">Veículos</div>
-            </div>
-            <div className="bg-success-light border border-success-border p-2 rounded-md">
-              <div className="text-success font-bold text-sm md:text-base">{groupedOrder.totalTrackers}</div>
-              <div className="text-[10px] md:text-xs text-success leading-tight">Rastreadores</div>
-            </div>
-            <div className="bg-purple-50 border border-purple-100 p-2 rounded-md">
-              <div className="text-purple-700 font-bold text-sm md:text-base">{groupedOrder.totalAccessories}</div>
-              <div className="text-[10px] md:text-xs text-purple-600 leading-tight">Acessórios</div>
-            </div>
-          </div>
-          
-          {/* Expandable details */}
-          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-            <CollapsibleContent className="space-y-2">
-              <div className="border-t border-border pt-2 mt-2">
-                <div className="text-xs text-muted-foreground mb-2">Detalhes dos pedidos:</div>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {groupedOrder.orders.map((order) => (
-                    <div key={order.id} className="bg-muted/50 border border-border p-2 rounded text-xs">
-                      <div className="font-medium text-foreground mb-1">Pedido {order.number}</div>
-                      <div className="space-y-1 text-[11px]">
-                        {order.vehicles.map((vehicle, vIndex) => (
-                          <div key={vIndex} className="flex justify-between items-center">
-                            <span className="text-primary truncate pr-2">{vehicle.brand} {vehicle.model}</span>
-                            <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px]">{vehicle.quantity}x</span>
-                          </div>
-                        ))}
-                        {order.trackers.map((tracker, tIndex) => (
-                          <div key={tIndex} className="flex justify-between items-center">
-                            <span className="text-success truncate pr-2">{cleanItemName(tracker.model)}</span>
-                            <span className="bg-success-light text-success px-1.5 py-0.5 rounded text-[10px]">{tracker.quantity}x</span>
-                          </div>
-                        ))}
-                        {order.accessories && order.accessories.length > 0 && (
-                          order.accessories.map((accessory, aIndex) => (
-                            <div key={aIndex} className="flex justify-between items-center">
-                              <span className="text-purple-600 truncate pr-2">{cleanItemName(accessory.name)}</span>
-                              <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">{accessory.quantity}x</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          {/* Stats grid - responsive: show always for non-production, or when expanded for production */}
+          {(!isInProduction || isExpanded) && (
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-primary/10 border border-primary/20 p-2 rounded-md">
+                <div className="text-primary font-bold text-sm md:text-base">{groupedOrder.totalVehicles}</div>
+                <div className="text-[10px] md:text-xs text-primary leading-tight">Veículos</div>
               </div>
-            </CollapsibleContent>
-          </Collapsible>
+              <div className="bg-success-light border border-success-border p-2 rounded-md">
+                <div className="text-success font-bold text-sm md:text-base">{groupedOrder.totalTrackers}</div>
+                <div className="text-[10px] md:text-xs text-success leading-tight">Rastreadores</div>
+              </div>
+              <div className="bg-purple-50 border border-purple-100 p-2 rounded-md">
+                <div className="text-purple-700 font-bold text-sm md:text-base">{groupedOrder.totalAccessories}</div>
+                <div className="text-[10px] md:text-xs text-purple-600 leading-tight">Acessórios</div>
+              </div>
+            </div>
+          )}
+          
+          {/* Expandable details - show always for non-production, or when expanded for production */}
+          {(!isInProduction || isExpanded) && (
+            <Collapsible open={!isInProduction || isExpanded} onOpenChange={setIsExpanded}>
+              <CollapsibleContent className="space-y-2">
+                <div className="border-t border-border pt-2 mt-2">
+                  <div className="text-xs text-muted-foreground mb-2">Detalhes dos pedidos:</div>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {groupedOrder.orders.map((order) => (
+                      <div key={order.id} className="bg-muted/50 border border-border p-2 rounded text-xs">
+                        <div className="font-medium text-foreground mb-1">Pedido {order.number}</div>
+                        <div className="space-y-1 text-[11px]">
+                          {order.vehicles.map((vehicle, vIndex) => (
+                            <div key={vIndex} className="flex justify-between items-center">
+                              <span className="text-primary truncate pr-2">{vehicle.brand} {vehicle.model}</span>
+                              <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px]">{vehicle.quantity}x</span>
+                            </div>
+                          ))}
+                          {order.trackers.map((tracker, tIndex) => (
+                            <div key={tIndex} className="flex justify-between items-center">
+                              <span className="text-success truncate pr-2">{cleanItemName(tracker.model)}</span>
+                              <span className="bg-success-light text-success px-1.5 py-0.5 rounded text-[10px]">{tracker.quantity}x</span>
+                            </div>
+                          ))}
+                          {order.accessories && order.accessories.length > 0 && (
+                            order.accessories.map((accessory, aIndex) => (
+                              <div key={aIndex} className="flex justify-between items-center">
+                                <span className="text-purple-600 truncate pr-2">{cleanItemName(accessory.name)}</span>
+                                <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">{accessory.quantity}x</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
 
           {/* Status indicators */}
           {isStandby && (
