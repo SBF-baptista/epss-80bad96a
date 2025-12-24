@@ -361,6 +361,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
           onUpdate={onOrderUpdate}
           schedule={selectedSchedule}
           kit={kits.find(k => k.id === selectedSchedule.kit_id)}
+          onOpenScanner={selectedOrder.status === "producao" && onScanClick ? () => onScanClick(selectedOrder) : undefined}
         />
       )}
     </>

@@ -21,7 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
-import { Calendar, User, MapPin, Eye } from "lucide-react";
+import { Calendar, User, MapPin, Eye, EyeOff, Scan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeItemName } from "@/utils/itemNormalization";
 
@@ -32,9 +32,10 @@ interface OrderModalProps {
   onUpdate?: () => void;
   schedule?: KitScheduleWithDetails;
   kit?: HomologationKit;
+  onOpenScanner?: () => void;
 }
 
-const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) => {
+const OrderModal = ({ order, isOpen, onClose, schedule, kit, onOpenScanner }: OrderModalProps) => {
   const [allSchedules, setAllSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<{
@@ -47,6 +48,7 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
   }>>([]);
   const [scheduleAccessoriesMap, setScheduleAccessoriesMap] = useState<Record<string, { name: string; quantity: number }[]>>({});
   const [kitNamesMap, setKitNamesMap] = useState<Record<string, string>>({});
+  const [showVehiclesSection, setShowVehiclesSection] = useState(false);
 
   useEffect(() => {
     const fetchAllSchedules = async () => {
@@ -251,11 +253,24 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
 
         <ScrollArea className="max-h-[70vh] pr-4">
           <div className="space-y-6">
-            {/* Status */}
-            <div className="flex items-center space-x-3">
-              <Badge className={getStatusColor(order.status)}>
-                {getStatusLabel(order.status)}
-              </Badge>
+            {/* Status and Scanner Button */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Badge className={getStatusColor(order.status)}>
+                  {getStatusLabel(order.status)}
+                </Badge>
+              </div>
+              
+              {/* Scanner button for "Em produção" status */}
+              {order.status === "producao" && onOpenScanner && (
+                <Button 
+                  onClick={onOpenScanner}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  Scanner
+                </Button>
+              )}
             </div>
 
             <Separator />
@@ -454,8 +469,275 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit }: OrderModalProps) 
               </>
             )}
 
-            {/* 3. All Vehicles/Plates Section */}
-            {loading ? (
+            {/* 3. All Vehicles/Plates Section - Hidden by default for "producao" status */}
+            {order.status === "producao" ? (
+              <>
+                <Separator className="my-6" />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg text-primary">
+                      Veículos Agendados ({allSchedules.length} {allSchedules.length === 1 ? 'placa' : 'placas'})
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowVehiclesSection(!showVehiclesSection)}
+                      className="gap-2"
+                    >
+                      {showVehiclesSection ? (
+                        <>
+                          <EyeOff className="h-4 w-4" />
+                          Ocultar
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4" />
+                          Visualizar
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {showVehiclesSection && (
+                    loading ? (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground">Carregando placas...</p>
+                      </div>
+                    ) : (
+                      allSchedules.map((sched, idx) => {
+                        // Get equipment from kit
+                        const equipment = sched.kit?.equipment || [];
+                        
+                        // Use ONLY ONE source for accessories to prevent duplication
+                        let accessoriesItems: Array<{ id: string; item_name: string; quantity: number }> = [];
+                        
+                        // Priority 1: DB accessories (real data from database)
+                        const dbAccessories = scheduleAccessoriesMap[sched.id] || [];
+                        if (dbAccessories.length > 0) {
+                          accessoriesItems = dbAccessories.map((acc, i) => ({
+                            id: `${sched.id}-acc-${i}`,
+                            item_name: acc.name,
+                            quantity: acc.quantity
+                          }));
+                        } 
+                        // Priority 2: Schedule accessories (only if no DB data)
+                        else if (Array.isArray(sched.accessories) && sched.accessories.length > 0) {
+                          // Create a map to aggregate quantities
+                          const accessoryMap: Record<string, number> = {};
+                          
+                          sched.accessories.forEach((accessoryStr: string) => {
+                            const match = accessoryStr.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                            const itemName = match ? match[1].trim() : accessoryStr.trim();
+                            const quantity = match ? parseInt(match[2], 10) : 1;
+                            
+                            accessoryMap[itemName] = (accessoryMap[itemName] || 0) + quantity;
+                          });
+                          
+                          accessoriesItems = Object.entries(accessoryMap).map(([name, quantity], i) => ({
+                            id: `${sched.id}-acc-${i}`,
+                            item_name: name,
+                            quantity
+                          }));
+                        }
+                        
+                        const suppliesItems = Array.isArray(sched.supplies) && sched.supplies.length > 0
+                          ? sched.supplies.map((name: string, i: number) => ({ 
+                              id: `${sched.id}-sup-${i}`, 
+                              item_name: name, 
+                              quantity: 1 
+                            }))
+                          : [];
+                        
+                        const getStatusBadge = (status: string) => {
+                          switch (status) {
+                            case 'completed':
+                              return <Badge className="bg-green-500 text-white">✓ Pronto</Badge>;
+                            case 'in_progress':
+                              return <Badge className="bg-yellow-500 text-white">Em Andamento</Badge>;
+                            case 'scheduled':
+                              return <Badge variant="secondary">Agendado</Badge>;
+                            case 'cancelled':
+                              return <Badge variant="destructive">Cancelado</Badge>;
+                            default:
+                              return <Badge variant="outline">{status}</Badge>;
+                          }
+                        };
+                        
+                        return (
+                          <div key={sched.id || idx} className="p-4 bg-card border-2 border-primary/20 rounded-lg space-y-4">
+                            {/* Vehicle Header */}
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {getStatusBadge(sched.status || 'scheduled')}
+                                  {sched.vehicle_plate && (
+                                    <Badge variant="outline" className="text-base font-bold px-3 py-1">
+                                      {sched.vehicle_plate}
+                                    </Badge>
+                                  )}
+                                  <Badge variant="secondary">Placa {idx + 1}</Badge>
+                                </div>
+                                <p className="font-semibold text-foreground text-lg">
+                                  {sched.vehicle_brand} {sched.vehicle_model}
+                                </p>
+                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                  {sched.vehicle_year && (
+                                    <span>Ano: {sched.vehicle_year}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Installation Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Calendar className="h-4 w-4 text-primary" />
+                                <span className="text-muted-foreground">Data:</span>
+                                <span className="font-medium">{formatDate(sched.scheduled_date)}</span>
+                              </div>
+                              {sched.technician && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <User className="h-4 w-4 text-primary" />
+                                  <span className="text-muted-foreground">Técnico:</span>
+                                  <span className="font-medium">{sched.technician.name}</span>
+                                </div>
+                              )}
+                              {sched.installation_address_city && (
+                                <div className="flex items-center gap-2 text-sm md:col-span-2">
+                                  <MapPin className="h-4 w-4 text-primary" />
+                                  <span className="text-muted-foreground">Local:</span>
+                                  <span className="font-medium">
+                                    {sched.installation_address_city}, {sched.installation_address_state}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Configuration Block */}
+                            {sched.configuration && (
+                              <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
+                                <p className="text-sm font-medium text-primary">
+                                  📋 Configuração: {sched.configuration}
+                                </p>
+                              </div>
+                            )}
+
+                            <Separator />
+
+                            {/* Kits Section - Show selected kits */}
+                            {(() => {
+                              const scheduleWithKits = sched as any;
+                              const hasSelectedKits = scheduleWithKits.selected_kit_ids && 
+                                                     Array.isArray(scheduleWithKits.selected_kit_ids) && 
+                                                     scheduleWithKits.selected_kit_ids.length > 0;
+                              
+                              if (!hasSelectedKits && !sched.kit?.name) return null;
+                              
+                              return (
+                                <div>
+                                  <h4 className="font-semibold text-sm mb-2 text-primary">
+                                    Kits
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {/* Selected kits from selected_kit_ids */}
+                                    {hasSelectedKits && (
+                                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1">
+                                        {scheduleWithKits.selected_kit_ids.map((kitId: string, kitIdx: number) => (
+                                          <div key={kitIdx} className="text-sm text-blue-900 font-medium">
+                                            • {kitNamesMap[kitId] || `Kit ${kitId}`}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {/* Legacy single kit (if exists and no selected_kit_ids) */}
+                                    {!hasSelectedKits && sched.kit?.name && (
+                                      <div className="p-2 bg-muted/30 rounded border text-sm">
+                                        <p className="font-medium text-foreground">{sched.kit.name}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
+                            {/* Equipment/Trackers */}
+                            {equipment.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2 text-primary">
+                                  Rastreadores ({equipment.reduce((sum, eq) => sum + eq.quantity, 0)} unidades)
+                                </h4>
+                                <div className="space-y-2">
+                                  {equipment.map((item, index) => (
+                                    <div key={index} className="p-2 bg-muted/30 rounded border text-sm">
+                                      <div className="flex justify-between items-center">
+                                        <div>
+                                          <p className="font-medium text-foreground">{item.item_name}</p>
+                                          {item.description && (
+                                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                                          )}
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {item.quantity}x
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Accessories */}
+                            {accessoriesItems.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2 text-primary">
+                                  Acessórios ({accessoriesItems.reduce((sum, a) => sum + (a.quantity || 0), 0)} unidades)
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {accessoriesItems.map((item, index) => (
+                                    <div key={item.id || index} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-md text-sm border border-primary/20">
+                                      <span className="font-medium">✓ {item.item_name}</span>
+                                      {item.quantity > 1 && (
+                                        <Badge variant="secondary" className="text-xs h-5">{item.quantity}x</Badge>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Supplies */}
+                            {suppliesItems.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2 text-primary">
+                                  Insumos ({suppliesItems.reduce((sum, s) => sum + (s.quantity || 0), 0)} unidades)
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {suppliesItems.map((item, index) => (
+                                    <div key={item.id || index} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 text-secondary-foreground rounded-md text-sm border border-secondary/20">
+                                      <span className="font-medium">✓ {item.item_name}</span>
+                                      {item.quantity > 1 && (
+                                        <Badge variant="secondary" className="text-xs h-5">{item.quantity}x</Badge>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Notes */}
+                            {sched.notes && (
+                              <div className="mt-2 p-2 bg-muted/20 rounded text-sm">
+                                <p className="text-muted-foreground">{sched.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )
+                  )}
+                </div>
+              </>
+            ) : loading ? (
               <>
                 <Separator className="my-6" />
                 <div className="text-center py-4">
