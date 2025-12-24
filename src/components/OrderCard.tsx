@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/services/orderService";
-import { Scan, Truck } from "lucide-react";
+import { Scan, Truck, Eye, EyeOff } from "lucide-react";
 
 // Utility to remove quantity pattern like "(1x)" or "(2x)" from item names
 const cleanItemName = (name: string): string => {
@@ -16,6 +17,8 @@ interface OrderCardProps {
 }
 
 const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }: OrderCardProps) => {
+  const [showDetails, setShowDetails] = useState(false);
+
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case "high":
@@ -60,6 +63,11 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
     onShipmentClick?.();
   };
 
+  const handleToggleDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDetails(!showDetails);
+  };
+
   return (
     <Card
       className={`cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] ${
@@ -88,13 +96,13 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
                   {getPriorityLabel(order.priority)}
                 </Badge>
               )}
-              {isInProduction && onScanClick && (
+              {isInProduction && (
                 <button
-                  onClick={handleScanClick}
+                  onClick={handleToggleDetails}
                   className="p-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                  title="Abrir Scanner de Produção"
+                  title={showDetails ? "Ocultar detalhes" : "Visualizar detalhes"}
                 >
-                  <Scan className="h-4 w-4" />
+                  {showDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               )}
               {(isAwaitingShipment || isShipped) && onShipmentClick && (
@@ -109,50 +117,53 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
             </div>
           </div>
           
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="text-muted-foreground font-medium">Veículos ({totalVehicles}):</span>
-              <div className="mt-1 space-y-1">
-                {order.vehicles.map((vehicle, index) => (
-                  <div key={index} className="flex justify-between text-xs">
-                    <span className="text-foreground">{vehicle.brand} {vehicle.model}</span>
-                    <span className="font-medium">{vehicle.quantity}x</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <span className="text-muted-foreground font-medium">Rastreadores ({totalTrackers}):</span>
-              <div className="mt-1 space-y-1">
-                {order.trackers.map((tracker, index) => (
-                  <div key={index} className="flex justify-between text-xs">
-                    <span className="text-foreground">{cleanItemName(tracker.model)}</span>
-                    <span className="font-medium">{tracker.quantity}x</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <span className="text-muted-foreground font-medium">Acessórios:</span>
-              {order.accessories && order.accessories.length > 0 ? (
+          {/* Show details for non-production status OR when toggled on for production status */}
+          {(!isInProduction || showDetails) && (
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-muted-foreground font-medium">Veículos ({totalVehicles}):</span>
                 <div className="mt-1 space-y-1">
-                  {order.accessories.map((accessory, index) => (
+                  {order.vehicles.map((vehicle, index) => (
                     <div key={index} className="flex justify-between text-xs">
-                      <span className="text-foreground">{cleanItemName(accessory.name)}</span>
-                      <span className="font-medium">{accessory.quantity}x</span>
+                      <span className="text-foreground">{vehicle.brand} {vehicle.model}</span>
+                      <span className="font-medium">{vehicle.quantity}x</span>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="mt-1">
-                  <span className="text-xs text-muted-foreground italic">Sem acessórios</span>
+              </div>
+              
+              <div>
+                <span className="text-muted-foreground font-medium">Rastreadores ({totalTrackers}):</span>
+                <div className="mt-1 space-y-1">
+                  {order.trackers.map((tracker, index) => (
+                    <div key={index} className="flex justify-between text-xs">
+                      <span className="text-foreground">{cleanItemName(tracker.model)}</span>
+                      <span className="font-medium">{tracker.quantity}x</span>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+              
+              <div>
+                <span className="text-muted-foreground font-medium">Acessórios:</span>
+                {order.accessories && order.accessories.length > 0 ? (
+                  <div className="mt-1 space-y-1">
+                    {order.accessories.map((accessory, index) => (
+                      <div key={index} className="flex justify-between text-xs">
+                        <span className="text-foreground">{cleanItemName(accessory.name)}</span>
+                        <span className="font-medium">{accessory.quantity}x</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-1">
+                    <span className="text-xs text-muted-foreground italic">Sem acessórios</span>
+                  </div>
+                )}
+              </div>
+              
             </div>
-            
-          </div>
+          )}
 
           {isStandby && (
             <div className="mt-3 p-2 bg-error-light border border-error-border rounded-md">
