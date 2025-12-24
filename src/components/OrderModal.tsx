@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
@@ -376,82 +378,106 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
               </>
             )}
 
-            {/* "Enviado" (scanner mode): Show Shipment Info read-only */}
+            {/* "Enviado" (scanner mode): Show Shipment Info as form */}
             {order.status === "enviado" && viewMode === "scanner" && (
               <>
                 <Separator />
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg text-primary">Informações de Envio</h3>
-                  <div className="bg-muted/30 p-4 rounded-lg border space-y-4">
-                    {/* Address Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Rua</p>
-                        <p className="font-medium text-foreground">
-                          {order.shipment_address_street || 'N/A'}
-                        </p>
+                  <div className="space-y-4">
+                    {/* Row 1: Rua, Número, Complemento */}
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                      <div className="md:col-span-3 space-y-2">
+                        <Label className="text-sm text-muted-foreground">Rua</Label>
+                        <Input 
+                          value={order.shipment_address_street || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Número</p>
-                          <p className="font-medium text-foreground">
-                            {order.shipment_address_number || 'N/A'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Complemento</p>
-                          <p className="font-medium text-foreground">
-                            {order.shipment_address_complement || 'N/A'}
-                          </p>
-                        </div>
+                      <div className="md:col-span-1 space-y-2">
+                        <Label className="text-sm text-muted-foreground">Número</Label>
+                        <Input 
+                          value={order.shipment_address_number || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <Label className="text-sm text-muted-foreground">Complemento</Label>
+                        <Input 
+                          value={order.shipment_address_complement || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
                       </div>
                     </div>
+
+                    {/* Row 2: Bairro, Cidade, Estado */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Bairro</p>
-                        <p className="font-medium text-foreground">
-                          {order.shipment_address_neighborhood || 'N/A'}
-                        </p>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Bairro</Label>
+                        <Input 
+                          value={order.shipment_address_neighborhood || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Cidade</p>
-                        <p className="font-medium text-foreground">
-                          {order.shipment_address_city || 'N/A'}
-                        </p>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Cidade</Label>
+                        <Input 
+                          value={order.shipment_address_city || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Estado</p>
-                        <p className="font-medium text-foreground">
-                          {order.shipment_address_state || 'N/A'}
-                        </p>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Estado</Label>
+                        <Input 
+                          value={order.shipment_address_state || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
                       </div>
                     </div>
+
+                    {/* Row 3: CEP, Código de Rastreamento */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">CEP</p>
-                        <p className="font-medium text-foreground">
-                          {order.shipment_address_postal_code || 'N/A'}
-                        </p>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">CEP</Label>
+                        <Input 
+                          value={order.shipment_address_postal_code || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Código de Rastreamento</p>
-                        <p className="font-medium text-foreground">
-                          {order.trackingCode || 'N/A'}
-                        </p>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Código de Rastreamento</Label>
+                        <Input 
+                          value={order.trackingCode || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
                       </div>
                     </div>
+
+                    {/* Row 4: Data de Envio (if available) */}
                     {order.shipment_prepared_at && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Data de Envio</p>
-                        <p className="font-medium text-foreground">
-                          {new Date(order.shipment_prepared_at).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Data de Envio</Label>
+                          <Input 
+                            value={new Date(order.shipment_prepared_at).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })} 
+                            disabled 
+                            className="bg-muted/50"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
