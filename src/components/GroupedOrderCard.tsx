@@ -71,11 +71,6 @@ const GroupedOrderCard = ({
               <h4 className="font-semibold text-foreground text-sm md:text-base truncate">
                 {groupedOrder.company_name || 'Cliente'}
               </h4>
-              {groupedOrder.orders[0]?.technicianName && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Técnico: {groupedOrder.orders[0].technicianName}
-                </p>
-              )}
               <Badge variant="secondary" className="text-xs mt-1">
                 {groupedOrder.orders.length} pedido{groupedOrder.orders.length > 1 ? 's' : ''}
               </Badge>
@@ -113,22 +108,6 @@ const GroupedOrderCard = ({
                   <Eye className="h-3.5 w-3.5" />
                 </button>
               )}
-            </div>
-          </div>
-          
-          {/* Stats grid - responsive */}
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-primary/10 border border-primary/20 p-2 rounded-md">
-              <div className="text-primary font-bold text-sm md:text-base">{groupedOrder.totalVehicles}</div>
-              <div className="text-[10px] md:text-xs text-primary leading-tight">Veículos</div>
-            </div>
-            <div className="bg-success-light border border-success-border p-2 rounded-md">
-              <div className="text-success font-bold text-sm md:text-base">{groupedOrder.totalTrackers}</div>
-              <div className="text-[10px] md:text-xs text-success leading-tight">Rastreadores</div>
-            </div>
-            <div className="bg-purple-50 border border-purple-100 p-2 rounded-md">
-              <div className="text-purple-700 font-bold text-sm md:text-base">{groupedOrder.totalAccessories}</div>
-              <div className="text-[10px] md:text-xs text-purple-600 leading-tight">Acessórios</div>
             </div>
           </div>
           
