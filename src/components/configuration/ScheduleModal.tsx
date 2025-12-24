@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, Clock, User, Truck, Package, Cpu, DollarSign, FileText, Building, Check, X, Info, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cleanItemName } from '@/utils/itemNormalization';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1290,7 +1291,7 @@ export const ScheduleModal = ({
                                                     <div className="flex flex-wrap gap-1">
                                                       {kit.equipment.map((item, idx) => (
                                                         <Badge key={idx} variant="outline" className="text-xs bg-white">
-                                                          {item.item_name} ({item.quantity}x)
+                                                          {cleanItemName(item.item_name)} ({item.quantity}x)
                                                         </Badge>
                                                       ))}
                                                     </div>
@@ -1304,7 +1305,7 @@ export const ScheduleModal = ({
                                                     <div className="flex flex-wrap gap-1">
                                                       {kit.accessories.map((item, idx) => (
                                                         <Badge key={idx} variant="outline" className="text-xs bg-white">
-                                                          {item.item_name} ({item.quantity}x)
+                                                          {cleanItemName(item.item_name)} ({item.quantity}x)
                                                         </Badge>
                                                       ))}
                                                     </div>
@@ -1318,7 +1319,7 @@ export const ScheduleModal = ({
                                                     <div className="flex flex-wrap gap-1">
                                                       {kit.supplies.map((item, idx) => (
                                                         <Badge key={idx} variant="outline" className="text-xs bg-white">
-                                                          {item.item_name} ({item.quantity}x)
+                                                          {cleanItemName(item.item_name)} ({item.quantity}x)
                                                         </Badge>
                                                       ))}
                                                     </div>

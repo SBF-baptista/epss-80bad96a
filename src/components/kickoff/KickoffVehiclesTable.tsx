@@ -24,6 +24,7 @@ import { EditVehicleModal } from "./EditVehicleModal";
 import { PlateValidationCheckbox } from "./PlateValidationCheckbox";
 import { useFipeBrands } from "@/hooks/useFipeData";
 import { fetchFipeModels, fetchFipeYears } from "@/services/fipeService";
+import { cleanItemName } from "@/utils/itemNormalization";
 
 interface KickoffVehiclesTableProps {
   vehicles: KickoffVehicle[];
@@ -398,7 +399,7 @@ export const KickoffVehiclesTable = ({
                   <div className="flex gap-1 flex-wrap">
                     {accessoriesList.map((item, idx) => (
                       <Badge key={`acc-${idx}`} variant="outline" className="text-xs">
-                        {item.name} ({item.quantity}x)
+                        {cleanItemName(item.name)} ({item.quantity}x)
                       </Badge>
                     ))}
                   </div>

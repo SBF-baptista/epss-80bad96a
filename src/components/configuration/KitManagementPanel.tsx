@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Package, AlertTriangle, CheckCircle, XCircle, Timer } from 'lucide-react';
+import { cleanItemName } from '@/utils/itemNormalization';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
 import type { KitScheduleWithDetails } from '@/services/kitScheduleService';
@@ -72,7 +73,7 @@ const renderKitItems = (kit: HomologationKit, homologationStatus: HomologationSt
                 ) : (
                   <XCircle className="w-3 h-3 text-red-600" />
                 )}
-                <span className="font-medium">{item.item_name}</span>
+                <span className="font-medium">{cleanItemName(item.item_name)}</span>
                 <Badge variant="outline" className="text-xs">
                   {item.category}
                 </Badge>
