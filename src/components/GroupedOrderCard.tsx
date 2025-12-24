@@ -86,7 +86,8 @@ const GroupedOrderCard = ({
             
             {/* Action buttons */}
             <div className="flex items-center gap-1 flex-shrink-0">
-              {isInProduction && (
+              {/* "Em produção" - Eye icon to view details (consolidated info) */}
+              {isInProduction && onViewDetailsClick && (
                 <button
                   onClick={handleViewDetailsClick}
                   className="p-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
@@ -95,11 +96,22 @@ const GroupedOrderCard = ({
                   <Eye className="h-3.5 w-3.5" />
                 </button>
               )}
-              {(isAwaitingShipment || isShipped) && onShipmentClick && (
+              {/* "Aguardando envio" - Eye icon to view details (replaces truck) */}
+              {isAwaitingShipment && onViewDetailsClick && (
+                <button
+                  onClick={handleViewDetailsClick}
+                  className="p-1.5 rounded-md bg-warning/10 text-warning hover:bg-warning/20 transition-colors"
+                  title="Visualizar detalhes"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {/* "Enviado" - Truck icon to view shipment info */}
+              {isShipped && onShipmentClick && (
                 <button
                   onClick={handleShipmentClick}
-                  className="p-1.5 rounded-md bg-warning text-warning-foreground hover:bg-warning/90 transition-colors shadow-sm"
-                  title={isShipped ? "Ver Informações de Envio" : "Preparar Envio"}
+                  className="p-1.5 rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"
+                  title="Ver Informações de Envio"
                 >
                   <Truck className="h-3.5 w-3.5" />
                 </button>

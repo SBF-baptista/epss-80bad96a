@@ -383,11 +383,6 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
           schedule={selectedSchedule}
           kit={kits.find(k => k.id === selectedSchedule.kit_id)}
           viewMode={modalMode}
-          onOpenScanner={
-            selectedOrder.status === "producao" && modalMode === "scanner" && onScanClick
-              ? () => onScanClick(selectedOrder)
-              : undefined
-          }
         />
       )}
     </>

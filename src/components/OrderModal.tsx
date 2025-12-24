@@ -24,6 +24,11 @@ import { HomologationKit } from "@/types/homologationKit";
 import { Calendar, User, MapPin, Eye, EyeOff, Scan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeItemName } from "@/utils/itemNormalization";
+import ProductionForm from "./production/ProductionForm";
+import ProductionItemsList from "./production/ProductionItemsList";
+import { useProductionItems } from "@/hooks/useProductionItems";
+import { useProductionScannerModal } from "@/hooks/useProductionScannerModal";
+import { ShipmentFormEmbedded } from "./shipment";
 
 interface OrderModalProps {
   order: Order | null;
@@ -36,7 +41,7 @@ interface OrderModalProps {
   onOpenScanner?: () => void;
 }
 
-const OrderModal = ({ order, isOpen, onClose, schedule, kit, viewMode = "scanner", onOpenScanner }: OrderModalProps) => {
+const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode = "scanner", onOpenScanner }: OrderModalProps) => {
   const [allSchedules, setAllSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<{
@@ -50,6 +55,59 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit, viewMode = "scanner
   const [scheduleAccessoriesMap, setScheduleAccessoriesMap] = useState<Record<string, { name: string; quantity: number }[]>>({});
   const [kitNamesMap, setKitNamesMap] = useState<Record<string, string>>({});
   const [showVehiclesSection, setShowVehiclesSection] = useState(false);
+
+  // Production scanner hooks
+  const {
+    imei,
+    productionLineCode,
+    scannerActive,
+    scannerError,
+    setImei,
+    setProductionLineCode,
+    setScannerActive,
+    handleScanResult,
+    handleScanError,
+    clearForm,
+    handleKeyPress: handleScanKeyPress,
+    registerForceCleanup,
+  } = useProductionScannerModal(order, isOpen);
+
+  const {
+    productionItems,
+    isLoading: productionLoading,
+    isScanning,
+    handleScanItem,
+    handleStartProduction,
+    handleCompleteProduction,
+  } = useProductionItems(order, isOpen);
+
+  const onScanItemClick = async () => {
+    const success = await handleScanItem(imei, productionLineCode);
+    if (success) {
+      clearForm();
+    }
+  };
+
+  const onStartProduction = async () => {
+    const success = await handleStartProduction();
+    if (success && onUpdate) {
+      onUpdate();
+    }
+  };
+
+  const onCompleteProduction = async () => {
+    const success = await handleCompleteProduction();
+    if (success && onUpdate) {
+      onUpdate();
+      onClose();
+    }
+  };
+
+  const onKeyPress = (e: React.KeyboardEvent) => {
+    if (handleScanKeyPress(e) && !isScanning) {
+      onScanItemClick();
+    }
+  };
 
   useEffect(() => {
     const fetchAllSchedules = async () => {
@@ -254,29 +312,16 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit, viewMode = "scanner
 
         <ScrollArea className="max-h-[70vh] pr-4">
           <div className="space-y-6">
-            {/* Status and Scanner Button */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Badge className={getStatusColor(order.status)}>
-                  {getStatusLabel(order.status)}
-                </Badge>
-              </div>
-              
-            {/* Scanner button for "Em produção" status (scanner mode only) */}
-            {order.status === "producao" && viewMode === "scanner" && onOpenScanner && (
-              <Button 
-                onClick={onOpenScanner}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Scan className="h-4 w-4 mr-2" />
-                Scanner
-              </Button>
-            )}
+            {/* Status */}
+            <div className="flex items-center space-x-3">
+              <Badge className={getStatusColor(order.status)}>
+                {getStatusLabel(order.status)}
+              </Badge>
             </div>
 
             <Separator />
 
-            {/* Customer Info */}
+            {/* Customer Info - Always show */}
             <div className="bg-muted/30 p-4 rounded-lg border">
               <h3 className="font-semibold text-base mb-2 text-primary">Cliente</h3>
               <p className="font-medium text-foreground">{order.company_name}</p>
@@ -288,10 +333,52 @@ const OrderModal = ({ order, isOpen, onClose, schedule, kit, viewMode = "scanner
               )}
             </div>
 
-            {/* For "producao" status: 
-                - scanner mode shows only customer + scanner button
-                - details mode shows the full detail sections */}
-            {!(order.status === "producao" && viewMode === "scanner") && (
+            {/* "Em produção" (scanner mode): Show Scanner + Processed Items */}
+            {order.status === "producao" && viewMode === "scanner" && (
+              <>
+                <Separator />
+                <ProductionForm
+                  order={order}
+                  productionItems={productionItems}
+                  isScanning={isScanning}
+                  imei={imei}
+                  productionLineCode={productionLineCode}
+                  scannerActive={scannerActive}
+                  scannerError={scannerError}
+                  onImeiChange={setImei}
+                  onProductionLineCodeChange={setProductionLineCode}
+                  onScannerToggle={() => setScannerActive(!scannerActive)}
+                  onScanResult={handleScanResult}
+                  onScanError={handleScanError}
+                  onScanItem={onScanItemClick}
+                  onKeyPress={onKeyPress}
+                  onStartProduction={onStartProduction}
+                  onCompleteProduction={onCompleteProduction}
+                  onRegisterForceCleanup={registerForceCleanup}
+                />
+                <Separator />
+                <ProductionItemsList
+                  productionItems={productionItems}
+                  totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
+                  isLoading={productionLoading}
+                />
+              </>
+            )}
+
+            {/* "Aguardando envio" (scanner mode): Show Shipment Form embedded */}
+            {order.status === "aguardando" && viewMode === "scanner" && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg text-primary">Preparar Envio</h3>
+                  <ShipmentFormEmbedded order={order} onUpdate={onUpdate} />
+                </div>
+              </>
+            )}
+
+            {/* For non-scanner modes or other statuses: show full detail sections */}
+            {!(order.status === "producao" && viewMode === "scanner") && 
+             !(order.status === "aguardando" && viewMode === "scanner") && (
               <>
                 <Separator />
 
