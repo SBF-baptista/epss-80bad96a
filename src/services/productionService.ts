@@ -4,7 +4,8 @@ import { logCreate, logUpdate } from './logService'
 
 export interface ProductionItem {
   id: string
-  pedido_id: string
+  pedido_id: string | null
+  kit_schedule_id: string | null
   imei: string
   production_line_code: string
   scanned_at: string
@@ -12,11 +13,12 @@ export interface ProductionItem {
 }
 
 export const addProductionItem = async (
-  pedidoId: string, 
+  pedidoId: string | null, 
   imei: string, 
-  productionLineCode: string
+  productionLineCode: string,
+  kitScheduleId?: string
 ): Promise<ProductionItem> => {
-  console.log('Adding production item:', { pedidoId, imei, productionLineCode })
+  console.log('Adding production item:', { pedidoId, kitScheduleId, imei, productionLineCode })
   
   const { data: user } = await supabase.auth.getUser()
   
@@ -24,6 +26,7 @@ export const addProductionItem = async (
     .from('production_items')
     .insert({
       pedido_id: pedidoId,
+      kit_schedule_id: kitScheduleId,
       imei: imei,
       production_line_code: productionLineCode,
       created_by: user.user?.id
@@ -51,6 +54,21 @@ export const getProductionItems = async (pedidoId: string): Promise<ProductionIt
     .from('production_items')
     .select('*')
     .eq('pedido_id', pedidoId)
+    .order('scanned_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching production items:', error)
+    throw error
+  }
+
+  return data || []
+}
+
+export const getProductionItemsBySchedule = async (kitScheduleId: string): Promise<ProductionItem[]> => {
+  const { data, error } = await supabase
+    .from('production_items')
+    .select('*')
+    .eq('kit_schedule_id', kitScheduleId)
     .order('scanned_at', { ascending: false })
 
   if (error) {

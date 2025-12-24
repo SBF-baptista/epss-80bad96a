@@ -1202,7 +1202,8 @@ export type Database = {
           created_by: string | null
           id: string
           imei: string
-          pedido_id: string
+          kit_schedule_id: string | null
+          pedido_id: string | null
           production_line_code: string
           scanned_at: string
         }
@@ -1211,7 +1212,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           imei: string
-          pedido_id: string
+          kit_schedule_id?: string | null
+          pedido_id?: string | null
           production_line_code: string
           scanned_at?: string
         }
@@ -1220,7 +1222,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           imei?: string
-          pedido_id?: string
+          kit_schedule_id?: string | null
+          pedido_id?: string | null
           production_line_code?: string
           scanned_at?: string
         }
@@ -1230,6 +1233,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_items_kit_schedule_id_fkey"
+            columns: ["kit_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "kit_schedules"
             referencedColumns: ["id"]
           },
           {
