@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { User, Mail, Phone, MapPin, FileText, AlertCircle } from "lucide-react";
+import { cleanItemName } from "@/utils/itemNormalization";
 
 interface KickoffHistoryDetailsModalProps {
   open: boolean;
@@ -151,7 +152,7 @@ export const KickoffHistoryDetailsModal = ({
                           <div className="flex gap-1 flex-wrap max-w-[200px]">
                             {vehicle.accessories.map((acc: any, aIdx: number) => (
                               <Badge key={aIdx} variant="outline" className="text-xs">
-                                {acc.name} ({acc.quantity}x)
+                                {cleanItemName(acc.name)} ({acc.quantity}x)
                               </Badge>
                             ))}
                           </div>

@@ -4,6 +4,27 @@
  */
 
 /**
+ * Cleans an item name by removing embedded quantity patterns.
+ * Handles multiple formats:
+ * - "(1x)", "(2x)", etc.
+ * - "(qty: 1)", "(qty: 2)", etc.
+ * - Extra whitespace
+ * 
+ * Examples:
+ * - "BLOQUEIO (1x)" -> "BLOQUEIO"
+ * - "CAMERA EXTRA (qty: 2)" -> "CAMERA EXTRA"
+ * - "ID BLUETOOTH  (1x)" -> "ID BLUETOOTH"
+ */
+export function cleanItemName(name: string): string {
+  if (!name) return '';
+  
+  return name
+    .replace(/\s*\(\d+x\)\s*$/i, '')      // Remove (1x), (2x), etc.
+    .replace(/\s*\(qty:\s*\d+\)\s*$/i, '') // Remove (qty: 1), (qty: 2), etc.
+    .trim();
+}
+
+/**
  * Normalizes an item name by:
  * - Converting to lowercase
  * - Trimming whitespace

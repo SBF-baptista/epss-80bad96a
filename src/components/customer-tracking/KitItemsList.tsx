@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, AlertCircle, Package, Wrench, Droplets } from "lucide-react";
+import { cleanItemName } from "@/utils/itemNormalization";
 
 interface KitItemsListProps {
   homologationStatus?: {
@@ -56,7 +57,7 @@ export const KitItemsList = ({
         <div className="space-y-1 ml-6">
           {items.map((item, index) => (
             <div key={index} className="flex items-center justify-between text-sm">
-              <span>{item.item_name} (Qtd: {item.quantity})</span>
+              <span>{cleanItemName(item.item_name)} (Qtd: {item.quantity})</span>
               {showHomologationStatus && (
                 <Badge 
                   variant={isHomologated ? "default" : "destructive"}

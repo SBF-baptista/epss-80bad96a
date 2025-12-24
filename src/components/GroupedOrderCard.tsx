@@ -5,10 +5,7 @@ import { Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
-// Utility to remove quantity pattern like "(1x)" or "(2x)" from item names
-const cleanItemName = (name: string): string => {
-  return name.replace(/\s*\(\d+x\)\s*$/i, '').trim();
-};
+import { cleanItemName } from "@/utils/itemNormalization";
 
 interface GroupedOrderCardProps {
   groupedOrder: GroupedOrder;
