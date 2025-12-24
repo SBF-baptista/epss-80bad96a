@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cleanItemName } from "@/utils/itemNormalization";
 
 interface VehicleAccessory {
   id: string;
@@ -32,7 +33,7 @@ const VehicleAccessoryDetails = ({ accessories, vehicleName }: VehicleAccessoryD
           {accessories.map((accessory) => (
             <div key={accessory.id} className="flex items-center justify-between py-1">
               <div className="flex flex-col gap-1">
-                <span className="text-sm">{accessory.name}</span>
+                <span className="text-sm">{cleanItemName(accessory.name)}</span>
                 {accessory.categories && (
                   <span className="text-xs text-muted-foreground">{accessory.categories}</span>
                 )}

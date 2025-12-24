@@ -4,10 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Order } from "@/services/orderService";
 import { Scan, Truck, Eye, EyeOff } from "lucide-react";
 
-// Utility to remove quantity pattern like "(1x)" or "(2x)" from item names
-const cleanItemName = (name: string): string => {
-  return name.replace(/\s*\(\d+x\)\s*$/i, '').trim();
-};
+import { cleanItemName } from "@/utils/itemNormalization";
 interface OrderCardProps {
   order: Order;
   onClick: () => void;
