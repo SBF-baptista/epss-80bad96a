@@ -12,6 +12,7 @@ interface KanbanColumnProps {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: () => void;
   onOrderClick: (order: Order) => void;
+  onOrderViewDetailsClick?: (order: Order) => void;
   onDragStart: (order: Order) => void;
   onScanClick?: (order: Order) => void;
   onShipmentClick?: (order: Order) => void;
@@ -24,6 +25,7 @@ const KanbanColumn = ({
   onDragOver,
   onDrop,
   onOrderClick,
+  onOrderViewDetailsClick,
   onDragStart,
   onScanClick,
   onShipmentClick
@@ -34,6 +36,12 @@ const KanbanColumn = ({
   const handleGroupClick = (groupedOrder: GroupedOrder) => {
     // Click on the first order in the group
     onOrderClick(groupedOrder.orders[0]);
+  };
+
+  const handleGroupViewDetailsClick = (groupedOrder: GroupedOrder) => {
+    if (onOrderViewDetailsClick) {
+      onOrderViewDetailsClick(groupedOrder.orders[0]);
+    }
   };
 
   const handleGroupDragStart = (groupedOrder: GroupedOrder) => {
@@ -78,6 +86,7 @@ const KanbanColumn = ({
                 groupedOrder={groupedOrder}
                 onClick={() => handleGroupClick(groupedOrder)}
                 onDragStart={() => handleGroupDragStart(groupedOrder)}
+                onViewDetailsClick={onOrderViewDetailsClick ? () => handleGroupViewDetailsClick(groupedOrder) : undefined}
                 onScanClick={onScanClick ? () => handleGroupScanClick(groupedOrder) : undefined}
                 onShipmentClick={onShipmentClick ? () => handleGroupShipmentClick(groupedOrder) : undefined}
               />
