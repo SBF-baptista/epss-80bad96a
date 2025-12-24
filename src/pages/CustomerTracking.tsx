@@ -27,6 +27,7 @@ export interface CustomerKitData {
   vehicle_model?: string;
   vehicle_plate?: string;
   vehicle_year?: number;
+  incoming_vehicle_id?: string;
   // Accessories and supplies
   accessories?: { name: string; quantity: number }[];
   supplies?: string[];
@@ -153,6 +154,7 @@ const CustomerTracking = () => {
         vehicle_model: schedule.vehicle_model,
         vehicle_plate: schedule.vehicle_plate,
         vehicle_year: schedule.vehicle_year,
+        incoming_vehicle_id: schedule.incoming_vehicle_id,
         // Accessories and supplies
         accessories: vehicleAccessories,
         supplies: schedule.supplies || [],
