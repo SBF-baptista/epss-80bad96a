@@ -76,6 +76,11 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
               <h4 className="font-semibold text-foreground">
                 {order.company_name || 'Cliente'}
               </h4>
+              {order.technicianName && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Técnico: {order.technicianName}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {order.priority && (
@@ -102,6 +107,51 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
                 </button>
               )}
             </div>
+          </div>
+          
+          <div className="space-y-2 text-sm">
+            <div>
+              <span className="text-muted-foreground font-medium">Veículos ({totalVehicles}):</span>
+              <div className="mt-1 space-y-1">
+                {order.vehicles.map((vehicle, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <span className="text-foreground">{vehicle.brand} {vehicle.model}</span>
+                    <span className="font-medium">{vehicle.quantity}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <span className="text-muted-foreground font-medium">Rastreadores ({totalTrackers}):</span>
+              <div className="mt-1 space-y-1">
+                {order.trackers.map((tracker, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <span className="text-foreground">{cleanItemName(tracker.model)}</span>
+                    <span className="font-medium">{tracker.quantity}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <span className="text-muted-foreground font-medium">Acessórios:</span>
+              {order.accessories && order.accessories.length > 0 ? (
+                <div className="mt-1 space-y-1">
+                  {order.accessories.map((accessory, index) => (
+                    <div key={index} className="flex justify-between text-xs">
+                      <span className="text-foreground">{cleanItemName(accessory.name)}</span>
+                      <span className="font-medium">{accessory.quantity}x</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-1">
+                  <span className="text-xs text-muted-foreground italic">Sem acessórios</span>
+                </div>
+              )}
+            </div>
+            
           </div>
 
           {isStandby && (
