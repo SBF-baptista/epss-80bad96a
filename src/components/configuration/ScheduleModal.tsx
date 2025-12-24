@@ -1183,8 +1183,27 @@ export const ScheduleModal = ({
                                 </Select>
                               </td>
                               <td className="px-4 py-3">
+                                 {(() => {
+                                   const vehicleConfiguration = configurationsByVehicle.get(vehicleSchedule.plate);
+                                   if (vehicleConfiguration) {
+                                     return (
+                                       <div className="p-2 bg-purple-100 border border-purple-300 rounded-lg min-w-[150px]">
+                                         <div className="flex items-center gap-2">
+                                           <Cpu className="h-4 w-4 text-purple-700 flex-shrink-0" />
+                                           <div className="flex flex-col">
+                                             <span className="text-xs text-purple-600 font-medium">Configuração:</span>
+                                             <span className="text-xs text-purple-900 font-semibold">{vehicleConfiguration}</span>
+                                           </div>
+                                         </div>
+                                       </div>
+                                     );
+                                   } else {
+                                     return <span className="text-xs text-muted-foreground">N/A</span>;
+                                   }
+                                 })()}
+                              </td>
+                              <td className="px-4 py-3">
                                 {(() => {
-                                  // Get modules for this vehicle
                                   const key = `${vehicleSchedule.brand}-${vehicleSchedule.model}-${vehicleSchedule.plate || 'pending'}`;
                                   const vehicleId = vehicleIdMap.get(key);
                                   const modules = vehicleId ? modulesByVehicleId.get(vehicleId) || [] : [];
@@ -1205,26 +1224,6 @@ export const ScheduleModal = ({
                                     </div>
                                   );
                                 })()}
-                              </td>
-                              <td className="px-4 py-3">
-                                 {(() => {
-                                   const vehicleConfiguration = configurationsByVehicle.get(vehicleSchedule.plate);
-                                   if (vehicleConfiguration) {
-                                     return (
-                                       <div className="p-2 bg-purple-100 border border-purple-300 rounded-lg min-w-[150px]">
-                                         <div className="flex items-center gap-2">
-                                           <Cpu className="h-4 w-4 text-purple-700 flex-shrink-0" />
-                                           <div className="flex flex-col">
-                                             <span className="text-xs text-purple-600 font-medium">Configuração:</span>
-                                             <span className="text-xs text-purple-900 font-semibold">{vehicleConfiguration}</span>
-                                           </div>
-                                         </div>
-                                       </div>
-                                     );
-                                   } else {
-                                     return <span className="text-xs text-muted-foreground">N/A</span>;
-                                   }
-                                 })()}
                               </td>
               <td className="px-4 py-3">
                                 <div className="flex flex-col gap-2 max-w-[220px]">
