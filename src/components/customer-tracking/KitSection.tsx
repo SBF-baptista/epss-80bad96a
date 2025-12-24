@@ -7,7 +7,7 @@ import { Calendar, User, Clock, Package, AlertCircle } from "lucide-react";
 import { KitStatusTimeline } from "./KitStatusTimeline";
 import { KitItemsList } from "./KitItemsList";
 import { RescheduleModal } from "./RescheduleModal";
-import { StatusHistory } from "./StatusHistory";
+import { ProcessHistoryTimeline } from "./ProcessHistoryTimeline";
 import { supabase } from "@/integrations/supabase/client";
 
 import { CustomerKitData } from "@/pages/CustomerTracking";
@@ -287,9 +287,12 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
-          {/* Histórico de Status */}
+          {/* Histórico Completo do Processo */}
           <div className="mt-4 pt-4 border-t">
-            <StatusHistory kitScheduleId={kitData.id} />
+            <ProcessHistoryTimeline 
+              scheduleId={kitData.id} 
+              incomingVehicleId={kitData.incoming_vehicle_id}
+            />
           </div>
         </CardContent>
       </Card>
