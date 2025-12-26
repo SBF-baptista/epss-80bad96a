@@ -32,7 +32,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
 
-  const handleDragStart = (card: HomologationCard) => {
+  const handleDragStart = (card: HomologationCard, e: React.DragEvent) => {
     try {
       setDraggedCard(card);
     } catch (error) {
