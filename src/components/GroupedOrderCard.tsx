@@ -1,11 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { GroupedOrder } from "@/types/groupedOrder";
-import { Eye, MapPin, Calendar, User, Settings } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cleanItemName } from "@/utils/itemNormalization";
 
 interface GroupedOrderCardProps {
@@ -109,45 +106,7 @@ const GroupedOrderCard = ({
             </div>
           </div>
           
-          {/* Quick info row - Plate, Year, Technician, Date */}
-          <div className="flex flex-wrap gap-1.5 text-xs">
-            {groupedOrder.plate && groupedOrder.plate !== 'Placa pendente' && (
-              <Badge variant="secondary" className="flex items-center gap-1 px-1.5 py-0.5 text-[10px]">
-                <MapPin className="h-2.5 w-2.5" />
-                {groupedOrder.plate}
-              </Badge>
-            )}
-            {groupedOrder.year && (
-              <Badge variant="outline" className="px-1.5 py-0.5 text-[10px]">
-                {groupedOrder.year}
-              </Badge>
-            )}
-            {groupedOrder.configuration && (
-              <Badge variant="outline" className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-primary/5">
-                <Settings className="h-2.5 w-2.5" />
-                {groupedOrder.configuration}
-              </Badge>
-            )}
-          </div>
-
-          {/* Technician and scheduled date */}
-          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-            {groupedOrder.technicianName && (
-              <div className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                <span>{groupedOrder.technicianName}</span>
-              </div>
-            )}
-            {groupedOrder.scheduledDate && (
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>
-                  {format(parseISO(groupedOrder.scheduledDate), "dd/MM/yyyy", { locale: ptBR })}
-                  {groupedOrder.scheduledTime && ` às ${groupedOrder.scheduledTime.slice(0, 5)}`}
-                </span>
-              </div>
-            )}
-          </div>
+          {/* Expandable details (non-production only) */}
           {!isInProduction && (
             <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
               <CollapsibleContent className="space-y-2">
