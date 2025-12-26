@@ -122,6 +122,7 @@ export const ScheduleManagement = () => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>('all');
   const [pendingVehicleData, setPendingVehicleData] = useState<PendingVehicleData | null>(null);
+  const [hiddenKitScheduleIds, setHiddenKitScheduleIds] = useState<string[]>([]);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -222,6 +223,9 @@ export const ScheduleManagement = () => {
 
     // Update kit_schedules status from 'shipped' to 'scheduled' if this came from pending vehicles
     if (pendingVehicleData?.kitScheduleId) {
+      // Immediately hide from UI (optimistic update)
+      setHiddenKitScheduleIds(prev => [...prev, pendingVehicleData.kitScheduleId!]);
+      
       const { error: updateError } = await supabase
         .from('kit_schedules')
         .update({ status: 'scheduled' })
@@ -229,6 +233,11 @@ export const ScheduleManagement = () => {
 
       if (updateError) {
         console.error('Error updating kit_schedule status:', updateError);
+        toast.error('Erro ao atualizar status do veículo. Verifique suas permissões.');
+        // Log the error for debugging
+        console.warn('[Scheduling] RLS may be blocking update. User role check needed.');
+      } else {
+        console.log('[Scheduling] kit_schedule status updated to scheduled:', pendingVehicleData.kitScheduleId);
       }
     }
 
@@ -453,6 +462,7 @@ export const ScheduleManagement = () => {
           setSelectedDate(new Date());
           setIsModalOpen(true);
         }}
+        hiddenKitScheduleIds={hiddenKitScheduleIds}
       />
 
       <Card className="overflow-hidden">
