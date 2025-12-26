@@ -106,6 +106,7 @@ export const updateKitScheduleShipment = async (
     installation_address_state: string;
     installation_address_postal_code: string;
     installation_address_complement?: string;
+    tracking_code?: string;
   }
 ) => {
   const { error } = await supabase
@@ -123,7 +124,7 @@ export const updateKitScheduleShipment = async (
     "Agendamento",
     "endereço de envio",
     scheduleId,
-    `Endereço: ${shipmentData.installation_address_city}`
+    `Endereço: ${shipmentData.installation_address_city}${shipmentData.tracking_code ? `, Rastreio: ${shipmentData.tracking_code}` : ''}`
   );
 };
 

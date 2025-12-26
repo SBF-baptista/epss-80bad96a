@@ -1010,6 +1010,7 @@ export type Database = {
           status: string
           supplies: string[] | null
           technician_id: string
+          tracking_code: string | null
           updated_at: string
           vehicle_brand: string | null
           vehicle_model: string | null
@@ -1043,6 +1044,7 @@ export type Database = {
           status?: string
           supplies?: string[] | null
           technician_id: string
+          tracking_code?: string | null
           updated_at?: string
           vehicle_brand?: string | null
           vehicle_model?: string | null
@@ -1076,6 +1078,7 @@ export type Database = {
           status?: string
           supplies?: string[] | null
           technician_id?: string
+          tracking_code?: string | null
           updated_at?: string
           vehicle_brand?: string | null
           vehicle_model?: string | null

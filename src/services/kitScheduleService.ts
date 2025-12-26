@@ -147,6 +147,7 @@ export interface KitScheduleWithDetails extends KitSchedule {
   vehicle_year?: number;
   accessories?: string[];
   supplies?: string[];
+  tracking_code?: string;
 }
 
 export interface CreateKitScheduleData {

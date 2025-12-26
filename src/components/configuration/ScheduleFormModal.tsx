@@ -389,9 +389,18 @@ export const ScheduleFormModal = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm">Serviço *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Tipo de serviço" {...field} className="h-9" />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Selecione o serviço" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background">
+                        <SelectItem value="Instalação">Instalação</SelectItem>
+                        <SelectItem value="Manutenção">Manutenção</SelectItem>
+                        <SelectItem value="Retirada">Retirada</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
