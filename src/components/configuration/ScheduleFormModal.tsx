@@ -144,8 +144,11 @@ export const ScheduleFormModal = ({
         if (initialVehicleData.brand && initialVehicleData.model) {
           form.setValue('vehicle_model', `${initialVehicleData.brand} ${initialVehicleData.model}${initialVehicleData.year ? ` (${initialVehicleData.year})` : ''}`);
         }
+        // Configuração vem da homologação - se não vier, deixar vazio para preencher manualmente
         if (initialVehicleData.configuration) {
           form.setValue('tracker_model', initialVehicleData.configuration);
+        } else {
+          form.setValue('tracker_model', '');
         }
         if (initialVehicleData.customerName) {
           form.setValue('customer', initialVehicleData.customerName);
@@ -232,15 +235,13 @@ export const ScheduleFormModal = ({
                     <span className="font-medium text-xs sm:text-sm">{initialVehicleData.year}</span>
                   </div>
                 )}
-                {initialVehicleData.configuration && (
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Config.</span>
-                    <div className="flex items-center gap-1">
-                      <Cpu className="h-3 w-3 text-purple-600" />
-                      <span className="font-medium text-xs sm:text-sm text-purple-700">{initialVehicleData.configuration}</span>
-                    </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Config.</span>
+                  <div className="flex items-center gap-1">
+                    <Cpu className="h-3 w-3 text-purple-600" />
+                    <span className="font-medium text-xs sm:text-sm text-purple-700">{initialVehicleData.configuration || 'N/A'}</span>
                   </div>
-                )}
+                </div>
               </div>
               {initialVehicleData.accessories && initialVehicleData.accessories.length > 0 && (
                 <div className="mt-2 pt-2 border-t">

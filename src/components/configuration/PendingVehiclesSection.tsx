@@ -161,7 +161,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
     const vehicleData: PendingVehicleData = {
       brand: vehicle.vehicle_brand,
       model: vehicle.vehicle_model,
-      configuration: vehicle.configuracao,
+      configuration: undefined, // Configuração vem da homologação, não do pedido
       customerName: vehicle.company_name || undefined,
       customerAddress: addressParts.length > 0 ? addressParts.join(', ') : undefined,
     };
@@ -247,18 +247,16 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
                     onClick={() => handleScheduleClick(vehicle)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
+                      <p className="text-sm font-medium text-foreground mb-1 truncate">
+                        {vehicle.company_name || 'Cliente não informado'}
+                      </p>
+                      
+                      <div className="flex items-center gap-2 mb-3">
                         {getVehicleIcon(vehicle.vehicle_type)}
-                        <span className="font-semibold text-sm">
+                        <span className="text-sm text-muted-foreground">
                           {vehicle.vehicle_brand} {vehicle.vehicle_model}
                         </span>
                       </div>
-                      
-                      {vehicle.company_name && (
-                        <p className="text-sm text-muted-foreground mb-3 truncate">
-                          {vehicle.company_name}
-                        </p>
-                      )}
                       
                       <Button 
                         size="sm" 
