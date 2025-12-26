@@ -220,6 +220,21 @@ export const ScheduleManagement = () => {
       return;
     }
 
+    // Update kit_schedules status from 'shipped' to 'scheduled' if this came from pending vehicles
+    if (pendingVehicleData?.kitScheduleId) {
+      const { error: updateError } = await supabase
+        .from('kit_schedules')
+        .update({ status: 'scheduled' })
+        .eq('id', pendingVehicleData.kitScheduleId);
+
+      if (updateError) {
+        console.error('Error updating kit_schedule status:', updateError);
+      }
+    }
+
+    // Clear pending vehicle data after successful scheduling
+    setPendingVehicleData(null);
+
     await fetchSchedules();
     toast.success('Agendamento criado com sucesso!');
 

@@ -111,6 +111,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
     ].filter(Boolean);
     
     const vehicleData: PendingVehicleData = {
+      kitScheduleId: schedule.id, // Pass the kit_schedule id to update status later
       brand: schedule.vehicle_brand || undefined,
       model: schedule.vehicle_model || undefined,
       year: schedule.vehicle_year || undefined,
@@ -191,8 +192,8 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="pt-0">
-            <ScrollArea className="max-h-[300px]">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <ScrollArea className="h-[280px]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pr-4">
                 {pendingSchedules.map((schedule) => (
                   <Card 
                     key={schedule.id} 
@@ -209,7 +210,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
                       
                       <div className="flex items-center gap-2 mb-3">
                         {getVehicleIcon(schedule.vehicle_brand)}
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-muted-foreground truncate">
                           {schedule.vehicle_brand || ''} {schedule.vehicle_model || 'Veículo não informado'}
                         </span>
                       </div>
