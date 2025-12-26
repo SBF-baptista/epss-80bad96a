@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
-import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText } from "lucide-react";
+import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText, Car, Settings, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cleanItemName, normalizeItemName } from "@/utils/itemNormalization";
 import ProductionForm from "./production/ProductionForm";
@@ -375,6 +375,62 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                         <p>CEP: {schedule.installation_address_postal_code}</p>
                       )}
                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Scheduling Info Section - Always show */}
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              <h3 className="font-semibold text-base mb-3 text-primary">Informações do Agendamento</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Vehicle info */}
+                {(schedule?.vehicle_brand || schedule?.vehicle_model) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span>
+                      {schedule.vehicle_brand} {schedule.vehicle_model}
+                      {schedule.vehicle_year && ` (${schedule.vehicle_year})`}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Plate */}
+                {schedule?.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente' && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span>Placa: <strong>{schedule.vehicle_plate}</strong></span>
+                  </div>
+                )}
+                
+                {/* Technician */}
+                {schedule?.technician?.name && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span>Técnico: {schedule.technician.name}</span>
+                  </div>
+                )}
+                
+                {/* Scheduled Date/Time */}
+                {schedule?.scheduled_date && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span>
+                      {formatDate(schedule.scheduled_date)}
+                      {schedule.installation_time && (
+                        <span className="ml-1 text-muted-foreground">
+                          às {schedule.installation_time.slice(0, 5)}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Configuration */}
+                {(schedule as any)?.configuration && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Settings className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span>Configuração: {(schedule as any).configuration}</span>
                   </div>
                 )}
               </div>
