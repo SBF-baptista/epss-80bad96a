@@ -116,8 +116,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
   return (
     <Card
       className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] touch-manipulation"
-      draggable
-      onDragStart={onDragStart}
       onClick={onClick}
     >
       <CardContent className="p-3 md:p-4">
