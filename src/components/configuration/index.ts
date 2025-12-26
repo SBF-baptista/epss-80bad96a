@@ -8,3 +8,4 @@ export { SchedulingSection } from './SchedulingSection';
 export { ScheduleModal } from './ScheduleModal';
 export { ScheduleManagement } from './ScheduleManagement';
 export { ScheduleEditModal } from './ScheduleEditModal';
+export { PendingVehiclesSection } from './PendingVehiclesSection';
