@@ -113,10 +113,14 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
 
   const isConfigurationEditable = card.status === 'homologar' || card.status === 'em_homologacao';
 
+  const isAdminUser = isAdmin();
+
   return (
     <Card
       className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] touch-manipulation"
       onClick={onClick}
+      draggable={isAdminUser}
+      onDragStart={isAdminUser ? onDragStart : undefined}
     >
       <CardContent className="p-3 md:p-4">
         <div className="space-y-2 md:space-y-3">
