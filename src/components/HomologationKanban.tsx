@@ -8,6 +8,7 @@ import { HomologationCard, updateHomologationStatus } from "@/services/homologat
 import { useHomologationToast } from "@/hooks/useHomologationToast";
 import { Button } from "@/components/ui/button";
 import { logKanbanMove } from "@/services/logService";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface HomologationKanbanProps {
   cards: HomologationCard[];
@@ -24,6 +25,7 @@ const columns = [
 
 const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const { showSuccess, showError } = useHomologationToast();
+  const { isAdmin } = useUserRole();
   const [draggedCard, setDraggedCard] = useState<HomologationCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -49,6 +51,16 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   };
 
   const handleDrop = async (columnId: string) => {
+    // Validação de segurança: apenas admin pode mover cards
+    if (!isAdmin()) {
+      showError(new Error('Permissão negada'), {
+        action: 'drop_card',
+        component: 'HomologationKanban',
+      }, 'Apenas administradores podem mover cards no Kanban');
+      setDraggedCard(null);
+      return;
+    }
+
     if (!draggedCard || draggedCard.status === columnId) {
       setDraggedCard(null);
       return;
