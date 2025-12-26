@@ -4,26 +4,29 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
-import { Car, Truck, Calendar, Package, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { Car, Truck, Calendar, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PendingVehicleData } from './ScheduleFormModal';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-interface PendingVehicle {
+interface PendingSchedule {
   id: string;
-  numero_pedido: string;
-  company_name: string | null;
-  configuracao: string;
-  shipment_address_street: string | null;
-  shipment_address_number: string | null;
-  shipment_address_neighborhood: string | null;
-  shipment_address_city: string | null;
-  shipment_address_state: string | null;
-  shipment_address_postal_code: string | null;
-  vehicle_brand: string;
-  vehicle_model: string;
-  vehicle_type: string | null;
-  tracker_model: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  vehicle_brand: string | null;
+  vehicle_model: string | null;
+  vehicle_year: number | null;
+  vehicle_plate: string | null;
+  configuration: string | null;
+  installation_address_street: string | null;
+  installation_address_number: string | null;
+  installation_address_neighborhood: string | null;
+  installation_address_city: string | null;
+  installation_address_state: string | null;
+  installation_address_postal_code: string | null;
+  installation_address_complement: string | null;
+  kit_id: string | null;
+  selected_kit_ids: string[] | null;
 }
 
 interface PendingVehiclesSectionProps {
@@ -31,114 +34,63 @@ interface PendingVehiclesSectionProps {
 }
 
 export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSectionProps) => {
-  const [pendingVehicles, setPendingVehicles] = useState<PendingVehicle[]>([]);
+  const [pendingSchedules, setPendingSchedules] = useState<PendingSchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
 
-  const fetchPendingVehicles = async () => {
+  const fetchPendingSchedules = async () => {
     setIsLoading(true);
     try {
-      // Fetch orders with status "enviado"
-      const { data: orders, error: ordersError } = await supabase
-        .from('pedidos')
+      // Fetch kit_schedules with status "shipped" (Enviado no Kanban)
+      const { data: schedules, error: schedulesError } = await supabase
+        .from('kit_schedules')
         .select(`
           id,
-          numero_pedido,
-          company_name,
-          configuracao,
-          shipment_address_street,
-          shipment_address_number,
-          shipment_address_neighborhood,
-          shipment_address_city,
-          shipment_address_state,
-          shipment_address_postal_code
+          customer_name,
+          customer_phone,
+          vehicle_brand,
+          vehicle_model,
+          vehicle_year,
+          vehicle_plate,
+          configuration,
+          installation_address_street,
+          installation_address_number,
+          installation_address_neighborhood,
+          installation_address_city,
+          installation_address_state,
+          installation_address_postal_code,
+          installation_address_complement,
+          kit_id,
+          selected_kit_ids
         `)
-        .eq('status', 'enviado');
+        .eq('status', 'shipped');
 
-      if (ordersError) {
-        console.error('Error fetching pending orders:', ordersError);
+      if (schedulesError) {
+        console.error('Error fetching pending schedules:', schedulesError);
+        setPendingSchedules([]);
         return;
       }
 
-      if (!orders || orders.length === 0) {
-        setPendingVehicles([]);
-        return;
-      }
-
-      // Fetch vehicles and trackers for each order
-      const orderIds = orders.map(o => o.id);
-      
-      const { data: vehicles, error: vehiclesError } = await supabase
-        .from('veiculos')
-        .select('pedido_id, marca, modelo, tipo')
-        .in('pedido_id', orderIds);
-
-      const { data: trackers, error: trackersError } = await supabase
-        .from('rastreadores')
-        .select('pedido_id, modelo')
-        .in('pedido_id', orderIds);
-
-      if (vehiclesError) console.error('Error fetching vehicles:', vehiclesError);
-      if (trackersError) console.error('Error fetching trackers:', trackersError);
-
-      // Create vehicle map
-      const vehicleMap = new Map<string, { marca: string; modelo: string; tipo: string | null }>();
-      vehicles?.forEach(v => {
-        if (!vehicleMap.has(v.pedido_id)) {
-          vehicleMap.set(v.pedido_id, { marca: v.marca, modelo: v.modelo, tipo: v.tipo });
-        }
-      });
-
-      // Create tracker map
-      const trackerMap = new Map<string, string>();
-      trackers?.forEach(t => {
-        if (!trackerMap.has(t.pedido_id)) {
-          trackerMap.set(t.pedido_id, t.modelo);
-        }
-      });
-
-      // Combine data
-      const combinedData: PendingVehicle[] = orders.map(order => {
-        const vehicle = vehicleMap.get(order.id);
-        const tracker = trackerMap.get(order.id);
-        
-        return {
-          id: order.id,
-          numero_pedido: order.numero_pedido,
-          company_name: order.company_name,
-          configuracao: order.configuracao,
-          shipment_address_street: order.shipment_address_street,
-          shipment_address_number: order.shipment_address_number,
-          shipment_address_neighborhood: order.shipment_address_neighborhood,
-          shipment_address_city: order.shipment_address_city,
-          shipment_address_state: order.shipment_address_state,
-          shipment_address_postal_code: order.shipment_address_postal_code,
-          vehicle_brand: vehicle?.marca || 'N/A',
-          vehicle_model: vehicle?.modelo || 'N/A',
-          vehicle_type: vehicle?.tipo || null,
-          tracker_model: tracker || 'N/A',
-        };
-      });
-
-      setPendingVehicles(combinedData);
+      setPendingSchedules(schedules || []);
     } catch (error) {
-      console.error('Error in fetchPendingVehicles:', error);
+      console.error('Error in fetchPendingSchedules:', error);
+      setPendingSchedules([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPendingVehicles();
+    fetchPendingSchedules();
 
-    // Subscribe to realtime updates
+    // Subscribe to realtime updates on kit_schedules
     const channel = supabase
-      .channel('pending-vehicles-changes')
+      .channel('pending-schedules-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'pedidos' },
+        { event: '*', schema: 'public', table: 'kit_schedules' },
         () => {
-          fetchPendingVehicles();
+          fetchPendingSchedules();
         }
       )
       .subscribe();
@@ -148,29 +100,33 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
     };
   }, []);
 
-  const handleScheduleClick = (vehicle: PendingVehicle) => {
+  const handleScheduleClick = (schedule: PendingSchedule) => {
     // Build address string
     const addressParts = [
-      vehicle.shipment_address_street,
-      vehicle.shipment_address_number,
-      vehicle.shipment_address_neighborhood,
-      vehicle.shipment_address_city,
-      vehicle.shipment_address_state,
+      schedule.installation_address_street,
+      schedule.installation_address_number,
+      schedule.installation_address_neighborhood,
+      schedule.installation_address_city,
+      schedule.installation_address_state,
     ].filter(Boolean);
     
     const vehicleData: PendingVehicleData = {
-      brand: vehicle.vehicle_brand,
-      model: vehicle.vehicle_model,
-      configuration: undefined, // Configuração vem da homologação, não do pedido
-      customerName: vehicle.company_name || undefined,
+      brand: schedule.vehicle_brand || undefined,
+      model: schedule.vehicle_model || undefined,
+      year: schedule.vehicle_year || undefined,
+      plate: schedule.vehicle_plate || undefined,
+      configuration: schedule.configuration || undefined,
+      customerName: schedule.customer_name || undefined,
+      customerPhone: schedule.customer_phone || undefined,
       customerAddress: addressParts.length > 0 ? addressParts.join(', ') : undefined,
     };
 
     onScheduleVehicle(vehicleData);
   };
 
-  const getVehicleIcon = (type: string | null) => {
-    if (type?.toLowerCase().includes('caminhão') || type?.toLowerCase().includes('truck')) {
+  const getVehicleIcon = (brand: string | null) => {
+    const brandLower = brand?.toLowerCase() || '';
+    if (brandLower.includes('scania') || brandLower.includes('volvo') || brandLower.includes('mercedes')) {
       return <Truck className="h-4 w-4" />;
     }
     return <Car className="h-4 w-4" />;
@@ -194,7 +150,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
     );
   }
 
-  if (pendingVehicles.length === 0) {
+  if (pendingSchedules.length === 0) {
     return (
       <Card className="mb-6 border-dashed">
         <CardHeader className="pb-3">
@@ -222,7 +178,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
                 <Package className="h-5 w-5 text-orange-500" />
                 <span>Veículos Pendentes de Agendamento</span>
                 <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
-                  {pendingVehicles.length}
+                  {pendingSchedules.length}
                 </Badge>
               </div>
               {isOpen ? (
@@ -237,24 +193,24 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
           <CardContent className="pt-0">
             <ScrollArea className="max-h-[300px]">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {pendingVehicles.map((vehicle) => (
+                {pendingSchedules.map((schedule) => (
                   <Card 
-                    key={vehicle.id} 
+                    key={schedule.id} 
                     className={cn(
                       "cursor-pointer transition-all hover:shadow-md hover:border-primary/50",
                       "bg-background"
                     )}
-                    onClick={() => handleScheduleClick(vehicle)}
+                    onClick={() => handleScheduleClick(schedule)}
                   >
                     <CardContent className="p-4">
                       <p className="text-sm font-medium text-foreground mb-1 truncate">
-                        {vehicle.company_name || 'Cliente não informado'}
+                        {schedule.customer_name || 'Cliente não informado'}
                       </p>
                       
                       <div className="flex items-center gap-2 mb-3">
-                        {getVehicleIcon(vehicle.vehicle_type)}
+                        {getVehicleIcon(schedule.vehicle_brand)}
                         <span className="text-sm text-muted-foreground">
-                          {vehicle.vehicle_brand} {vehicle.vehicle_model}
+                          {schedule.vehicle_brand || ''} {schedule.vehicle_model || 'Veículo não informado'}
                         </span>
                       </div>
                       
@@ -263,7 +219,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
                         className="w-full"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleScheduleClick(vehicle);
+                          handleScheduleClick(schedule);
                         }}
                       >
                         <Calendar className="h-4 w-4 mr-2" />
