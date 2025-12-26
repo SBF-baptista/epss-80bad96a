@@ -95,6 +95,38 @@ export const updateOrderShipment = async (
   );
 };
 
+// Update kit_schedules shipment information (for Kanban flow)
+export const updateKitScheduleShipment = async (
+  scheduleId: string, 
+  shipmentData: {
+    installation_address_street: string;
+    installation_address_number: string;
+    installation_address_neighborhood: string;
+    installation_address_city: string;
+    installation_address_state: string;
+    installation_address_postal_code: string;
+    installation_address_complement?: string;
+  }
+) => {
+  const { error } = await supabase
+    .from('kit_schedules')
+    .update(shipmentData)
+    .eq('id', scheduleId);
+
+  if (error) {
+    console.error('Error updating kit_schedule shipment:', error);
+    throw error;
+  }
+
+  // Registrar log da preparação de embarque
+  await logUpdate(
+    "Agendamento",
+    "endereço de envio",
+    scheduleId,
+    `Endereço: ${shipmentData.installation_address_city}`
+  );
+};
+
 // Address parsing utility
 export const parseAddress = (addressString: string): Partial<ShipmentAddress> => {
   const address: Partial<ShipmentAddress> = {};
