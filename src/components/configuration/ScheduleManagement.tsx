@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScheduleFormModal, PendingVehicleData } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
+import { PendingVehiclesSection } from './PendingVehiclesSection';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -429,6 +430,15 @@ export const ScheduleManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Pending Vehicles Section */}
+      <PendingVehiclesSection 
+        onScheduleVehicle={(vehicleData) => {
+          setPendingVehicleData(vehicleData);
+          setSelectedDate(new Date());
+          setIsModalOpen(true);
+        }}
+      />
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
