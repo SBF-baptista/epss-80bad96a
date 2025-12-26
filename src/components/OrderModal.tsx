@@ -430,8 +430,46 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg text-primary">Informações de Envio</h3>
                   <div className="space-y-4">
-                    {/* Row: Cidade, Estado */}
+                    {/* Row: Rua, Número */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label className="text-sm text-muted-foreground">Rua/Logradouro</Label>
+                        <Input 
+                          value={schedule?.installation_address_street || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Número</Label>
+                        <Input 
+                          value={schedule?.installation_address_number || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
+                      </div>
+                    </div>
+                    {/* Row: Bairro, Complemento */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Bairro</Label>
+                        <Input 
+                          value={schedule?.installation_address_neighborhood || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Complemento</Label>
+                        <Input 
+                          value={schedule?.installation_address_complement || '-'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
+                      </div>
+                    </div>
+                    {/* Row: Cidade, UF, CEP */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label className="text-sm text-muted-foreground">Cidade</Label>
                         <Input 
@@ -444,6 +482,14 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                         <Label className="text-sm text-muted-foreground">UF</Label>
                         <Input 
                           value={schedule?.installation_address_state || 'N/A'} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">CEP</Label>
+                        <Input 
+                          value={schedule?.installation_address_postal_code || 'N/A'} 
                           disabled 
                           className="bg-muted/50"
                         />
