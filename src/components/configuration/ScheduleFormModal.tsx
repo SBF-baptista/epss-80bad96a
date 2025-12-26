@@ -63,6 +63,7 @@ const scheduleFormSchema = z.object({
 export type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
 
 export interface PendingVehicleData {
+  kitScheduleId?: string; // ID from kit_schedules to update status after scheduling
   plate?: string;
   brand?: string;
   model?: string;
