@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Order } from "@/services/orderService";
 import {
   updateKitScheduleShipment,
@@ -21,6 +23,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
 
   const [selectedUF, setSelectedUF] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
+  const [trackingCode, setTrackingCode] = useState<string>("");
   const [address, setAddress] = useState<ShipmentAddress>({
     street: "",
     number: "",
@@ -40,6 +43,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
       installation_address_state: string;
       installation_address_postal_code: string;
       installation_address_complement?: string;
+      tracking_code?: string;
     }) => updateKitScheduleShipment(order.id, data),
     onSuccess: () => {
       toast({
@@ -62,6 +66,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
   useEffect(() => {
     if (order.installation_address_state) setSelectedUF(order.installation_address_state);
     if (order.installation_address_city) setSelectedCity(order.installation_address_city);
+    if (order.trackingCode) setTrackingCode(order.trackingCode);
 
     setAddress({
       street: order.installation_address_street || "",
@@ -108,6 +113,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
       installation_address_state: address.state,
       installation_address_postal_code: address.postal_code,
       installation_address_complement: address.complement || undefined,
+      tracking_code: trackingCode || undefined,
     });
   };
 
@@ -154,6 +160,24 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
             isReadOnly={false}
             allowManualEntry
           />
+        </CardContent>
+      </Card>
+
+      {/* Tracking Code Section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Código de Rastreio</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="tracking_code">Código de Rastreio dos Correios</Label>
+            <Input
+              id="tracking_code"
+              value={trackingCode}
+              onChange={(e) => setTrackingCode(e.target.value)}
+              placeholder="Ex: AA123456789BR"
+            />
+          </div>
         </CardContent>
       </Card>
 

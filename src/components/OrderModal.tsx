@@ -495,6 +495,15 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                         />
                       </div>
                     </div>
+                    {/* Row: Código de Rastreio */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Código de Rastreio</Label>
+                      <Input 
+                        value={schedule?.tracking_code || 'N/A'} 
+                        disabled 
+                        className="bg-muted/50"
+                      />
+                    </div>
                   </div>
                 </div>
               </>
