@@ -8,7 +8,7 @@ import { Order } from "@/services/orderService";
 import {
   fetchShipmentRecipients,
   createShipmentRecipient,
-  updateOrderShipment,
+  updateKitScheduleShipment,
   parseAddress,
   ShipmentAddress,
 } from "@/services/shipmentService";
@@ -59,12 +59,21 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
   });
 
   const updateShipmentMutation = useMutation({
-    mutationFn: (data: any) => updateOrderShipment(order.id, data),
+    mutationFn: (data: {
+      installation_address_street: string;
+      installation_address_number: string;
+      installation_address_neighborhood: string;
+      installation_address_city: string;
+      installation_address_state: string;
+      installation_address_postal_code: string;
+      installation_address_complement?: string;
+    }) => updateKitScheduleShipment(order.id, data),
     onSuccess: () => {
       toast({
         title: "Envio preparado",
         description: "Informações de envio salvas com sucesso.",
       });
+      queryClient.invalidateQueries({ queryKey: ['kit-schedules'] });
       onUpdate?.();
     },
   });
@@ -226,30 +235,24 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
 
   const handleSave = async () => {
     try {
-      let recipientId = selectedRecipientId;
-
-      // Create new recipient if needed
+      // Create new recipient if needed (for future reference)
       if (isNewRecipient && newRecipientName.trim()) {
-        const newRecipient = await createRecipientMutation.mutateAsync({
+        await createRecipientMutation.mutateAsync({
           name: newRecipientName,
           phone: newRecipientPhone,
           ...address,
         });
-        recipientId = newRecipient.id;
       }
 
-      // Update order with shipment information
+      // Update kit_schedule with shipment address information
       await updateShipmentMutation.mutateAsync({
-        shipment_recipient_id: recipientId || undefined,
-        shipment_address_street: address.street,
-        shipment_address_number: address.number,
-        shipment_address_neighborhood: address.neighborhood,
-        shipment_address_city: address.city,
-        shipment_address_state: address.state,
-        shipment_address_postal_code: address.postal_code,
-        shipment_address_complement: address.complement || undefined,
-        shipment_prepared_at: new Date().toISOString(),
-        correios_tracking_code: trackingCode || undefined,
+        installation_address_street: address.street,
+        installation_address_number: address.number,
+        installation_address_neighborhood: address.neighborhood,
+        installation_address_city: address.city,
+        installation_address_state: address.state,
+        installation_address_postal_code: address.postal_code,
+        installation_address_complement: address.complement || undefined,
       });
     } catch (error) {
       toast({
