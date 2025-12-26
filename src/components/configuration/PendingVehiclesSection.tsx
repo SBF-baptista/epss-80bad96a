@@ -31,12 +31,16 @@ interface PendingSchedule {
 
 interface PendingVehiclesSectionProps {
   onScheduleVehicle: (vehicleData: PendingVehicleData) => void;
+  hiddenKitScheduleIds?: string[];
 }
 
-export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSectionProps) => {
+export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds = [] }: PendingVehiclesSectionProps) => {
   const [pendingSchedules, setPendingSchedules] = useState<PendingSchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
+
+  // Filter out hidden schedules (already scheduled in this session)
+  const visibleSchedules = pendingSchedules.filter(s => !hiddenKitScheduleIds.includes(s.id));
 
   const fetchPendingSchedules = async () => {
     setIsLoading(true);
@@ -151,7 +155,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
     );
   }
 
-  if (pendingSchedules.length === 0) {
+  if (visibleSchedules.length === 0) {
     return (
       <Card className="mb-6 border-dashed">
         <CardHeader className="pb-3">
@@ -179,7 +183,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
                 <Package className="h-5 w-5 text-orange-500" />
                 <span>Veículos Pendentes de Agendamento</span>
                 <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
-                  {pendingSchedules.length}
+                  {visibleSchedules.length}
                 </Badge>
               </div>
               {isOpen ? (
@@ -194,7 +198,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
           <CardContent className="pt-0">
             <ScrollArea className="h-[280px]">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pr-4">
-                {pendingSchedules.map((schedule) => (
+                {visibleSchedules.map((schedule) => (
                   <Card 
                     key={schedule.id} 
                     className={cn(
