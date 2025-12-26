@@ -247,39 +247,17 @@ export const PendingVehiclesSection = ({ onScheduleVehicle }: PendingVehiclesSec
                     onClick={() => handleScheduleClick(vehicle)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {getVehicleIcon(vehicle.vehicle_type)}
-                          <span className="font-semibold text-sm">
-                            {vehicle.vehicle_brand} {vehicle.vehicle_model}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {vehicle.numero_pedido}
-                        </Badge>
+                      <div className="flex items-center gap-2 mb-2">
+                        {getVehicleIcon(vehicle.vehicle_type)}
+                        <span className="font-semibold text-sm">
+                          {vehicle.vehicle_brand} {vehicle.vehicle_model}
+                        </span>
                       </div>
                       
                       {vehicle.company_name && (
-                        <p className="text-sm text-muted-foreground mb-2 truncate">
+                        <p className="text-sm text-muted-foreground mb-3 truncate">
                           {vehicle.company_name}
                         </p>
-                      )}
-                      
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                        <Badge variant="secondary" className="text-xs px-1.5">
-                          {vehicle.configuracao}
-                        </Badge>
-                        <span>•</span>
-                        <span>{vehicle.tracker_model}</span>
-                      </div>
-                      
-                      {vehicle.shipment_address_city && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                          <MapPin className="h-3 w-3" />
-                          <span className="truncate">
-                            {vehicle.shipment_address_city}, {vehicle.shipment_address_state}
-                          </span>
-                        </div>
                       )}
                       
                       <Button 
