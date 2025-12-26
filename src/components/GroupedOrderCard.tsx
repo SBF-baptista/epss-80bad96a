@@ -155,12 +155,6 @@ const GroupedOrderCard = ({
             </div>
           )}
 
-          {isInProduction && (
-            <div className="flex items-center gap-2 p-2 bg-primary/10 border border-primary/20 rounded-md">
-              <span className="text-primary">🔧</span>
-              <p className="text-xs text-primary font-medium">Em Produção</p>
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>
