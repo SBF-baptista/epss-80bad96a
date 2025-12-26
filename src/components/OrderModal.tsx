@@ -430,101 +430,25 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg text-primary">Informações de Envio</h3>
                   <div className="space-y-4">
-                    {/* Row 1: Rua, Número, Complemento */}
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                      <div className="md:col-span-3 space-y-2">
-                        <Label className="text-sm text-muted-foreground">Rua</Label>
-                        <Input 
-                          value={order.shipment_address_street || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="md:col-span-1 space-y-2">
-                        <Label className="text-sm text-muted-foreground">Número</Label>
-                        <Input 
-                          value={order.shipment_address_number || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="md:col-span-2 space-y-2">
-                        <Label className="text-sm text-muted-foreground">Complemento</Label>
-                        <Input 
-                          value={order.shipment_address_complement || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Row 2: Bairro, Cidade, Estado */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Bairro</Label>
-                        <Input 
-                          value={order.shipment_address_neighborhood || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
+                    {/* Row: Cidade, Estado */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-sm text-muted-foreground">Cidade</Label>
                         <Input 
-                          value={order.shipment_address_city || 'N/A'} 
+                          value={schedule?.installation_address_city || 'N/A'} 
                           disabled 
                           className="bg-muted/50"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Estado</Label>
+                        <Label className="text-sm text-muted-foreground">UF</Label>
                         <Input 
-                          value={order.shipment_address_state || 'N/A'} 
+                          value={schedule?.installation_address_state || 'N/A'} 
                           disabled 
                           className="bg-muted/50"
                         />
                       </div>
                     </div>
-
-                    {/* Row 3: CEP, Código de Rastreamento */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">CEP</Label>
-                        <Input 
-                          value={order.shipment_address_postal_code || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Código de Rastreamento</Label>
-                        <Input 
-                          value={order.trackingCode || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Row 4: Data de Envio (if available) */}
-                    {order.shipment_prepared_at && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm text-muted-foreground">Data de Envio</Label>
-                          <Input 
-                            value={new Date(order.shipment_prepared_at).toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })} 
-                            disabled 
-                            className="bg-muted/50"
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </>
