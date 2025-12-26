@@ -45,4 +45,9 @@ export interface Order {
   shipment_prepared_at?: string
   trackingCode?: string
   technicianName?: string
+  plate?: string
+  year?: string
+  scheduledDate?: string
+  scheduledTime?: string
+  configuration?: string
 }

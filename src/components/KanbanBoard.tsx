@@ -168,6 +168,12 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       })) || [],
       accessories: accessoriesList,
       technicianName: schedule.technician?.name,
+      // New fields for Kanban cards
+      plate: schedule.vehicle_plate || undefined,
+      year: schedule.vehicle_year?.toString(),
+      scheduledDate: schedule.scheduled_date,
+      scheduledTime: schedule.installation_time || undefined,
+      configuration: (schedule as any).configuration || kit?.name || undefined,
     };
   };
 
