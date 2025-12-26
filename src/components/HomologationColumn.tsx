@@ -12,7 +12,7 @@ interface HomologationColumnProps {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: () => void;
   onCardClick: (card: HomologationCard) => void;
-  onDragStart: (card: HomologationCard) => void;
+  onDragStart: (card: HomologationCard, e: React.DragEvent) => void;
   onUpdate: () => void;
   isUpdating?: string | null;
 }
@@ -89,7 +89,7 @@ const HomologationColumn = ({
             <HomologationCardComponent
               card={card}
               onClick={() => onCardClick(card)}
-              onDragStart={() => onDragStart(card)}
+              onDragStart={(e) => onDragStart(card, e)}
               onUpdate={onUpdate}
             />
             {isUpdating === card.id && (

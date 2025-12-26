@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface HomologationCardProps {
   card: HomologationCard;
   onClick: () => void;
-  onDragStart: () => void;
+  onDragStart: (e: React.DragEvent) => void;
   onUpdate: () => void;
 }
 
@@ -115,12 +115,19 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
 
   const isAdminUser = isAdmin();
 
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!isAdminUser) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', card.id);
+    onDragStart(e);
+  };
+
   return (
     <Card
       className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] touch-manipulation"
       onClick={onClick}
       draggable={isAdminUser}
-      onDragStart={isAdminUser ? onDragStart : undefined}
+      onDragStart={isAdminUser ? handleDragStart : undefined}
     >
       <CardContent className="p-3 md:p-4">
         <div className="space-y-2 md:space-y-3">
@@ -135,7 +142,7 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
               <Badge className={`text-xs ${getStatusColor(card.status)}`}>
                 {getStatusLabel(card.status)}
               </Badge>
-              {isAdmin && (
+              {isAdminUser && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
