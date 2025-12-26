@@ -201,68 +201,67 @@ export const ScheduleFormModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-4 sm:p-6" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-3 sm:p-6 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-base sm:text-lg">
+          <DialogTitle className="text-base sm:text-lg truncate">
             Novo Agendamento {watchedDate ? `- ${format(watchedDate, "dd 'de' MMMM", { locale: ptBR })}` : ''}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Vehicle Data Header */}
-        {initialVehicleData && (initialVehicleData.plate || initialVehicleData.model) && (
-          <Card className="bg-muted/50 border-primary/20">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Car className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-sm sm:text-base">Dados do Veículo</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                {initialVehicleData.model && (
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Modelo</span>
-                    <span className="font-medium text-xs sm:text-sm">{initialVehicleData.brand} {initialVehicleData.model}</span>
-                  </div>
-                )}
-                {initialVehicleData.plate && (
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Placa</span>
-                    <Badge variant="secondary" className="text-xs">{initialVehicleData.plate}</Badge>
-                  </div>
-                )}
-                {initialVehicleData.year && (
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Ano</span>
-                    <span className="font-medium text-xs sm:text-sm">{initialVehicleData.year}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-xs text-muted-foreground block">Config.</span>
-                  <div className="flex items-center gap-1">
-                    <Cpu className="h-3 w-3 text-purple-600" />
-                    <span className="font-medium text-xs sm:text-sm text-purple-700">{initialVehicleData.configuration || 'N/A'}</span>
+        <ScrollArea className="max-h-[calc(90vh-80px)] pr-2 sm:pr-4">
+          {/* Vehicle Data Header */}
+          {initialVehicleData && (initialVehicleData.plate || initialVehicleData.model) && (
+            <Card className="bg-muted/50 border-primary/20 mb-4">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Car className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="font-semibold text-sm">Dados do Veículo</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+                  {initialVehicleData.model && (
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground block">Modelo</span>
+                      <span className="font-medium text-xs truncate block">{initialVehicleData.brand} {initialVehicleData.model}</span>
+                    </div>
+                  )}
+                  {initialVehicleData.plate && (
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground block">Placa</span>
+                      <Badge variant="secondary" className="text-xs">{initialVehicleData.plate}</Badge>
+                    </div>
+                  )}
+                  {initialVehicleData.year && (
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground block">Ano</span>
+                      <span className="font-medium text-xs">{initialVehicleData.year}</span>
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <span className="text-xs text-muted-foreground block">Config.</span>
+                    <div className="flex items-center gap-1">
+                      <Cpu className="h-3 w-3 text-purple-600 flex-shrink-0" />
+                      <span className="font-medium text-xs text-purple-700 truncate">{initialVehicleData.configuration || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              {initialVehicleData.accessories && initialVehicleData.accessories.length > 0 && (
-                <div className="mt-2 pt-2 border-t">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Package className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Acessórios</span>
+                {initialVehicleData.accessories && initialVehicleData.accessories.length > 0 && (
+                  <div className="mt-2 pt-2 border-t">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs text-muted-foreground">Acessórios</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {initialVehicleData.accessories.map((acc, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0">
+                          {acc}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {initialVehicleData.accessories.map((acc, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0">
-                        {acc}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-        
-        <ScrollArea className="max-h-[60vh] sm:max-h-[70vh] pr-2 sm:pr-4">
+                )}
+              </CardContent>
+            </Card>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               {/* Date Picker Field */}
