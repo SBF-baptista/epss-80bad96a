@@ -9,6 +9,13 @@ export interface GroupedOrder {
   status: "novos" | "producao" | "aguardando" | "enviado" | "standby";
   configurations: string[];
   createdAt: string; // Will use the earliest order's createdAt
+  // New fields from scheduling
+  plate?: string;
+  year?: string;
+  technicianName?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  configuration?: string;
 }
 
 export const groupOrdersByCompany = (orders: Order[]): GroupedOrder[] => {
@@ -48,6 +55,9 @@ export const groupOrdersByCompany = (orders: Order[]): GroupedOrder[] => {
       .map(order => order.createdAt)
       .sort()[0];
 
+    // Get first order's additional details
+    const firstOrder = companyOrders[0];
+
     return {
       company_name,
       orders: companyOrders,
@@ -56,7 +66,14 @@ export const groupOrdersByCompany = (orders: Order[]): GroupedOrder[] => {
       totalAccessories,
       status,
       configurations,
-      createdAt
+      createdAt,
+      // Pass through first order's scheduling details
+      plate: firstOrder.plate,
+      year: firstOrder.year,
+      technicianName: firstOrder.technicianName,
+      scheduledDate: firstOrder.scheduledDate,
+      scheduledTime: firstOrder.scheduledTime,
+      configuration: firstOrder.configuration,
     };
   });
 };
