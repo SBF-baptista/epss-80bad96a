@@ -105,6 +105,7 @@ interface ScheduleEntry {
   phone: string;
   local_contact: string;
   observation: string;
+  kit_schedule_id?: string | null;
 }
 
 export const ScheduleManagement = () => {
@@ -207,6 +208,7 @@ export const ScheduleManagement = () => {
       phone: data.phone || null,
       local_contact: data.local_contact || null,
       observation: data.observation || null,
+      kit_schedule_id: pendingVehicleData?.kitScheduleId || null,
     };
 
     const { error } = await supabase
@@ -306,6 +308,13 @@ export const ScheduleManagement = () => {
   const handleDeleteSchedule = async (id: string) => {
     setIsLoading(true);
     
+    // First, get the kit_schedule_id from the schedule being deleted
+    const { data: scheduleToDelete } = await supabase
+      .from('installation_schedules')
+      .select('kit_schedule_id')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
       .from('installation_schedules')
       .delete()
@@ -317,6 +326,26 @@ export const ScheduleManagement = () => {
       console.error('Error deleting schedule:', error);
       toast.error('Erro ao excluir agendamento');
       return;
+    }
+
+    // If this schedule had a kit_schedule_id, revert its status to 'shipped'
+    if (scheduleToDelete?.kit_schedule_id) {
+      const { error: revertError } = await supabase
+        .from('kit_schedules')
+        .update({ status: 'shipped' })
+        .eq('id', scheduleToDelete.kit_schedule_id);
+
+      if (revertError) {
+        console.error('Error reverting kit_schedule status:', revertError);
+        toast.warning('Agendamento excluído, mas veículo pode não reaparecer em pendentes.');
+      } else {
+        console.log('[Scheduling] kit_schedule status reverted to shipped:', scheduleToDelete.kit_schedule_id);
+      }
+
+      // Remove from hidden list so it reappears in the UI
+      setHiddenKitScheduleIds(prev => 
+        prev.filter(kid => kid !== scheduleToDelete.kit_schedule_id)
+      );
     }
 
     await fetchSchedules();

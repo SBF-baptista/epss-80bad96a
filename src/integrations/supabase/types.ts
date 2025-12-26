@@ -721,6 +721,7 @@ export type Database = {
           created_by: string | null
           customer: string
           id: string
+          kit_schedule_id: string | null
           local_contact: string | null
           observation: string | null
           phone: string | null
@@ -742,6 +743,7 @@ export type Database = {
           created_by?: string | null
           customer: string
           id?: string
+          kit_schedule_id?: string | null
           local_contact?: string | null
           observation?: string | null
           phone?: string | null
@@ -763,6 +765,7 @@ export type Database = {
           created_by?: string | null
           customer?: string
           id?: string
+          kit_schedule_id?: string | null
           local_contact?: string | null
           observation?: string | null
           phone?: string | null
@@ -778,7 +781,15 @@ export type Database = {
           updated_at?: string
           vehicle_model?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "installation_schedules_kit_schedule_id_fkey"
+            columns: ["kit_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "kit_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       integration_state: {
         Row: {
