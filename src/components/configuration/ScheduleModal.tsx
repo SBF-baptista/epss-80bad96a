@@ -249,14 +249,63 @@ const calculateKitCompatibility = (vehicleAccessories: string[], kit: Homologati
 };
 
 /**
- * Sugere kits compatíveis para um veículo baseado em seus acessórios
+ * Verifica se um kit é compatível com o tipo de uso do veículo
+ * FMC150 = Telemetria (telemetria_gps, telemetria_can, copiloto_2_cameras, copiloto_4_cameras)
+ * FMC130 = Rastreio (particular, comercial, frota)
+ */
+const isKitCompatibleWithUsageType = (kit: HomologationKit, usageType?: string | null): boolean => {
+  if (!usageType) return true; // Se não tiver usage_type, mostra todos os kits
+  
+  // Verificar se o kit tem FMC150 ou FMC130 nos equipamentos
+  const hasFMC150 = kit.equipment.some(e => {
+    const name = e.item_name.toLowerCase();
+    return name.includes('fmc150') || name.includes('fmc 150');
+  });
+  
+  const hasFMC130 = kit.equipment.some(e => {
+    const name = e.item_name.toLowerCase();
+    return name.includes('fmc130') || name.includes('fmc 130');
+  });
+  
+  // Tipos de uso que são telemetria
+  const telemetryTypes = ['telemetria_gps', 'telemetria_can', 'copiloto_2_cameras', 'copiloto_4_cameras'];
+  const isTelemetryUsage = telemetryTypes.includes(usageType);
+  
+  // Tipos de uso que são rastreio
+  const trackingTypes = ['particular', 'comercial', 'frota'];
+  const isTrackingUsage = trackingTypes.includes(usageType);
+  
+  // Lógica de compatibilidade:
+  // - Se é telemetria: mostrar kits com FMC150 (e kits sem FMC130/FMC150 para flexibilidade)
+  // - Se é rastreio: mostrar kits com FMC130 (e kits sem FMC130/FMC150 para flexibilidade)
+  if (isTelemetryUsage) {
+    // Se o kit tem FMC130 mas NÃO tem FMC150, não é compatível
+    if (hasFMC130 && !hasFMC150) return false;
+    return true;
+  }
+  
+  if (isTrackingUsage) {
+    // Se o kit tem FMC150 mas NÃO tem FMC130, não é compatível
+    if (hasFMC150 && !hasFMC130) return false;
+    return true;
+  }
+  
+  // Para outros tipos de uso, mostrar todos
+  return true;
+};
+
+/**
+ * Sugere kits compatíveis para um veículo baseado em seus acessórios e tipo de uso
  * Retorna kits ordenados por compatibilidade (maior primeiro)
  */
-const matchKitsToAccessories = (vehicleAccessories: string[], allKits: HomologationKit[]): HomologationKit[] => {
+const matchKitsToAccessories = (vehicleAccessories: string[], allKits: HomologationKit[], usageType?: string | null): HomologationKit[] => {
   if (vehicleAccessories.length === 0) return [];
   
-  // Calcular compatibilidade para cada kit
-  const kitsWithScore = allKits.map(kit => ({
+  // Primeiro, filtrar kits compatíveis com o tipo de uso
+  const compatibleKits = allKits.filter(kit => isKitCompatibleWithUsageType(kit, usageType));
+  
+  // Calcular compatibilidade para cada kit compatível
+  const kitsWithScore = compatibleKits.map(kit => ({
     kit,
     matchCount: calculateKitCompatibility(vehicleAccessories, kit)
   }));
@@ -538,14 +587,15 @@ export const ScheduleModal = ({
               return updated;
             });
 
-            // Calcular kits sugeridos para cada veículo baseado nos acessórios
+            // Calcular kits sugeridos para cada veículo baseado nos acessórios e tipo de uso
             const suggestedKitsMap = new Map<string, HomologationKit[]>();
             for (const v of unscheduledVehicles) {
               const key = `${v.brand}-${v.model}-${v.plate || 'pending'}`;
               const vehicleId = vehicleIdMapping.get(key);
               if (vehicleId) {
                 const vehicleAccessories = formattedMap.get(vehicleId) || [];
-                const matchedKits = matchKitsToAccessories(vehicleAccessories, kits);
+                const usageType = usageTypesMap.get(v.plate);
+                const matchedKits = matchKitsToAccessories(vehicleAccessories, kits, usageType);
                 suggestedKitsMap.set(v.plate, matchedKits);
               }
             }
