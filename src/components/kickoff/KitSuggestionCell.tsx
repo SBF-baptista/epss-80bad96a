@@ -136,9 +136,6 @@ export const KitSuggestionCell = ({
                         )}
                       </div>
                     </div>
-                    <Badge variant="default" className="shrink-0 bg-green-600 text-white">
-                      {match.matchedItems.length} {match.matchedItems.length === 1 ? 'item' : 'itens'}
-                    </Badge>
                   </div>
 
                   <div className="ml-6 space-y-1">
@@ -162,31 +159,6 @@ export const KitSuggestionCell = ({
                     </div>
                   </div>
 
-                  {match.unmatchedItems.length > 0 && (
-                    <div className="ml-6 space-y-1">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Info className="h-3 w-3" />
-                        <span className="font-medium">
-                          Itens adicionais do kit:
-                        </span>
-                      </div>
-                      <div className="flex gap-1 flex-wrap">
-                        {match.unmatchedItems.slice(0, 2).map((item, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs bg-muted">
-                            {item}
-                          </Badge>
-                        ))}
-                        {match.unmatchedItems.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{match.unmatchedItems.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground italic">
-                        Itens do kit não encontrados no veículo
-                      </p>
-                    </div>
-                  )}
                 </div>
               );
             })}
