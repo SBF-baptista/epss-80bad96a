@@ -273,6 +273,7 @@ interface VehicleScheduleData {
   brand: string;
   model: string;
   year: number;
+  usage_type?: string | null;
   technician_ids: string[];
   scheduled_date: Date | null;
   installation_time: string;
@@ -330,6 +331,7 @@ export const ScheduleModal = ({
   const [scheduleConflicts, setScheduleConflicts] = useState<Map<string, string>>(new Map());
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, string[]>>(new Map());
   const [modulesByVehicleId, setModulesByVehicleId] = useState<Map<string, string[]>>(new Map());
+  const [usageTypeByVehicle, setUsageTypeByVehicle] = useState<Map<string, string>>(new Map());
   const [vehicleIdMap, setVehicleIdMap] = useState<Map<string, string>>(new Map());
   const [suggestedKitsByVehicle, setSuggestedKitsByVehicle] = useState<Map<string, HomologationKit[]>>(new Map());
   const [configurationsByVehicle, setConfigurationsByVehicle] = useState<Map<string, string>>(new Map());
@@ -476,6 +478,7 @@ export const ScheduleModal = ({
             const formattedMap = new Map<string, string[]>();
             const modulesMap = new Map<string, string[]>();
             const configurationsMap = new Map<string, string>();
+            const usageTypesMap = new Map<string, string>();
 
             // Extract modules for each vehicle
             accessoriesMap.forEach((accessories, vehicleId) => {
@@ -483,8 +486,11 @@ export const ScheduleModal = ({
             });
             setModulesByVehicleId(modulesMap);
 
-            // Fetch configurations for each vehicle
+            // Fetch configurations and usage_type for each vehicle
             for (const [key, vehicleId] of vehicleIdMapping.entries()) {
+              const plate = key.split('-').pop()?.replace('pending', '') || '';
+              
+              // Fetch homologation configuration
               const { data: homologationData } = await supabase
                 .from('homologation_cards')
                 .select('configuration')
@@ -493,12 +499,23 @@ export const ScheduleModal = ({
                 .single();
               
               if (homologationData?.configuration) {
-                const plate = key.split('-').pop()?.replace('pending', '') || '';
                 configurationsMap.set(plate, homologationData.configuration);
+              }
+
+              // Fetch usage_type from incoming_vehicles
+              const { data: incomingVehicleData } = await supabase
+                .from('incoming_vehicles')
+                .select('usage_type')
+                .eq('id', vehicleId)
+                .single();
+              
+              if (incomingVehicleData?.usage_type) {
+                usageTypesMap.set(plate, incomingVehicleData.usage_type);
               }
             }
 
             setConfigurationsByVehicle(configurationsMap);
+            setUsageTypeByVehicle(usageTypesMap);
 
             accessoriesMap.forEach((accessories, vehicleId) => {
               formattedMap.set(vehicleId, aggregateAccessoriesWithoutModules(accessories));
@@ -1120,6 +1137,7 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Tipo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Técnico</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Previsão de Instalação</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
@@ -1160,6 +1178,37 @@ export const ScheduleModal = ({
                                 <Badge variant="secondary">{vehicleSchedule.plate}</Badge>
                               </td>
                               <td className="px-4 py-3 text-sm">{vehicleSchedule.year}</td>
+                              <td className="px-4 py-3 text-sm">
+                                {(() => {
+                                  const usageType = usageTypeByVehicle.get(vehicleSchedule.plate);
+                                  if (!usageType) return <span className="text-muted-foreground">-</span>;
+                                  
+                                  // Format usage type for display
+                                  const formatUsageType = (type: string): { label: string; variant: 'default' | 'secondary' | 'outline' } => {
+                                    switch (type) {
+                                      case 'telemetria_gps':
+                                        return { label: 'Telemetria GPS', variant: 'default' };
+                                      case 'telemetria_can':
+                                        return { label: 'Telemetria CAN', variant: 'default' };
+                                      case 'copiloto_2_cameras':
+                                        return { label: 'Copiloto 2 Câmeras', variant: 'secondary' };
+                                      case 'copiloto_4_cameras':
+                                        return { label: 'Copiloto 4 Câmeras', variant: 'secondary' };
+                                      case 'particular':
+                                        return { label: 'Particular', variant: 'outline' };
+                                      case 'comercial':
+                                        return { label: 'Comercial', variant: 'outline' };
+                                      case 'frota':
+                                        return { label: 'Frota', variant: 'outline' };
+                                      default:
+                                        return { label: type, variant: 'outline' };
+                                    }
+                                  };
+                                  
+                                  const { label, variant } = formatUsageType(usageType);
+                                  return <Badge variant={variant}>{label}</Badge>;
+                                })()}
+                              </td>
                               <td className="px-4 py-3">
                                 <Select
                                   value={vehicleSchedule.technician_ids?.[0] || ''}

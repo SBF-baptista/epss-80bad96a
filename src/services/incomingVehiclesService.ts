@@ -9,13 +9,14 @@ export interface IncomingVehicle {
   company_name: string | null;
   received_at: string;
   sale_summary_id: number | null;
+  usage_type: string | null;
 }
 
 export const getIncomingVehiclesBySaleSummary = async (saleSummaryId: number): Promise<IncomingVehicle[]> => {
   try {
     const { data, error } = await supabase
       .from('incoming_vehicles')
-      .select('id, plate, brand, vehicle, year, company_name, received_at, sale_summary_id')
+      .select('id, plate, brand, vehicle, year, company_name, received_at, sale_summary_id, usage_type')
       .eq('sale_summary_id', saleSummaryId)
       .order('received_at', { ascending: false });
 
