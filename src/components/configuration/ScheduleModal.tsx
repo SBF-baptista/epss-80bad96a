@@ -1573,29 +1573,6 @@ export const ScheduleModal = ({
                                                      </div>
                                                    </div>
 
-                                                   {/* Itens compatíveis */}
-                                                   {matchedItems.length > 0 && (
-                                                     <div className="ml-6 space-y-1">
-                                                       <div className="flex items-center gap-1 text-xs text-green-700">
-                                                         <Check className="h-3 w-3" />
-                                                         <span className="font-medium">
-                                                           Itens compatíveis ({matchedItems.length}):
-                                                         </span>
-                                                       </div>
-                                                       <div className="flex gap-1 flex-wrap">
-                                                         {matchedItems.slice(0, 3).map((item, idx) => (
-                                                           <Badge key={idx} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                                                             {item}
-                                                           </Badge>
-                                                         ))}
-                                                         {matchedItems.length > 3 && (
-                                                           <Badge variant="outline" className="text-xs">
-                                                             +{matchedItems.length - 3}
-                                                           </Badge>
-                                                         )}
-                                                       </div>
-                                                     </div>
-                                                   )}
 
 
                                                    {/* Itens não homologados */}
