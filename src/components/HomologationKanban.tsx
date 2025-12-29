@@ -66,6 +66,22 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       return;
     }
 
+    // Validação: configuração é obrigatória para sair do status inicial
+    const hasValidConfiguration = draggedCard.configuration && draggedCard.configuration.trim() !== '';
+    if (!hasValidConfiguration && draggedCard.status === 'homologar') {
+      showError(
+        new Error('Configuração obrigatória'),
+        {
+          action: 'validate_configuration',
+          component: 'HomologationKanban',
+          cardId: draggedCard.id,
+        },
+        'Selecione uma configuração antes de mover o card para a próxima etapa'
+      );
+      setDraggedCard(null);
+      return;
+    }
+
     const cardId = draggedCard.id;
     const previousStatus = draggedCard.status;
     const targetColumn = columns.find(c => c.id === columnId);
