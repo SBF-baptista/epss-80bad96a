@@ -819,12 +819,6 @@ export const ScheduleModal = ({
             title: "Configuração definida",
             description: `Configuração "${configuration}" aplicada para ${schedule.brand} ${schedule.model} com ${trackerModel}`,
           });
-        } else {
-          toastHook({
-            title: "Configuração não encontrada",
-            description: `Não foi encontrada uma regra de automação para ${schedule.brand} ${schedule.model} com ${trackerModel}. A configuração padrão será utilizada.`,
-            variant: "default"
-          });
         }
       }
     }
