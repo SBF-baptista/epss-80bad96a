@@ -761,23 +761,62 @@ export const ScheduleModal = ({
     try {
       console.log('🔍 Buscando configuração para:', { vehicleBrand, vehicleModel, trackerModel });
       
-      const { data, error } = await supabase
+      // Normalizar a marca para busca mais flexível
+      // Ex: "VW - VolksWagen" -> tentar "VW", "VOLKSWAGEN", etc.
+      const brandNormalized = vehicleBrand.toUpperCase()
+        .replace(/\s*-\s*/g, ' ')
+        .replace(/[^\w\s]/g, '')
+        .trim();
+      
+      // Extrair primeira palavra significativa do modelo para match parcial
+      const modelFirstWord = vehicleModel.split(' ')[0].toUpperCase();
+      
+      // Tentar busca exata primeiro
+      let { data, error } = await supabase
         .from('automation_rules_extended')
-        .select('configuration')
-        .ilike('brand', vehicleBrand)
-        .ilike('model', `%${vehicleModel}%`)
+        .select('configuration, brand, model')
         .ilike('tracker_model', `%${trackerModel}%`)
-        .limit(1)
-        .maybeSingle();
+        .limit(50);
       
       if (error) {
         console.error('Erro ao buscar configuração:', error);
         return null;
       }
       
-      if (data?.configuration) {
-        console.log('✅ Configuração encontrada:', data.configuration);
-        return data.configuration;
+      if (data && data.length > 0) {
+        // Filtrar por marca (flexível) e modelo
+        const brandKeywords = brandNormalized.split(' ').filter(w => w.length > 1);
+        
+        // Primeiro, tentar match exato de marca e modelo contém
+        let match = data.find(rule => {
+          const ruleBrand = rule.brand.toUpperCase();
+          const ruleModel = rule.model.toUpperCase();
+          const vehicleModelUpper = vehicleModel.toUpperCase();
+          
+          // Verificar se a marca bate (match parcial)
+          const brandMatches = brandKeywords.some(keyword => 
+            ruleBrand.includes(keyword) || keyword.includes(ruleBrand.split(' ')[0])
+          );
+          
+          // Verificar se o modelo bate
+          const modelMatches = ruleModel.includes(modelFirstWord) || 
+                               vehicleModelUpper.includes(ruleModel.split(' ')[0]);
+          
+          return brandMatches && modelMatches;
+        });
+        
+        // Se não encontrou, tentar match só pela primeira palavra do modelo
+        if (!match) {
+          match = data.find(rule => {
+            const ruleModel = rule.model.toUpperCase();
+            return ruleModel.includes(modelFirstWord);
+          });
+        }
+        
+        if (match?.configuration) {
+          console.log('✅ Configuração encontrada:', match.configuration, 'para', match.brand, match.model);
+          return match.configuration;
+        }
       }
       
       console.log('⚠️ Nenhuma configuração encontrada para esta combinação');
