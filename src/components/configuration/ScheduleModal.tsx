@@ -1558,11 +1558,6 @@ export const ScheduleModal = ({
                                                          <p className="font-medium text-sm">
                                                            {kit.name}
                                                          </p>
-                                                         {kit.description && (
-                                                           <p className="text-xs text-muted-foreground mt-1">
-                                                             {kit.description}
-                                                           </p>
-                                                         )}
                                                        </div>
                                                      </div>
                                                      <div className="flex flex-col gap-1 items-end">
@@ -1574,12 +1569,6 @@ export const ScheduleModal = ({
                                                          )}
                                                        >
                                                          {isHomologated ? 'Homologado' : 'Pendente'}
-                                                       </Badge>
-                                                       <Badge 
-                                                         variant="outline"
-                                                         className="shrink-0 text-xs"
-                                                       >
-                                                         {matchedItems.length}/{relevantKitItems.length} itens
                                                        </Badge>
                                                      </div>
                                                    </div>
@@ -1608,29 +1597,6 @@ export const ScheduleModal = ({
                                                      </div>
                                                    )}
 
-                                                   {/* Itens adicionais do kit */}
-                                                   {unmatchedItems.length > 0 && (
-                                                     <div className="ml-6 space-y-1">
-                                                       <div className="flex items-center gap-1 text-xs text-blue-700">
-                                                         <Info className="h-3 w-3" />
-                                                         <span className="font-medium">
-                                                           Itens adicionais do kit ({unmatchedItems.length}):
-                                                         </span>
-                                                       </div>
-                                                       <div className="flex gap-1 flex-wrap">
-                                                         {unmatchedItems.slice(0, 3).map((item, idx) => (
-                                                           <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
-                                                             {item}
-                                                           </Badge>
-                                                         ))}
-                                                         {unmatchedItems.length > 3 && (
-                                                           <Badge variant="outline" className="text-xs">
-                                                             +{unmatchedItems.length - 3}
-                                                           </Badge>
-                                                         )}
-                                                       </div>
-                                                     </div>
-                                                   )}
 
                                                    {/* Itens não homologados */}
                                                    {status && !isHomologated && (
