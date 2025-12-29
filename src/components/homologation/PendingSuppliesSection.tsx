@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cleanItemName } from "@/utils/itemNormalization";
+import { findExistingItem } from "@/services/kitItemOptionsService";
 
 export const PendingSuppliesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -50,6 +51,18 @@ export const PendingSuppliesSection = () => {
     setApprovingItems(prev => new Set(prev).add(itemKey));
 
     try {
+      // Check if item already exists (case-insensitive)
+      const existingItem = await findExistingItem(item.item_name, item.item_type);
+      if (existingItem) {
+        toast({
+          title: "Item já homologado",
+          description: `Este item já foi homologado como "${existingItem.item_name}".`,
+        });
+        // Refresh to update the list
+        await queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+        return;
+      }
+
       // Get current user ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {

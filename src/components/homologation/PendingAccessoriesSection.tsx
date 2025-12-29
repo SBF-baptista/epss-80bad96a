@@ -10,6 +10,7 @@ import { AccessoryHomologationForm } from "./AccessoryHomologationForm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { findExistingItem } from "@/services/kitItemOptionsService";
 
 export const PendingAccessoriesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -47,6 +48,18 @@ export const PendingAccessoriesSection = () => {
     setApprovingItems(prev => new Set(prev).add(itemKey));
 
     try {
+      // Check if item already exists (case-insensitive)
+      const existingItem = await findExistingItem(item.item_name, 'accessory');
+      if (existingItem) {
+        toast({
+          title: "Item já homologado",
+          description: `Este item já foi homologado como "${existingItem.item_name}".`,
+        });
+        // Refresh to update the list
+        await queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+        return;
+      }
+
       // Get current user ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {

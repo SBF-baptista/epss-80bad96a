@@ -99,21 +99,54 @@ export const deleteKitItemOption = async (optionId: string): Promise<{ count: nu
 
 export const checkIfItemExists = async (itemName: string, itemType: ItemType): Promise<boolean> => {
   try {
+    const normalizedName = itemName.toLowerCase().trim();
+    
     const { data, error } = await supabase
       .from('kit_item_options')
-      .select('id')
-      .eq('item_name', itemName.trim())
-      .eq('item_type', itemType)
-      .limit(1);
+      .select('id, item_name')
+      .eq('item_type', itemType);
 
     if (error) {
       console.error('Error checking if item exists:', error);
       throw error;
     }
 
-    return (data && data.length > 0);
+    // Case-insensitive comparison
+    return data?.some(item => 
+      item.item_name.toLowerCase().trim() === normalizedName
+    ) ?? false;
   } catch (error) {
     console.error('Error in checkIfItemExists:', error);
+    throw error;
+  }
+};
+
+export const findExistingItem = async (itemName: string, itemType: ItemType): Promise<KitItemOption | null> => {
+  try {
+    const normalizedName = itemName.toLowerCase().trim();
+    
+    const { data, error } = await supabase
+      .from('kit_item_options')
+      .select('*')
+      .eq('item_type', itemType);
+
+    if (error) {
+      console.error('Error finding existing item:', error);
+      throw error;
+    }
+
+    const existingItem = data?.find(item => 
+      item.item_name.toLowerCase().trim() === normalizedName
+    );
+
+    if (!existingItem) return null;
+
+    return {
+      ...existingItem,
+      item_type: existingItem.item_type as ItemType
+    };
+  } catch (error) {
+    console.error('Error in findExistingItem:', error);
     throw error;
   }
 };
