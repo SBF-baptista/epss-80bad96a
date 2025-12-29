@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import HomologationColumn from "./HomologationColumn";
@@ -20,7 +19,7 @@ const columns = [
   { id: "em_homologacao", title: "Em Homologação", color: "bg-warning-light border-warning-border" },
   { id: "agendamento_teste", title: "Agendamento de Teste", color: "bg-warning-light border-warning-border" },
   { id: "execucao_teste", title: "Execução de Teste", color: "bg-purple-100 border-purple-200" },
-  { id: "homologado", title: "Homologado", color: "bg-success-light border-success-border" }
+  { id: "homologado", title: "Homologado", color: "bg-success-light border-success-border" },
 ];
 
 const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
@@ -29,7 +28,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const [draggedCard, setDraggedCard] = useState<HomologationCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  
+
   // Navegação lateral com botões
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
@@ -39,9 +38,9 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       setDraggedCard(card);
     } catch (error) {
       showError(error as Error, {
-        action: 'drag_start',
-        component: 'HomologationKanban',
-        cardId: card.id
+        action: "drag_start",
+        component: "HomologationKanban",
+        cardId: card.id,
       });
     }
   };
@@ -53,10 +52,14 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const handleDrop = async (columnId: string) => {
     // Validação de segurança: apenas admin pode mover cards
     if (!isAdmin()) {
-      showError(new Error('Permissão negada'), {
-        action: 'drop_card',
-        component: 'HomologationKanban',
-      }, 'Apenas administradores podem mover cards no Kanban');
+      showError(
+        new Error("Permissão negada"),
+        {
+          action: "drop_card",
+          component: "HomologationKanban",
+        },
+        "Apenas administradores podem mover cards no Kanban",
+      );
       setDraggedCard(null);
       return;
     }
@@ -67,16 +70,16 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
     }
 
     // Validação: configuração é obrigatória para sair do status inicial
-    const hasValidConfiguration = draggedCard.configuration && draggedCard.configuration.trim() !== '';
-    if (!hasValidConfiguration && draggedCard.status === 'homologar') {
+    const hasValidConfiguration = draggedCard.configuration && draggedCard.configuration.trim() !== "";
+    if (!hasValidConfiguration && draggedCard.status === "homologar") {
       showError(
-        new Error('Configuração obrigatória'),
+        new Error("Configuração obrigatória"),
         {
-          action: 'validate_configuration',
-          component: 'HomologationKanban',
+          action: "validate_configuration",
+          component: "HomologationKanban",
           cardId: draggedCard.id,
         },
-        'Selecione uma configuração antes de mover o card para a próxima etapa'
+        "Selecione uma configuração",
       );
       setDraggedCard(null);
       return;
@@ -84,77 +87,79 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
 
     const cardId = draggedCard.id;
     const previousStatus = draggedCard.status;
-    const targetColumn = columns.find(c => c.id === columnId);
-    const previousColumn = columns.find(c => c.id === previousStatus);
-    
-    // Validação: não permitir mover de "agendamento_teste" para "execucao_teste" 
+    const targetColumn = columns.find((c) => c.id === columnId);
+    const previousColumn = columns.find((c) => c.id === previousStatus);
+
+    // Validação: não permitir mover de "agendamento_teste" para "execucao_teste"
     // sem preencher dados obrigatórios de teste
-    if (previousStatus === 'agendamento_teste' && columnId === 'execucao_teste') {
+    if (previousStatus === "agendamento_teste" && columnId === "execucao_teste") {
       // Verificar se configuration existe e não está vazio
-      const hasValidConfiguration = draggedCard.configuration && draggedCard.configuration.trim() !== '';
-      
+      const hasValidConfiguration = draggedCard.configuration && draggedCard.configuration.trim() !== "";
+
       // Verificar se test_checklist existe, é array, e tem pelo menos um item marcado
-      const hasValidChecklist = Array.isArray(draggedCard.test_checklist) && 
+      const hasValidChecklist =
+        Array.isArray(draggedCard.test_checklist) &&
         draggedCard.test_checklist.length > 0 &&
         draggedCard.test_checklist.some((item: any) => item.completed === true);
-      
+
       if (!hasValidConfiguration || !hasValidChecklist) {
         const missingFields: string[] = [];
-        if (!hasValidConfiguration) missingFields.push('Configuração');
-        if (!hasValidChecklist) missingFields.push('Checklist de testes (marcar pelo menos um item)');
-        
+        if (!hasValidConfiguration) missingFields.push("Configuração");
+        if (!hasValidChecklist) missingFields.push("Checklist de testes (marcar pelo menos um item)");
+
         showError(
-          new Error('Dados de teste incompletos'),
+          new Error("Dados de teste incompletos"),
           {
-            action: 'validate_test_data',
-            component: 'HomologationKanban',
+            action: "validate_test_data",
+            component: "HomologationKanban",
             cardId: cardId,
           },
-          `Para mover para Execução de Teste, preencha primeiro: ${missingFields.join(', ')}`
+          `Para mover para Execução de Teste, preencha primeiro: ${missingFields.join(", ")}`,
         );
         setDraggedCard(null);
         return;
       }
     }
-    
+
     setIsUpdating(cardId);
-    
+
     try {
       console.log(`Attempting to move card ${cardId} from ${previousStatus} to ${columnId}`);
-      
-      await updateHomologationStatus(cardId, columnId as HomologationCard['status']);
-      
+
+      await updateHomologationStatus(cardId, columnId as HomologationCard["status"]);
+
       console.log(`Successfully moved card ${cardId} to ${columnId}`);
-      
+
       // Registrar log da movimentação
       await logKanbanMove(
         "Homologação",
         cardId,
         previousColumn?.title || previousStatus,
         targetColumn?.title || columnId,
-        `${draggedCard.brand} ${draggedCard.model}`
+        `${draggedCard.brand} ${draggedCard.model}`,
       );
-      
-      showSuccess(
-        "Status atualizado",
-        `${draggedCard.brand} ${draggedCard.model} movido para ${targetColumn?.title}`
-      );
-      
+
+      showSuccess("Status atualizado", `${draggedCard.brand} ${draggedCard.model} movido para ${targetColumn?.title}`);
+
       onUpdate();
     } catch (error) {
       console.error("Error updating homologation status:", error);
-      
-      showError(error as Error, {
-        action: 'update_status',
-        component: 'HomologationKanban',
-        cardId: cardId,
-        additionalContext: {
-          previousStatus,
-          targetStatus: columnId,
-          cardBrand: draggedCard.brand,
-          cardModel: draggedCard.model
-        }
-      }, `Erro ao mover ${draggedCard.brand} ${draggedCard.model} para ${targetColumn?.title}`);
+
+      showError(
+        error as Error,
+        {
+          action: "update_status",
+          component: "HomologationKanban",
+          cardId: cardId,
+          additionalContext: {
+            previousStatus,
+            targetStatus: columnId,
+            cardBrand: draggedCard.brand,
+            cardModel: draggedCard.model,
+          },
+        },
+        `Erro ao mover ${draggedCard.brand} ${draggedCard.model} para ${targetColumn?.title}`,
+      );
     } finally {
       setDraggedCard(null);
       setIsUpdating(null);
@@ -163,12 +168,12 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
 
   const getCardsByStatus = (status: string) => {
     try {
-      return cards.filter(card => card.status === status);
+      return cards.filter((card) => card.status === status);
     } catch (error) {
       showError(error as Error, {
-        action: 'filter_cards',
-        component: 'HomologationKanban',
-        additionalContext: { status }
+        action: "filter_cards",
+        component: "HomologationKanban",
+        additionalContext: { status },
       });
       return [];
     }
@@ -179,9 +184,9 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       setSelectedCard(card);
     } catch (error) {
       showError(error as Error, {
-        action: 'open_modal',
-        component: 'HomologationKanban',
-        cardId: card.id
+        action: "open_modal",
+        component: "HomologationKanban",
+        cardId: card.id,
       });
     }
   };
@@ -191,8 +196,8 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       setSelectedCard(null);
     } catch (error) {
       showError(error as Error, {
-        action: 'close_modal',
-        component: 'HomologationKanban'
+        action: "close_modal",
+        component: "HomologationKanban",
       });
     }
   };
@@ -202,8 +207,8 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       onUpdate();
     } catch (error) {
       showError(error as Error, {
-        action: 'refresh_data',
-        component: 'HomologationKanban'
+        action: "refresh_data",
+        component: "HomologationKanban",
       });
     }
   };
@@ -225,7 +230,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       const columnWidth = 320;
       container.scrollTo({
         left: index * columnWidth,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
       setActiveScrollIndex(index);
     }
@@ -251,7 +256,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
         {/* Container do Kanban - todas as colunas visíveis */}
         <div className="w-full px-2">
           <div className="grid grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-            {columns.map(column => (
+            {columns.map((column) => (
               <HomologationColumn
                 key={column.id}
                 title={column.title}
