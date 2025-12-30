@@ -45,6 +45,7 @@ interface EditRequest {
   kit_id: string | null;
   created_at: string;
   updated_at: string;
+  requester_email?: string;
 }
 
 const EditRequests = () => {
@@ -64,7 +65,23 @@ const EditRequests = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests((data as EditRequest[]) || []);
+
+      // Fetch requester emails for each request
+      const requestsWithEmail = await Promise.all(
+        (data || []).map(async (request) => {
+          if (request.requested_by) {
+            const { data: userData } = await supabase
+              .from('usuarios')
+              .select('email')
+              .eq('id', request.requested_by)
+              .single();
+            return { ...request, requester_email: userData?.email || null };
+          }
+          return { ...request, requester_email: null };
+        })
+      );
+
+      setRequests(requestsWithEmail as EditRequest[]);
     } catch (error) {
       console.error('Error loading edit requests:', error);
       toast.error('Erro ao carregar solicitações');
@@ -320,7 +337,13 @@ const EditRequests = () => {
           </div>
         )}
 
-        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3 pt-3 border-t">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3 pt-3 border-t flex-wrap">
+          {request.requester_email && (
+            <div className="flex items-center gap-1">
+              <User className="h-3 w-3" />
+              <span className="font-medium">{request.requester_email}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
             Solicitado em {new Date(request.created_at).toLocaleDateString('pt-BR')} às{' '}
@@ -328,7 +351,7 @@ const EditRequests = () => {
           </div>
           {request.reviewed_at && (
             <div className="flex items-center gap-1">
-              <User className="h-3 w-3" />
+              <CheckCircle2 className="h-3 w-3" />
               Revisado em {new Date(request.reviewed_at).toLocaleDateString('pt-BR')} às{' '}
               {new Date(request.reviewed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </div>
