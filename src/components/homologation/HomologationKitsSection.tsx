@@ -577,6 +577,17 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                      homologationStatus.pendingItems.accessories.length + 
                      homologationStatus.pendingItems.supplies.length) : 0;
                   
+                  // Determinar categoria do kit baseado nos equipamentos
+                  const hasFMC150 = kit.equipment.some(e => {
+                    const name = e.item_name.toLowerCase();
+                    return name.includes('fmc150') || name.includes('fmc 150');
+                  });
+                  const hasFMC130 = kit.equipment.some(e => {
+                    const name = e.item_name.toLowerCase();
+                    return name.includes('fmc130') || name.includes('fmc 130');
+                  });
+                  const kitCategory = hasFMC150 ? 'Telemetria' : hasFMC130 ? 'Rastreamento' : null;
+                  
                   return (
                     <Collapsible
                       key={kit.id}
@@ -595,6 +606,19 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     <ChevronRight className="h-4 w-4" />
                                   )}
                                   <CardTitle className="text-lg">{kit.name}</CardTitle>
+                                  {/* Kit Category Badge */}
+                                  {kitCategory && (
+                                    <Badge 
+                                      variant="outline"
+                                      className={
+                                        kitCategory === 'Telemetria' 
+                                          ? "bg-blue-50 text-blue-700 border-blue-200" 
+                                          : "bg-orange-50 text-orange-700 border-orange-200"
+                                      }
+                                    >
+                                      {kitCategory}
+                                    </Badge>
+                                  )}
                                   {/* Homologation Status Badge */}
                                    {homologationStatus && (
                                     <Badge 
