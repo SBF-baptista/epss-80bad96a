@@ -50,23 +50,17 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   };
 
   const handleDrop = async (columnId: string) => {
-    // Se ainda está carregando a role, aguardar
+    // Não bloquear com "erro" enquanto a role ainda está carregando.
+    // Apenas ignora o drop (o usuário pode tentar novamente em seguida).
     if (roleLoading) {
-      showError(
-        new Error("Aguarde"),
-        {
-          action: "drop_card",
-          component: "HomologationKanban",
-        },
-        "Aguarde a verificação de permissões...",
-      );
       setDraggedCard(null);
       return;
     }
 
+    const canMoveCards = role === "admin";
+
     // Validação de segurança: apenas admin pode mover cards
-    console.log('Role check:', { role, isAdminResult: isAdmin(), roleLoading });
-    if (!isAdmin()) {
+    if (!canMoveCards) {
       showError(
         new Error("Permissão negada"),
         {
