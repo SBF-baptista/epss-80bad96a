@@ -24,7 +24,7 @@ const columns = [
 
 const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const { showSuccess, showError } = useHomologationToast();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, role, loading: roleLoading } = useUserRole();
   const [draggedCard, setDraggedCard] = useState<HomologationCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -50,7 +50,22 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   };
 
   const handleDrop = async (columnId: string) => {
+    // Se ainda está carregando a role, aguardar
+    if (roleLoading) {
+      showError(
+        new Error("Aguarde"),
+        {
+          action: "drop_card",
+          component: "HomologationKanban",
+        },
+        "Aguarde a verificação de permissões...",
+      );
+      setDraggedCard(null);
+      return;
+    }
+
     // Validação de segurança: apenas admin pode mover cards
+    console.log('Role check:', { role, isAdminResult: isAdmin(), roleLoading });
     if (!isAdmin()) {
       showError(
         new Error("Permissão negada"),
