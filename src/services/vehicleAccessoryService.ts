@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeItemName } from "@/utils/itemNormalization";
 
 export interface VehicleAccessory {
   id: string;
@@ -183,31 +184,33 @@ export const isModuleCategory = (category?: string): boolean => {
 };
 
 export const aggregateAccessories = (accessories: VehicleAccessory[]): string[] => {
-  const aggregated = new Map<string, number>();
+  const uniqueNames = new Map<string, string>();
   
   accessories.forEach(acc => {
-    const current = aggregated.get(acc.name) || 0;
-    aggregated.set(acc.name, current + acc.quantity);
+    const normalizedKey = normalizeItemName(acc.name);
+    if (!uniqueNames.has(normalizedKey)) {
+      uniqueNames.set(normalizedKey, acc.name.toUpperCase());
+    }
   });
 
-  return Array.from(aggregated.entries())
-    .map(([name, qty]) => `${name} (${qty}x)`)
-    .sort();
+  return Array.from(uniqueNames.values()).sort();
 };
 
 /**
- * Agrega acessórios retornando objetos com nome e quantidade (sem duplicar formato)
+ * Agrega acessórios retornando objetos com nome único e quantidade 1 (consolidação case-insensitive)
  */
 export const aggregateAccessoriesToObjects = (accessories: VehicleAccessory[]): { name: string; quantity: number }[] => {
-  const aggregated = new Map<string, number>();
+  const uniqueNames = new Map<string, string>();
   
   accessories.forEach(acc => {
-    const current = aggregated.get(acc.name) || 0;
-    aggregated.set(acc.name, current + acc.quantity);
+    const normalizedKey = normalizeItemName(acc.name);
+    if (!uniqueNames.has(normalizedKey)) {
+      uniqueNames.set(normalizedKey, acc.name.toUpperCase());
+    }
   });
 
-  return Array.from(aggregated.entries())
-    .map(([name, quantity]) => ({ name, quantity }))
+  return Array.from(uniqueNames.values())
+    .map(name => ({ name, quantity: 1 }))
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
@@ -231,16 +234,18 @@ export const aggregateAccessoriesWithoutModulesToObjects = (accessories: Vehicle
 };
 
 /**
- * Filtra e agrega APENAS módulos (categories='Módulos')
+ * Filtra e agrega APENAS módulos (categories='Módulos') - consolidação case-insensitive
  */
 export const aggregateModulesOnly = (accessories: VehicleAccessory[]): string[] => {
   const modules = accessories.filter(acc => isModuleCategory(acc.categories));
-  const aggregated = new Map<string, number>();
+  const uniqueNames = new Map<string, string>();
   
   modules.forEach(acc => {
-    const current = aggregated.get(acc.name) || 0;
-    aggregated.set(acc.name, current + acc.quantity);
+    const normalizedKey = normalizeItemName(acc.name);
+    if (!uniqueNames.has(normalizedKey)) {
+      uniqueNames.set(normalizedKey, acc.name.toUpperCase());
+    }
   });
 
-  return Array.from(aggregated.keys()).sort();
+  return Array.from(uniqueNames.values()).sort();
 };
