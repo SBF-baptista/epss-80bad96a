@@ -897,6 +897,47 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                 </div>
                               )}
 
+                              {/* Modules Section - from kickoff accessories with category "Módulos" */}
+                              {(() => {
+                                // Get modules from schedule accessories
+                                const moduleAccessories = Array.isArray(sched.accessories) 
+                                  ? sched.accessories.filter((acc: string) => {
+                                      // Check if any contract accessory with category "Módulos" matches
+                                      const accName = acc.replace(/\s*\(qty:\s*\d+\)$/i, '').trim().toLowerCase();
+                                      return contractAccessories.some(ca => 
+                                        ca.name.toLowerCase().includes('gestão') || 
+                                        ca.name.toLowerCase().includes('telemetria') ||
+                                        ca.name.toLowerCase().includes('módulo') ||
+                                        ca.name.toLowerCase().includes('modulo')
+                                      ) || accName.includes('gestão') || 
+                                         accName.includes('telemetria') ||
+                                         accName.includes('módulo') ||
+                                         accName.includes('modulo');
+                                    })
+                                  : [];
+                                
+                                if (moduleAccessories.length === 0) return null;
+                                
+                                return (
+                                  <div className="mb-3">
+                                    <h4 className="font-semibold text-sm mb-2 text-primary">
+                                      Módulos
+                                    </h4>
+                                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-md space-y-1">
+                                      {moduleAccessories.map((mod: string, modIdx: number) => {
+                                        const match = mod.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                                        const name = match ? match[1].trim() : mod.trim();
+                                        return (
+                                          <div key={modIdx} className="text-sm text-purple-900 font-medium">
+                                            • {cleanItemName(name)}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
                               <Separator />
 
                               {/* Kits Section - Show selected kits */}
