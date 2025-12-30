@@ -560,6 +560,27 @@ export const ScheduleModal = ({
               
               if (homologationData?.configuration) {
                 configurationsMap.set(plate, homologationData.configuration);
+              } else {
+                // Fallback: search by brand + model when incoming_vehicle_id doesn't match
+                const keyParts = key.split('-');
+                const vehicleBrand = keyParts[0];
+                const vehicleModel = keyParts.slice(1, -1).join('-');
+                const firstToken = vehicleModel.split(' ')[0];
+                
+                const { data: fallbackConfig } = await supabase
+                  .from('homologation_cards')
+                  .select('configuration')
+                  .eq('brand', vehicleBrand)
+                  .ilike('model', `%${firstToken}%`)
+                  .eq('status', 'homologado')
+                  .not('configuration', 'is', null)
+                  .order('updated_at', { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                
+                if (fallbackConfig?.configuration) {
+                  configurationsMap.set(plate, fallbackConfig.configuration);
+                }
               }
 
               // Fetch usage_type from incoming_vehicles
