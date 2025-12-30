@@ -1062,14 +1062,8 @@ export const ScheduleModal = ({
         schedulesCreated++;
       }
 
-      // Show result toast
-      if (schedulesCreated > 0 && schedulesSkipped > 0) {
-        toastHook({
-          title: "Enviado parcialmente para esteira",
-          description: `${schedulesCreated} veículo(s) enviado(s) para a esteira de pedidos. ${schedulesSkipped} veículo(s) ignorado(s): ${skippedVehicles.join(', ')}.`,
-          variant: "default"
-        });
-      } else if (schedulesCreated > 0) {
+      // Show result toast - apenas sucesso quando houver veículos enviados
+      if (schedulesCreated > 0) {
         toastHook({
           title: "Enviado para esteira de pedidos",
           description: `${schedulesCreated} veículo(s) de ${selectedCustomer.name} enviado(s) para a esteira de pedidos.`
