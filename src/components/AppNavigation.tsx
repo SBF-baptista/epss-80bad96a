@@ -17,7 +17,8 @@ import {
   Calendar,
   UserCheck,
   Rocket,
-  Clock
+  Clock,
+  FileEdit
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,8 +36,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
+import { useEditRequestsCount } from "@/hooks/useEditRequestsCount";
 
 // Definindo grupos de navegação
 const navigationGroups = {
@@ -62,6 +65,13 @@ const navigationGroups = {
         label: "Acessórios & Insumos", 
         icon: Cog,
         roles: ["admin", "installer"]
+      },
+      { 
+        to: "/edit-requests", 
+        label: "Solicitações de Edição", 
+        icon: FileEdit,
+        roles: ["admin", "gestor"],
+        showBadge: true
       },
       { 
         to: "/config", 
@@ -167,6 +177,7 @@ export function AppNavigation() {
   const isCollapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const { role, loading } = useUserRole();
+  const { count: editRequestsCount } = useEditRequestsCount();
   
   // Estados para controlar abertura dos dropdowns
   const [homologationOpen, setHomologationOpen] = useState(false);
@@ -290,6 +301,7 @@ export function AppNavigation() {
                         .filter(item => canAccessItem(item.roles))
                         .map((item) => {
                           const Icon = item.icon;
+                          const showBadge = (item as any).showBadge && editRequestsCount > 0;
                           return (
                             <SidebarMenuButton
                               key={item.to}
@@ -299,7 +311,16 @@ export function AppNavigation() {
                             >
                               <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                                 <Icon className="h-4 w-4 flex-shrink-0" />
-                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                                {!isCollapsed && (
+                                  <span className="font-medium text-sm truncate flex items-center gap-2">
+                                    {item.label}
+                                    {showBadge && (
+                                      <Badge variant="destructive" className="h-5 min-w-5 px-1 text-xs flex items-center justify-center">
+                                        {editRequestsCount}
+                                      </Badge>
+                                    )}
+                                  </span>
+                                )}
                               </NavLink>
                             </SidebarMenuButton>
                           );
