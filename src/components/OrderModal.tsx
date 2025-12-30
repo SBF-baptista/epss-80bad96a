@@ -413,16 +413,19 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 
                 {/* Scheduled Date/Time */}
                 {schedule?.scheduled_date && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span>
-                      {formatDate(schedule.scheduled_date)}
-                      {schedule.installation_time && (
-                        <span className="ml-1 text-muted-foreground">
-                          às {schedule.installation_time.slice(0, 5)}
-                        </span>
-                      )}
-                    </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground font-medium">Data prevista de instalação</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span>
+                        {formatDate(schedule.scheduled_date)}
+                        {schedule.installation_time && (
+                          <span className="ml-1 text-muted-foreground">
+                            às {schedule.installation_time.slice(0, 5)}
+                          </span>
+                        )}
+                      </span>
+                    </div>
                   </div>
                 )}
                 
