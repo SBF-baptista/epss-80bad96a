@@ -833,6 +833,65 @@ export type Database = {
         }
         Relationships: []
       }
+      item_edit_requests: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          item_type: string
+          kit_id: string | null
+          original_data: Json
+          reason: string | null
+          requested_by: string | null
+          requested_changes: Json
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          item_type: string
+          kit_id?: string | null
+          original_data?: Json
+          reason?: string | null
+          requested_by?: string | null
+          requested_changes?: Json
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_type?: string
+          kit_id?: string | null
+          original_data?: Json
+          reason?: string | null
+          requested_by?: string | null
+          requested_changes?: Json
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_edit_requests_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "homologation_kits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_homologation_history: {
         Row: {
           changed_at: string

@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import SmartRedirect from "@/components/SmartRedirect";
 import SegsaleTest from "./pages/SegsaleTest";
 import History from "./pages/History";
+import EditRequests from "./pages/EditRequests";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +112,15 @@ function App() {
                   <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
                     <Layout>
                       <AccessorySupplyHomologation />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/edit-requests" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['gestor', 'admin']}>
+                    <Layout>
+                      <EditRequests />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
