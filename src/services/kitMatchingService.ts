@@ -67,14 +67,11 @@ const isSimilarItem = (item1: string, item2: string): boolean => {
   return false;
 };
 /**
- * Verifica se um kit é compatível com o tipo de uso do veículo
- * FMC150 = Telemetria (telemetria_gps, telemetria_can, copiloto_2_cameras, copiloto_4_cameras)
- * FMC130 = Rastreio (particular, comercial, frota)
+ * Determina a categoria do kit baseado nos equipamentos
+ * FMC150 = Telemetria
+ * FMC130 = Rastreamento (inclui Copiloto)
  */
-export const isKitCompatibleWithUsageType = (kit: HomologationKit, usageType?: string | null): boolean => {
-  if (!usageType) return true; // Se não tiver usage_type, mostra todos os kits
-  
-  // Verificar se o kit tem FMC150 ou FMC130 nos equipamentos
+export const getKitCategory = (kit: HomologationKit): 'telemetria' | 'rastreamento' | null => {
   const hasFMC150 = kit.equipment.some(e => {
     const name = e.item_name.toLowerCase();
     return name.includes('fmc150') || name.includes('fmc 150');
@@ -85,27 +82,41 @@ export const isKitCompatibleWithUsageType = (kit: HomologationKit, usageType?: s
     return name.includes('fmc130') || name.includes('fmc 130');
   });
   
-  // Tipos de uso que são telemetria
-  const telemetryTypes = ['telemetria_gps', 'telemetria_can', 'copiloto_2_cameras', 'copiloto_4_cameras'];
+  if (hasFMC150) return 'telemetria';
+  if (hasFMC130) return 'rastreamento';
+  return null;
+};
+
+/**
+ * Verifica se um kit é compatível com o tipo de uso do veículo
+ * FMC150 = Telemetria (telemetria_gps, telemetria_can)
+ * FMC130 = Rastreamento/Copiloto (particular, comercial, frota, copiloto_2_cameras, copiloto_4_cameras)
+ */
+export const isKitCompatibleWithUsageType = (kit: HomologationKit, usageType?: string | null): boolean => {
+  if (!usageType) return true; // Se não tiver usage_type, mostra todos os kits
+  
+  const kitCategory = getKitCategory(kit);
+  
+  // Se o kit não tem FMC150 nem FMC130, mostra para todos
+  if (!kitCategory) return true;
+  
+  // Tipos de uso que são APENAS telemetria (FMC150)
+  const telemetryTypes = ['telemetria_gps', 'telemetria_can'];
   const isTelemetryUsage = telemetryTypes.includes(usageType);
   
-  // Tipos de uso que são rastreio
-  const trackingTypes = ['particular', 'comercial', 'frota'];
-  const isTrackingUsage = trackingTypes.includes(usageType);
+  // Tipos de uso que são Rastreamento/Copiloto (FMC130)
+  const trackingCopilotoTypes = ['particular', 'comercial', 'frota', 'copiloto_2_cameras', 'copiloto_4_cameras'];
+  const isTrackingCopilotoUsage = trackingCopilotoTypes.includes(usageType);
   
   // Lógica de compatibilidade:
-  // - Se é telemetria: mostrar kits com FMC150 (e kits sem FMC130/FMC150 para flexibilidade)
-  // - Se é rastreio: mostrar kits com FMC130 (e kits sem FMC130/FMC150 para flexibilidade)
+  // - Telemetria (telemetria_gps, telemetria_can): mostrar kits com FMC150
+  // - Rastreamento/Copiloto (particular, comercial, frota, copiloto): mostrar kits com FMC130
   if (isTelemetryUsage) {
-    // Se o kit tem FMC130 mas NÃO tem FMC150, não é compatível
-    if (hasFMC130 && !hasFMC150) return false;
-    return true;
+    return kitCategory === 'telemetria';
   }
   
-  if (isTrackingUsage) {
-    // Se o kit tem FMC150 mas NÃO tem FMC130, não é compatível
-    if (hasFMC150 && !hasFMC130) return false;
-    return true;
+  if (isTrackingCopilotoUsage) {
+    return kitCategory === 'rastreamento';
   }
   
   // Para outros tipos de uso, mostrar todos
