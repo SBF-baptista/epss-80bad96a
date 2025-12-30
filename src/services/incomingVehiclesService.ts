@@ -43,17 +43,35 @@ export const resolveIncomingVehicleId = async (
   }
 ): Promise<string | null> => {
   try {
-    // Priority 1: By plate (if available and not "Placa pendente")
+    // Priority 1: By plate + brand + model match (most specific)
     if (vehicle.plate && vehicle.plate !== 'Placa pendente') {
+      const firstToken = vehicle.model?.split(' ')?.[0] || vehicle.model;
       const { data, error } = await supabase
         .from('incoming_vehicles')
         .select('id')
         .eq('plate', vehicle.plate)
+        .eq('brand', vehicle.brand)
+        .ilike('vehicle', `%${firstToken}%`)
+        .order('received_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (!error && data) {
         return data.id;
+      }
+      
+      // Fallback: plate + brand only (model may vary in naming)
+      const { data: fallbackByPlate } = await supabase
+        .from('incoming_vehicles')
+        .select('id')
+        .eq('plate', vehicle.plate)
+        .eq('brand', vehicle.brand)
+        .order('received_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackByPlate) {
+        return fallbackByPlate.id;
       }
     }
 
