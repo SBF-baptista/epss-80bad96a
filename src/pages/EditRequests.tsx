@@ -3,16 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Check, 
   X, 
   Clock, 
   FileEdit, 
   Package, 
-  User,
+  Wrench,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  History,
+  ArrowRight,
+  Calendar,
+  User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -49,6 +54,7 @@ const EditRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState<EditRequest | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("pending");
 
   const loadRequests = async () => {
     try {
@@ -89,9 +95,41 @@ const EditRequests = () => {
     };
   }, []);
 
+  const applyChangesToItem = async (request: EditRequest) => {
+    const originalId = request.original_data?.id;
+    const newName = request.requested_changes?.item_name;
+
+    if (!originalId || !newName) {
+      console.error('Missing data for applying changes:', { originalId, newName });
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('kit_item_options')
+        .update({ item_name: newName })
+        .eq('id', originalId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error applying changes to item:', error);
+      return false;
+    }
+  };
+
   const handleApprove = async (request: EditRequest) => {
     setProcessingId(request.id);
     try {
+      // First, apply the changes to the item
+      const applied = await applyChangesToItem(request);
+      
+      if (!applied) {
+        toast.error('Erro ao aplicar alterações no item');
+        return;
+      }
+
+      // Then update the request status
       const { error } = await supabase
         .from('item_edit_requests')
         .update({
@@ -103,10 +141,10 @@ const EditRequests = () => {
         .eq('id', request.id);
 
       if (error) throw error;
-
-      // TODO: Apply the actual changes to the kit items here
       
-      toast.success('Solicitação aprovada com sucesso');
+      toast.success('Solicitação aprovada com sucesso', {
+        description: `O item foi renomeado para "${request.requested_changes?.item_name}"`
+      });
       setSelectedRequest(null);
       setReviewNotes("");
       loadRequests();
@@ -181,15 +219,14 @@ const EditRequests = () => {
       </Badge>
     ) : (
       <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-        <Package className="h-3 w-3 mr-1" />
+        <Wrench className="h-3 w-3 mr-1" />
         Insumo
       </Badge>
     );
   };
 
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
   const pendingRequests = requests.filter(r => r.status === 'pending');
-  const processedRequests = requests.filter(r => r.status !== 'pending');
+  const historyRequests = requests.filter(r => r.status !== 'pending');
 
   if (loading) {
     return (
@@ -198,6 +235,108 @@ const EditRequests = () => {
       </div>
     );
   }
+
+  const renderRequestCard = (request: EditRequest, showActions: boolean = false) => (
+    <Card 
+      key={request.id} 
+      className={`border-l-4 ${
+        request.status === 'pending' 
+          ? 'border-l-yellow-500' 
+          : request.status === 'approved'
+          ? 'border-l-green-500'
+          : 'border-l-red-500'
+      }`}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              {request.item_name}
+            </CardTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              {getItemTypeBadge(request.item_type)}
+              {getStatusBadge(request.status)}
+            </div>
+          </div>
+          {showActions && (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                onClick={() => setSelectedRequest(request)}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Aprovar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => setSelectedRequest(request)}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Rejeitar
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {/* Alteração Solicitada */}
+        <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4" />
+            Alteração Solicitada
+          </h4>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+              <span className="text-xs text-red-600 block mb-1">De:</span>
+              <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+              <span className="text-xs text-green-600 block mb-1">Para:</span>
+              <span className="font-medium text-green-800">{request.requested_changes?.item_name}</span>
+            </div>
+          </div>
+        </div>
+        
+        {request.reason && (
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm">
+              <strong className="text-blue-800">Justificativa:</strong>{' '}
+              <span className="text-blue-700">{request.reason}</span>
+            </p>
+          </div>
+        )}
+
+        {request.review_notes && request.status !== 'pending' && (
+          <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-md">
+            <p className="text-sm">
+              <strong className="text-purple-800">Observação do revisor:</strong>{' '}
+              <span className="text-purple-700">{request.review_notes}</span>
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3 pt-3 border-t">
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Solicitado em {new Date(request.created_at).toLocaleDateString('pt-BR')} às{' '}
+            {new Date(request.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+          {request.reviewed_at && (
+            <div className="flex items-center gap-1">
+              <User className="h-3 w-3" />
+              Revisado em {new Date(request.reviewed_at).toLocaleDateString('pt-BR')} às{' '}
+              {new Date(request.reviewed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -211,158 +350,117 @@ const EditRequests = () => {
             Aprovar ou rejeitar solicitações de alteração em acessórios e insumos
           </p>
         </div>
-        {pendingCount > 0 && (
+        {pendingRequests.length > 0 && (
           <Badge variant="destructive" className="text-lg px-3 py-1">
-            {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
+            {pendingRequests.length} pendente{pendingRequests.length > 1 ? 's' : ''}
           </Badge>
         )}
       </div>
 
-      {/* Pending Requests */}
-      {pendingRequests.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-yellow-600" />
-            Aguardando Aprovação ({pendingRequests.length})
-          </h2>
-          <div className="grid gap-4">
-            {pendingRequests.map((request) => (
-              <Card key={request.id} className="border-l-4 border-l-yellow-500">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        {request.item_name}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {getItemTypeBadge(request.item_type)}
-                        {getStatusBadge(request.status)}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() => setSelectedRequest(request)}
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        Aprovar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                        }}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Rejeitar
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {request.reason && (
-                    <div className="mb-3 p-3 bg-muted/50 rounded-md">
-                      <p className="text-sm">
-                        <strong>Motivo:</strong> {request.reason}
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                      <h4 className="text-sm font-semibold text-red-800 mb-2">Dados Originais</h4>
-                      <pre className="text-xs text-red-700 whitespace-pre-wrap">
-                        {JSON.stringify(request.original_data, null, 2)}
-                      </pre>
-                    </div>
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                      <h4 className="text-sm font-semibold text-green-800 mb-2">Alterações Solicitadas</h4>
-                      <pre className="text-xs text-green-700 whitespace-pre-wrap">
-                        {JSON.stringify(request.requested_changes, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-12 bg-muted p-1 rounded-lg">
+          <TabsTrigger 
+            value="pending" 
+            className="h-10 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm font-medium flex items-center gap-2"
+          >
+            <AlertCircle className="h-4 w-4" />
+            Pendentes
+            {pendingRequests.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
+                {pendingRequests.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="history"
+            className="h-10 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm font-medium flex items-center gap-2"
+          >
+            <History className="h-4 w-4" />
+            Histórico
+            {historyRequests.length > 0 && (
+              <span className="text-xs text-muted-foreground ml-1">
+                ({historyRequests.length})
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-                  <div className="mt-3 text-xs text-muted-foreground">
-                    Solicitado em {new Date(request.created_at).toLocaleDateString('pt-BR')} às {new Date(request.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+        <TabsContent value="pending" className="space-y-4 mt-6">
+          {pendingRequests.length > 0 ? (
+            <div className="grid gap-4">
+              {pendingRequests.map((request) => renderRequestCard(request, true))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhuma solicitação pendente</h3>
+                <p className="text-muted-foreground text-center">
+                  Todas as solicitações foram processadas.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-      {/* Processed Requests */}
-      {processedRequests.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Histórico de Solicitações</h2>
-          <div className="grid gap-4">
-            {processedRequests.map((request) => (
-              <Card key={request.id} className="opacity-75">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        {request.item_name}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {getItemTypeBadge(request.item_type)}
-                        {getStatusBadge(request.status)}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {request.review_notes && (
-                    <div className="mb-3 p-3 bg-muted/50 rounded-md">
-                      <p className="text-sm">
-                        <strong>Observação do revisor:</strong> {request.review_notes}
-                      </p>
-                    </div>
-                  )}
-                  <div className="text-xs text-muted-foreground">
-                    Revisado em {request.reviewed_at ? new Date(request.reviewed_at).toLocaleDateString('pt-BR') : 'N/A'}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {requests.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileEdit className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhuma solicitação</h3>
-            <p className="text-muted-foreground text-center">
-              Não há solicitações de edição de acessórios ou insumos no momento.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="history" className="space-y-4 mt-6">
+          {historyRequests.length > 0 ? (
+            <div className="grid gap-4">
+              {historyRequests.map((request) => renderRequestCard(request, false))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <History className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum histórico</h3>
+                <p className="text-muted-foreground text-center">
+                  O histórico de solicitações aprovadas e rejeitadas aparecerá aqui.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Review Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Revisar Solicitação</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <FileEdit className="h-5 w-5" />
+              Revisar Solicitação
+            </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div>
-              <strong>Item:</strong> {selectedRequest?.item_name}
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedRequest && getItemTypeBadge(selectedRequest.item_type)}
             </div>
+
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <h4 className="text-sm font-semibold mb-3">Alteração Solicitada</h4>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                  <span className="text-xs text-red-600 block mb-1">De:</span>
+                  <span className="font-medium text-red-800">{selectedRequest?.original_data?.item_name}</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                  <span className="text-xs text-green-600 block mb-1">Para:</span>
+                  <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.item_name}</span>
+                </div>
+              </div>
+            </div>
+
             {selectedRequest?.reason && (
-              <div>
-                <strong>Motivo:</strong> {selectedRequest.reason}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm">
+                  <strong className="text-blue-800">Justificativa:</strong>{' '}
+                  <span className="text-blue-700">{selectedRequest.reason}</span>
+                </p>
               </div>
             )}
+
             <div>
               <label className="text-sm font-medium">Observações (opcional)</label>
               <Textarea
@@ -370,6 +468,7 @@ const EditRequests = () => {
                 onChange={(e) => setReviewNotes(e.target.value)}
                 placeholder="Adicione observações sobre a decisão..."
                 className="mt-1"
+                rows={3}
               />
             </div>
           </div>

@@ -11,6 +11,15 @@ import { fetchKitItemOptions, deleteKitItemOption } from "@/services/kitItemOpti
 import { Trash2, Wrench, FileText, ChevronDown, Search, Pencil } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { EditRequestModal } from "./EditRequestModal";
+
+interface KitItemOption {
+  id: string;
+  item_name: string;
+  item_type: string;
+  description?: string | null;
+  created_at: string;
+}
 
 export const SupplyHomologationList = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -20,7 +29,7 @@ export const SupplyHomologationList = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin, isGestor } = useUserRole();
-  const [requestingEditId, setRequestingEditId] = useState<string | null>(null);
+  const [editModalItem, setEditModalItem] = useState<KitItemOption | null>(null);
 
   const { data: supplies = [], isLoading } = useQuery({
     queryKey: ['kit-item-options', 'supply'],
@@ -70,27 +79,11 @@ export const SupplyHomologationList = () => {
     }
   };
 
-  const handleRequestEdit = async (supplyId: string, supplyName: string) => {
-    try {
-      setRequestingEditId(supplyId);
-      
-      // Simula envio de solicitação - pode ser expandido para salvar em banco
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      toast({
-        title: "Solicitação enviada",
-        description: `Sua solicitação de edição para "${supplyName}" foi enviada ao gestor para aprovação.`,
-      });
-    } catch (error) {
-      console.error('Error requesting edit:', error);
-      toast({
-        title: "Erro ao enviar solicitação",
-        description: "Ocorreu um erro ao enviar a solicitação. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setRequestingEditId(null);
-    }
+  const handleOpenEditModal = (supply: KitItemOption) => {
+    setEditModalItem({
+      ...supply,
+      item_type: 'supply'
+    } as KitItemOption);
   };
 
   if (isLoading) {
@@ -202,8 +195,7 @@ export const SupplyHomologationList = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleRequestEdit(supply.id, supply.item_name)}
-                              disabled={requestingEditId === supply.id}
+                              onClick={() => handleOpenEditModal(supply)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -264,6 +256,13 @@ export const SupplyHomologationList = () => {
           </CardContent>
         </CollapsibleContent>
       </Card>
+
+      {/* Modal de Solicitação de Edição */}
+      <EditRequestModal
+        open={!!editModalItem}
+        onClose={() => setEditModalItem(null)}
+        item={editModalItem ? { ...editModalItem, item_type: 'supply' } : null}
+      />
     </Collapsible>
   );
 };
