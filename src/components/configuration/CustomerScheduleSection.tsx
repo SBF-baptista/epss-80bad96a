@@ -5,25 +5,11 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { getTechnicians, Technician } from '@/services/technicianService';
 import { Package, ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { format } from 'date-fns';
 import { CustomerScheduleCard, VehicleScheduleData } from './CustomerScheduleCard';
+import { ScheduleFormModal, ScheduleFormData, PendingVehicleData } from './ScheduleFormModal';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
-
-interface VehicleFormData {
-  date: Date | null;
-  time: string;
-  technician_id: string;
-  technician_name: string;
-  technician_whatsapp: string;
-  service: string;
-  scheduled_by: string;
-  reference_point: string;
-  phone: string;
-  local_contact: string;
-  observation: string;
-}
 
 interface CustomerGroup {
   customerName: string;
@@ -36,7 +22,7 @@ interface CustomerScheduleSectionProps {
   onScheduleSuccess: () => void;
 }
 
-// Send WhatsApp notification to technician using Twilio template
+// Send WhatsApp notification to technician
 const sendTechnicianWhatsApp = async (
   technicianId: string,
   scheduleData: {
@@ -92,11 +78,15 @@ const sendTechnicianWhatsApp = async (
 
 export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleSectionProps) => {
   const [pendingSchedules, setPendingSchedules] = useState<VehicleScheduleData[]>([]);
-  const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [hiddenVehicleIds, setHiddenVehicleIds] = useState<string[]>([]);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleScheduleData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchPendingSchedules = async () => {
     setIsLoading(true);
@@ -120,7 +110,9 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
           installation_address_postal_code,
           installation_address_complement,
           kit_id,
-          selected_kit_ids
+          selected_kit_ids,
+          accessories,
+          supplies
         `)
         .eq('status', 'shipped');
 
@@ -139,18 +131,8 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
     }
   };
 
-  const fetchTechnicians = async () => {
-    try {
-      const data = await getTechnicians();
-      setTechnicians(data);
-    } catch (error) {
-      console.error('Error fetching technicians:', error);
-    }
-  };
-
   useEffect(() => {
     fetchPendingSchedules();
-    fetchTechnicians();
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -218,36 +200,33 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
 
   const totalVehicles = filteredGroups.reduce((acc, g) => acc + g.vehicles.length, 0);
 
-  const handleScheduleVehicles = async (
-    vehicles: Array<{ vehicle: VehicleScheduleData; formData: VehicleFormData }>
-  ) => {
-    for (const { vehicle, formData } of vehicles) {
-      // Build address from vehicle data
-      const addressParts = [
-        vehicle.installation_address_street,
-        vehicle.installation_address_number,
-        vehicle.installation_address_neighborhood,
-        vehicle.installation_address_city,
-        vehicle.installation_address_state,
-      ].filter(Boolean);
+  const handleScheduleVehicle = (vehicle: VehicleScheduleData) => {
+    setSelectedVehicle(vehicle);
+    setIsModalOpen(true);
+  };
 
+  const handleFormSubmit = async (data: ScheduleFormData & { date: Date }) => {
+    if (!selectedVehicle) return;
+    
+    setIsSubmitting(true);
+    try {
       const scheduleData = {
-        scheduled_date: format(formData.date!, 'yyyy-MM-dd'),
-        scheduled_time: formData.time,
-        technician_name: formData.technician_name,
-        technician_whatsapp: formData.technician_whatsapp,
-        customer: vehicle.customer_name || '',
-        address: addressParts.join(', '),
-        plate: vehicle.vehicle_plate || '',
-        service: formData.service,
-        vehicle_model: `${vehicle.vehicle_brand || ''} ${vehicle.vehicle_model || ''}`.trim(),
-        tracker_model: vehicle.configuration || '',
-        scheduled_by: formData.scheduled_by,
-        reference_point: formData.reference_point || null,
-        phone: formData.phone || null,
-        local_contact: formData.local_contact || null,
-        observation: formData.observation || null,
-        kit_schedule_id: vehicle.id,
+        scheduled_date: format(data.date, 'yyyy-MM-dd'),
+        scheduled_time: data.time,
+        technician_name: data.technician_name,
+        technician_whatsapp: data.technician_whatsapp || '',
+        customer: data.customer,
+        address: data.address,
+        plate: data.plate,
+        service: data.service,
+        vehicle_model: data.vehicle_model,
+        tracker_model: data.tracker_model,
+        scheduled_by: data.scheduled_by,
+        reference_point: data.reference_point || null,
+        phone: data.phone || null,
+        local_contact: data.local_contact || null,
+        observation: data.observation || null,
+        kit_schedule_id: selectedVehicle.id,
       };
 
       // Insert schedule
@@ -257,40 +236,75 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
 
       if (insertError) {
         console.error('Error creating schedule:', insertError);
-        throw new Error(`Erro ao criar agendamento para ${vehicle.vehicle_plate}`);
+        toast.error('Erro ao criar agendamento');
+        return;
       }
 
       // Immediately hide from UI
-      setHiddenVehicleIds(prev => [...prev, vehicle.id]);
+      setHiddenVehicleIds(prev => [...prev, selectedVehicle.id]);
 
       // Update kit_schedule status
       const { error: updateError } = await supabase
         .from('kit_schedules')
         .update({ status: 'scheduled' })
-        .eq('id', vehicle.id);
+        .eq('id', selectedVehicle.id);
 
       if (updateError) {
         console.error('Error updating kit_schedule status:', updateError);
       }
 
       // Send WhatsApp notification (non-blocking)
-      if (formData.technician_id) {
-        sendTechnicianWhatsApp(formData.technician_id, {
+      if (data.technician_id) {
+        sendTechnicianWhatsApp(data.technician_id, {
           date: scheduleData.scheduled_date,
           time: scheduleData.scheduled_time,
           customer: scheduleData.customer,
           address: scheduleData.address,
-          local_contact: formData.local_contact || '',
-          phone: formData.phone,
+          local_contact: data.local_contact || '',
+          phone: data.phone,
         }).then(result => {
           if (result.success) {
             toast.success(`WhatsApp enviado para ${result.technicianName}`);
           }
         });
       }
-    }
 
-    onScheduleSuccess();
+      toast.success('Agendamento criado com sucesso!');
+      setIsModalOpen(false);
+      setSelectedVehicle(null);
+      onScheduleSuccess();
+    } catch (error) {
+      console.error('Error scheduling vehicle:', error);
+      toast.error('Erro ao agendar veículo');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Convert selected vehicle to PendingVehicleData format for the modal
+  const getInitialVehicleData = (): PendingVehicleData | null => {
+    if (!selectedVehicle) return null;
+
+    const addressParts = [
+      selectedVehicle.installation_address_street,
+      selectedVehicle.installation_address_number,
+      selectedVehicle.installation_address_neighborhood,
+      selectedVehicle.installation_address_city,
+      selectedVehicle.installation_address_state,
+    ].filter(Boolean);
+
+    return {
+      kitScheduleId: selectedVehicle.id,
+      plate: selectedVehicle.vehicle_plate || undefined,
+      brand: selectedVehicle.vehicle_brand || undefined,
+      model: selectedVehicle.vehicle_model || undefined,
+      year: selectedVehicle.vehicle_year || undefined,
+      configuration: selectedVehicle.configuration || undefined,
+      customerName: selectedVehicle.customer_name || undefined,
+      customerPhone: selectedVehicle.customer_phone || undefined,
+      customerAddress: addressParts.join(', ') || undefined,
+      accessories: selectedVehicle.accessories || undefined,
+    };
   };
 
   if (isLoading) {
@@ -330,56 +344,71 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
   }
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
-      <Card className="border-orange-200 bg-orange-50/30 dark:bg-orange-950/10 dark:border-orange-900/30">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="pb-3 cursor-pointer hover:bg-orange-100/50 dark:hover:bg-orange-900/20 transition-colors rounded-t-lg">
-            <CardTitle className="text-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-orange-500" />
-                <span>Veículos Pendentes de Agendamento</span>
-                <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
-                  {customerGroups.length} cliente{customerGroups.length !== 1 ? 's' : ''} • {totalVehicles} veículo{totalVehicles !== 1 ? 's' : ''}
-                </Badge>
+    <>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
+        <Card className="border-orange-200 bg-orange-50/30 dark:bg-orange-950/10 dark:border-orange-900/30">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-orange-100/50 dark:hover:bg-orange-900/20 transition-colors rounded-t-lg">
+              <CardTitle className="text-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-orange-500" />
+                  <span>Veículos Pendentes de Agendamento</span>
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
+                    {customerGroups.length} cliente{customerGroups.length !== 1 ? 's' : ''} • {totalVehicles} veículo{totalVehicles !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+                {isOpen ? (
+                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                )}
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por cliente, placa ou veículo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-              {isOpen ? (
-                <ChevronUp className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
-              )}
-            </CardTitle>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent className="pt-0">
-            {/* Search */}
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por cliente, placa ou veículo..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
 
-            {/* Customer Cards */}
-            <ScrollArea className="h-[500px]">
-              <div className="space-y-3 pr-4">
-                {filteredGroups.map((group) => (
-                  <CustomerScheduleCard
-                    key={group.customerName}
-                    customerGroup={group}
-                    technicians={technicians}
-                    onScheduleVehicles={handleScheduleVehicles}
-                    hiddenVehicleIds={hiddenVehicleIds}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+              {/* Customer Cards */}
+              <ScrollArea className="h-[500px]">
+                <div className="space-y-3 pr-4">
+                  {filteredGroups.map((group) => (
+                    <CustomerScheduleCard
+                      key={group.customerName}
+                      customerGroup={group}
+                      onScheduleVehicle={handleScheduleVehicle}
+                      hiddenVehicleIds={hiddenVehicleIds}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Schedule Form Modal */}
+      <ScheduleFormModal
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) setSelectedVehicle(null);
+        }}
+        selectedDate={null}
+        selectedTime={null}
+        onSubmit={handleFormSubmit}
+        isLoading={isSubmitting}
+        initialVehicleData={getInitialVehicleData()}
+      />
+    </>
   );
 };
