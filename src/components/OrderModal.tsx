@@ -489,6 +489,17 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg text-primary">Informações de Envio</h3>
                   <div className="space-y-4">
+                    {/* Row: Técnico */}
+                    {schedule?.technician?.name && (
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Técnico</Label>
+                        <Input 
+                          value={schedule.technician.name} 
+                          disabled 
+                          className="bg-muted/50"
+                        />
+                      </div>
+                    )}
                     {/* Row: Rua, Número */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2 md:col-span-2">
@@ -847,6 +858,11 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                       <Badge variant="outline" className="text-base font-bold px-3 py-1">
                                         {sched.vehicle_plate}
                                       </Badge>
+                                    )}
+                                    {(sched.vehicle_brand || sched.vehicle_model) && (
+                                      <span className="text-sm text-muted-foreground">
+                                        {[sched.vehicle_brand, sched.vehicle_model].filter(Boolean).join(' ')}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
