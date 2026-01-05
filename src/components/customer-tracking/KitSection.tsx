@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, User, Package } from "lucide-react";
+import { KitStatusTimeline } from "./KitStatusTimeline";
 import { RescheduleModal } from "./RescheduleModal";
 import { ProcessHistoryModal } from "./ProcessHistoryModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -205,16 +206,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
 
         <CardContent className="space-y-4">
           {/* 1. Progresso de instalação */}
-          {kitData.status === 'shipped' && (
-            <div>
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Progresso da instalação</span>
-                <span>{statusInfo.progress}%</span>
-              </div>
-              <Progress value={statusInfo.progress} className="h-2" />
-              <p className="text-xs text-gray-500 mt-1">{statusInfo.description}</p>
-            </div>
-          )}
+          <KitStatusTimeline status={statusInfo.status} kitData={kitData} statusHistory={statusHistory} />
 
           {/* 2. Histórico completo do processo */}
           <ProcessHistoryModal 
