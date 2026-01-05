@@ -19,26 +19,38 @@ interface KitSectionProps {
 export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
+  const [hasInstallationSchedule, setHasInstallationSchedule] = useState(false);
 
   useEffect(() => {
-    const loadHistory = async () => {
+    const loadData = async () => {
       if (!kitData.id) return;
       
-      const { data, error } = await supabase
+      // Load status history
+      const { data: historyData, error: historyError } = await supabase
         .from('kit_schedule_status_history')
         .select('*')
         .eq('kit_schedule_id', kitData.id)
         .order('changed_at', { ascending: true });
       
-      if (error) {
-        console.error('Error loading status history:', error);
-        return;
+      if (historyError) {
+        console.error('Error loading status history:', historyError);
+      } else {
+        setStatusHistory(historyData || []);
       }
-      
-      setStatusHistory(data || []);
+
+      // Check if there's an installation schedule
+      const { data: installationData, error: installationError } = await supabase
+        .from('installation_schedules')
+        .select('id')
+        .eq('kit_schedule_id', kitData.id)
+        .limit(1);
+
+      if (!installationError && installationData && installationData.length > 0) {
+        setHasInstallationSchedule(true);
+      }
     };
 
-    loadHistory();
+    loadData();
   }, [kitData.id]);
 
   const getStatusInfo = () => {
@@ -61,6 +73,17 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
       }
     }
 
+    // If there's an installation schedule, the vehicle has already been shipped
+    // and is now scheduled for installation - show as "Instalação Agendada"
+    if (hasInstallationSchedule) {
+      return {
+        status: "installation_scheduled",
+        label: "📅 Instalação Agendada",
+        color: "bg-green-500",
+        description: "Aguardando instalação",
+        progress: 100
+      };
+    }
 
     switch (kitData.status) {
       case "scheduled":
@@ -107,6 +130,15 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   };
 
   const statusInfo = getStatusInfo();
+
+  // Determine the effective status for the timeline
+  // If there's an installation schedule, the effective status should be "shipped" (completed the order flow)
+  const getEffectiveTimelineStatus = () => {
+    if (hasInstallationSchedule) {
+      return "shipped";
+    }
+    return kitData.status;
+  };
 
   const getDaysInStatus = () => {
     // Priority 1: Use statusHistory if available
@@ -206,7 +238,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
 
         <CardContent className="space-y-4">
           {/* 1. Progresso de instalação */}
-          <KitStatusTimeline status={kitData.status} kitData={kitData} statusHistory={statusHistory} />
+          <KitStatusTimeline status={getEffectiveTimelineStatus()} kitData={kitData} statusHistory={statusHistory} />
 
           {/* 2. Histórico completo do processo */}
           <ProcessHistoryModal 
