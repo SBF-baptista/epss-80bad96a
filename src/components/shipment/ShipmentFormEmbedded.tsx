@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Order } from "@/services/orderService";
 import {
   updateKitScheduleShipment,
   ShipmentAddress,
 } from "@/services/shipmentService";
+import { getTechnicians, Technician } from "@/services/technicianService";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector, AddressForm } from "./index";
 
@@ -21,6 +23,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>("");
   const [selectedUF, setSelectedUF] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [trackingCode, setTrackingCode] = useState<string>("");
@@ -33,6 +36,33 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
     postal_code: "",
     complement: "",
   });
+
+  // Fetch technicians
+  const { data: technicians = [] } = useQuery({
+    queryKey: ["technicians"],
+    queryFn: getTechnicians,
+  });
+
+  // Handle technician selection
+  const handleTechnicianChange = (technicianId: string) => {
+    setSelectedTechnicianId(technicianId);
+    
+    const technician = technicians.find((t: Technician) => t.id === technicianId);
+    if (technician) {
+      // Fill address fields with technician's address
+      setSelectedUF(technician.address_state || "");
+      setSelectedCity(technician.address_city || "");
+      setAddress({
+        street: technician.address_street || "",
+        number: technician.address_number || "",
+        neighborhood: technician.address_neighborhood || "",
+        city: technician.address_city || "",
+        state: technician.address_state || "",
+        postal_code: technician.postal_code || "",
+        complement: "",
+      });
+    }
+  };
 
   const updateShipmentMutation = useMutation({
     mutationFn: (data: {
@@ -132,6 +162,33 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
 
   return (
     <div className="space-y-4">
+      {/* Technician Selection */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Técnico</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="technician">Selecione o técnico</Label>
+            <Select value={selectedTechnicianId} onValueChange={handleTechnicianChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um técnico" />
+              </SelectTrigger>
+              <SelectContent>
+                {technicians.map((technician: Technician) => (
+                  <SelectItem key={technician.id} value={technician.id!}>
+                    {technician.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Ao selecionar um técnico, o endereço será preenchido automaticamente
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Location Selection */}
       <Card>
         <CardHeader className="pb-3">
