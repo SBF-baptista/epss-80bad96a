@@ -92,21 +92,9 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
     },
   });
 
-  // Load existing shipment data if available
+  // Load only tracking code if available (address fields start empty)
   useEffect(() => {
-    if (order.installation_address_state) setSelectedUF(order.installation_address_state);
-    if (order.installation_address_city) setSelectedCity(order.installation_address_city);
     if (order.trackingCode) setTrackingCode(order.trackingCode);
-
-    setAddress({
-      street: order.installation_address_street || "",
-      number: order.installation_address_number || "",
-      neighborhood: order.installation_address_neighborhood || "",
-      city: order.installation_address_city || "",
-      state: order.installation_address_state || "",
-      postal_code: order.installation_address_postal_code || "",
-      complement: order.installation_address_complement || "",
-    });
   }, [order]);
 
   // Handle UF change
@@ -186,22 +174,6 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
               Ao selecionar um técnico, o endereço será preenchido automaticamente
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Location Selection */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Localização</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <LocationSelector
-            selectedUF={selectedUF}
-            selectedCity={selectedCity}
-            onUFChange={handleUFChange}
-            onCityChange={handleCityChange}
-            disabled={false}
-          />
         </CardContent>
       </Card>
 
