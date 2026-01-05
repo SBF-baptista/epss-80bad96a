@@ -3,9 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, User, Clock, Package, AlertCircle } from "lucide-react";
-import { KitStatusTimeline } from "./KitStatusTimeline";
-import { KitItemsList } from "./KitItemsList";
+import { Calendar, User, Package } from "lucide-react";
 import { RescheduleModal } from "./RescheduleModal";
 import { ProcessHistoryModal } from "./ProcessHistoryModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,6 +204,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* 1. Progresso de instalação */}
           {kitData.status === 'shipped' && (
             <div>
               <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -217,54 +216,15 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
-          <KitStatusTimeline status={statusInfo.status} kitData={kitData} statusHistory={statusHistory} />
-
-          {/* Process History Button - Above Technician */}
+          {/* 2. Histórico completo do processo */}
           <ProcessHistoryModal 
             scheduleId={kitData.id} 
             incomingVehicleId={kitData.incoming_vehicle_id}
           />
 
-          {kitData.technician_name && (
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-gray-500" />
-              <span><strong>Técnico:</strong> {kitData.technician_name}</span>
-            </div>
-          )}
-
-          {kitData.scheduled_date && (
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <span><strong>Agendamento:</strong> {formatDateTime(kitData.scheduled_date, kitData.installation_time)}</span>
-            </div>
-          )}
-
-          {statusInfo.status === "homologation" && kitData.homologationStatus && (
-            <div className="mt-4">
-              <h5 className="text-sm font-medium text-gray-900 mb-2">Status de Homologação dos Itens:</h5>
-              <KitItemsList homologationStatus={kitData.homologationStatus} />
-            </div>
-          )}
-
-          {kitData.kit && statusInfo.status !== "homologation" && (
-            <div className="mt-4">
-              <h5 className="text-sm font-medium text-gray-900 mb-2">Itens do Kit:</h5>
-              <KitItemsList 
-                kit={kitData.kit}
-                showHomologationStatus={false}
-              />
-            </div>
-          )}
-
-          {kitData.notes && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-md">
-              <p className="text-sm"><strong>Observações:</strong> {kitData.notes}</p>
-            </div>
-          )}
-
-          {/* Vehicle Info */}
+          {/* 3. Veículo */}
           {(kitData.vehicle_brand || kitData.vehicle_model) && (
-            <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
+            <div className="p-4 bg-gray-50 border rounded-lg">
               <h5 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                 🚗 Veículo
               </h5>
@@ -276,20 +236,19 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             </div>
           )}
 
+          {/* 4. Técnico */}
+          {kitData.technician_name && (
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-gray-500" />
+              <span><strong>Técnico:</strong> {kitData.technician_name}</span>
+            </div>
+          )}
 
-          {/* Supplies */}
-          {kitData.supplies && kitData.supplies.length > 0 && (
-            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <h5 className="text-sm font-semibold text-orange-900 mb-2 flex items-center gap-2">
-                📋 Insumos
-              </h5>
-              <div className="flex flex-wrap gap-2">
-                {kitData.supplies.map((supply, idx) => (
-                  <Badge key={idx} variant="outline" className="border-orange-300 text-orange-800">
-                    {supply}
-                  </Badge>
-                ))}
-              </div>
+          {/* 5. Agendamento */}
+          {kitData.scheduled_date && (
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <span><strong>Agendamento:</strong> {formatDateTime(kitData.scheduled_date, kitData.installation_time)}</span>
             </div>
           )}
 
