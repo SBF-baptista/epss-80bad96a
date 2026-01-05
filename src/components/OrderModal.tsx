@@ -1011,12 +1011,6 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                 </div>
                               )}
 
-                              {/* Notes */}
-                              {sched.notes && (
-                                <div className="mt-2 p-2 bg-muted/20 rounded text-sm">
-                                  <p className="text-muted-foreground">{sched.notes}</p>
-                                </div>
-                              )}
                             </div>
                           );
                         })
