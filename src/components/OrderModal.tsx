@@ -991,24 +991,6 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                 </div>
                               )}
 
-                              {/* Accessories */}
-                              {accessoriesItems.length > 0 && (
-                                <div>
-                                  <h4 className="font-semibold text-sm mb-2 text-primary">
-                                    Acessórios ({accessoriesItems.reduce((sum, a) => sum + (a.quantity || 0), 0)} unidades)
-                                  </h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    {accessoriesItems.map((item, index) => (
-                                      <div key={item.id || index} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-md text-sm border border-primary/20">
-                                        <span className="font-medium">✓ {cleanItemName(item.item_name)}</span>
-                                        {item.quantity > 1 && (
-                                          <Badge variant="secondary" className="text-xs h-5">{item.quantity}x</Badge>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
 
                               {/* Supplies */}
                               {suppliesItems.length > 0 && (
