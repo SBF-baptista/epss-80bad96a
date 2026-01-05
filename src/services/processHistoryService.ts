@@ -174,23 +174,47 @@ export const fetchProcessHistory = async (
       }
     }
 
-    // 5. Add schedule created event
+    // 5. Fetch installation schedules (actual appointments)
+    const { data: installationSchedules, error: installationError } = await supabase
+      .from('installation_schedules')
+      .select('*')
+      .eq('kit_schedule_id', scheduleId)
+      .order('created_at', { ascending: true });
+
+    if (!installationError && installationSchedules && installationSchedules.length > 0) {
+      installationSchedules.forEach((installation) => {
+        events.push({
+          id: `installation-${installation.id}`,
+          type: 'schedule_created',
+          title: 'Instalação Agendada',
+          description: `Instalação agendada para ${format(new Date(installation.scheduled_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })} às ${installation.scheduled_time} com técnico ${installation.technician_name}`,
+          timestamp: installation.created_at,
+          formattedDate: format(new Date(installation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
+          timeAgo: formatDistanceToNow(new Date(installation.created_at), { addSuffix: true, locale: ptBR }),
+          status: 'Agendado',
+          module: 'Agendamento',
+          icon: '📅'
+        });
+      });
+    }
+
+    // 6. Add schedule created event (kit schedule creation)
     if (schedule) {
       events.push({
         id: `schedule-created-${schedule.id}`,
         type: 'schedule_created',
-        title: 'Agendamento Criado',
-        description: `Instalação agendada para ${format(new Date(schedule.scheduled_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}${schedule.technician?.name ? ` com técnico ${schedule.technician.name}` : ''}`,
+        title: 'Kit Vinculado',
+        description: `Kit agendado para ${format(new Date(schedule.scheduled_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}${schedule.technician?.name ? ` com técnico ${schedule.technician.name}` : ''}`,
         timestamp: schedule.created_at,
         formattedDate: format(new Date(schedule.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
         timeAgo: formatDistanceToNow(new Date(schedule.created_at), { addSuffix: true, locale: ptBR }),
         status: scheduleStatusLabels[schedule.status] || schedule.status,
-        module: 'Agendamento',
-        icon: '📅'
+        module: 'Esteira de Pedidos',
+        icon: '📦'
       });
     }
 
-    // 6. Fetch kit schedule status history
+    // 7. Fetch kit schedule status history
     const { data: statusHistory, error: statusHistoryError } = await supabase
       .from('kit_schedule_status_history')
       .select('*')

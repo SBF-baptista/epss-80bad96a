@@ -206,7 +206,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
 
         <CardContent className="space-y-4">
           {/* 1. Progresso de instalação */}
-          <KitStatusTimeline status={statusInfo.status} kitData={kitData} statusHistory={statusHistory} />
+          <KitStatusTimeline status={kitData.status} kitData={kitData} statusHistory={statusHistory} />
 
           {/* 2. Histórico completo do processo */}
           <ProcessHistoryModal 
