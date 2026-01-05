@@ -38,7 +38,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getTechnicians, Technician } from '@/services/technicianService';
-import { MapPin, CalendarIcon, Car, Cpu, Package } from 'lucide-react';
+import { MapPin, CalendarIcon, Car, Cpu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const scheduleFormSchema = z.object({
@@ -145,12 +145,8 @@ export const ScheduleFormModal = ({
         if (initialVehicleData.brand && initialVehicleData.model) {
           form.setValue('vehicle_model', `${initialVehicleData.brand} ${initialVehicleData.model}${initialVehicleData.year ? ` (${initialVehicleData.year})` : ''}`);
         }
-        // Configuração vem da homologação - se não vier, deixar vazio para preencher manualmente
-        if (initialVehicleData.configuration) {
-          form.setValue('tracker_model', initialVehicleData.configuration);
-        } else {
-          form.setValue('tracker_model', '');
-        }
+        // Modelo do rastreador vazio para o usuário preencher
+        form.setValue('tracker_model', '');
         if (initialVehicleData.customerName) {
           form.setValue('customer', initialVehicleData.customerName);
         }
@@ -160,14 +156,8 @@ export const ScheduleFormModal = ({
         if (initialVehicleData.customerAddress) {
           form.setValue('address', initialVehicleData.customerAddress);
         }
-        // Build observation with accessories info
-        const obsLines: string[] = [];
-        if (initialVehicleData.accessories && initialVehicleData.accessories.length > 0) {
-          obsLines.push(`Acessórios: ${initialVehicleData.accessories.join(', ')}`);
-        }
-        if (obsLines.length > 0) {
-          form.setValue('observation', obsLines.join('\n'));
-        }
+        // Observação vazia para o usuário preencher
+        form.setValue('observation', '');
       }
     } else {
       form.reset();
@@ -245,21 +235,6 @@ export const ScheduleFormModal = ({
                     </div>
                   </div>
                 </div>
-                {initialVehicleData.accessories && initialVehicleData.accessories.length > 0 && (
-                  <div className="mt-2 pt-2 border-t">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Package className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                      <span className="text-xs text-muted-foreground">Acessórios</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {initialVehicleData.accessories.map((acc, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0">
-                          {acc}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           )}
