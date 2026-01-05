@@ -1,6 +1,9 @@
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShipmentAddress } from "@/services/shipmentService";
+import { useStates, useCities } from "@/hooks/useIBGEData";
 
 interface AddressFormProps {
   address: ShipmentAddress;
@@ -15,13 +18,34 @@ const AddressForm = ({
   isReadOnly = false,
   allowManualEntry = true,
 }: AddressFormProps) => {
+  const [selectedUF, setSelectedUF] = useState<string>(address.state || "");
+  
+  const { states, loading: isLoadingStates } = useStates();
+  const { cities, loading: isLoadingCities } = useCities(selectedUF);
+
+  // Sync internal state when address prop changes (e.g., when technician is selected)
+  useEffect(() => {
+    if (address.state && address.state !== selectedUF) {
+      setSelectedUF(address.state);
+    }
+  }, [address.state]);
+
   const isFieldDisabled = (field: keyof ShipmentAddress) => {
     if (isReadOnly) return true;
-    if (field === "city" || field === "state") return true; // Always read-only from selection
     return false;
   };
 
   const hasPrefilledAddress = address.street && address.number && address.neighborhood;
+
+  const handleStateChange = (value: string) => {
+    setSelectedUF(value);
+    onAddressChange("state", value);
+    onAddressChange("city", ""); // Reset city when state changes
+  };
+
+  const handleCityChange = (value: string) => {
+    onAddressChange("city", value);
+  };
 
   return (
     <div className="space-y-4">
@@ -73,28 +97,49 @@ const AddressForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="city">Cidade</Label>
-          <Input
-            id="city"
-            value={address.city}
-            onChange={(e) => onAddressChange("city", e.target.value)}
-            disabled
-            placeholder="Cidade será preenchida automaticamente"
-            className="bg-muted"
-          />
+          <Label htmlFor="state">Estado (UF)</Label>
+          <Select 
+            value={address.state} 
+            onValueChange={handleStateChange}
+            disabled={isReadOnly}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={isLoadingStates ? "Carregando..." : "Selecione o estado"} />
+            </SelectTrigger>
+            <SelectContent>
+              {states.map((state) => (
+                <SelectItem key={state.sigla} value={state.sigla}>
+                  {state.sigla} - {state.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="state">Estado (UF)</Label>
-          <Input
-            id="state"
-            value={address.state}
-            onChange={(e) => onAddressChange("state", e.target.value)}
-            disabled
-            placeholder="Estado será preenchido automaticamente"
-            className="bg-muted"
-            maxLength={2}
-          />
+          <Label htmlFor="city">Cidade</Label>
+          <Select 
+            value={address.city} 
+            onValueChange={handleCityChange}
+            disabled={isReadOnly || !selectedUF}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={
+                !selectedUF 
+                  ? "Selecione o estado primeiro" 
+                  : isLoadingCities 
+                    ? "Carregando..." 
+                    : "Selecione a cidade"
+              } />
+            </SelectTrigger>
+            <SelectContent>
+              {cities.map((city) => (
+                <SelectItem key={city} value={city}>
+                  {city}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
