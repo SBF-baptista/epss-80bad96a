@@ -83,10 +83,13 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
   const [searchTerm, setSearchTerm] = useState('');
   const [hiddenVehicleIds, setHiddenVehicleIds] = useState<string[]>([]);
   
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Modal state for schedule form
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleScheduleData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // State to track which customer's vehicle table modal is open
+  const [openCustomerModal, setOpenCustomerModal] = useState<string | null>(null);
 
   const fetchPendingSchedules = async () => {
     setIsLoading(true);
@@ -202,7 +205,8 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
 
   const handleScheduleVehicle = (vehicle: VehicleScheduleData) => {
     setSelectedVehicle(vehicle);
-    setIsModalOpen(true);
+    setOpenCustomerModal(null); // Close the vehicle table modal
+    setIsFormModalOpen(true); // Open the form modal
   };
 
   const handleFormSubmit = async (data: ScheduleFormData & { date: Date }) => {
@@ -270,7 +274,7 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
       }
 
       toast.success('Agendamento criado com sucesso!');
-      setIsModalOpen(false);
+      setIsFormModalOpen(false);
       setSelectedVehicle(null);
       onScheduleSuccess();
     } catch (error) {
@@ -387,6 +391,8 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
                       customerGroup={group}
                       onScheduleVehicle={handleScheduleVehicle}
                       hiddenVehicleIds={hiddenVehicleIds}
+                      isModalOpen={openCustomerModal === group.customerName}
+                      onModalOpenChange={(open) => setOpenCustomerModal(open ? group.customerName : null)}
                     />
                   ))}
                 </div>
@@ -398,9 +404,9 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
 
       {/* Schedule Form Modal */}
       <ScheduleFormModal
-        open={isModalOpen}
+        open={isFormModalOpen}
         onOpenChange={(open) => {
-          setIsModalOpen(open);
+          setIsFormModalOpen(open);
           if (!open) setSelectedVehicle(null);
         }}
         selectedDate={null}
