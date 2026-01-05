@@ -771,7 +771,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                     <Separator className="my-6" />
                     <div className="space-y-4">
                       <h3 className="font-semibold text-lg text-primary">
-                        Veículos Agendados ({allSchedules.length} {allSchedules.length === 1 ? 'placa' : 'placas'})
+                        Veículos ({allSchedules.length} {allSchedules.length === 1 ? 'placa' : 'placas'})
                       </h3>
                       {loading ? (
                         <div className="text-center py-4">
@@ -828,7 +828,6 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                               case 'completed':
                                 return <Badge className="bg-green-500 text-white">✓ Pronto</Badge>;
                               case 'in_progress':
-                                return <Badge className="bg-yellow-500 text-white">Em Andamento</Badge>;
                               case 'scheduled':
                                 return <Badge variant="secondary">Agendado</Badge>;
                               case 'cancelled':
@@ -851,14 +850,6 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                       </Badge>
                                     )}
                                     <Badge variant="secondary">Placa {idx + 1}</Badge>
-                                  </div>
-                                  <p className="font-semibold text-foreground text-lg">
-                                    {sched.vehicle_brand} {sched.vehicle_model}
-                                  </p>
-                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                    {sched.vehicle_year && (
-                                      <span>Ano: {sched.vehicle_year}</span>
-                                    )}
                                   </div>
                                 </div>
                               </div>
