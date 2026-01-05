@@ -1619,17 +1619,41 @@ export const ScheduleModal = ({
                                                          </p>
                                                        </div>
                                                      </div>
-                                                     <div className="flex flex-col gap-1 items-end">
-                                                       <Badge 
-                                                         variant={isHomologated ? "default" : "destructive"}
-                                                         className={cn(
-                                                           "shrink-0 text-xs",
-                                                           isHomologated ? "bg-green-600 text-white" : ""
-                                                         )}
-                                                       >
-                                                         {isHomologated ? 'Homologado' : 'Pendente'}
-                                                       </Badge>
-                                                     </div>
+                                                      <div className="flex flex-col gap-1 items-end">
+                                                        {/* Badge de tipo do kit */}
+                                                        {(() => {
+                                                          const hasFMC150 = kit.equipment?.some(e => 
+                                                            e.item_name.toLowerCase().includes('fmc150')
+                                                          );
+                                                          const hasFMC130 = kit.equipment?.some(e => 
+                                                            e.item_name.toLowerCase().includes('fmc130')
+                                                          );
+                                                          
+                                                          if (hasFMC150) {
+                                                            return (
+                                                              <Badge variant="outline" className="shrink-0 text-xs bg-blue-100 text-blue-700 border-blue-300">
+                                                                Telemetria
+                                                              </Badge>
+                                                            );
+                                                          } else if (hasFMC130) {
+                                                            return (
+                                                              <Badge variant="outline" className="shrink-0 text-xs bg-purple-100 text-purple-700 border-purple-300">
+                                                                Vídeomonitoramento
+                                                              </Badge>
+                                                            );
+                                                          }
+                                                          return null;
+                                                        })()}
+                                                        <Badge 
+                                                          variant={isHomologated ? "default" : "destructive"}
+                                                          className={cn(
+                                                            "shrink-0 text-xs",
+                                                            isHomologated ? "bg-green-600 text-white" : ""
+                                                          )}
+                                                        >
+                                                          {isHomologated ? 'Homologado' : 'Pendente'}
+                                                        </Badge>
+                                                      </div>
                                                    </div>
 
 
