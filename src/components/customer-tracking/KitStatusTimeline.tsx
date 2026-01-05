@@ -132,12 +132,9 @@ export const KitStatusTimeline = ({ status, kitData, statusHistory }: KitStatusT
                 </div>
                 {getStepDate(step.id) && (
                   <div className="text-xs text-blue-600 font-medium mt-1">
-                    Entrou em {getStepDate(step.id)}
+                    {getStepDate(step.id)}
                   </div>
                 )}
-                <div className="text-xs text-gray-500 mt-1 max-w-20">
-                  {step.description}
-                </div>
               </div>
             </div>
           );
