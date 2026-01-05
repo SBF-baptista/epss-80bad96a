@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, AlertCircle, History, Clock, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Edit, AlertCircle, History, Clock, AlertTriangle, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -20,6 +21,7 @@ const Kickoff = () => {
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   
   const { toast } = useToast();
 
@@ -132,7 +134,18 @@ const Kickoff = () => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
-          <h2 className="text-2xl font-semibold">Kickoff Cliente</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 className="text-2xl font-semibold">Kickoff Cliente</h2>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Pesquisar por nome do cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
           {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <Skeleton className="h-32" />
@@ -140,9 +153,13 @@ const Kickoff = () => {
             <Skeleton className="h-32" />
             <Skeleton className="h-32" />
           </div>
-        ) : kickoffData && kickoffData.clients.length > 0 ? (
+        ) : kickoffData && kickoffData.clients.filter(client => 
+            client.company_name.toLowerCase().includes(searchTerm.toLowerCase())
+          ).length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {kickoffData.clients.map((client) => {
+            {kickoffData.clients
+              .filter(client => client.company_name.toLowerCase().includes(searchTerm.toLowerCase()))
+              .map((client) => {
               const daysInKickoff = getDaysInKickoff(client.sale_summary_id);
               
               // Colorimetria dinâmica: amarelo 0-5, laranja 6-10, vermelho >10
