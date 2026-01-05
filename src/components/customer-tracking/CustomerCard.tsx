@@ -63,7 +63,6 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <CardTitle className="text-lg">{customer.name}</CardTitle>
-                    {getKitStatusBadge()}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <span className="font-mono">

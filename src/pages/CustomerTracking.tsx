@@ -187,21 +187,23 @@ const CustomerTracking = () => {
       />
 
       <div className="space-y-6">
-        {filteredCustomers.length === 0 ? (
+        {filteredCustomers.filter(customer => getCustomerKits(customer.id!).length > 0).length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">
-              {searchTerm ? "Nenhum cliente encontrado com os critérios de busca." : "Nenhum cliente cadastrado."}
+              {searchTerm ? "Nenhum cliente encontrado com os critérios de busca." : "Nenhum cliente com informações cadastradas."}
             </p>
           </div>
         ) : (
-          filteredCustomers.map((customer) => (
-            <CustomerCard
-              key={customer.id}
-              customer={customer}
-              customerKits={getCustomerKits(customer.id!)}
-              onUpdate={loadData}
-            />
-          ))
+          filteredCustomers
+            .filter(customer => getCustomerKits(customer.id!).length > 0)
+            .map((customer) => (
+              <CustomerCard
+                key={customer.id}
+                customer={customer}
+                customerKits={getCustomerKits(customer.id!)}
+                onUpdate={loadData}
+              />
+            ))
         )}
       </div>
     </div>
