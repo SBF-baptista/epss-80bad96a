@@ -228,6 +228,11 @@ export const fetchProcessHistory = async (
           return;
         }
 
+        // Skip status changes from shipped to scheduled (this is installation scheduling, not going back to order)
+        if (entry.previous_status === 'shipped' && entry.new_status === 'scheduled') {
+          return;
+        }
+
         events.push({
           id: `status-change-${entry.id}`,
           type: 'schedule_status_change',
