@@ -5,9 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScheduleFormModal, PendingVehicleData } from './ScheduleFormModal';
+import { ScheduleFormModal } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
-import { PendingVehiclesSection } from './PendingVehiclesSection';
+import { CustomerScheduleSection } from './CustomerScheduleSection';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -122,8 +122,6 @@ export const ScheduleManagement = () => {
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>('all');
-  const [pendingVehicleData, setPendingVehicleData] = useState<PendingVehicleData | null>(null);
-  const [hiddenKitScheduleIds, setHiddenKitScheduleIds] = useState<string[]>([]);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -156,21 +154,6 @@ export const ScheduleManagement = () => {
     fetchSchedules();
     fetchTechnicians();
 
-    // Check for pending vehicle data from Planning page
-    const pendingData = sessionStorage.getItem('pendingScheduleVehicle');
-    if (pendingData) {
-      try {
-        const vehicleData = JSON.parse(pendingData) as PendingVehicleData;
-        setPendingVehicleData(vehicleData);
-        // Clear the sessionStorage
-        sessionStorage.removeItem('pendingScheduleVehicle');
-        // Open modal with vehicle data
-        setSelectedDate(new Date());
-        setIsModalOpen(true);
-      } catch (error) {
-        console.error('Error parsing pending vehicle data:', error);
-      }
-    }
   }, []);
 
   // Filter schedules by selected technician
@@ -208,7 +191,6 @@ export const ScheduleManagement = () => {
       phone: data.phone || null,
       local_contact: data.local_contact || null,
       observation: data.observation || null,
-      kit_schedule_id: pendingVehicleData?.kitScheduleId || null,
     };
 
     const { error } = await supabase
@@ -222,29 +204,6 @@ export const ScheduleManagement = () => {
       toast.error('Erro ao criar agendamento');
       return;
     }
-
-    // Update kit_schedules status from 'shipped' to 'scheduled' if this came from pending vehicles
-    if (pendingVehicleData?.kitScheduleId) {
-      // Immediately hide from UI (optimistic update)
-      setHiddenKitScheduleIds(prev => [...prev, pendingVehicleData.kitScheduleId!]);
-      
-      const { error: updateError } = await supabase
-        .from('kit_schedules')
-        .update({ status: 'scheduled' })
-        .eq('id', pendingVehicleData.kitScheduleId);
-
-      if (updateError) {
-        console.error('Error updating kit_schedule status:', updateError);
-        toast.error('Erro ao atualizar status do veículo. Verifique suas permissões.');
-        // Log the error for debugging
-        console.warn('[Scheduling] RLS may be blocking update. User role check needed.');
-      } else {
-        console.log('[Scheduling] kit_schedule status updated to scheduled:', pendingVehicleData.kitScheduleId);
-      }
-    }
-
-    // Clear pending vehicle data after successful scheduling
-    setPendingVehicleData(null);
 
     await fetchSchedules();
     toast.success('Agendamento criado com sucesso!');
@@ -342,10 +301,6 @@ export const ScheduleManagement = () => {
         console.log('[Scheduling] kit_schedule status reverted to shipped:', scheduleToDelete.kit_schedule_id);
       }
 
-      // Remove from hidden list so it reappears in the UI
-      setHiddenKitScheduleIds(prev => 
-        prev.filter(kid => kid !== scheduleToDelete.kit_schedule_id)
-      );
     }
 
     await fetchSchedules();
@@ -484,15 +439,8 @@ export const ScheduleManagement = () => {
         )}
       </div>
 
-      {/* Pending Vehicles Section */}
-      <PendingVehiclesSection 
-        onScheduleVehicle={(vehicleData) => {
-          setPendingVehicleData(vehicleData);
-          setSelectedDate(new Date());
-          setIsModalOpen(true);
-        }}
-        hiddenKitScheduleIds={hiddenKitScheduleIds}
-      />
+      {/* Customer Schedule Section - Grouped by Customer */}
+      <CustomerScheduleSection onScheduleSuccess={fetchSchedules} />
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -635,16 +583,10 @@ export const ScheduleManagement = () => {
 
       <ScheduleFormModal
         open={isModalOpen}
-        onOpenChange={(open) => {
-          setIsModalOpen(open);
-          if (!open) {
-            setPendingVehicleData(null);
-          }
-        }}
+        onOpenChange={setIsModalOpen}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         onSubmit={handleFormSubmit}
-        initialVehicleData={pendingVehicleData}
       />
 
       <ScheduleEditModal

@@ -9,3 +9,5 @@ export { ScheduleModal } from './ScheduleModal';
 export { ScheduleManagement } from './ScheduleManagement';
 export { ScheduleEditModal } from './ScheduleEditModal';
 export { PendingVehiclesSection } from './PendingVehiclesSection';
+export { CustomerScheduleSection } from './CustomerScheduleSection';
+export { CustomerScheduleCard } from './CustomerScheduleCard';
