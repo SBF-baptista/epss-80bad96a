@@ -843,13 +843,11 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                               <div className="flex items-start justify-between">
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    {getStatusBadge(sched.status || 'scheduled')}
                                     {sched.vehicle_plate && (
                                       <Badge variant="outline" className="text-base font-bold px-3 py-1">
                                         {sched.vehicle_plate}
                                       </Badge>
                                     )}
-                                    <Badge variant="secondary">Placa {idx + 1}</Badge>
                                   </div>
                                 </div>
                               </div>
