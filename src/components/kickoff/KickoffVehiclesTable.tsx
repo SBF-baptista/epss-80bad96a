@@ -371,19 +371,11 @@ export const KickoffVehiclesTable = ({
               {/* Modules */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Módulos</Label>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {modulesList.length > 0 ? (
                     modulesList.map((module, idx) => (
-                      <div key={`mod-${idx}`} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`mobile-${vehicle.id}-${module.name}`}
-                          checked={vehicleModules.has(module.name)}
-                          onCheckedChange={() => onModuleToggle(vehicle.id, module.name)}
-                          disabled={isPlateValidated}
-                        />
-                        <Label htmlFor={`mobile-${vehicle.id}-${module.name}`} className="text-sm cursor-pointer">
-                          {module.name} ({module.quantity}x)
-                        </Label>
+                      <div key={`mod-${idx}`} className="text-sm">
+                        {module.name} ({module.quantity}x)
                       </div>
                     ))
                   ) : (
@@ -800,22 +792,11 @@ export const KickoffVehiclesTable = ({
                   <TableCell className="border-r border-border align-top">
                     <div className="space-y-1">
                       {modulesList.length > 0 ? (
-                        <div className="space-y-1">
-                          {modulesList.map((module, idx) => (
-                            <div key={`mod-${idx}`} className="flex items-start gap-1">
-                              <Checkbox
-                                id={`${vehicle.id}-${module.name}`}
-                                checked={vehicleModules.has(module.name)}
-                                onCheckedChange={() => onModuleToggle(vehicle.id, module.name)}
-                                disabled={isPlateValidated}
-                                className="mt-0.5 shrink-0"
-                              />
-                              <span className="text-xs break-words">
-                                {module.name} ({module.quantity}x)
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        modulesList.map((module, idx) => (
+                          <div key={`mod-${idx}`} className="text-xs break-words">
+                            {module.name} ({module.quantity}x)
+                          </div>
+                        ))
                       ) : (
                         <span className="text-xs text-muted-foreground">Nenhum módulo</span>
                       )}
