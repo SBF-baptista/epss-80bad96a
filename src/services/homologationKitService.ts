@@ -239,6 +239,30 @@ export async function updateHomologationKit(kitId: string, updateData: UpdateKit
 // Delete a homologation kit
 export async function deleteHomologationKit(kitId: string): Promise<void> {
   try {
+    // First, remove kit reference from any kit_schedules that use this kit
+    // (set kit_id to null instead of deleting, since schedules may have production_items)
+    const { error: scheduleError } = await supabase
+      .from('kit_schedules')
+      .update({ kit_id: null })
+      .eq('kit_id', kitId);
+
+    if (scheduleError) {
+      console.error('Error removing kit reference from schedules:', scheduleError);
+      throw scheduleError;
+    }
+
+    // Delete kit items first (foreign key constraint)
+    const { error: itemsError } = await supabase
+      .from('homologation_kit_accessories')
+      .delete()
+      .eq('kit_id', kitId);
+
+    if (itemsError) {
+      console.error('Error deleting kit items:', itemsError);
+      throw itemsError;
+    }
+
+    // Now delete the kit
     const { error } = await supabase
       .from('homologation_kits')
       .delete()
