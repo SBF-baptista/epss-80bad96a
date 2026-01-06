@@ -17,7 +17,8 @@ import {
   History,
   ArrowRight,
   Calendar,
-  User
+  User,
+  BoxIcon
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -115,20 +116,48 @@ const EditRequests = () => {
   const applyChangesToItem = async (request: EditRequest) => {
     const originalId = request.original_data?.id;
     const newName = request.requested_changes?.item_name;
+    const isKit = request.item_type === 'kit';
 
-    if (!originalId || !newName) {
-      console.error('Missing data for applying changes:', { originalId, newName });
+    if (!originalId) {
+      console.error('Missing data for applying changes:', { originalId });
       return false;
     }
 
     try {
-      const { error } = await supabase
-        .from('kit_item_options')
-        .update({ item_name: newName })
-        .eq('id', originalId);
+      if (isKit) {
+        // For kits, update the homologation_kits table
+        const updateData: Record<string, any> = {};
+        if (request.requested_changes?.name) {
+          updateData.name = request.requested_changes.name;
+        }
+        if (request.requested_changes?.description !== undefined) {
+          updateData.description = request.requested_changes.description;
+        }
 
-      if (error) throw error;
-      return true;
+        if (Object.keys(updateData).length > 0) {
+          const { error } = await supabase
+            .from('homologation_kits')
+            .update(updateData)
+            .eq('id', originalId);
+
+          if (error) throw error;
+        }
+        return true;
+      } else {
+        // For accessories/supplies, update kit_item_options
+        if (!newName) {
+          console.error('Missing new name for item update');
+          return false;
+        }
+        
+        const { error } = await supabase
+          .from('kit_item_options')
+          .update({ item_name: newName })
+          .eq('id', originalId);
+
+        if (error) throw error;
+        return true;
+      }
     } catch (error) {
       console.error('Error applying changes to item:', error);
       return false;
@@ -229,6 +258,14 @@ const EditRequests = () => {
   };
 
   const getItemTypeBadge = (type: string) => {
+    if (type === 'kit') {
+      return (
+        <Badge variant="secondary" className="bg-primary/10 text-primary">
+          <BoxIcon className="h-3 w-3 mr-1" />
+          Kit
+        </Badge>
+      );
+    }
     return type === 'accessory' ? (
       <Badge variant="secondary" className="bg-blue-100 text-blue-800">
         <Package className="h-3 w-3 mr-1" />
@@ -306,17 +343,48 @@ const EditRequests = () => {
             <ArrowRight className="h-4 w-4" />
             Alteração Solicitada
           </h4>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
-              <span className="text-xs text-red-600 block mb-1">De:</span>
-              <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
+          {request.item_type === 'kit' ? (
+            <div className="space-y-2">
+              {request.requested_changes?.name && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                    <span className="text-xs text-red-600 block mb-1">Nome atual:</span>
+                    <span className="font-medium text-red-800">{request.original_data?.name}</span>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                    <span className="text-xs text-green-600 block mb-1">Novo nome:</span>
+                    <span className="font-medium text-green-800">{request.requested_changes?.name}</span>
+                  </div>
+                </div>
+              )}
+              {request.requested_changes?.description !== undefined && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                    <span className="text-xs text-red-600 block mb-1">Descrição atual:</span>
+                    <span className="font-medium text-red-800">{request.original_data?.description || '(vazio)'}</span>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                    <span className="text-xs text-green-600 block mb-1">Nova descrição:</span>
+                    <span className="font-medium text-green-800">{request.requested_changes?.description || '(vazio)'}</span>
+                  </div>
+                </div>
+              )}
             </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
-              <span className="text-xs text-green-600 block mb-1">Para:</span>
-              <span className="font-medium text-green-800">{request.requested_changes?.item_name}</span>
+          ) : (
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                <span className="text-xs text-red-600 block mb-1">De:</span>
+                <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                <span className="text-xs text-green-600 block mb-1">Para:</span>
+                <span className="font-medium text-green-800">{request.requested_changes?.item_name}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         
         {request.reason && (
@@ -462,17 +530,48 @@ const EditRequests = () => {
 
             <div className="p-4 bg-muted/50 rounded-lg">
               <h4 className="text-sm font-semibold mb-3">Alteração Solicitada</h4>
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
-                  <span className="text-xs text-red-600 block mb-1">De:</span>
-                  <span className="font-medium text-red-800">{selectedRequest?.original_data?.item_name}</span>
+              {selectedRequest?.item_type === 'kit' ? (
+                <div className="space-y-2">
+                  {selectedRequest?.requested_changes?.name && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                        <span className="text-xs text-red-600 block mb-1">Nome atual:</span>
+                        <span className="font-medium text-red-800">{selectedRequest?.original_data?.name}</span>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                        <span className="text-xs text-green-600 block mb-1">Novo nome:</span>
+                        <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.name}</span>
+                      </div>
+                    </div>
+                  )}
+                  {selectedRequest?.requested_changes?.description !== undefined && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                        <span className="text-xs text-red-600 block mb-1">Descrição atual:</span>
+                        <span className="font-medium text-red-800">{selectedRequest?.original_data?.description || '(vazio)'}</span>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                        <span className="text-xs text-green-600 block mb-1">Nova descrição:</span>
+                        <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.description || '(vazio)'}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
-                  <span className="text-xs text-green-600 block mb-1">Para:</span>
-                  <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.item_name}</span>
+              ) : (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                    <span className="text-xs text-red-600 block mb-1">De:</span>
+                    <span className="font-medium text-red-800">{selectedRequest?.original_data?.item_name}</span>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                    <span className="text-xs text-green-600 block mb-1">Para:</span>
+                    <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.item_name}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {selectedRequest?.reason && (
