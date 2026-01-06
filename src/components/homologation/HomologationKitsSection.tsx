@@ -22,8 +22,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  FileUp,
-  Send
+  FileUp
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
@@ -35,7 +34,6 @@ import { checkMultipleKitsHomologation, type HomologationStatus } from '@/servic
 import { supabase } from '@/integrations/supabase/client';
 import KitImportModal from './KitImportModal';
 import { KitCreationModal } from '@/components/configuration/KitCreationModal';
-import { KitEditRequestModal } from './KitEditRequestModal';
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
@@ -70,7 +68,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isKitModalOpen, setIsKitModalOpen] = useState(false);
-  const [editRequestKit, setEditRequestKit] = useState<HomologationKit | null>(null);
 
   // Load kits on component mount
   useEffect(() => {
@@ -658,11 +655,10 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => setEditRequestKit(kit)}
+                                  onClick={() => startEdit(kit)}
                                   className="h-8 w-8 p-0"
-                                  title="Solicitar edição"
                                 >
-                                  <Send className="h-4 w-4" />
+                                  <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -1000,13 +996,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
           loadKits();
           setIsKitModalOpen(false);
         }}
-      />
-
-      {/* Kit Edit Request Modal */}
-      <KitEditRequestModal
-        open={!!editRequestKit}
-        onClose={() => setEditRequestKit(null)}
-        kit={editRequestKit}
       />
     </Card>
   );

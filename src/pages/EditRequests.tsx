@@ -17,9 +17,7 @@ import {
   History,
   ArrowRight,
   Calendar,
-  User,
-  BoxIcon,
-  Zap
+  User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -117,92 +115,20 @@ const EditRequests = () => {
   const applyChangesToItem = async (request: EditRequest) => {
     const originalId = request.original_data?.id;
     const newName = request.requested_changes?.item_name;
-    const isKit = request.item_type === 'kit';
 
-    if (!originalId) {
-      console.error('Missing data for applying changes:', { originalId });
+    if (!originalId || !newName) {
+      console.error('Missing data for applying changes:', { originalId, newName });
       return false;
     }
 
     try {
-      if (isKit) {
-        // For kits, update the kit items in homologation_kit_accessories table
-        const kitId = request.kit_id || originalId;
-        
-        // Delete existing items for this kit
-        const { error: deleteError } = await supabase
-          .from('homologation_kit_accessories')
-          .delete()
-          .eq('kit_id', kitId);
-        
-        if (deleteError) throw deleteError;
+      const { error } = await supabase
+        .from('kit_item_options')
+        .update({ item_name: newName })
+        .eq('id', originalId);
 
-        // Insert new items from requested_changes
-        const itemsToInsert: any[] = [];
-        
-        if (request.requested_changes?.equipment) {
-          request.requested_changes.equipment.forEach((item: { item_name: string; quantity: number }) => {
-            if (item.item_name.trim()) {
-              itemsToInsert.push({
-                kit_id: kitId,
-                item_name: item.item_name.trim().toUpperCase(),
-                item_type: 'equipment',
-                quantity: item.quantity || 1
-              });
-            }
-          });
-        }
-        
-        if (request.requested_changes?.accessories) {
-          request.requested_changes.accessories.forEach((item: { item_name: string; quantity: number }) => {
-            if (item.item_name.trim()) {
-              itemsToInsert.push({
-                kit_id: kitId,
-                item_name: item.item_name.trim().toUpperCase(),
-                item_type: 'accessory',
-                quantity: item.quantity || 1
-              });
-            }
-          });
-        }
-        
-        if (request.requested_changes?.supplies) {
-          request.requested_changes.supplies.forEach((item: { item_name: string; quantity: number }) => {
-            if (item.item_name.trim()) {
-              itemsToInsert.push({
-                kit_id: kitId,
-                item_name: item.item_name.trim().toUpperCase(),
-                item_type: 'supply',
-                quantity: item.quantity || 1
-              });
-            }
-          });
-        }
-
-        if (itemsToInsert.length > 0) {
-          const { error: insertError } = await supabase
-            .from('homologation_kit_accessories')
-            .insert(itemsToInsert);
-          
-          if (insertError) throw insertError;
-        }
-
-        return true;
-      } else {
-        // For accessories/supplies, update kit_item_options
-        if (!newName) {
-          console.error('Missing new name for item update');
-          return false;
-        }
-        
-        const { error } = await supabase
-          .from('kit_item_options')
-          .update({ item_name: newName })
-          .eq('id', originalId);
-
-        if (error) throw error;
-        return true;
-      }
+      if (error) throw error;
+      return true;
     } catch (error) {
       console.error('Error applying changes to item:', error);
       return false;
@@ -233,11 +159,8 @@ const EditRequests = () => {
 
       if (error) throw error;
       
-      const isKit = request.item_type === 'kit';
       toast.success('Solicitação aprovada com sucesso', {
-        description: isKit 
-          ? `Os itens do kit "${request.item_name}" foram atualizados`
-          : `O item foi renomeado para "${request.requested_changes?.item_name}"`
+        description: `O item foi renomeado para "${request.requested_changes?.item_name}"`
       });
       setSelectedRequest(null);
       setReviewNotes("");
@@ -306,14 +229,6 @@ const EditRequests = () => {
   };
 
   const getItemTypeBadge = (type: string) => {
-    if (type === 'kit') {
-      return (
-        <Badge variant="secondary" className="bg-primary/10 text-primary">
-          <BoxIcon className="h-3 w-3 mr-1" />
-          Kit
-        </Badge>
-      );
-    }
     return type === 'accessory' ? (
       <Badge variant="secondary" className="bg-blue-100 text-blue-800">
         <Package className="h-3 w-3 mr-1" />
@@ -391,129 +306,17 @@ const EditRequests = () => {
             <ArrowRight className="h-4 w-4" />
             Alteração Solicitada
           </h4>
-          {request.item_type === 'kit' ? (
-            <div className="space-y-4">
-              {/* Equipment changes */}
-              {request.requested_changes?.equipment && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-purple-700">
-                    <Zap className="h-4 w-4" />
-                    Equipamentos
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md">
-                      <span className="text-xs text-red-600 block mb-1">Antes:</span>
-                      <div className="space-y-1">
-                        {request.original_data?.equipment?.length > 0 ? (
-                          request.original_data.equipment.map((item: any, idx: number) => (
-                            <div key={idx} className="text-xs text-red-800">{item.item_name} x{item.quantity}</div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-red-600 italic">Nenhum</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md">
-                      <span className="text-xs text-green-600 block mb-1">Depois:</span>
-                      <div className="space-y-1">
-                        {request.requested_changes.equipment.length > 0 ? (
-                          request.requested_changes.equipment.map((item: any, idx: number) => (
-                            <div key={idx} className="text-xs text-green-800">{item.item_name} x{item.quantity}</div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-green-600 italic">Nenhum</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Accessories changes */}
-              {request.requested_changes?.accessories && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-blue-700">
-                    <Package className="h-4 w-4" />
-                    Acessórios
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md">
-                      <span className="text-xs text-red-600 block mb-1">Antes:</span>
-                      <div className="space-y-1">
-                        {request.original_data?.accessories?.length > 0 ? (
-                          request.original_data.accessories.map((item: any, idx: number) => (
-                            <div key={idx} className="text-xs text-red-800">{item.item_name} x{item.quantity}</div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-red-600 italic">Nenhum</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md">
-                      <span className="text-xs text-green-600 block mb-1">Depois:</span>
-                      <div className="space-y-1">
-                        {request.requested_changes.accessories.length > 0 ? (
-                          request.requested_changes.accessories.map((item: any, idx: number) => (
-                            <div key={idx} className="text-xs text-green-800">{item.item_name} x{item.quantity}</div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-green-600 italic">Nenhum</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Supplies changes */}
-              {request.requested_changes?.supplies && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
-                    <Wrench className="h-4 w-4" />
-                    Insumos
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md">
-                      <span className="text-xs text-red-600 block mb-1">Antes:</span>
-                      <div className="space-y-1">
-                        {request.original_data?.supplies?.length > 0 ? (
-                          request.original_data.supplies.map((item: any, idx: number) => (
-                            <div key={idx} className="text-xs text-red-800">{item.item_name} x{item.quantity}</div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-red-600 italic">Nenhum</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md">
-                      <span className="text-xs text-green-600 block mb-1">Depois:</span>
-                      <div className="space-y-1">
-                        {request.requested_changes.supplies.length > 0 ? (
-                          request.requested_changes.supplies.map((item: any, idx: number) => (
-                            <div key={idx} className="text-xs text-green-800">{item.item_name} x{item.quantity}</div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-green-600 italic">Nenhum</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+              <span className="text-xs text-red-600 block mb-1">De:</span>
+              <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
             </div>
-          ) : (
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
-                <span className="text-xs text-red-600 block mb-1">De:</span>
-                <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
-                <span className="text-xs text-green-600 block mb-1">Para:</span>
-                <span className="font-medium text-green-800">{request.requested_changes?.item_name}</span>
-              </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+              <span className="text-xs text-green-600 block mb-1">Para:</span>
+              <span className="font-medium text-green-800">{request.requested_changes?.item_name}</span>
             </div>
-          )}
+          </div>
         </div>
         
         {request.reason && (
@@ -659,117 +462,17 @@ const EditRequests = () => {
 
             <div className="p-4 bg-muted/50 rounded-lg">
               <h4 className="text-sm font-semibold mb-3">Alteração Solicitada</h4>
-            {selectedRequest?.item_type === 'kit' ? (
-                <div className="space-y-4 max-h-60 overflow-y-auto">
-                  {/* Equipment changes */}
-                  {selectedRequest?.requested_changes?.equipment && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-purple-700">
-                        <Zap className="h-4 w-4" />
-                        Equipamentos
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="px-2 py-1.5 bg-red-50 border border-red-200 rounded-md">
-                          <span className="text-xs text-red-600 block mb-1">Antes:</span>
-                          <div className="space-y-0.5">
-                            {selectedRequest.original_data?.equipment?.length > 0 ? (
-                              selectedRequest.original_data.equipment.map((item: any, idx: number) => (
-                                <div key={idx} className="text-xs text-red-800">{item.item_name} x{item.quantity}</div>
-                              ))
-                            ) : (
-                              <span className="text-xs text-red-600 italic">Nenhum</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="px-2 py-1.5 bg-green-50 border border-green-200 rounded-md">
-                          <span className="text-xs text-green-600 block mb-1">Depois:</span>
-                          <div className="space-y-0.5">
-                            {selectedRequest.requested_changes.equipment.map((item: any, idx: number) => (
-                              <div key={idx} className="text-xs text-green-800">{item.item_name} x{item.quantity}</div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Accessories changes */}
-                  {selectedRequest?.requested_changes?.accessories && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-blue-700">
-                        <Package className="h-4 w-4" />
-                        Acessórios
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="px-2 py-1.5 bg-red-50 border border-red-200 rounded-md">
-                          <span className="text-xs text-red-600 block mb-1">Antes:</span>
-                          <div className="space-y-0.5">
-                            {selectedRequest.original_data?.accessories?.length > 0 ? (
-                              selectedRequest.original_data.accessories.map((item: any, idx: number) => (
-                                <div key={idx} className="text-xs text-red-800">{item.item_name} x{item.quantity}</div>
-                              ))
-                            ) : (
-                              <span className="text-xs text-red-600 italic">Nenhum</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="px-2 py-1.5 bg-green-50 border border-green-200 rounded-md">
-                          <span className="text-xs text-green-600 block mb-1">Depois:</span>
-                          <div className="space-y-0.5">
-                            {selectedRequest.requested_changes.accessories.map((item: any, idx: number) => (
-                              <div key={idx} className="text-xs text-green-800">{item.item_name} x{item.quantity}</div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Supplies changes */}
-                  {selectedRequest?.requested_changes?.supplies && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
-                        <Wrench className="h-4 w-4" />
-                        Insumos
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="px-2 py-1.5 bg-red-50 border border-red-200 rounded-md">
-                          <span className="text-xs text-red-600 block mb-1">Antes:</span>
-                          <div className="space-y-0.5">
-                            {selectedRequest.original_data?.supplies?.length > 0 ? (
-                              selectedRequest.original_data.supplies.map((item: any, idx: number) => (
-                                <div key={idx} className="text-xs text-red-800">{item.item_name} x{item.quantity}</div>
-                              ))
-                            ) : (
-                              <span className="text-xs text-red-600 italic">Nenhum</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="px-2 py-1.5 bg-green-50 border border-green-200 rounded-md">
-                          <span className="text-xs text-green-600 block mb-1">Depois:</span>
-                          <div className="space-y-0.5">
-                            {selectedRequest.requested_changes.supplies.map((item: any, idx: number) => (
-                              <div key={idx} className="text-xs text-green-800">{item.item_name} x{item.quantity}</div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                  <span className="text-xs text-red-600 block mb-1">De:</span>
+                  <span className="font-medium text-red-800">{selectedRequest?.original_data?.item_name}</span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
-                    <span className="text-xs text-red-600 block mb-1">De:</span>
-                    <span className="font-medium text-red-800">{selectedRequest?.original_data?.item_name}</span>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
-                    <span className="text-xs text-green-600 block mb-1">Para:</span>
-                    <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.item_name}</span>
-                  </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                  <span className="text-xs text-green-600 block mb-1">Para:</span>
+                  <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.item_name}</span>
                 </div>
-              )}
+              </div>
             </div>
 
             {selectedRequest?.reason && (
