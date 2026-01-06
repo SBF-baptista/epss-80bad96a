@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BoxIcon, Send, Package, Wrench, Zap } from "lucide-react";
+import { BoxIcon, Send, Package, Wrench, Zap, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -24,18 +24,48 @@ interface KitEditRequestModalProps {
   kit: HomologationKit | null;
 }
 
+interface EditableItem {
+  item_name: string;
+  quantity: number;
+}
+
 export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalProps) => {
   const { user } = useAuth();
-  const [newName, setNewName] = useState("");
-  const [newDescription, setNewDescription] = useState("");
   const [observation, setObservation] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Editable items state
+  const [equipment, setEquipment] = useState<EditableItem[]>([]);
+  const [accessories, setAccessories] = useState<EditableItem[]>([]);
+  const [supplies, setSupplies] = useState<EditableItem[]>([]);
+
+  // Initialize state when kit changes
+  useEffect(() => {
+    if (kit) {
+      setEquipment(kit.equipment.map(e => ({ item_name: e.item_name, quantity: e.quantity })));
+      setAccessories(kit.accessories.map(a => ({ item_name: a.item_name, quantity: a.quantity })));
+      setSupplies(kit.supplies.map(s => ({ item_name: s.item_name, quantity: s.quantity })));
+    }
+  }, [kit]);
 
   const handleClose = () => {
-    setNewName("");
-    setNewDescription("");
     setObservation("");
+    if (kit) {
+      setEquipment(kit.equipment.map(e => ({ item_name: e.item_name, quantity: e.quantity })));
+      setAccessories(kit.accessories.map(a => ({ item_name: a.item_name, quantity: a.quantity })));
+      setSupplies(kit.supplies.map(s => ({ item_name: s.item_name, quantity: s.quantity })));
+    }
     onClose();
+  };
+
+  const hasChanges = () => {
+    if (!kit) return false;
+    
+    const equipmentChanged = JSON.stringify(equipment) !== JSON.stringify(kit.equipment.map(e => ({ item_name: e.item_name, quantity: e.quantity })));
+    const accessoriesChanged = JSON.stringify(accessories) !== JSON.stringify(kit.accessories.map(a => ({ item_name: a.item_name, quantity: a.quantity })));
+    const suppliesChanged = JSON.stringify(supplies) !== JSON.stringify(kit.supplies.map(s => ({ item_name: s.item_name, quantity: s.quantity })));
+    
+    return equipmentChanged || accessoriesChanged || suppliesChanged;
   };
 
   const handleSubmit = async () => {
@@ -44,23 +74,27 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
       return;
     }
 
-    // At least the name should be different
-    const hasNameChange = newName.trim() && newName.trim().toUpperCase() !== kit.name.toUpperCase();
-    const hasDescriptionChange = newDescription.trim() !== (kit.description || '');
-    
-    if (!hasNameChange && !hasDescriptionChange) {
-      toast.error("Por favor, informe uma alteração");
+    if (!hasChanges()) {
+      toast.error("Por favor, faça alguma alteração nos itens");
       return;
     }
 
     setSubmitting(true);
     try {
       const requestedChanges: Record<string, any> = {};
-      if (hasNameChange) {
-        requestedChanges.name = newName.trim().toUpperCase();
+      
+      const equipmentChanged = JSON.stringify(equipment) !== JSON.stringify(kit.equipment.map(e => ({ item_name: e.item_name, quantity: e.quantity })));
+      const accessoriesChanged = JSON.stringify(accessories) !== JSON.stringify(kit.accessories.map(a => ({ item_name: a.item_name, quantity: a.quantity })));
+      const suppliesChanged = JSON.stringify(supplies) !== JSON.stringify(kit.supplies.map(s => ({ item_name: s.item_name, quantity: s.quantity })));
+      
+      if (equipmentChanged) {
+        requestedChanges.equipment = equipment.filter(e => e.item_name.trim());
       }
-      if (hasDescriptionChange) {
-        requestedChanges.description = newDescription.trim();
+      if (accessoriesChanged) {
+        requestedChanges.accessories = accessories.filter(a => a.item_name.trim());
+      }
+      if (suppliesChanged) {
+        requestedChanges.supplies = supplies.filter(s => s.item_name.trim());
       }
 
       const { error } = await supabase
@@ -99,41 +133,92 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
     }
   };
 
+  const updateItem = (
+    type: 'equipment' | 'accessories' | 'supplies',
+    index: number,
+    field: 'item_name' | 'quantity',
+    value: string | number
+  ) => {
+    const setters = { equipment: setEquipment, accessories: setAccessories, supplies: setSupplies };
+    const lists = { equipment, accessories, supplies };
+    
+    const newList = [...lists[type]];
+    newList[index] = { ...newList[index], [field]: value };
+    setters[type](newList);
+  };
+
+  const addItem = (type: 'equipment' | 'accessories' | 'supplies') => {
+    const setters = { equipment: setEquipment, accessories: setAccessories, supplies: setSupplies };
+    const lists = { equipment, accessories, supplies };
+    setters[type]([...lists[type], { item_name: '', quantity: 1 }]);
+  };
+
+  const removeItem = (type: 'equipment' | 'accessories' | 'supplies', index: number) => {
+    const setters = { equipment: setEquipment, accessories: setAccessories, supplies: setSupplies };
+    const lists = { equipment, accessories, supplies };
+    setters[type](lists[type].filter((_, i) => i !== index));
+  };
+
   if (!kit) return null;
 
-  const renderItemsList = (items: HomologationKitItem[], type: 'equipment' | 'accessory' | 'supply') => {
-    const icons = {
-      equipment: <Zap className="h-3 w-3" />,
-      accessory: <Package className="h-3 w-3" />,
-      supply: <Wrench className="h-3 w-3" />
-    };
-    const labels = {
-      equipment: 'Equipamentos',
-      accessory: 'Acessórios',
-      supply: 'Insumos'
-    };
-    const colors = {
-      equipment: 'bg-purple-100 text-purple-800',
-      accessory: 'bg-blue-100 text-blue-800',
-      supply: 'bg-orange-100 text-orange-800'
-    };
-
-    if (items.length === 0) return null;
-
-    return (
-      <div className="space-y-1">
-        <span className="text-xs font-medium text-muted-foreground">{labels[type]}</span>
-        <div className="flex flex-wrap gap-1">
-          {items.map((item, index) => (
-            <Badge key={index} variant="secondary" className={`text-xs ${colors[type]}`}>
-              {icons[type]}
-              <span className="ml-1">{item.item_name} x{item.quantity}</span>
-            </Badge>
-          ))}
-        </div>
+  const renderEditableSection = (
+    type: 'equipment' | 'accessories' | 'supplies',
+    items: EditableItem[],
+    label: string,
+    icon: React.ReactNode,
+    colorClass: string
+  ) => (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium flex items-center gap-2">
+          {icon}
+          {label}
+        </Label>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => addItem(type)}
+          className="h-7 px-2"
+        >
+          <Plus className="h-3 w-3 mr-1" />
+          Adicionar
+        </Button>
       </div>
-    );
-  };
+      <div className="space-y-2">
+        {items.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic">Nenhum item</p>
+        ) : (
+          items.map((item, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <Input
+                value={item.item_name}
+                onChange={(e) => updateItem(type, index, 'item_name', e.target.value.toUpperCase())}
+                placeholder="Nome do item"
+                className="flex-1 h-8 text-sm uppercase"
+              />
+              <Input
+                type="number"
+                min={1}
+                value={item.quantity}
+                onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
+                className="w-16 h-8 text-sm text-center"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeItem(type, index)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
@@ -147,57 +232,42 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
 
         <ScrollArea className="max-h-[60vh]">
           <div className="space-y-4 py-4 pr-4">
+            {/* Kit Name Badge */}
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-primary/10 text-primary">
                 <BoxIcon className="h-3 w-3 mr-1" />
-                Kit
+                {kit.name}
               </Badge>
             </div>
 
-            {/* Current Kit Info */}
-            <div className="p-3 bg-muted rounded-lg space-y-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Nome Atual</Label>
-                <p className="font-medium">{kit.name}</p>
-              </div>
-              {kit.description && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Descrição Atual</Label>
-                  <p className="text-sm">{kit.description}</p>
-                </div>
+            {/* Editable Sections */}
+            <div className="space-y-4 p-3 bg-muted/50 rounded-lg">
+              {renderEditableSection(
+                'equipment',
+                equipment,
+                'Equipamentos',
+                <Zap className="h-4 w-4 text-purple-600" />,
+                'bg-purple-100 text-purple-800'
               )}
-              <div className="space-y-2">
-                {renderItemsList(kit.equipment, 'equipment')}
-                {renderItemsList(kit.accessories, 'accessory')}
-                {renderItemsList(kit.supplies, 'supply')}
-              </div>
+              
+              {renderEditableSection(
+                'accessories',
+                accessories,
+                'Acessórios',
+                <Package className="h-4 w-4 text-blue-600" />,
+                'bg-blue-100 text-blue-800'
+              )}
+              
+              {renderEditableSection(
+                'supplies',
+                supplies,
+                'Insumos',
+                <Wrench className="h-4 w-4 text-orange-600" />,
+                'bg-orange-100 text-orange-800'
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="new-kit-name" className="text-sm font-medium">
-                Novo Nome
-              </Label>
-              <Input
-                id="new-kit-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Digite o novo nome do kit..."
-                className="uppercase"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="new-kit-description" className="text-sm font-medium">
-                Nova Descrição
-              </Label>
-              <Input
-                id="new-kit-description"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Digite a nova descrição..."
-              />
-            </div>
-
+            {/* Observation */}
             <div className="space-y-2">
               <Label htmlFor="kit-observation" className="text-sm font-medium">
                 Observação
@@ -219,7 +289,7 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={submitting || (!newName.trim() && !newDescription.trim())}
+            disabled={submitting || !hasChanges()}
             className="gap-2"
           >
             <Send className="h-4 w-4" />
