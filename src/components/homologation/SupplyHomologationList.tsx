@@ -205,49 +205,6 @@ export const SupplyHomologationList = () => {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-
-                      {/* Botão de Excluir (apenas admin) */}
-                      {isAdmin && (
-                        <AlertDialog 
-                          open={dialogOpen === supply.id}
-                          onOpenChange={(open) => setDialogOpen(open ? supply.id : null)}
-                        >
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="hover:bg-destructive hover:text-destructive-foreground"
-                              disabled={deletingId === supply.id}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remover Insumo</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja remover o insumo "<strong>{supply.item_name}</strong>"?
-                              Esta ação não pode ser desfeita e o insumo não estará mais disponível para novos kits.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel disabled={deletingId === supply.id}>
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleDeleteSupply(supply.id, supply.item_name);
-                              }}
-                              disabled={deletingId === supply.id}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              {deletingId === supply.id ? "Removendo..." : "Remover"}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      )}
                     </div>
                   </div>
                 ))}

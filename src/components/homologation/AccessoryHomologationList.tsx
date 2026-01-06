@@ -205,49 +205,6 @@ export const AccessoryHomologationList = () => {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-
-                      {/* Botão de Excluir (apenas admin) */}
-                      {isAdmin && (
-                        <AlertDialog 
-                          open={dialogOpen === accessory.id}
-                          onOpenChange={(open) => setDialogOpen(open ? accessory.id : null)}
-                        >
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="hover:bg-destructive hover:text-destructive-foreground"
-                              disabled={deletingId === accessory.id}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remover Acessório</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja remover o acessório "<strong>{accessory.item_name}</strong>"?
-                              Esta ação não pode ser desfeita e o acessório não estará mais disponível para novos kits.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel disabled={deletingId === accessory.id}>
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleDeleteAccessory(accessory.id, accessory.item_name);
-                              }}
-                              disabled={deletingId === accessory.id}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              {deletingId === accessory.id ? "Removendo..." : "Remover"}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      )}
                     </div>
                   </div>
                 ))}
