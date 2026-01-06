@@ -73,8 +73,8 @@ export const KickoffDetailsModal = ({
     }))
   );
   
-  const [vehicleBlocking, setVehicleBlocking] = useState<Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean; quantity: number }>>(
-    new Map(vehicles.map(v => [v.id, { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 }]))
+  const [vehicleBlocking, setVehicleBlocking] = useState<Map<string, { needsBlocking: boolean; engineBlocking: boolean; fuelBlocking: boolean; engineQuantity: number; fuelQuantity: number }>>(
+    new Map(vehicles.map(v => [v.id, { needsBlocking: false, engineBlocking: false, fuelBlocking: false, engineQuantity: 1, fuelQuantity: 1 }]))
   );
 
   const [vehicleSiren, setVehicleSiren] = useState<Map<string, { hasSiren: boolean; quantity: number }>>(
@@ -250,7 +250,7 @@ export const KickoffDetailsModal = ({
   const handleBlockingToggle = (vehicleId: string, field: 'needsBlocking' | 'engineBlocking' | 'fuelBlocking', value: boolean) => {
     setVehicleBlocking(prev => {
       const newMap = new Map(prev);
-      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 }) };
+      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, engineQuantity: 1, fuelQuantity: 1 }) };
       
       vehicleBlock[field] = value;
       
@@ -265,11 +265,11 @@ export const KickoffDetailsModal = ({
     });
   };
 
-  const handleBlockingQuantityChange = (vehicleId: string, quantity: number) => {
+  const handleBlockingQuantityChange = (vehicleId: string, field: 'engineQuantity' | 'fuelQuantity', quantity: number) => {
     setVehicleBlocking(prev => {
       const newMap = new Map(prev);
-      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, quantity: 1 }) };
-      vehicleBlock.quantity = Math.max(1, quantity);
+      const vehicleBlock = { ...(newMap.get(vehicleId) || { needsBlocking: false, engineBlocking: false, fuelBlocking: false, engineQuantity: 1, fuelQuantity: 1 }) };
+      vehicleBlock[field] = Math.max(1, quantity);
       newMap.set(vehicleId, vehicleBlock);
       return newMap;
     });
@@ -418,27 +418,54 @@ export const KickoffDetailsModal = ({
           }
         }
 
-        // Add bloqueio as accessory with quantity
+        // Add bloqueio as accessory with quantity per type
         if (blockingData.needsBlocking) {
-          const { error: blockingError } = await supabase
-            .from("accessories")
-            .upsert({
-              vehicle_id: vehicle.id,
-              company_name: companyName,
-              usage_type: (vehicle as any).usage_type || 'outros',
-              name: 'Bloqueio',
-              categories: 'Acessórios',
-              quantity: blockingData.quantity,
-              received_at: new Date().toISOString()
-            }, {
-              onConflict: 'vehicle_id,name,categories',
-              ignoreDuplicates: false
-            });
+          // Bloqueio de Partida
+          if (blockingData.engineBlocking && blockingData.engineQuantity > 0) {
+            const { error: engineBlockingError } = await supabase
+              .from("accessories")
+              .upsert({
+                vehicle_id: vehicle.id,
+                company_name: companyName,
+                usage_type: (vehicle as any).usage_type || 'outros',
+                name: 'Bloqueio de Partida',
+                categories: 'Acessórios',
+                quantity: blockingData.engineQuantity,
+                received_at: new Date().toISOString()
+              }, {
+                onConflict: 'vehicle_id,name,categories',
+                ignoreDuplicates: false
+              });
 
-          if (blockingError) {
-            console.error(`Error adding bloqueio for vehicle ${vehicle.id}:`, blockingError);
-          } else {
-            console.log(`Successfully added ${blockingData.quantity} bloqueio(s) for vehicle ${vehicle.id}`);
+            if (engineBlockingError) {
+              console.error(`Error adding bloqueio de partida for vehicle ${vehicle.id}:`, engineBlockingError);
+            } else {
+              console.log(`Successfully added ${blockingData.engineQuantity} bloqueio(s) de partida for vehicle ${vehicle.id}`);
+            }
+          }
+
+          // Bloqueio de Combustível
+          if (blockingData.fuelBlocking && blockingData.fuelQuantity > 0) {
+            const { error: fuelBlockingError } = await supabase
+              .from("accessories")
+              .upsert({
+                vehicle_id: vehicle.id,
+                company_name: companyName,
+                usage_type: (vehicle as any).usage_type || 'outros',
+                name: 'Bloqueio de Combustível',
+                categories: 'Acessórios',
+                quantity: blockingData.fuelQuantity,
+                received_at: new Date().toISOString()
+              }, {
+                onConflict: 'vehicle_id,name,categories',
+                ignoreDuplicates: false
+              });
+
+            if (fuelBlockingError) {
+              console.error(`Error adding bloqueio de combustível for vehicle ${vehicle.id}:`, fuelBlockingError);
+            } else {
+              console.log(`Successfully added ${blockingData.fuelQuantity} bloqueio(s) de combustível for vehicle ${vehicle.id}`);
+            }
           }
         }
       }
