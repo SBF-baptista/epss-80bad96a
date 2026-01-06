@@ -363,6 +363,7 @@ export const KickoffDetailsModal = ({
           year: vehicle.year,
           plate: vehicle.plate,
           quantity: vehicle.quantity,
+          usage_type: (vehicle as any).usage_type,
           selected_modules: modules,
           blocking_info: blocking,
           siren_info: sirenData,
