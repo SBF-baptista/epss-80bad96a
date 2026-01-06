@@ -684,7 +684,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                         <CollapsibleContent>
                           <CardContent className="pt-0">
                             <div className="space-y-4">
-                              {kit.description && (
+                              {kit.description && !kit.description.includes('Importado automaticamente de arquivo TXT') && (
                                 <p className="text-sm text-muted-foreground">
                                   {kit.description}
                                 </p>
