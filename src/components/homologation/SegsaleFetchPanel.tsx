@@ -23,15 +23,17 @@ export const SegsaleFetchPanel = () => {
       // Construct URL with query parameter
       const url = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
       const response = await fetch(url);
-      
+
+      const result = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const details = result?.error || `HTTP ${response.status}`;
+        throw new Error(details);
       }
 
-      const result = await response.json();
       console.log('📦 Resposta Segsale completa:', result);
 
-      if (result.success) {
+      if (result?.success) {
         // Store result to display
         setResultData(result);
 
@@ -42,24 +44,30 @@ export const SegsaleFetchPanel = () => {
           }
         });
 
-        toast.success(
-          `Busca concluída: ${result.sales?.length || 0} venda(s) encontrada(s)`,
-          {
-            description: result.processing?.forwarded 
-              ? `Processamento: ${result.processing.success ? 'Sucesso' : 'Erro'}`
-              : 'Acessórios armazenados com sucesso'
-          }
-        );
+        if (result.cached) {
+          toast.warning('Segsale indisponível: exibindo cache', {
+            description: `Último cache: ${result.cache_updated_at || 'desconhecido'}`,
+          });
+        } else {
+          toast.success(
+            `Busca concluída: ${result.sales?.length || 0} venda(s) encontrada(s)`,
+            {
+              description: result.processing?.forwarded
+                ? `Processamento: ${result.processing.success ? 'Sucesso' : 'Erro'}`
+                : 'Acessórios armazenados com sucesso',
+            }
+          );
+        }
       } else {
         setResultData(null);
-        toast.error("Erro ao buscar dados", {
-          description: result.error || "Erro desconhecido"
+        toast.error('Erro ao buscar dados', {
+          description: result?.error || 'Erro desconhecido',
         });
       }
     } catch (err: any) {
-      console.error("Erro ao buscar Segsale:", err);
-      toast.error("Erro ao buscar dados do Segsale", {
-        description: err.message
+      console.error('Erro ao buscar Segsale:', err);
+      toast.error('Erro ao buscar dados do Segsale', {
+        description: err.message,
       });
     } finally {
       setLoading(false);

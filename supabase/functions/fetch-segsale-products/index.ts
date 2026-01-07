@@ -22,48 +22,85 @@ interface SegsaleSale {
 
 // Fetch with timeout and retry logic
 async function fetchWithRetry(
-  url: string, 
-  options: RequestInit, 
-  maxRetries = 3, 
-  timeoutMs = 30000
+  url: string,
+  options: RequestInit,
+  maxRetries = 2,
+  timeoutMs = 60000,
 ): Promise<Response> {
   let lastError: Error | null = null
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-    
+
     try {
       console.log(`🔄 Attempt ${attempt}/${maxRetries} - Fetching: ${url}`)
-      
+
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       })
-      
+
       clearTimeout(timeoutId)
       return response
-      
-    } catch (error) {
+    } catch (error: any) {
       clearTimeout(timeoutId)
       lastError = error as Error
-      
-      if (error.name === 'AbortError') {
-        console.warn(`⏱️ Attempt ${attempt}/${maxRetries} - Timeout after ${timeoutMs}ms`)
-      } else {
-        console.warn(`❌ Attempt ${attempt}/${maxRetries} - Error: ${error.message}`)
-      }
-      
+
+      const isAbort = error?.name === 'AbortError'
+      console.warn(
+        isAbort
+          ? `⏱️ Attempt ${attempt}/${maxRetries} - Timeout after ${timeoutMs}ms`
+          : `❌ Attempt ${attempt}/${maxRetries} - Error: ${error?.message ?? String(error)}`,
+      )
+
       // Wait before retrying (exponential backoff)
       if (attempt < maxRetries) {
         const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
         console.log(`⏳ Waiting ${waitTime}ms before retry...`)
-        await new Promise(resolve => setTimeout(resolve, waitTime))
+        await new Promise((resolve) => setTimeout(resolve, waitTime))
       }
     }
   }
-  
+
   throw new Error(`Failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`)
+}
+
+async function readCachedSegsaleResponse(supabase: any, idResumoVenda: string) {
+  const cacheKey = `segsale_products:${idResumoVenda}`
+  const { data, error } = await supabase
+    .from('integration_state')
+    .select('metadata, updated_at')
+    .eq('id', cacheKey)
+    .maybeSingle()
+
+  if (error) {
+    console.warn('⚠️ Failed to read cache from integration_state:', error)
+    return null
+  }
+
+  const cachedSales = data?.metadata?.sales
+  if (!cachedSales) return null
+
+  return { sales: cachedSales, updated_at: data.updated_at }
+}
+
+async function writeCachedSegsaleResponse(supabase: any, idResumoVenda: string, sales: any) {
+  const cacheKey = `segsale_products:${idResumoVenda}`
+  const now = new Date().toISOString()
+
+  const { error } = await supabase.from('integration_state').upsert({
+    id: cacheKey,
+    integration_name: 'segsale_products',
+    status: 'ok',
+    last_poll_at: now,
+    metadata: { sales },
+    updated_at: now,
+  })
+
+  if (error) {
+    console.warn('⚠️ Failed to write cache to integration_state:', error)
+  }
 }
 
 Deno.serve(async (req) => {
@@ -94,7 +131,7 @@ Deno.serve(async (req) => {
 
     // Call Segsale API with retry and timeout
     const segsaleUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/produtos-por-veiculo?idResumoVenda=${idResumoVenda}`
-    
+
     let segsaleResponse: Response
     try {
       segsaleResponse = await fetchWithRetry(
@@ -102,23 +139,42 @@ Deno.serve(async (req) => {
         {
           method: 'GET',
           headers: {
-            'Token': segsaleToken,
-            'Content-Type': 'application/json'
-          }
+            Token: segsaleToken,
+            'Content-Type': 'application/json',
+          },
         },
-        3, // maxRetries
-        45000 // 45 second timeout (Segsale can be slow)
+        2, // maxRetries (avoid long-running edge executions)
+        60000, // 60s timeout (Segsale test env can be very slow)
       )
-    } catch (fetchError) {
-      console.error('❌ All retry attempts failed:', fetchError.message)
+    } catch (fetchError: any) {
+      console.error('❌ Segsale fetch failed (timeout/retries exceeded):', fetchError?.message ?? fetchError)
+
+      // Fallback to cached response (last successful import)
+      const cached = await readCachedSegsaleResponse(supabase, idResumoVenda)
+      if (cached) {
+        console.log('🧠 Returning cached Segsale response from integration_state:', cached.updated_at)
+        return new Response(
+          JSON.stringify({
+            success: true,
+            cached: true,
+            cache_updated_at: cached.updated_at,
+            message: 'Segsale indisponível no momento; retornando último resultado em cache',
+            sale_summary_id: idResumoVenda,
+            sales: cached.sales,
+            processing: { forwarded: false, message: 'Skipped processing because response is cached' },
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Segsale API timeout - servidor não respondeu',
-          details: fetchError.message,
+          details: fetchError?.message ?? String(fetchError),
           suggestion: 'A API Segsale está lenta ou indisponível. Tente novamente em alguns minutos.',
-          url: segsaleUrl
+          url: segsaleUrl,
         }),
-        { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 
@@ -142,6 +198,7 @@ Deno.serve(async (req) => {
 
     const salesData: SegsaleSale[] = await segsaleResponse.json()
     console.log(`✅ Received ${salesData.length} sales from Segsale`)
+    await writeCachedSegsaleResponse(supabase, idResumoVenda, salesData)
 
     // Fetch contract items for each sale that has id_contrato_pendente
     const enrichedSalesData = []
