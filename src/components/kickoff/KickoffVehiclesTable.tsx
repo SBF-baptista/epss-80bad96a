@@ -375,7 +375,7 @@ export const KickoffVehiclesTable = ({
                   {modulesList.length > 0 ? (
                     modulesList.map((module, idx) => (
                       <div key={`mod-${idx}`} className="text-sm">
-                        {module.name} ({module.quantity}x)
+                        {module.name}
                       </div>
                     ))
                   ) : (
@@ -391,7 +391,7 @@ export const KickoffVehiclesTable = ({
                   <div className="flex gap-1 flex-wrap">
                     {accessoriesList.map((item, idx) => (
                       <Badge key={`acc-${idx}`} variant="outline" className="text-xs">
-                        {cleanItemName(item.name)} ({item.quantity}x)
+                        {cleanItemName(item.name)}
                       </Badge>
                     ))}
                   </div>
@@ -809,7 +809,7 @@ export const KickoffVehiclesTable = ({
                       {modulesList.length > 0 ? (
                         modulesList.map((module, idx) => (
                           <div key={`mod-${idx}`} className="text-xs break-words">
-                            {module.name} ({module.quantity}x)
+                            {module.name}
                           </div>
                         ))
                       ) : (
@@ -823,7 +823,7 @@ export const KickoffVehiclesTable = ({
                         <div className="flex gap-1 flex-wrap">
                           {accessoriesList.map((item, idx) => (
                             <span key={`acc-${idx}`} className="text-xs bg-muted px-1.5 py-0.5 rounded break-words">
-                              {item.name} ({item.quantity}x)
+                              {cleanItemName(item.name)}
                             </span>
                           ))}
                         </div>

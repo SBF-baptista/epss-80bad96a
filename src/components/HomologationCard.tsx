@@ -5,9 +5,6 @@ import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Image, Link, Package, Trash2 } from "lucide-react";
 import { HomologationCard, softDeleteHomologationCard } from "@/services/homologationService";
-import ConfigurationSelector from "./ConfigurationSelector";
-import { useQuery } from "@tanstack/react-query";
-import { fetchVehicleAccessories, VehicleAccessory } from "@/services/vehicleAccessoryService";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,30 +19,6 @@ interface HomologationCardProps {
 const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: HomologationCardProps) => {
   const { isAdmin } = useUserRole();
   const { toast } = useToast();
-  
-  // Fetch vehicle accessories if there's a linked incoming vehicle
-  const { data: vehicleAccessories = [] } = useQuery({
-    queryKey: ['vehicle-accessories', card.incoming_vehicle_id],
-    queryFn: () => fetchVehicleAccessories(card.incoming_vehicle_id!),
-    enabled: !!card.incoming_vehicle_id,
-  });
-
-  // Fetch incoming vehicle data (includes customer info and address)
-  const { data: incomingVehicle } = useQuery({
-    queryKey: ['incoming-vehicle', card.incoming_vehicle_id],
-    queryFn: async () => {
-      if (!card.incoming_vehicle_id) return null;
-      const { data, error } = await supabase
-        .from('incoming_vehicles')
-        .select('*')
-        .eq('id', card.incoming_vehicle_id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!card.incoming_vehicle_id,
-  });
 
   const handleDelete = async () => {
     try {
@@ -110,8 +83,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
-
-  const isConfigurationEditable = card.status === 'homologar' || card.status === 'em_homologacao';
 
   const isAdminUser = isAdmin();
 
@@ -201,18 +172,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           </div>
 
           <Separator />
-
-          {/* Configuration Selector */}
-          <div onClick={(e) => e.stopPropagation()}>
-            <ConfigurationSelector
-              cardId={card.id}
-              currentConfiguration={card.configuration}
-              brand={card.brand}
-              model={card.model}
-              isEditable={isConfigurationEditable}
-              onUpdate={onUpdate}
-            />
-          </div>
 
           {/* Workflow status indicators */}
           <div className="flex items-center gap-2 pt-2 border-t border-border">
