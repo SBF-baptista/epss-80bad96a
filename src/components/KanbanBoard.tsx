@@ -246,6 +246,21 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         
         const newStatus = statusMap[columnId] || 'scheduled';
         const previousStatus = draggedSchedules[0].status;
+        
+        // Validate tracking code is required before moving to "shipped"
+        if (newStatus === 'shipped') {
+          const schedulesWithoutTracking = draggedSchedules.filter(s => !s.tracking_code || s.tracking_code.trim() === '');
+          if (schedulesWithoutTracking.length > 0) {
+            toast({
+              title: "Código de rastreio obrigatório",
+              description: "Preencha o código de rastreio antes de mover para Enviado",
+              variant: "destructive"
+            });
+            setDraggedSchedules([]);
+            return;
+          }
+        }
+        
         const targetColumn = columns.find(c => c.id === columnId);
         const previousColumn = columns.find(c => {
           const reverseMap: Record<string, string> = {
