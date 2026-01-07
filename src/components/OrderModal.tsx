@@ -326,8 +326,8 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
             {/* Customer Info - Always show */}
             <div className="bg-muted/30 p-4 rounded-lg border">
               <h3 className="font-semibold text-base mb-3 text-primary">Cliente</h3>
-              <div className="space-y-2">
-                <p className="font-medium text-foreground">{order.company_name}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <p className="font-medium text-foreground sm:col-span-2">{order.company_name}</p>
                 
                 {schedule?.customer_document_number && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -344,7 +344,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 )}
                 
                 {schedule?.customer_email && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground sm:col-span-2">
                     <Mail className="h-4 w-4 flex-shrink-0" />
                     <span>{schedule.customer_email}</span>
                   </div>
@@ -352,7 +352,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 
                 {/* Installation Address */}
                 {(schedule?.installation_address_street || schedule?.installation_address_city) && (
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground mt-2 pt-2 border-t border-border/50">
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground sm:col-span-2 pt-2 border-t border-border/50">
                     <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
                       {schedule?.installation_address_street && (
@@ -758,7 +758,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                               
                               {/* Consolidated items list for this technician */}
                               {sortedTechItems.length > 0 && (
-                                <div className="pl-7 space-y-1">
+                                <div className="pl-7 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                                   {sortedTechItems.map(([itemName, quantity]) => (
                                     <div key={itemName} className="flex items-center gap-2 text-sm">
                                       <span className="text-muted-foreground">•</span>
