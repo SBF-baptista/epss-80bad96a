@@ -609,7 +609,7 @@ const EditRequests = () => {
 
       {/* Review Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileEdit className="h-5 w-5" />
@@ -622,19 +622,156 @@ const EditRequests = () => {
               {selectedRequest && getItemTypeBadge(selectedRequest.item_type)}
             </div>
 
-            <div className="p-4 bg-muted/50 rounded-lg">
+            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
               <h4 className="text-sm font-semibold mb-3">Alteração Solicitada</h4>
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
-                  <span className="text-xs text-red-600 block mb-1">De:</span>
-                  <span className="font-medium text-red-800">{selectedRequest?.original_data?.item_name}</span>
+              
+              {selectedRequest?.item_type === 'kit' ? (
+                // Kit changes display
+                <div className="space-y-3">
+                  {/* Name change */}
+                  {selectedRequest.original_data?.name !== selectedRequest.requested_changes?.name && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-sm font-medium text-muted-foreground w-20">Nome:</span>
+                      <div className="px-2 py-1 bg-red-100 border border-red-200 rounded text-sm">
+                        <span className="text-red-800">{selectedRequest.original_data?.name}</span>
+                      </div>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      <div className="px-2 py-1 bg-green-100 border border-green-200 rounded text-sm">
+                        <span className="text-green-800">{selectedRequest.requested_changes?.name}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Category change */}
+                  {selectedRequest.original_data?.category !== selectedRequest.requested_changes?.category && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-sm font-medium text-muted-foreground w-20">Tipo:</span>
+                      <div className="px-2 py-1 bg-red-100 border border-red-200 rounded text-sm">
+                        <span className="text-red-800">{selectedRequest.original_data?.category || 'Nenhum'}</span>
+                      </div>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      <div className="px-2 py-1 bg-green-100 border border-green-200 rounded text-sm">
+                        <span className="text-green-800">{selectedRequest.requested_changes?.category || 'Nenhum'}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Equipment - Original vs New */}
+                  {selectedRequest.requested_changes?.equipment && (
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium text-muted-foreground">Equipamentos:</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2 bg-red-50 border border-red-200 rounded">
+                          <span className="text-xs text-red-600 block mb-1">Original:</span>
+                          <div className="text-xs">
+                            {(selectedRequest.original_data?.equipment || []).map((e: any, i: number) => (
+                              <span key={i} className="inline-block px-1.5 py-0.5 bg-red-100 rounded mr-1 mb-1 text-red-800">
+                                {e.item_name} ({e.quantity}x)
+                              </span>
+                            ))}
+                            {(!selectedRequest.original_data?.equipment || selectedRequest.original_data.equipment.length === 0) && (
+                              <span className="text-red-400 italic">Nenhum</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="p-2 bg-green-50 border border-green-200 rounded">
+                          <span className="text-xs text-green-600 block mb-1">Novo:</span>
+                          <div className="text-xs">
+                            {selectedRequest.requested_changes.equipment.map((e: any, i: number) => (
+                              <span key={i} className="inline-block px-1.5 py-0.5 bg-green-100 rounded mr-1 mb-1 text-green-800">
+                                {e.item_name} ({e.quantity}x)
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Accessories - Original vs New */}
+                  {(selectedRequest.requested_changes?.accessories?.length > 0 || selectedRequest.original_data?.accessories?.length > 0) && (
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium text-muted-foreground">Acessórios:</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2 bg-red-50 border border-red-200 rounded">
+                          <span className="text-xs text-red-600 block mb-1">Original:</span>
+                          <div className="text-xs">
+                            {(selectedRequest.original_data?.accessories || []).map((a: any, i: number) => (
+                              <span key={i} className="inline-block px-1.5 py-0.5 bg-red-100 rounded mr-1 mb-1 text-red-800">
+                                {a.item_name} ({a.quantity}x)
+                              </span>
+                            ))}
+                            {(!selectedRequest.original_data?.accessories || selectedRequest.original_data.accessories.length === 0) && (
+                              <span className="text-red-400 italic">Nenhum</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="p-2 bg-green-50 border border-green-200 rounded">
+                          <span className="text-xs text-green-600 block mb-1">Novo:</span>
+                          <div className="text-xs">
+                            {(selectedRequest.requested_changes?.accessories || []).map((a: any, i: number) => (
+                              <span key={i} className="inline-block px-1.5 py-0.5 bg-green-100 rounded mr-1 mb-1 text-green-800">
+                                {a.item_name} ({a.quantity}x)
+                              </span>
+                            ))}
+                            {(!selectedRequest.requested_changes?.accessories || selectedRequest.requested_changes.accessories.length === 0) && (
+                              <span className="text-green-400 italic">Nenhum</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Supplies - Original vs New */}
+                  {(selectedRequest.requested_changes?.supplies?.length > 0 || selectedRequest.original_data?.supplies?.length > 0) && (
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium text-muted-foreground">Insumos:</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2 bg-red-50 border border-red-200 rounded">
+                          <span className="text-xs text-red-600 block mb-1">Original:</span>
+                          <div className="text-xs">
+                            {(selectedRequest.original_data?.supplies || []).map((s: any, i: number) => (
+                              <span key={i} className="inline-block px-1.5 py-0.5 bg-red-100 rounded mr-1 mb-1 text-red-800">
+                                {s.item_name} ({s.quantity}x)
+                              </span>
+                            ))}
+                            {(!selectedRequest.original_data?.supplies || selectedRequest.original_data.supplies.length === 0) && (
+                              <span className="text-red-400 italic">Nenhum</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="p-2 bg-green-50 border border-green-200 rounded">
+                          <span className="text-xs text-green-600 block mb-1">Novo:</span>
+                          <div className="text-xs">
+                            {(selectedRequest.requested_changes?.supplies || []).map((s: any, i: number) => (
+                              <span key={i} className="inline-block px-1.5 py-0.5 bg-green-100 rounded mr-1 mb-1 text-green-800">
+                                {s.item_name} ({s.quantity}x)
+                              </span>
+                            ))}
+                            {(!selectedRequest.requested_changes?.supplies || selectedRequest.requested_changes.supplies.length === 0) && (
+                              <span className="text-green-400 italic">Nenhum</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
-                  <span className="text-xs text-green-600 block mb-1">Para:</span>
-                  <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.item_name}</span>
+              ) : (
+                // Accessory/Supply simple change display
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                    <span className="text-xs text-red-600 block mb-1">De:</span>
+                    <span className="font-medium text-red-800">{selectedRequest?.original_data?.item_name}</span>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                    <span className="text-xs text-green-600 block mb-1">Para:</span>
+                    <span className="font-medium text-green-800">{selectedRequest?.requested_changes?.item_name}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {selectedRequest?.reason && (
