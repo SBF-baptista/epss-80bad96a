@@ -323,121 +323,129 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
 
             <Separator />
 
-            {/* Customer Info - Always show */}
-            <div className="bg-muted/30 p-4 rounded-lg border">
-              <h3 className="font-semibold text-base mb-3 text-primary">Cliente</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <p className="font-medium text-foreground sm:col-span-2">{order.company_name}</p>
-                
-                {schedule?.customer_document_number && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <FileText className="h-4 w-4 flex-shrink-0" />
-                    <span>{schedule.customer_document_number}</span>
-                  </div>
-                )}
-                
-                {schedule?.customer_phone && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4 flex-shrink-0" />
-                    <span>{schedule.customer_phone}</span>
-                  </div>
-                )}
-                
-                {schedule?.customer_email && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground sm:col-span-2">
-                    <Mail className="h-4 w-4 flex-shrink-0" />
-                    <span>{schedule.customer_email}</span>
-                  </div>
-                )}
-                
-                {/* Installation Address */}
-                {(schedule?.installation_address_street || schedule?.installation_address_city) && (
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground sm:col-span-2 pt-2 border-t border-border/50">
-                    <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      {schedule?.installation_address_street && (
-                        <p>
-                          {schedule.installation_address_street}
-                          {schedule.installation_address_number && `, ${schedule.installation_address_number}`}
-                          {schedule.installation_address_complement && ` - ${schedule.installation_address_complement}`}
-                        </p>
+            {/* Customer Info and Scheduling Info - Show only in details view or for "novos" status */}
+            {(viewMode === "details" || order.status === "novos") && (
+              <>
+                {/* Customer Info */}
+                <div className="bg-muted/30 p-4 rounded-lg border">
+                  <h3 className="font-semibold text-base mb-3 text-primary">Cliente</h3>
+                  <div className="space-y-2">
+                    <p className="font-medium text-foreground">{order.company_name}</p>
+                    
+                    {/* Document and Phone side by side */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {schedule?.customer_document_number && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <FileText className="h-4 w-4 flex-shrink-0" />
+                          <span>{schedule.customer_document_number}</span>
+                        </div>
                       )}
-                      {schedule?.installation_address_neighborhood && (
-                        <p>{schedule.installation_address_neighborhood}</p>
-                      )}
-                      {(schedule?.installation_address_city || schedule?.installation_address_state) && (
-                        <p>
-                          {schedule.installation_address_city}
-                          {schedule.installation_address_state && ` - ${schedule.installation_address_state}`}
-                        </p>
-                      )}
-                      {schedule?.installation_address_postal_code && (
-                        <p>CEP: {schedule.installation_address_postal_code}</p>
+                      
+                      {schedule?.customer_phone && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span>{schedule.customer_phone}</span>
+                        </div>
                       )}
                     </div>
+                    
+                    {schedule?.customer_email && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4 flex-shrink-0" />
+                        <span>{schedule.customer_email}</span>
+                      </div>
+                    )}
+                    
+                    {/* Installation Address */}
+                    {(schedule?.installation_address_street || schedule?.installation_address_city) && (
+                      <div className="flex items-start gap-2 text-sm text-muted-foreground pt-2 border-t border-border/50">
+                        <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                        <div className="space-y-0.5">
+                          {schedule?.installation_address_street && (
+                            <p>
+                              {schedule.installation_address_street}
+                              {schedule.installation_address_number && `, ${schedule.installation_address_number}`}
+                              {schedule.installation_address_complement && ` - ${schedule.installation_address_complement}`}
+                            </p>
+                          )}
+                          {schedule?.installation_address_neighborhood && (
+                            <p>{schedule.installation_address_neighborhood}</p>
+                          )}
+                          {(schedule?.installation_address_city || schedule?.installation_address_state) && (
+                            <p>
+                              {schedule.installation_address_city}
+                              {schedule.installation_address_state && ` - ${schedule.installation_address_state}`}
+                            </p>
+                          )}
+                          {schedule?.installation_address_postal_code && (
+                            <p>CEP: {schedule.installation_address_postal_code}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            {/* Scheduling Info Section - Always show */}
-            <div className="bg-muted/30 p-4 rounded-lg border">
-              <h3 className="font-semibold text-base mb-3 text-primary">Informações do Agendamento</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Vehicle info */}
-                {(schedule?.vehicle_brand || schedule?.vehicle_model) && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span>
-                      {schedule.vehicle_brand} {schedule.vehicle_model}
-                      {schedule.vehicle_year && ` (${schedule.vehicle_year})`}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Plate */}
-                {schedule?.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente' && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span>Placa: <strong>{schedule.vehicle_plate}</strong></span>
-                  </div>
-                )}
-                
-                {/* Technician */}
-                {schedule?.technician?.name && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span>Técnico: {schedule.technician.name}</span>
-                  </div>
-                )}
-                
-                {/* Scheduled Date/Time */}
-                {schedule?.scheduled_date && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground font-medium">Data prevista de instalação</span>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span>
-                        {formatDate(schedule.scheduled_date)}
-                        {schedule.installation_time && (
-                          <span className="ml-1 text-muted-foreground">
-                            às {schedule.installation_time.slice(0, 5)}
+                {/* Scheduling Info Section */}
+                <div className="bg-muted/30 p-4 rounded-lg border">
+                  <h3 className="font-semibold text-base mb-3 text-primary">Informações do Agendamento</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Vehicle info */}
+                    {(schedule?.vehicle_brand || schedule?.vehicle_model) && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span>
+                          {schedule.vehicle_brand} {schedule.vehicle_model}
+                          {schedule.vehicle_year && ` (${schedule.vehicle_year})`}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Plate */}
+                    {schedule?.vehicle_plate && schedule.vehicle_plate !== 'Placa pendente' && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span>Placa: <strong>{schedule.vehicle_plate}</strong></span>
+                      </div>
+                    )}
+                    
+                    {/* Technician */}
+                    {schedule?.technician?.name && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span>Técnico: {schedule.technician.name}</span>
+                      </div>
+                    )}
+                    
+                    {/* Scheduled Date/Time */}
+                    {schedule?.scheduled_date && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-muted-foreground font-medium">Data prevista de instalação</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span>
+                            {formatDate(schedule.scheduled_date)}
+                            {schedule.installation_time && (
+                              <span className="ml-1 text-muted-foreground">
+                                às {schedule.installation_time.slice(0, 5)}
+                              </span>
+                            )}
                           </span>
-                        )}
-                      </span>
-                    </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Configuration */}
+                    {(schedule as any)?.configuration && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Settings className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span>Configuração: {(schedule as any).configuration}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-                
-                {/* Configuration */}
-                {(schedule as any)?.configuration && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Settings className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span>Configuração: {(schedule as any).configuration}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+                </div>
+              </>
+            )}
 
             {/* "Em produção" (scanner mode): Show Scanner + Processed Items */}
             {order.status === "producao" && viewMode === "scanner" && (
