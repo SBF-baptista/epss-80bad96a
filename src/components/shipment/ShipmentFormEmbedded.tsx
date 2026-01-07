@@ -174,8 +174,9 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
       address.city &&
       address.state &&
       address.postal_code;
+    const hasTrackingCode = trackingCode && trackingCode.trim() !== '';
 
-    return Boolean(hasLocation && hasAddress);
+    return Boolean(hasLocation && hasAddress && hasTrackingCode);
   };
 
   return (
