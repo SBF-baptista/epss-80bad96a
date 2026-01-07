@@ -91,6 +91,7 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
         homologation_card_id: kitData.homologation_card_id || null,
         name: kitData.name,
         description: kitData.description,
+        category: kitData.category,
       })
       .select()
       .single();

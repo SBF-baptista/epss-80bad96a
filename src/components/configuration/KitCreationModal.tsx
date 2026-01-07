@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, Package, Wrench, Box, AlertTriangle } from 'lucide-react';
 import { createHomologationKit, type CreateKitRequest, type HomologationKitItem } from '@/services/homologationKitService';
@@ -19,14 +20,22 @@ interface KitCreationModalProps {
 interface KitFormData {
   name: string;
   description: string;
+  category: string;
   equipment: Omit<HomologationKitItem, 'id'>[];
   accessories: Omit<HomologationKitItem, 'id'>[];
   supplies: Omit<HomologationKitItem, 'id'>[];
 }
 
+const KIT_CATEGORIES = [
+  { value: 'telemetria', label: 'Telemetria' },
+  { value: 'videomonitoramento', label: 'Videomonitoramento' },
+  { value: 'rastreamento', label: 'Rastreamento' }
+];
+
 const initialFormData: KitFormData = {
   name: '',
   description: '',
+  category: '',
   equipment: [{ item_name: '', item_type: 'equipment', quantity: 1, description: '', notes: '' }],
   accessories: [{ item_name: '', item_type: 'accessory', quantity: 1, description: '', notes: '' }],
   supplies: [{ item_name: '', item_type: 'supply', quantity: 1, description: '', notes: '' }]
@@ -120,6 +129,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       const kitData: CreateKitRequest = {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
+        category: formData.category || undefined,
         equipment,
         accessories,
         supplies
@@ -267,6 +277,24 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   placeholder="Descreva o kit e seu uso..."
                   rows={3}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Tipo do Kit</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {KIT_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
