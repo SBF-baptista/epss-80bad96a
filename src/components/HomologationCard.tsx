@@ -105,14 +105,8 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           <div className="flex justify-between items-start gap-2">
             <h4 className="font-semibold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0">
               <span className="block truncate">{card.brand} {card.model}</span>
-              {card.year && (
-                <span className="text-xs md:text-sm text-muted-foreground">({card.year})</span>
-              )}
             </h4>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Badge className={`text-xs ${getStatusColor(card.status)}`}>
-                {getStatusLabel(card.status)}
-              </Badge>
               {isAdminUser && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -203,14 +197,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
               <p className="text-xs text-muted-foreground line-clamp-2">{card.notes}</p>
             </div>
           )}
-
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Image className="h-3 w-3 flex-shrink-0" />
-              <span className="hidden md:inline">Clique para ver fotos</span>
-              <span className="md:hidden">Toque para detalhes</span>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>
