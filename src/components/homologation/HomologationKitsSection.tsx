@@ -577,16 +577,28 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                      homologationStatus.pendingItems.accessories.length + 
                      homologationStatus.pendingItems.supplies.length) : 0;
                   
-                  // Determinar categoria do kit baseado nos equipamentos
-                  const hasFMC150 = kit.equipment.some(e => {
-                    const name = e.item_name.toLowerCase();
-                    return name.includes('fmc150') || name.includes('fmc 150');
-                  });
-                  const hasFMC130 = kit.equipment.some(e => {
-                    const name = e.item_name.toLowerCase();
-                    return name.includes('fmc130') || name.includes('fmc 130');
-                  });
-                  const kitCategory = hasFMC150 ? 'Telemetria' : hasFMC130 ? 'Rastreamento' : null;
+                  // Determinar categoria do kit - usa o campo category ou fallback para lógica de equipamentos
+                  const getCategoryLabel = () => {
+                    if (kit.category) {
+                      const categoryMap: Record<string, string> = {
+                        'telemetria': 'Telemetria',
+                        'videomonitoramento': 'Videomonitoramento',
+                        'rastreamento': 'Rastreamento'
+                      };
+                      return categoryMap[kit.category] || null;
+                    }
+                    // Fallback para lógica antiga baseada em equipamentos
+                    const hasFMC150 = kit.equipment.some(e => {
+                      const name = e.item_name.toLowerCase();
+                      return name.includes('fmc150') || name.includes('fmc 150');
+                    });
+                    const hasFMC130 = kit.equipment.some(e => {
+                      const name = e.item_name.toLowerCase();
+                      return name.includes('fmc130') || name.includes('fmc 130');
+                    });
+                    return hasFMC150 ? 'Telemetria' : hasFMC130 ? 'Rastreamento' : null;
+                  };
+                  const kitCategory = getCategoryLabel();
                   
                   return (
                     <Collapsible
@@ -613,7 +625,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                       className={
                                         kitCategory === 'Telemetria' 
                                           ? "bg-blue-50 text-blue-700 border-blue-200" 
-                                          : "bg-orange-50 text-orange-700 border-orange-200"
+                                          : kitCategory === 'Videomonitoramento'
+                                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                                            : "bg-orange-50 text-orange-700 border-orange-200"
                                       }
                                     >
                                       {kitCategory}
