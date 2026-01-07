@@ -82,7 +82,7 @@ const navigationGroups = {
     ]
   },
   orders: {
-    label: "Esteira de Pedidos",
+    label: "Logística",
     icon: BarChart3,
     roles: ["admin", "order_manager"],
     items: [
@@ -94,7 +94,7 @@ const navigationGroups = {
       },
       { 
         to: "/dashboard", 
-        label: "Dash Esteira de Pedidos", 
+        label: "Dash Logística", 
         icon: BarChart3,
         roles: ["admin"]
       }
