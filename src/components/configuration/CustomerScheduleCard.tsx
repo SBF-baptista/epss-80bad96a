@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Building2, Car, Calendar, Phone, MapPin } from 'lucide-react';
+import { Car, Calendar, Users } from 'lucide-react';
 
 export interface VehicleScheduleData {
   id: string;
@@ -26,6 +26,10 @@ export interface VehicleScheduleData {
   selected_kit_ids: string[] | null;
   accessories?: string[] | null;
   supplies?: string[] | null;
+  technician_id?: string | null;
+  scheduled_date?: string | null;
+  installation_time?: string | null;
+  incoming_vehicle_id?: string | null;
 }
 
 interface CustomerGroup {
@@ -61,31 +65,15 @@ export const CustomerScheduleCard = ({
   return (
     <>
       <Card className="border-primary/20 overflow-hidden">
-        <CardHeader className="py-4">
+        <CardHeader className="py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className="p-2 rounded-lg bg-primary/10">
-                <Building2 className="h-5 w-5 text-primary" />
+                <Users className="h-5 w-5 text-primary" />
               </div>
-              <div className="min-w-0">
-                <CardTitle className="text-base truncate">
-                  {customerGroup.customerName}
-                </CardTitle>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                  {customerGroup.customerPhone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {customerGroup.customerPhone}
-                    </span>
-                  )}
-                  {customerGroup.address && (
-                    <span className="flex items-center gap-1 truncate">
-                      <MapPin className="h-3 w-3" />
-                      {customerGroup.address}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <CardTitle className="text-base truncate">
+                {customerGroup.customerName}
+              </CardTitle>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
@@ -108,7 +96,7 @@ export const CustomerScheduleCard = ({
         <DialogContent className="max-w-4xl max-h-[85vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
+              <Users className="h-5 w-5 text-primary" />
               Veículos de {customerGroup.customerName}
             </DialogTitle>
           </DialogHeader>

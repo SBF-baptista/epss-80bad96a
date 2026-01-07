@@ -9,7 +9,7 @@ import { ScheduleFormModal } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
 import { CustomerScheduleSection } from './CustomerScheduleSection';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getTechnicians, Technician } from '@/services/technicianService';
@@ -186,7 +186,7 @@ export const ScheduleManagement = () => {
       service: data.service,
       vehicle_model: data.vehicle_model,
       tracker_model: data.tracker_model,
-      scheduled_by: data.scheduled_by,
+      scheduled_by: 'Sistema', // Auto-filled since field was removed
       reference_point: data.reference_point || null,
       phone: data.phone || null,
       local_contact: data.local_contact || null,
@@ -406,22 +406,30 @@ export const ScheduleManagement = () => {
             </p>
           </div>
           
-          {/* Filtro de técnico */}
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedTechnicianFilter} onValueChange={setSelectedTechnicianFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por técnico" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os técnicos</SelectItem>
-                {technicians.map((tech) => (
-                  <SelectItem key={tech.id} value={tech.name}>
-                    {tech.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-3">
+            {/* Botão Criar Agendamento */}
+            <Button onClick={() => handleDateSelect(new Date())} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Criar Agendamento
+            </Button>
+            
+            {/* Filtro de técnico */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedTechnicianFilter} onValueChange={setSelectedTechnicianFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filtrar por técnico" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os técnicos</SelectItem>
+                  {technicians.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.name}>
+                      {tech.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

@@ -115,7 +115,11 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
           kit_id,
           selected_kit_ids,
           accessories,
-          supplies
+          supplies,
+          technician_id,
+          scheduled_date,
+          installation_time,
+          incoming_vehicle_id
         `)
         .eq('status', 'shipped');
 
@@ -225,7 +229,7 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
         service: data.service,
         vehicle_model: data.vehicle_model,
         tracker_model: data.tracker_model,
-        scheduled_by: data.scheduled_by,
+        scheduled_by: 'Sistema', // Auto-filled since field was removed
         reference_point: data.reference_point || null,
         phone: data.phone || null,
         local_contact: data.local_contact || null,
@@ -308,6 +312,10 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
       customerPhone: selectedVehicle.customer_phone || undefined,
       customerAddress: addressParts.join(', ') || undefined,
       accessories: selectedVehicle.accessories || undefined,
+      technicianId: selectedVehicle.technician_id || undefined,
+      scheduledDate: selectedVehicle.scheduled_date || undefined,
+      installationTime: selectedVehicle.installation_time || undefined,
+      incomingVehicleId: selectedVehicle.incoming_vehicle_id || undefined,
     };
   };
 

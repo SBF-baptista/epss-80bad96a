@@ -47,7 +47,6 @@ const scheduleFormSchema = z.object({
   technician_name: z.string().min(1, 'Nome do técnico é obrigatório'),
   technician_whatsapp: z.string().optional(),
   time: z.string().min(1, 'Horário é obrigatório'),
-  scheduled_by: z.string().min(1, 'Quem agendou é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
   plate: z.string().min(1, 'Placa é obrigatória'),
   vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
@@ -75,6 +74,10 @@ export interface PendingVehicleData {
   customerName?: string;
   customerPhone?: string;
   customerAddress?: string;
+  technicianId?: string;
+  scheduledDate?: string;
+  installationTime?: string;
+  incomingVehicleId?: string;
 }
 
 interface ScheduleFormModalProps {
@@ -106,7 +109,6 @@ export const ScheduleFormModal = ({
       technician_name: '',
       technician_whatsapp: '',
       time: '',
-      scheduled_by: '',
       service: '',
       plate: '',
       vehicle_model: '',
@@ -125,18 +127,37 @@ export const ScheduleFormModal = ({
       try {
         const data = await getTechnicians();
         setTechnicians(data);
+        
+        // After technicians are loaded, pre-fill from planning data
+        if (initialVehicleData?.technicianId && data.length > 0) {
+          const planningTechnician = data.find(t => t.id === initialVehicleData.technicianId);
+          if (planningTechnician) {
+            form.setValue('technician_id', planningTechnician.id!);
+            form.setValue('technician_name', planningTechnician.name);
+            form.setValue('technician_whatsapp', planningTechnician.phone || '');
+          }
+        }
       } catch (error) {
         console.error('Error loading technicians:', error);
       }
     };
     if (open) {
       loadTechnicians();
-      if (selectedTime) {
-        form.setValue('time', selectedTime);
-      }
-      if (selectedDate) {
+      
+      // Pre-fill date and time from planning
+      if (initialVehicleData?.scheduledDate) {
+        const date = new Date(initialVehicleData.scheduledDate + 'T12:00:00');
+        form.setValue('date', date);
+      } else if (selectedDate) {
         form.setValue('date', selectedDate);
       }
+      
+      if (initialVehicleData?.installationTime) {
+        form.setValue('time', initialVehicleData.installationTime.substring(0, 5));
+      } else if (selectedTime) {
+        form.setValue('time', selectedTime);
+      }
+      
       // Pre-fill form with vehicle data from Planning page
       if (initialVehicleData) {
         if (initialVehicleData.plate) {
@@ -158,6 +179,12 @@ export const ScheduleFormModal = ({
         }
         // Observação vazia para o usuário preencher
         form.setValue('observation', '');
+        
+        // Set service based on usage type (frota from Segsale = fixed "Instalação")
+        // For now, we'll check if incomingVehicleId exists (meaning it came from Segsale pipeline)
+        if (initialVehicleData.incomingVehicleId) {
+          form.setValue('service', 'Instalação');
+        }
       }
     } else {
       form.reset();
@@ -328,35 +355,19 @@ export const ScheduleFormModal = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <FormField
-                  control={form.control}
-                  name="time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Horário *</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} className="h-9" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="scheduled_by"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Quem Agendou *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nome de quem agendou" {...field} className="h-9" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Horário *</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} className="h-9" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
