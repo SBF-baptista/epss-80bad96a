@@ -485,7 +485,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                 <Separator />
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg text-primary">Preparar Envio</h3>
-                  <ShipmentFormEmbedded order={order} onUpdate={onUpdate} />
+                  <ShipmentFormEmbedded order={order} onUpdate={onUpdate} schedule={schedule} />
                 </div>
               </>
             )}

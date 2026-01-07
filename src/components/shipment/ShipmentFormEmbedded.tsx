@@ -11,15 +11,17 @@ import {
   ShipmentAddress,
 } from "@/services/shipmentService";
 import { getTechnicians, Technician } from "@/services/technicianService";
+import { KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector, AddressForm } from "./index";
 
 interface ShipmentFormEmbeddedProps {
   order: Order;
   onUpdate?: () => void;
+  schedule?: KitScheduleWithDetails;
 }
 
-const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) => {
+const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbeddedProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -36,6 +38,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
     postal_code: "",
     complement: "",
   });
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Fetch technicians
   const { data: technicians = [] } = useQuery({
@@ -92,10 +95,37 @@ const ShipmentFormEmbedded = ({ order, onUpdate }: ShipmentFormEmbeddedProps) =>
     },
   });
 
-  // Load only tracking code if available (address fields start empty)
+  // Load tracking code if available
   useEffect(() => {
     if (order.trackingCode) setTrackingCode(order.trackingCode);
   }, [order]);
+
+  // Pre-fill technician from schedule when technicians are loaded
+  useEffect(() => {
+    if (hasInitialized || technicians.length === 0) return;
+    
+    // Check if there's a technician from the schedule
+    const scheduleTechnicianId = schedule?.technician_id;
+    if (scheduleTechnicianId) {
+      const technician = technicians.find((t: Technician) => t.id === scheduleTechnicianId);
+      if (technician) {
+        setSelectedTechnicianId(scheduleTechnicianId);
+        // Fill address fields with technician's address
+        setSelectedUF(technician.address_state || "");
+        setSelectedCity(technician.address_city || "");
+        setAddress({
+          street: technician.address_street || "",
+          number: technician.address_number || "",
+          neighborhood: technician.address_neighborhood || "",
+          city: technician.address_city || "",
+          state: technician.address_state || "",
+          postal_code: technician.postal_code || "",
+          complement: "",
+        });
+        setHasInitialized(true);
+      }
+    }
+  }, [technicians, schedule, hasInitialized]);
 
   // Handle UF change
   const handleUFChange = (value: string) => {
