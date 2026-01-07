@@ -13,7 +13,7 @@ export interface HomologationKitAccessory extends HomologationKitItem {
   item_type: 'accessory';
 }
 
-export type KitCategory = 'telemetria' | 'rastreamento';
+export type KitCategory = 'telemetria' | 'videomonitoramento' | 'rastreamento';
 
 export interface HomologationKit {
   id?: string;
@@ -32,6 +32,7 @@ export interface CreateKitRequest {
   homologation_card_id?: string;
   name: string;
   description?: string;
+  category?: string;
   equipment: Omit<HomologationKitItem, 'id'>[];
   accessories: Omit<HomologationKitItem, 'id'>[];
   supplies: Omit<HomologationKitItem, 'id'>[];
