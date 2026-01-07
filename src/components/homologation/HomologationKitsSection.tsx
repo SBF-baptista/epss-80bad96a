@@ -34,6 +34,7 @@ import { checkMultipleKitsHomologation, type HomologationStatus } from '@/servic
 import { supabase } from '@/integrations/supabase/client';
 import KitImportModal from './KitImportModal';
 import { KitCreationModal } from '@/components/configuration/KitCreationModal';
+import { KitEditRequestModal } from './KitEditRequestModal';
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
@@ -68,6 +69,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isKitModalOpen, setIsKitModalOpen] = useState(false);
+  const [editRequestKit, setEditRequestKit] = useState<HomologationKit | null>(null);
 
   // Load kits on component mount
   useEffect(() => {
@@ -341,17 +343,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
     });
   };
 
-  // Form operations
+  // Form operations - now uses edit request modal
   const startEdit = (kit: HomologationKit) => {
-    setFormData({
-      name: kit.name,
-      description: kit.description || '',
-      equipment: [...kit.equipment],
-      accessories: [...kit.accessories],
-      supplies: [...kit.supplies],
-    });
-    setEditingKitId(kit.id!);
-    setIsCreating(true);
+    setEditRequestKit(kit);
   };
 
   const cancelEdit = () => {
@@ -1010,6 +1004,13 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
           loadKits();
           setIsKitModalOpen(false);
         }}
+      />
+
+      {/* Kit Edit Request Modal */}
+      <KitEditRequestModal
+        open={!!editRequestKit}
+        onClose={() => setEditRequestKit(null)}
+        kit={editRequestKit}
       />
     </Card>
   );

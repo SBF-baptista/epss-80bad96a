@@ -17,7 +17,8 @@ import {
   History,
   ArrowRight,
   Calendar,
-  User
+  User,
+  Box
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -113,6 +114,12 @@ const EditRequests = () => {
   }, []);
 
   const applyChangesToItem = async (request: EditRequest) => {
+    // Handle kit type
+    if (request.item_type === 'kit') {
+      return await applyChangesToKit(request);
+    }
+    
+    // Handle accessory/supply type
     const originalId = request.original_data?.id;
     const newName = request.requested_changes?.item_name;
 
@@ -131,6 +138,72 @@ const EditRequests = () => {
       return true;
     } catch (error) {
       console.error('Error applying changes to item:', error);
+      return false;
+    }
+  };
+
+  const applyChangesToKit = async (request: EditRequest) => {
+    const kitId = request.kit_id || request.original_data?.id;
+    const changes = request.requested_changes;
+
+    if (!kitId || !changes) {
+      console.error('Missing data for applying kit changes:', { kitId, changes });
+      return false;
+    }
+
+    try {
+      // Update the kit basic info
+      const { error: kitError } = await supabase
+        .from('homologation_kits')
+        .update({ 
+          name: changes.name,
+          category: changes.category
+        })
+        .eq('id', kitId);
+
+      if (kitError) throw kitError;
+
+      // Delete existing kit items
+      const { error: deleteError } = await supabase
+        .from('homologation_kit_accessories')
+        .delete()
+        .eq('kit_id', kitId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new items
+      const allItems = [
+        ...(changes.equipment || []).map((item: any) => ({
+          kit_id: kitId,
+          item_name: item.item_name,
+          item_type: 'equipment',
+          quantity: item.quantity || 1
+        })),
+        ...(changes.accessories || []).map((item: any) => ({
+          kit_id: kitId,
+          item_name: item.item_name,
+          item_type: 'accessory',
+          quantity: item.quantity || 1
+        })),
+        ...(changes.supplies || []).map((item: any) => ({
+          kit_id: kitId,
+          item_name: item.item_name,
+          item_type: 'supply',
+          quantity: item.quantity || 1
+        }))
+      ];
+
+      if (allItems.length > 0) {
+        const { error: insertError } = await supabase
+          .from('homologation_kit_accessories')
+          .insert(allItems);
+
+        if (insertError) throw insertError;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error applying changes to kit:', error);
       return false;
     }
   };
@@ -159,8 +232,12 @@ const EditRequests = () => {
 
       if (error) throw error;
       
+      const successMessage = request.item_type === 'kit'
+        ? `O kit "${request.requested_changes?.name}" foi atualizado com sucesso`
+        : `O item foi renomeado para "${request.requested_changes?.item_name}"`;
+      
       toast.success('Solicitação aprovada com sucesso', {
-        description: `O item foi renomeado para "${request.requested_changes?.item_name}"`
+        description: successMessage
       });
       setSelectedRequest(null);
       setReviewNotes("");
@@ -229,6 +306,14 @@ const EditRequests = () => {
   };
 
   const getItemTypeBadge = (type: string) => {
+    if (type === 'kit') {
+      return (
+        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+          <Box className="h-3 w-3 mr-1" />
+          Kit
+        </Badge>
+      );
+    }
     return type === 'accessory' ? (
       <Badge variant="secondary" className="bg-blue-100 text-blue-800">
         <Package className="h-3 w-3 mr-1" />
@@ -306,17 +391,94 @@ const EditRequests = () => {
             <ArrowRight className="h-4 w-4" />
             Alteração Solicitada
           </h4>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
-              <span className="text-xs text-red-600 block mb-1">De:</span>
-              <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
+          
+          {request.item_type === 'kit' ? (
+            // Kit-specific changes display
+            <div className="space-y-3">
+              {/* Name change */}
+              {request.original_data?.name !== request.requested_changes?.name && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-medium text-muted-foreground w-20">Nome:</span>
+                  <div className="px-2 py-1 bg-red-100 border border-red-200 rounded text-sm">
+                    <span className="text-red-800">{request.original_data?.name}</span>
+                  </div>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <div className="px-2 py-1 bg-green-100 border border-green-200 rounded text-sm">
+                    <span className="text-green-800">{request.requested_changes?.name}</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Category change */}
+              {request.original_data?.category !== request.requested_changes?.category && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-medium text-muted-foreground w-20">Tipo:</span>
+                  <div className="px-2 py-1 bg-red-100 border border-red-200 rounded text-sm">
+                    <span className="text-red-800">{request.original_data?.category || 'Nenhum'}</span>
+                  </div>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <div className="px-2 py-1 bg-green-100 border border-green-200 rounded text-sm">
+                    <span className="text-green-800">{request.requested_changes?.category || 'Nenhum'}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Equipment changes */}
+              {request.requested_changes?.equipment && (
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-muted-foreground">Equipamentos:</span>
+                  <div className="text-xs text-muted-foreground">
+                    {request.requested_changes.equipment.map((e: any, i: number) => (
+                      <span key={i} className="inline-block px-2 py-0.5 bg-muted rounded mr-1 mb-1">
+                        {e.item_name} ({e.quantity}x)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Accessories changes */}
+              {request.requested_changes?.accessories && request.requested_changes.accessories.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-muted-foreground">Acessórios:</span>
+                  <div className="text-xs text-muted-foreground">
+                    {request.requested_changes.accessories.map((a: any, i: number) => (
+                      <span key={i} className="inline-block px-2 py-0.5 bg-muted rounded mr-1 mb-1">
+                        {a.item_name} ({a.quantity}x)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Supplies changes */}
+              {request.requested_changes?.supplies && request.requested_changes.supplies.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-muted-foreground">Insumos:</span>
+                  <div className="text-xs text-muted-foreground">
+                    {request.requested_changes.supplies.map((s: any, i: number) => (
+                      <span key={i} className="inline-block px-2 py-0.5 bg-muted rounded mr-1 mb-1">
+                        {s.item_name} ({s.quantity}x)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
-              <span className="text-xs text-green-600 block mb-1">Para:</span>
-              <span className="font-medium text-green-800">{request.requested_changes?.item_name}</span>
+          ) : (
+            // Accessory/Supply simple change display
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                <span className="text-xs text-red-600 block mb-1">De:</span>
+                <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <div className="px-3 py-2 bg-green-100 border border-green-200 rounded-md">
+                <span className="text-xs text-green-600 block mb-1">Para:</span>
+                <span className="font-medium text-green-800">{request.requested_changes?.item_name}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         
         {request.reason && (
@@ -370,7 +532,7 @@ const EditRequests = () => {
             Solicitações de Edição
           </h1>
           <p className="text-muted-foreground mt-1">
-            Aprovar ou rejeitar solicitações de alteração em acessórios e insumos
+            Aprovar ou rejeitar solicitações de alteração em kits, acessórios e insumos
           </p>
         </div>
         {pendingRequests.length > 0 && (
