@@ -173,6 +173,14 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
 
           <Separator />
 
+          {/* Configuration - only displayed when homologated */}
+          {card.status === 'homologado' && card.configuration && (
+            <div className="flex justify-between gap-1 items-center text-xs">
+              <span className="text-muted-foreground flex-shrink-0">Configuração:</span>
+              <span className="font-medium text-foreground truncate">{card.configuration}</span>
+            </div>
+          )}
+
           {/* Workflow status indicators */}
           <div className="flex items-center gap-2 pt-2 border-t border-border">
             {card.incoming_vehicle_id && (
