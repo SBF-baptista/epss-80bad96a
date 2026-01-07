@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScheduleFormModal } from './ScheduleFormModal';
 import { ScheduleEditModal, ScheduleEditFormData } from './ScheduleEditModal';
 import { CustomerScheduleSection } from './CustomerScheduleSection';
+import { TechnicianAgendaModal } from './TechnicianAgendaModal';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter, Plus, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getTechnicians, Technician } from '@/services/technicianService';
@@ -122,6 +123,7 @@ export const ScheduleManagement = () => {
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>('all');
+  const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -407,6 +409,12 @@ export const ScheduleManagement = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Botão Disparar Agenda */}
+            <Button variant="outline" onClick={() => setIsAgendaModalOpen(true)} className="gap-2">
+              <Send className="h-4 w-4" />
+              Disparar Agenda
+            </Button>
+            
             {/* Botão Criar Agendamento */}
             <Button onClick={() => handleDateSelect(new Date())} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -604,6 +612,11 @@ export const ScheduleManagement = () => {
         onUpdate={handleUpdateSchedule}
         onDelete={handleDeleteSchedule}
         isLoading={isLoading}
+      />
+
+      <TechnicianAgendaModal
+        isOpen={isAgendaModalOpen}
+        onOpenChange={setIsAgendaModalOpen}
       />
     </div>
   );

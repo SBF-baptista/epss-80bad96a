@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Car, Calendar, Users } from 'lucide-react';
+import { Car, Calendar } from 'lucide-react';
 
 export interface VehicleScheduleData {
   id: string;
@@ -67,14 +67,9 @@ export const CustomerScheduleCard = ({
       <Card className="border-primary/20 overflow-hidden">
         <CardHeader className="py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-              <CardTitle className="text-base truncate">
-                {customerGroup.customerName}
-              </CardTitle>
-            </div>
+            <CardTitle className="text-base truncate">
+              {customerGroup.customerName}
+            </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
                 {visibleVehicles.length} veículo{visibleVehicles.length !== 1 ? 's' : ''}
@@ -95,8 +90,7 @@ export const CustomerScheduleCard = ({
       <Dialog open={isModalOpen} onOpenChange={onModalOpenChange}>
         <DialogContent className="max-w-4xl max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
+            <DialogTitle>
               Veículos de {customerGroup.customerName}
             </DialogTitle>
           </DialogHeader>
