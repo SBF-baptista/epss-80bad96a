@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TestTube, Settings, FileText, Car, Upload, X, AlertTriangle } from "lucide-react";
+import { TestTube, Settings, FileText, Car, Upload, X, AlertTriangle, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { updateTestExecution, HomologationCard, uploadHomologationPhoto } from "@/services/homologationService";
+import { updateTestExecution, HomologationCard, uploadHomologationPhoto, fetchAutomationConfigurations, createAutomationRule, updateHomologationConfiguration } from "@/services/homologationService";
 import { useHomologationToast } from "@/hooks/useHomologationToast";
 import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
 
@@ -64,6 +64,62 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
   );
 
   const [outrosText, setOutrosText] = useState('');
+
+  // New configuration states
+  const [configurations, setConfigurations] = useState<string[]>([]);
+  const [isNewConfigOpen, setIsNewConfigOpen] = useState(false);
+  const [newConfiguration, setNewConfiguration] = useState("");
+  const [newTrackerModel, setNewTrackerModel] = useState("");
+
+  useEffect(() => {
+    loadConfigurations();
+  }, []);
+
+  const loadConfigurations = async () => {
+    try {
+      const configs = await fetchAutomationConfigurations();
+      setConfigurations(configs || []);
+    } catch (error) {
+      console.error("Error loading configurations:", error);
+      setConfigurations([]);
+    }
+  };
+
+  const handleCreateNewConfiguration = async () => {
+    if (!newConfiguration.trim() || !newTrackerModel.trim()) {
+      showWarning("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await createAutomationRule(
+        card.brand,
+        card.model,
+        newConfiguration.trim(),
+        newTrackerModel.trim()
+      );
+
+      await updateHomologationConfiguration(card.id, newConfiguration.trim());
+      await loadConfigurations();
+      
+      setFormData({ ...formData, testConfiguration: newConfiguration.trim() });
+      setNewConfiguration("");
+      setNewTrackerModel("");
+      setIsNewConfigOpen(false);
+      onUpdate();
+      
+      showSuccess("Nova configuração criada e aplicada com sucesso");
+    } catch (error) {
+      showError(error as Error, {
+        action: 'create_configuration',
+        component: 'TestExecutionModal',
+        cardId: card.id
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChecklistChange = (itemId: string, completed: boolean) => {
     try {
@@ -369,37 +425,39 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 md:space-y-3">
-                {checklist.map((item) => (
-                  <div key={item.id} className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={item.id}
-                        checked={item.completed}
-                        onCheckedChange={(checked) => 
-                          handleChecklistChange(item.id, checked as boolean)
-                        }
-                      />
-                      <Label htmlFor={item.id} className="text-sm">
-                        {item.label}
-                      </Label>
-                    </div>
-                    {item.id === 'outros' && item.completed && (
-                      <div className="ml-6 space-y-2">
-                        <Label htmlFor="outrosText" className="text-sm">
-                          Especificar:
-                        </Label>
-                        <Input
-                          id="outrosText"
-                          value={outrosText}
-                          onChange={(e) => setOutrosText(e.target.value)}
-                          placeholder="Descreva o que foi testado..."
-                          className="text-sm"
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+                  {checklist.map((item) => (
+                    <div key={item.id} className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={item.id}
+                          checked={item.completed}
+                          onCheckedChange={(checked) => 
+                            handleChecklistChange(item.id, checked as boolean)
+                          }
                         />
+                        <Label htmlFor={item.id} className="text-sm">
+                          {item.label}
+                        </Label>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {item.id === 'outros' && item.completed && (
+                        <div className="ml-6 space-y-2 col-span-full">
+                          <Label htmlFor="outrosText" className="text-sm">
+                            Especificar:
+                          </Label>
+                          <Input
+                            id="outrosText"
+                            value={outrosText}
+                            onChange={(e) => setOutrosText(e.target.value)}
+                            placeholder="Descreva o que foi testado..."
+                            className="text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
@@ -414,21 +472,97 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
               <CardContent className="space-y-3 md:space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="testConfiguration">Configuração Utilizada no Teste *</Label>
-                  <Select
-                    value={formData.testConfiguration}
-                    onValueChange={(value) => setFormData({ ...formData, testConfiguration: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a configuração testada" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONFIGURATION_OPTIONS.map((config) => (
-                        <SelectItem key={config} value={config}>
-                          {config}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.testConfiguration}
+                      onValueChange={(value) => setFormData({ ...formData, testConfiguration: value })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione a configuração testada" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {configurations.map((config) => (
+                          <SelectItem key={config} value={config}>
+                            {config}
+                          </SelectItem>
+                        ))}
+                        {CONFIGURATION_OPTIONS.filter(opt => !configurations.includes(opt)).map((config) => (
+                          <SelectItem key={config} value={config}>
+                            {config}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Dialog open={isNewConfigOpen} onOpenChange={setIsNewConfigOpen}>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => setIsNewConfigOpen(true)}
+                        disabled={isLoading}
+                        type="button"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <DialogContent className="bg-white">
+                        <DialogHeader>
+                          <DialogTitle>Nova Configuração</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="vehicle-info" className="text-sm font-medium text-gray-700">
+                              Veículo
+                            </Label>
+                            <div className="text-sm text-gray-600 p-2 bg-gray-50 border border-gray-200 rounded">
+                              {card.brand} {card.model}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="new-configuration" className="text-sm font-medium text-gray-700">
+                              Nome da Configuração *
+                            </Label>
+                            <Input
+                              id="new-configuration"
+                              value={newConfiguration}
+                              onChange={(e) => setNewConfiguration(e.target.value)}
+                              placeholder="Ex: Configuração Básica"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="tracker-model" className="text-sm font-medium text-gray-700">
+                              Modelo do Rastreador *
+                            </Label>
+                            <Input
+                              id="tracker-model"
+                              value={newTrackerModel}
+                              onChange={(e) => setNewTrackerModel(e.target.value)}
+                              placeholder="Ex: TR-200"
+                            />
+                          </div>
+                          
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setIsNewConfigOpen(false)}
+                              disabled={isLoading}
+                              type="button"
+                            >
+                              Cancelar
+                            </Button>
+                            <Button 
+                              onClick={handleCreateNewConfiguration}
+                              disabled={isLoading}
+                              type="button"
+                            >
+                              {isLoading ? "Criando..." : "Criar"}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 
                 {formData.testConfiguration === 'Outros' && (
