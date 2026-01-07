@@ -20,6 +20,52 @@ interface SegsaleSale {
   vehicles: SegsaleVehicle[]
 }
 
+// Fetch with timeout and retry logic
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit, 
+  maxRetries = 3, 
+  timeoutMs = 30000
+): Promise<Response> {
+  let lastError: Error | null = null
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+    
+    try {
+      console.log(`🔄 Attempt ${attempt}/${maxRetries} - Fetching: ${url}`)
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
+      return response
+      
+    } catch (error) {
+      clearTimeout(timeoutId)
+      lastError = error as Error
+      
+      if (error.name === 'AbortError') {
+        console.warn(`⏱️ Attempt ${attempt}/${maxRetries} - Timeout after ${timeoutMs}ms`)
+      } else {
+        console.warn(`❌ Attempt ${attempt}/${maxRetries} - Error: ${error.message}`)
+      }
+      
+      // Wait before retrying (exponential backoff)
+      if (attempt < maxRetries) {
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+      }
+    }
+  }
+  
+  throw new Error(`Failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`)
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -44,18 +90,37 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`Fetching Segsale products for idResumoVenda: ${idResumoVenda}`)
+    console.log(`📡 Fetching Segsale products for idResumoVenda: ${idResumoVenda}`)
 
-    // Call Segsale API
+    // Call Segsale API with retry and timeout
     const segsaleUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/produtos-por-veiculo?idResumoVenda=${idResumoVenda}`
     
-    const segsaleResponse = await fetch(segsaleUrl, {
-      method: 'GET',
-      headers: {
-        'Token': segsaleToken,
-        'Content-Type': 'application/json'
-      }
-    })
+    let segsaleResponse: Response
+    try {
+      segsaleResponse = await fetchWithRetry(
+        segsaleUrl,
+        {
+          method: 'GET',
+          headers: {
+            'Token': segsaleToken,
+            'Content-Type': 'application/json'
+          }
+        },
+        3, // maxRetries
+        45000 // 45 second timeout (Segsale can be slow)
+      )
+    } catch (fetchError) {
+      console.error('❌ All retry attempts failed:', fetchError.message)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Segsale API timeout - servidor não respondeu',
+          details: fetchError.message,
+          suggestion: 'A API Segsale está lenta ou indisponível. Tente novamente em alguns minutos.',
+          url: segsaleUrl
+        }),
+        { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!segsaleResponse.ok) {
       const errorText = await segsaleResponse.text()
@@ -76,7 +141,7 @@ Deno.serve(async (req) => {
     }
 
     const salesData: SegsaleSale[] = await segsaleResponse.json()
-    console.log(`Received ${salesData.length} sales from Segsale`)
+    console.log(`✅ Received ${salesData.length} sales from Segsale`)
 
     // Fetch contract items for each sale that has id_contrato_pendente
     const enrichedSalesData = []
@@ -86,17 +151,23 @@ Deno.serve(async (req) => {
       // Check if sale has pending_contract_id to fetch contract items
       if ((sale as any).pending_contract_id) {
         const pendingContractId = (sale as any).pending_contract_id
-        console.log(`Fetching contract items for pending_contract_id: ${pendingContractId}`)
+        console.log(`📦 Fetching contract items for pending_contract_id: ${pendingContractId}`)
         
         try {
           const contractItemsUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/itens-produtos?id=${pendingContractId}`
-          const contractResponse = await fetch(contractItemsUrl, {
-            method: 'GET',
-            headers: {
-              'Token': segsaleToken,
-              'Content-Type': 'application/json'
-            }
-          })
+          
+          const contractResponse = await fetchWithRetry(
+            contractItemsUrl,
+            {
+              method: 'GET',
+              headers: {
+                'Token': segsaleToken,
+                'Content-Type': 'application/json'
+              }
+            },
+            2, // fewer retries for secondary calls
+            20000 // 20 second timeout
+          )
 
           if (contractResponse.ok) {
             const contractItems = await contractResponse.json()
@@ -128,7 +199,7 @@ Deno.serve(async (req) => {
             console.error(`Failed to fetch contract items for ${pendingContractId}: ${contractResponse.status}`)
           }
         } catch (err) {
-          console.error(`Error fetching contract items for ${pendingContractId}:`, err)
+          console.error(`Error fetching contract items for ${pendingContractId}:`, err.message)
         }
       }
       
@@ -136,7 +207,7 @@ Deno.serve(async (req) => {
     }
 
     // Forward all contract_items to receive-vehicle for centralized vehicle_id linking
-    console.log(`Forwarding ${enrichedSalesData.length} sales to receive-vehicle...`)
+    console.log(`📤 Forwarding ${enrichedSalesData.length} sales to receive-vehicle...`)
     console.log(`Contract items will be processed by receive-vehicle with proper vehicle_id linking`)
 
     // After storing, forward data to receive-vehicle for processing
@@ -176,37 +247,50 @@ Deno.serve(async (req) => {
 
     // Only forward if we have groups with vehicles
     if (!apiKey) {
-      console.log('Skipping forwarding to receive-vehicle (missing API key)')
+      console.log('⚠️ Skipping forwarding to receive-vehicle (missing API key)')
     } else if (vehicleGroups.length === 0) {
-      console.log('Skipping forwarding to receive-vehicle (no vehicle groups to process)')
+      console.log('ℹ️ Skipping forwarding to receive-vehicle (no vehicle groups to process)')
       processing = { forwarded: false, message: 'No vehicle groups to process' }
     } else {
-      console.log(`Forwarding ${vehicleGroups.length} group(s) to receive-vehicle...`)
-      console.log('Payload being sent:', JSON.stringify(vehicleGroups, null, 2))
+      console.log(`📤 Forwarding ${vehicleGroups.length} group(s) to receive-vehicle...`)
       
-      // Use direct fetch instead of supabase.functions.invoke to properly send body
-      const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
-      const receiveVehicleResponse = await fetch(receiveVehicleUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-        },
-        body: JSON.stringify(vehicleGroups),
-      })
+      try {
+        // Use direct fetch instead of supabase.functions.invoke to properly send body
+        const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
+        const receiveVehicleResponse = await fetchWithRetry(
+          receiveVehicleUrl,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+            },
+            body: JSON.stringify(vehicleGroups),
+          },
+          2, // fewer retries for internal calls
+          30000 // 30 second timeout
+        )
 
-      if (!receiveVehicleResponse.ok) {
-        const errorText = await receiveVehicleResponse.text()
-        console.error('Error calling receive-vehicle:', receiveVehicleResponse.status, errorText)
+        if (!receiveVehicleResponse.ok) {
+          const errorText = await receiveVehicleResponse.text()
+          console.error('Error calling receive-vehicle:', receiveVehicleResponse.status, errorText)
+          processing = { 
+            forwarded: true, 
+            success: false, 
+            error: `HTTP ${receiveVehicleResponse.status}: ${errorText}` 
+          }
+        } else {
+          const rvData = await receiveVehicleResponse.json()
+          console.log('✅ receive-vehicle processed successfully:', rvData)
+          processing = { forwarded: true, success: true, result: rvData }
+        }
+      } catch (forwardError) {
+        console.error('Error forwarding to receive-vehicle:', forwardError.message)
         processing = { 
           forwarded: true, 
           success: false, 
-          error: `HTTP ${receiveVehicleResponse.status}: ${errorText}` 
+          error: forwardError.message 
         }
-      } else {
-        const rvData = await receiveVehicleResponse.json()
-        console.log('receive-vehicle processed successfully:', rvData)
-        processing = { forwarded: true, success: true, result: rvData }
       }
     }
 
@@ -225,7 +309,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('❌ Unexpected error:', error)
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
