@@ -1246,11 +1246,11 @@ export const ScheduleModal = ({
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Tipo</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Produto</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Técnico</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Previsão de Instalação</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Configuração</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Produto</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Módulo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Acessórios</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Kit</th>
                           </tr>
