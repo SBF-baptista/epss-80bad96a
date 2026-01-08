@@ -515,7 +515,7 @@ export const ScheduleFormModal = ({
                 name="observation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Observação *</FormLabel>
+                    <FormLabel className="text-sm">Observação</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Observações sobre o agendamento" {...field} className="min-h-[60px]" />
                     </FormControl>
