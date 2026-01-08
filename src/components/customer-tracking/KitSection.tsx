@@ -17,11 +17,17 @@ interface KitSectionProps {
 interface IncomingVehicleData {
   kickoff_completed: boolean | null;
   homologation_status: string | null;
+  created_at: string | null;
+}
+
+interface InstallationScheduleData {
+  id: string;
+  scheduled_date: string;
 }
 
 export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [hasInstallationSchedule, setHasInstallationSchedule] = useState(false);
+  const [installationSchedule, setInstallationSchedule] = useState<InstallationScheduleData | null>(null);
   const [incomingVehicleData, setIncomingVehicleData] = useState<IncomingVehicleData | null>(null);
 
   useEffect(() => {
@@ -31,24 +37,28 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
       // Check if there's an installation schedule
       const { data: installationData, error: installationError } = await supabase
         .from('installation_schedules')
-        .select('id')
+        .select('id, scheduled_date')
         .eq('kit_schedule_id', kitData.id)
         .limit(1);
 
       if (!installationError && installationData && installationData.length > 0) {
-        setHasInstallationSchedule(true);
+        setInstallationSchedule(installationData[0]);
       }
 
       // Fetch incoming_vehicle data for kickoff and homologation status
       if (kitData.incoming_vehicle_id) {
         const { data: vehicleData } = await supabase
           .from('incoming_vehicles')
-          .select('kickoff_completed, homologation_status')
+          .select('kickoff_completed, homologation_status, created_at')
           .eq('id', kitData.incoming_vehicle_id)
           .single();
 
         if (vehicleData) {
-          setIncomingVehicleData(vehicleData);
+          setIncomingVehicleData({
+            kickoff_completed: vehicleData.kickoff_completed ?? null,
+            homologation_status: vehicleData.homologation_status ?? null,
+            created_at: vehicleData.created_at ?? null
+          });
         }
       }
     };
@@ -58,7 +68,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
 
   const getStatusInfo = () => {
     // If there's an installation schedule, the vehicle has already been shipped
-    if (hasInstallationSchedule) {
+    if (installationSchedule) {
       return {
         label: "📅 Instalação Agendada",
         color: "bg-green-500",
@@ -141,11 +151,17 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
           {/* Timeline de progresso */}
           <KitStatusTimeline 
             kickoffCompleted={incomingVehicleData?.kickoff_completed ?? false}
+            kickoffDate={incomingVehicleData?.created_at}
             homologationStatus={incomingVehicleData?.homologation_status}
+            homologationDate={null}
             planningStatus={kitData.status}
+            planningDate={kitData.scheduled_date}
             logisticsStatus={kitData.status}
-            hasInstallationSchedule={hasInstallationSchedule}
+            logisticsDate={(kitData as any).updated_at || kitData.scheduled_date}
+            hasInstallationSchedule={!!installationSchedule}
+            scheduleDate={installationSchedule?.scheduled_date}
             installationCompleted={false}
+            installationDate={null}
           />
 
           {/* Histórico completo do processo */}
