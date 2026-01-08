@@ -197,7 +197,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
         <CollapsibleContent>
           <CardContent className="pt-0">
             <ScrollArea className="h-[280px]">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pr-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-4">
                 {visibleSchedules.map((schedule) => (
                   <Card 
                     key={schedule.id} 
