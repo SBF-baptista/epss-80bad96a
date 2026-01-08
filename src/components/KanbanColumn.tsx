@@ -9,6 +9,7 @@ interface KanbanColumnProps {
   title: string;
   orders: Order[];
   color: string;
+  status: string;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: () => void;
   onOrderClick: (order: Order) => void;
@@ -22,6 +23,7 @@ const KanbanColumn = ({
   title,
   orders,
   color,
+  status,
   onDragOver,
   onDrop,
   onOrderClick,
@@ -30,8 +32,9 @@ const KanbanColumn = ({
   onScanClick,
   onShipmentClick
 }: KanbanColumnProps) => {
-  // Group orders by company - only orders that are in this column (already filtered)
-  const groupedOrders = groupOrdersByCompany(orders);
+  // Only group orders by company when status is "enviado", otherwise show individually
+  const shouldGroup = status === 'enviado';
+  const groupedOrders = groupOrdersByCompany(orders, shouldGroup);
   
   const handleGroupClick = (groupedOrder: GroupedOrder) => {
     // Click on the first order in the group

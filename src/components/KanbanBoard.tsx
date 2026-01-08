@@ -327,6 +327,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             title={column.title}
             orders={getOrdersByStatus(column.id)}
             color={column.color}
+            status={column.id}
             onDragOver={handleDragOver}
             onDrop={() => handleDrop(column.id)}
             onOrderClick={(order) => {
@@ -363,6 +364,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 title={column.title}
                 orders={getOrdersByStatus(column.id)}
                 color={column.color}
+                status={column.id}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(column.id)}
                 onOrderClick={(order) => {

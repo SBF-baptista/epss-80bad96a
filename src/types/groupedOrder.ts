@@ -18,7 +18,27 @@ export interface GroupedOrder {
   configuration?: string;
 }
 
-export const groupOrdersByCompany = (orders: Order[]): GroupedOrder[] => {
+export const groupOrdersByCompany = (orders: Order[], shouldGroup: boolean = true): GroupedOrder[] => {
+  // If we shouldn't group, return each order as its own "group"
+  if (!shouldGroup) {
+    return orders.map(order => ({
+      company_name: order.company_name || "Sem Empresa",
+      orders: [order],
+      totalVehicles: order.vehicles.reduce((sum, v) => sum + v.quantity, 0),
+      totalTrackers: order.trackers.reduce((sum, t) => sum + t.quantity, 0),
+      totalAccessories: order.accessories?.reduce((sum, a) => sum + a.quantity, 0) || 0,
+      status: order.status,
+      configurations: [order.configurationType],
+      createdAt: order.createdAt,
+      plate: order.plate,
+      year: order.year,
+      technicianName: order.technicianName,
+      scheduledDate: order.scheduledDate,
+      scheduledTime: order.scheduledTime,
+      configuration: order.configuration,
+    }));
+  }
+
   const groupedMap = new Map<string, Order[]>();
   
   // Group orders by company_name, using "Sem Empresa" for orders without company
