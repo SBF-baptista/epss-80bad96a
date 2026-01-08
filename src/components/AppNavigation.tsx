@@ -18,7 +18,8 @@ import {
   UserCheck,
   Rocket,
   Clock,
-  FileEdit
+  FileEdit,
+  Home
 } from "lucide-react";
 import {
   Sidebar,
@@ -248,6 +249,21 @@ export function AppNavigation() {
           <SidebarGroupContent>
             <SidebarMenu>
               
+              {/* Item: Início - Tela de Seleção de Módulos */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={isActive('/modules')}
+                  tooltip={isCollapsed ? 'Início' : undefined}
+                  className="touch-manipulation tap-target"
+                >
+                  <NavLink to="/modules" className="flex items-center gap-3 px-2 py-2">
+                    <Home className="h-4 w-4 flex-shrink-0" />
+                    {!isCollapsed && <span className="font-medium text-sm truncate">Início</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Item: Kickoff */}
               {singleNavigationItems
                 .filter(item => item.to === "/kickoff" && canAccessItem(item.roles))
