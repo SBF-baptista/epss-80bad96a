@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
-import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText, Car, Settings, Clock } from "lucide-react";
+import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText, Car, Settings, Clock, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cleanItemName, normalizeItemName } from "@/utils/itemNormalization";
 import ProductionForm from "./production/ProductionForm";
@@ -490,99 +490,143 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
               </>
             )}
 
-            {/* "Enviado" (scanner mode): Show Shipment Info as form */}
+            {/* "Enviado" (scanner mode): Show Shipment Info for ALL vehicles */}
             {order.status === "enviado" && viewMode === "scanner" && (
               <>
                 <Separator />
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg text-primary">Informações de Envio</h3>
-                  <div className="space-y-4">
-                    {/* Row: Técnico */}
-                    {schedule?.technician?.name && (
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Técnico</Label>
-                        <Input 
-                          value={schedule.technician.name} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                    )}
-                    {/* Row: Rua, Número */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2 md:col-span-2">
-                        <Label className="text-sm text-muted-foreground">Rua/Logradouro</Label>
-                        <Input 
-                          value={schedule?.installation_address_street || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Número</Label>
-                        <Input 
-                          value={schedule?.installation_address_number || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
+                <div className="space-y-6">
+                  <h3 className="font-semibold text-lg text-primary">Veículos Enviados</h3>
+                  {loading ? (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground">Carregando veículos...</p>
                     </div>
-                    {/* Row: Bairro, Complemento */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Bairro</Label>
-                        <Input 
-                          value={schedule?.installation_address_neighborhood || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Complemento</Label>
-                        <Input 
-                          value={schedule?.installation_address_complement || '-'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                    </div>
-                    {/* Row: Cidade, UF, CEP */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Cidade</Label>
-                        <Input 
-                          value={schedule?.installation_address_city || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">UF</Label>
-                        <Input 
-                          value={schedule?.installation_address_state || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">CEP</Label>
-                        <Input 
-                          value={schedule?.installation_address_postal_code || 'N/A'} 
-                          disabled 
-                          className="bg-muted/50"
-                        />
-                      </div>
-                    </div>
-                    {/* Row: Código de Rastreio */}
-                    <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Código de Rastreio</Label>
-                      <Input 
-                        value={schedule?.tracking_code || 'N/A'} 
-                        disabled 
-                        className="bg-muted/50"
-                      />
-                    </div>
-                  </div>
+                  ) : (
+                    (allSchedules.length > 0 ? allSchedules : schedule ? [schedule] : []).map((sched, idx) => {
+                      // Get selected kit names for this schedule
+                      const scheduleWithKits = sched as any;
+                      const selectedKitNames = scheduleWithKits.selected_kit_ids && Array.isArray(scheduleWithKits.selected_kit_ids)
+                        ? scheduleWithKits.selected_kit_ids.map((kitId: string) => kitNamesMap[kitId] || `Kit ${kitId}`).join(', ')
+                        : sched.kit?.name || 'N/A';
+
+                      return (
+                        <div key={sched.id || idx} className="p-4 bg-card border-2 border-primary/20 rounded-lg space-y-4">
+                          {/* Vehicle Header */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {sched.vehicle_plate && (
+                              <Badge variant="outline" className="text-base font-bold px-3 py-1">
+                                {sched.vehicle_plate}
+                              </Badge>
+                            )}
+                            {(sched.vehicle_brand || sched.vehicle_model) && (
+                              <span className="text-sm text-foreground font-medium">
+                                {[sched.vehicle_brand, sched.vehicle_model].filter(Boolean).join(' ')}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Kit info */}
+                          <div className="space-y-2">
+                            <Label className="text-sm text-muted-foreground">Kit Selecionado</Label>
+                            <Input 
+                              value={selectedKitNames} 
+                              disabled 
+                              className="bg-muted/50"
+                            />
+                          </div>
+
+                          {/* Técnico */}
+                          {sched.technician?.name && (
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">Técnico</Label>
+                              <Input 
+                                value={sched.technician.name} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                          )}
+
+                          {/* Address: Rua, Número */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label className="text-sm text-muted-foreground">Rua/Logradouro</Label>
+                              <Input 
+                                value={sched.installation_address_street || 'N/A'} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">Número</Label>
+                              <Input 
+                                value={sched.installation_address_number || 'N/A'} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Bairro, Complemento */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">Bairro</Label>
+                              <Input 
+                                value={sched.installation_address_neighborhood || 'N/A'} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">Complemento</Label>
+                              <Input 
+                                value={sched.installation_address_complement || '-'} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Cidade, UF, CEP */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">Cidade</Label>
+                              <Input 
+                                value={sched.installation_address_city || 'N/A'} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">UF</Label>
+                              <Input 
+                                value={sched.installation_address_state || 'N/A'} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">CEP</Label>
+                              <Input 
+                                value={sched.installation_address_postal_code || 'N/A'} 
+                                disabled 
+                                className="bg-muted/50"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Código de Rastreio */}
+                          <div className="space-y-2">
+                            <Label className="text-sm text-primary font-semibold">Código de Rastreio</Label>
+                            <Input 
+                              value={sched.tracking_code || 'N/A'} 
+                              disabled 
+                              className="bg-success-light/50 border-success/30 font-mono"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </>
             )}
@@ -884,10 +928,20 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                   <span className="font-medium">{formatDate(sched.scheduled_date)}</span>
                                 </div>
                                 {sched.technician && (
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <User className="h-4 w-4 text-primary" />
-                                    <span className="text-muted-foreground">Técnico:</span>
-                                    <span className="font-medium">{sched.technician.name}</span>
+                                  <div className="flex flex-col gap-1 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-4 w-4 text-primary" />
+                                      <span className="text-muted-foreground">Técnico:</span>
+                                      <span className="font-medium">{sched.technician.name}</span>
+                                    </div>
+                                    {/* Tracking code under technician */}
+                                    {sched.tracking_code && (
+                                      <div className="flex items-center gap-2 ml-6">
+                                        <Package className="h-3.5 w-3.5 text-success" />
+                                        <span className="text-xs text-muted-foreground">Rastreio:</span>
+                                        <span className="font-mono text-xs text-success font-medium">{sched.tracking_code}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                                 {sched.installation_address_city && (
