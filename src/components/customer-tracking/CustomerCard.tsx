@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Phone, Mail, MapPin } from "lucide-react";
-import { Customer, formatCPF, formatCNPJ, formatPhone } from "@/services/customerService";
+import { ChevronDown, ChevronUp, MapPin } from "lucide-react";
+import { Customer } from "@/services/customerService";
 import { KitSection } from "./KitSection";
 
 import { CustomerKitData } from "@/pages/CustomerTracking";
@@ -16,15 +16,6 @@ interface CustomerCardProps {
 export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const formatDocument = (documentNumber: string, documentType: string) => {
-    if (documentType === 'CPF') {
-      return formatCPF(documentNumber);
-    } else if (documentType === 'CNPJ') {
-      return formatCNPJ(documentNumber);
-    }
-    return documentNumber;
-  };
-
   return (
     <Card className="w-full">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -35,24 +26,11 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
                 <div className="flex items-center gap-3">
                   <CardTitle className="text-lg">{customer.name}</CardTitle>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span className="font-mono">
-                    {formatDocument(customer.document_number, customer.document_type)}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-4 w-4" />
-                    {formatPhone(customer.phone)}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-4 w-4" />
-                    {customer.email}
-                  </div>
-                </div>
                 <div className="flex items-center gap-1 text-sm text-gray-500">
-                  <MapPin className="h-4 w-4" />
-                  {customer.address_street}, {customer.address_number} - {customer.address_neighborhood}
-                  <br />
-                  {customer.address_city}, {customer.address_state} - {customer.address_postal_code}
+                  <MapPin className="h-4 w-4 flex-shrink-0" />
+                  <span>
+                    {customer.address_street}, {customer.address_number} - {customer.address_neighborhood}, {customer.address_city}, {customer.address_state} - {customer.address_postal_code}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
