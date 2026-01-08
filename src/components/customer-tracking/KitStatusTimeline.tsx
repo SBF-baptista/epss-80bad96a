@@ -2,87 +2,105 @@ import { CheckCircle, Clock, FileCheck, Truck, Calendar, Wrench } from "lucide-r
 
 interface KitStatusTimelineProps {
   kickoffCompleted?: boolean;
+  kickoffDate?: string | null;
   homologationStatus?: string | null;
-  planningStatus?: string; // scheduled = planejado
-  logisticsStatus?: string; // scheduled, in_progress, completed, shipped
+  homologationDate?: string | null;
+  planningStatus?: string;
+  planningDate?: string | null;
+  logisticsStatus?: string;
+  logisticsDate?: string | null;
   hasInstallationSchedule?: boolean;
+  scheduleDate?: string | null;
   installationCompleted?: boolean;
+  installationDate?: string | null;
 }
 
 export const KitStatusTimeline = ({ 
   kickoffCompleted,
+  kickoffDate,
   homologationStatus,
+  homologationDate,
   planningStatus,
+  planningDate,
   logisticsStatus,
+  logisticsDate,
   hasInstallationSchedule,
-  installationCompleted
+  scheduleDate,
+  installationCompleted,
+  installationDate
 }: KitStatusTimelineProps) => {
   
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return null;
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    } catch {
+      return null;
+    }
+  };
+
   // Step 1: Kickoff
   const getKickoffStatus = () => {
-    if (kickoffCompleted) return { status: "completed", label: "Realizado" };
-    return { status: "pending", label: "Pendente" };
+    if (kickoffCompleted) return { status: "completed", label: "Realizado", date: formatDate(kickoffDate) };
+    return { status: "pending", label: "Pendente", date: null };
   };
 
   // Step 2: Homologação
   const getHomologationStepStatus = () => {
-    // homologation_status enum: homologar, em_homologacao, em_testes_finais, homologado, agendamento_teste, execucao_teste, armazenamento_plataforma
     if (!homologationStatus || homologationStatus === 'homologar') {
-      return { status: "pending", label: "Pendente" };
+      return { status: "pending", label: "Pendente", date: null };
     }
     if (homologationStatus === 'agendamento_teste' || homologationStatus === 'execucao_teste') {
-      return { status: "in_progress", label: "Agendada" };
+      return { status: "in_progress", label: "Agendada", date: formatDate(homologationDate) };
     }
     if (homologationStatus === 'homologado' || homologationStatus === 'armazenamento_plataforma') {
-      return { status: "completed", label: "Homologada" };
+      return { status: "completed", label: "Homologada", date: formatDate(homologationDate) };
     }
-    // em_homologacao, em_testes_finais
-    return { status: "in_progress", label: "Em Andamento" };
+    return { status: "in_progress", label: "Em Andamento", date: formatDate(homologationDate) };
   };
 
   // Step 3: Planejamento
   const getPlanningStepStatus = () => {
-    // Se tem um kit_schedule criado (qualquer status), o planejamento foi realizado
     if (planningStatus) {
-      return { status: "completed", label: "Realizado" };
+      return { status: "completed", label: "Realizado", date: formatDate(planningDate) };
     }
-    return { status: "pending", label: "Pendente" };
+    return { status: "pending", label: "Pendente", date: null };
   };
 
   // Step 4: Logística
   const getLogisticsStepStatus = () => {
     if (!logisticsStatus || logisticsStatus === 'pending') {
-      return { status: "pending", label: "Pendente" };
+      return { status: "pending", label: "Pendente", date: null };
     }
     if (logisticsStatus === 'scheduled') {
-      return { status: "step1", label: "Pedidos" };
+      return { status: "step1", label: "Pedidos", date: formatDate(logisticsDate) };
     }
     if (logisticsStatus === 'in_progress') {
-      return { status: "step2", label: "Produção" };
+      return { status: "step2", label: "Produção", date: formatDate(logisticsDate) };
     }
     if (logisticsStatus === 'completed') {
-      return { status: "step3", label: "Aguard. Envio" };
+      return { status: "step3", label: "Aguard. Envio", date: formatDate(logisticsDate) };
     }
     if (logisticsStatus === 'shipped') {
-      return { status: "step4", label: "Enviado" };
+      return { status: "step4", label: "Enviado", date: formatDate(logisticsDate) };
     }
-    return { status: "pending", label: "Pendente" };
+    return { status: "pending", label: "Pendente", date: null };
   };
 
   // Step 5: Agendamento (de instalação)
   const getSchedulingStepStatus = () => {
     if (hasInstallationSchedule) {
-      return { status: "completed", label: "Realizado" };
+      return { status: "completed", label: "Realizado", date: formatDate(scheduleDate) };
     }
-    return { status: "pending", label: "Pendente" };
+    return { status: "pending", label: "Pendente", date: null };
   };
 
   // Step 6: Instalação
   const getInstallationStepStatus = () => {
     if (installationCompleted) {
-      return { status: "completed", label: "Realizado" };
+      return { status: "completed", label: "Realizado", date: formatDate(installationDate) };
     }
-    return { status: "pending", label: "Pendente" };
+    return { status: "pending", label: "Pendente", date: null };
   };
 
   const kickoff = getKickoffStatus();
@@ -95,56 +113,68 @@ export const KitStatusTimeline = ({
   const steps = [
     {
       id: "kickoff",
-      label: "Kickoff",
+      name: "Kickoff",
       icon: FileCheck,
-      ...kickoff
+      statusLabel: kickoff.label,
+      statusType: kickoff.status,
+      date: kickoff.date
     },
     {
       id: "homologation",
-      label: "Homologação",
+      name: "Homologação",
       icon: CheckCircle,
-      ...homologation
+      statusLabel: homologation.label,
+      statusType: homologation.status,
+      date: homologation.date
     },
     {
       id: "planning",
-      label: "Planejamento",
+      name: "Planejamento",
       icon: Calendar,
-      ...planning
+      statusLabel: planning.label,
+      statusType: planning.status,
+      date: planning.date
     },
     {
       id: "logistics",
-      label: "Logística",
+      name: "Logística",
       icon: Truck,
-      ...logistics
+      statusLabel: logistics.label,
+      statusType: logistics.status,
+      date: logistics.date
     },
     {
       id: "scheduling",
-      label: "Agendamento",
+      name: "Agendamento",
       icon: Clock,
-      ...scheduling
+      statusLabel: scheduling.label,
+      statusType: scheduling.status,
+      date: scheduling.date
     },
     {
       id: "installation",
-      label: "Instalação",
+      name: "Instalação",
       icon: Wrench,
-      ...installation
+      statusLabel: installation.label,
+      statusType: installation.status,
+      date: installation.date
     }
   ];
 
   const getStepColor = (step: typeof steps[0]) => {
-    if (step.status === "completed" || step.status === "step4") {
+    if (step.statusType === "completed" || step.statusType === "step4") {
       return "bg-green-500 border-green-500 text-white";
     }
-    if (step.status === "in_progress" || step.status === "step1" || step.status === "step2" || step.status === "step3") {
+    if (step.statusType === "in_progress" || step.statusType === "step1" || step.statusType === "step2" || step.statusType === "step3") {
       return "bg-blue-500 border-blue-500 text-white";
     }
     return "bg-gray-200 border-gray-300 text-gray-500";
   };
 
   const getTextColor = (step: typeof steps[0]) => {
-    if (step.status === "completed" || step.status === "step4" || 
-        step.status === "in_progress" || step.status === "step1" || 
-        step.status === "step2" || step.status === "step3") {
+    if (step.statusType === "completed" || step.statusType === "step4" || 
+        step.statusType === "in_progress" || step.statusType === "step1" || 
+        step.statusType === "step2" || step.statusType === "step3") {
       return "text-gray-900";
     }
     return "text-gray-500";
@@ -170,21 +200,16 @@ export const KitStatusTimeline = ({
               
               <div className="text-center mt-2 min-w-0">
                 <div className={`text-xs font-medium ${getTextColor(step)}`}>
-                  {step.label}
+                  {step.name}
                 </div>
                 <div className={`text-[10px] mt-0.5 ${
-                  step.status === "completed" || step.status === "step4" 
+                  step.statusType === "completed" || step.statusType === "step4" 
                     ? "text-green-600 font-medium" 
-                    : step.status === "in_progress" || step.status === "step1" || step.status === "step2" || step.status === "step3"
+                    : step.statusType === "in_progress" || step.statusType === "step1" || step.statusType === "step2" || step.statusType === "step3"
                     ? "text-blue-600 font-medium"
                     : "text-gray-400"
                 }`}>
-                  {step.id === "logistics" ? logistics.label : 
-                   step.id === "homologation" ? homologation.label :
-                   step.id === "kickoff" ? kickoff.label :
-                   step.id === "planning" ? planning.label :
-                   step.id === "scheduling" ? scheduling.label :
-                   installation.label}
+                  {step.date || step.statusLabel}
                 </div>
               </div>
             </div>
