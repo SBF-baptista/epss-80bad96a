@@ -133,7 +133,7 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
     }).join('\n\n');
 
     try {
-      const { error: sendError } = await supabase.functions.invoke('send-whatsapp', {
+      const { data, error: sendError } = await supabase.functions.invoke('send-whatsapp', {
         body: {
           orderId: 'next-day-agenda',
           orderNumber: `Agenda Amanhã - ${technician.name}`,
@@ -151,6 +151,21 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       if (sendError) {
         return { success: false, error: sendError.message };
       }
+
+      // Check response for delivery issues
+      if (data?.errorCode) {
+        return { 
+          success: false, 
+          error: `Twilio erro ${data.errorCode}: ${data.errorMessage || 'Verifique se o número está opt-in'}` 
+        };
+      }
+
+      // Log the status for debugging
+      console.log(`WhatsApp sent to ${technician.name}:`, {
+        sid: data?.messageSid,
+        status: data?.finalStatus,
+        format: data?.variablesFormat
+      });
 
       return { success: true };
     } catch (err) {

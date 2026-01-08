@@ -11,7 +11,6 @@ interface WhatsAppMessage {
   recipientName: string;
   companyName?: string;
   customMessage?: string;
-  // Template support
   templateType?: 'order_shipped' | 'technician_schedule' | 'technician_next_day_agenda';
   templateVariables?: {
     technicianName?: string;
@@ -29,16 +28,13 @@ interface WhatsAppMessage {
 function normalizeToE164(phone: string): string | null {
   const digits = phone.replace(/\D/g, '');
   if (!digits) return null;
-  // If already includes country code BR (55)
   if (digits.startsWith('55') && digits.length >= 12 && digits.length <= 13) {
     return `+${digits}`;
   }
-  // If original had +, keep it
   if (phone.trim().startsWith('+')) {
     const cleaned = `+${digits}`;
     return /^\+[1-9]\d{7,14}$/.test(cleaned) ? cleaned : null;
   }
-  // Heuristic: assume Brazil if 10-11 local digits
   if (digits.length === 10 || digits.length === 11) {
     const br = `+55${digits}`;
     return /^\+[1-9]\d{7,14}$/.test(br) ? br : null;
@@ -47,8 +43,68 @@ function normalizeToE164(phone: string): string | null {
   return /^\+[1-9]\d{7,14}$/.test(generic) ? generic : null;
 }
 
+// Helper to send message with specific ContentVariables format
+async function sendWithVariables(
+  twilioUrl: string,
+  authHeader: string,
+  fromNumber: string,
+  toPhone: string,
+  contentSid: string,
+  variables: Record<string, string>,
+  attemptLabel: string
+): Promise<{ ok: boolean; status: number; body: string }> {
+  console.log(`Attempt [${attemptLabel}] with variables:`, JSON.stringify(variables));
+  
+  const formData = new URLSearchParams();
+  formData.append('From', `whatsapp:${fromNumber}`);
+  formData.append('To', `whatsapp:${toPhone}`);
+  formData.append('ContentSid', contentSid);
+  formData.append('ContentVariables', JSON.stringify(variables));
+
+  const response = await fetch(twilioUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': authHeader,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData,
+  });
+
+  const body = await response.text();
+  return { ok: response.ok, status: response.status, body };
+}
+
+// Check message status after sending
+async function checkMessageStatus(
+  twilioAccountSid: string,
+  authHeader: string,
+  messageSid: string
+): Promise<{ status: string; errorCode?: number; errorMessage?: string }> {
+  try {
+    // Wait a moment for status to update
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const statusUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages/${messageSid}.json`;
+    const response = await fetch(statusUrl, {
+      method: 'GET',
+      headers: { 'Authorization': authHeader },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        status: data.status || 'unknown',
+        errorCode: data.error_code || undefined,
+        errorMessage: data.error_message || undefined,
+      };
+    }
+  } catch (e) {
+    console.error('Error checking message status:', e);
+  }
+  return { status: 'unknown' };
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -95,117 +151,206 @@ Deno.serve(async (req) => {
     console.log('Has customMessage:', !!customMessage);
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-    const formData = new URLSearchParams();
-    formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
-    formData.append('To', `whatsapp:${toPhone}`);
+    const authHeader = `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`;
+    
+    let twilioResult: any = null;
+    let usedContentSid = '';
+    let usedVariablesFormat = '';
 
-    // Determine which template/message to use
+    // Handle technician_next_day_agenda with fallback
     if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
-      // Use next day agenda template
-      console.log('Using next day agenda template:', nextDayAgendaContentSid);
-      formData.append('ContentSid', nextDayAgendaContentSid);
-
-      // Some Twilio Content templates use NAMED variables (not numeric placeholders).
-      // To maximize compatibility, we send named variables for this template.
-      const variables = {
+      usedContentSid = nextDayAgendaContentSid;
+      
+      // Try NAMED variables first
+      const namedVars = {
         technicianName: String(templateVariables?.technicianName || recipientName || ''),
         scheduledDate: String(templateVariables?.scheduledDate || ''),
         scheduleList: String(templateVariables?.scheduleList || ''),
-      } as Record<string, string>;
-
-      formData.append('ContentVariables', JSON.stringify(variables));
-    } else if (templateType === 'technician_schedule' && technicianScheduleContentSid) {
-      // Use technician schedule template
-      console.log('Using technician schedule template:', technicianScheduleContentSid);
-      formData.append('ContentSid', technicianScheduleContentSid);
+      };
       
-      // Map variables to template placeholders (1-indexed)
-      const variables = {
-        '1': templateVariables?.technicianName || recipientName,
-        '2': templateVariables?.scheduledDate || '',
-        '3': templateVariables?.scheduledTime || 'A definir',
-        '4': templateVariables?.customerName || '',
-        '5': templateVariables?.address || '',
-        '6': templateVariables?.contactPhone || 'Não informado',
-      } as Record<string, string>;
-      formData.append('ContentVariables', JSON.stringify(variables));
-      
-    } else if (templateType === 'order_shipped' && orderShippedContentSid) {
-      // Use order shipped template
-      console.log('Using order shipped template:', orderShippedContentSid);
-      formData.append('ContentSid', orderShippedContentSid);
-      const variables = {
-        '1': orderNumber,
-        '2': recipientName,
-        '3': companyName || '',
-        order_number: orderNumber,
-        orderNumber: trackingCode || orderNumber,
-        recipient_name: recipientName,
-        company_name: companyName || '',
-      } as Record<string, string>;
-      formData.append('ContentVariables', JSON.stringify(variables));
-      
-    } else if (customMessage) {
-      // Use custom message (only works within 24h window)
-      console.log('Using custom message (freeform) - requires 24h window');
-      formData.append('Body', customMessage);
-      
-    } else if (orderShippedContentSid) {
-      // Fallback to order shipped template for backward compatibility
-      console.log('Fallback to order shipped template');
-      formData.append('ContentSid', orderShippedContentSid);
-      const variables = {
-        '1': orderNumber,
-        '2': recipientName,
-        '3': companyName || '',
-        order_number: orderNumber,
-        orderNumber: trackingCode || orderNumber,
-        recipient_name: recipientName,
-        company_name: companyName || '',
-      } as Record<string, string>;
-      formData.append('ContentVariables', JSON.stringify(variables));
-      
-    } else {
-      // No template available, use fallback body message (may fail outside 24h window)
-      console.warn('No template configured, using fallback body message');
-      const message = `🚚 *Pedido Enviado - ${orderNumber}*\n\n` +
-        `Olá ${recipientName}!\n\n` +
-        `Seu pedido foi enviado e está a caminho! 📦\n\n` +
-        `${companyName ? `Empresa: ${companyName}\n` : ''}` +
-        `${trackingCode ? `Código de Rastreamento: ${trackingCode}\n` : ''}` +
-        `Número do Pedido: ${orderNumber}\n\n` +
-        `Em breve você receberá mais informações sobre a entrega.\n\n` +
-        `Obrigado por escolher nossos serviços! 🙏`;
-      formData.append('Body', message);
-    }
-
-    const response = await fetch(twilioUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData,
-    });
-
-    const resultText = await response.text();
-    console.log('Twilio response status:', response.status);
-    console.log('Twilio response:', resultText);
-
-    if (!response.ok) {
-      console.error('Failed to send WhatsApp message:', resultText);
-      return new Response(
-        JSON.stringify({ error: 'Failed to send WhatsApp message', details: resultText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      let result = await sendWithVariables(
+        twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
+        nextDayAgendaContentSid, namedVars, 'named'
       );
+
+      // Check if we got 21656 error - try NUMERIC format
+      if (!result.ok && result.body.includes('21656')) {
+        console.log('Named variables failed with 21656, trying numeric format...');
+        usedVariablesFormat = 'numeric (fallback)';
+        
+        const numericVars = {
+          '1': String(templateVariables?.technicianName || recipientName || ''),
+          '2': String(templateVariables?.scheduledDate || ''),
+          '3': String(templateVariables?.scheduleList || ''),
+        };
+        
+        result = await sendWithVariables(
+          twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
+          nextDayAgendaContentSid, numericVars, 'numeric'
+        );
+      } else {
+        usedVariablesFormat = 'named';
+      }
+
+      if (!result.ok) {
+        console.error('Failed to send WhatsApp message:', result.body);
+        return new Response(
+          JSON.stringify({ error: 'Failed to send WhatsApp message', details: result.body }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try { twilioResult = JSON.parse(result.body); } catch (_) { twilioResult = { sid: 'unknown' }; }
+
+    } else if (templateType === 'technician_schedule' && technicianScheduleContentSid) {
+      usedContentSid = technicianScheduleContentSid;
+      
+      // Try NUMERIC variables first
+      const numericVars = {
+        '1': String(templateVariables?.technicianName || recipientName || ''),
+        '2': String(templateVariables?.scheduledDate || ''),
+        '3': String(templateVariables?.scheduledTime || 'A definir'),
+        '4': String(templateVariables?.customerName || ''),
+        '5': String(templateVariables?.address || ''),
+        '6': String(templateVariables?.contactPhone || 'Não informado'),
+      };
+      
+      let result = await sendWithVariables(
+        twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
+        technicianScheduleContentSid, numericVars, 'numeric'
+      );
+
+      // Check if we got 21656 error - try NAMED format
+      if (!result.ok && result.body.includes('21656')) {
+        console.log('Numeric variables failed with 21656, trying named format...');
+        usedVariablesFormat = 'named (fallback)';
+        
+        const namedVars = {
+          technicianName: String(templateVariables?.technicianName || recipientName || ''),
+          scheduledDate: String(templateVariables?.scheduledDate || ''),
+          scheduledTime: String(templateVariables?.scheduledTime || 'A definir'),
+          customerName: String(templateVariables?.customerName || ''),
+          address: String(templateVariables?.address || ''),
+          contactPhone: String(templateVariables?.contactPhone || 'Não informado'),
+        };
+        
+        result = await sendWithVariables(
+          twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
+          technicianScheduleContentSid, namedVars, 'named'
+        );
+      } else {
+        usedVariablesFormat = 'numeric';
+      }
+
+      if (!result.ok) {
+        console.error('Failed to send WhatsApp message:', result.body);
+        return new Response(
+          JSON.stringify({ error: 'Failed to send WhatsApp message', details: result.body }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try { twilioResult = JSON.parse(result.body); } catch (_) { twilioResult = { sid: 'unknown' }; }
+
+    } else {
+      // Handle other templates and custom messages with original logic
+      const formData = new URLSearchParams();
+      formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
+      formData.append('To', `whatsapp:${toPhone}`);
+
+      if (templateType === 'order_shipped' && orderShippedContentSid) {
+        usedContentSid = orderShippedContentSid;
+        usedVariablesFormat = 'mixed';
+        formData.append('ContentSid', orderShippedContentSid);
+        const variables = {
+          '1': orderNumber,
+          '2': recipientName,
+          '3': companyName || '',
+          order_number: orderNumber,
+          orderNumber: trackingCode || orderNumber,
+          recipient_name: recipientName,
+          company_name: companyName || '',
+        };
+        formData.append('ContentVariables', JSON.stringify(variables));
+      } else if (customMessage) {
+        usedVariablesFormat = 'custom_body';
+        formData.append('Body', customMessage);
+      } else if (orderShippedContentSid) {
+        usedContentSid = orderShippedContentSid;
+        usedVariablesFormat = 'fallback';
+        formData.append('ContentSid', orderShippedContentSid);
+        const variables = {
+          '1': orderNumber,
+          '2': recipientName,
+          '3': companyName || '',
+          order_number: orderNumber,
+          orderNumber: trackingCode || orderNumber,
+          recipient_name: recipientName,
+          company_name: companyName || '',
+        };
+        formData.append('ContentVariables', JSON.stringify(variables));
+      } else {
+        usedVariablesFormat = 'fallback_body';
+        const message = `🚚 *Pedido Enviado - ${orderNumber}*\n\n` +
+          `Olá ${recipientName}!\n\n` +
+          `Seu pedido foi enviado e está a caminho! 📦\n\n` +
+          `${companyName ? `Empresa: ${companyName}\n` : ''}` +
+          `${trackingCode ? `Código de Rastreamento: ${trackingCode}\n` : ''}` +
+          `Número do Pedido: ${orderNumber}\n\n` +
+          `Em breve você receberá mais informações sobre a entrega.\n\n` +
+          `Obrigado por escolher nossos serviços! 🙏`;
+        formData.append('Body', message);
+      }
+
+      const response = await fetch(twilioUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+
+      const resultText = await response.text();
+      console.log('Twilio response status:', response.status);
+      console.log('Twilio response:', resultText);
+
+      if (!response.ok) {
+        console.error('Failed to send WhatsApp message:', resultText);
+        return new Response(
+          JSON.stringify({ error: 'Failed to send WhatsApp message', details: resultText }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try { twilioResult = JSON.parse(resultText); } catch (_) { twilioResult = { sid: 'unknown' }; }
     }
 
-    let twilioResult: any;
-    try { twilioResult = JSON.parse(resultText); } catch (_) { twilioResult = { sid: 'unknown', raw: resultText }; }
-    console.log('WhatsApp message sent successfully:', twilioResult.sid);
+    const messageSid = twilioResult?.sid || 'unknown';
+    const initialStatus = twilioResult?.status || 'unknown';
+    
+    console.log('WhatsApp message sent successfully:', messageSid, 'initial status:', initialStatus);
+
+    // Check message status after a brief delay
+    const statusCheck = await checkMessageStatus(twilioAccountSid, authHeader, messageSid);
+    console.log('Post-send status check:', statusCheck);
 
     return new Response(
-      JSON.stringify({ success: true, messageSid: twilioResult.sid, message: 'WhatsApp message sent successfully' }),
+      JSON.stringify({ 
+        success: true, 
+        messageSid,
+        to: toPhone,
+        templateType: templateType || 'none',
+        contentSid: usedContentSid || 'none',
+        variablesFormat: usedVariablesFormat,
+        initialStatus,
+        finalStatus: statusCheck.status,
+        errorCode: statusCheck.errorCode,
+        errorMessage: statusCheck.errorMessage,
+        message: statusCheck.errorCode 
+          ? `Mensagem enviada mas com erro: ${statusCheck.errorMessage || statusCheck.errorCode}`
+          : 'WhatsApp message sent successfully'
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
