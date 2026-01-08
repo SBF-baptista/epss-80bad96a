@@ -115,29 +115,16 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format message for Twilio template with variables {{1}}, {{2}}, {{3}}
+    // Format message for Twilio template - keep it simple without special characters
     const scheduleList = schedules.map((s, index) => {
       const lines = [];
+      lines.push(`Horario: ${s.scheduled_time || 'A definir'}`);
+      lines.push(`Cliente: ${s.customer || 'Nao informado'}`);
+      lines.push(`Telefone: ${s.phone || 'Nao informado'}`);
+      lines.push(`Endereco: ${s.address || 'Nao informado'}`);
+      lines.push(`Ponto de referencia: ${s.reference_point || 'Nao informado'}`);
+      lines.push(`Contato local: ${s.local_contact || 'Nao informado'}`);
       
-      // Horário
-      lines.push(`🕗 Horário: ${s.scheduled_time || 'A definir'}`);
-      
-      // Cliente
-      lines.push(`👤 Cliente: ${s.customer || 'Não informado'}`);
-      
-      // Telefone
-      lines.push(`📞 Telefone: ${s.phone || 'Não informado'}`);
-      
-      // Endereço
-      lines.push(`📍 Endereço: ${s.address || 'Não informado'}`);
-      
-      // Ponto de referência
-      lines.push(`📍 Ponto de referência: ${s.reference_point || 'Não informado'}`);
-      
-      // Contato local
-      lines.push(`👤 Contato local: ${s.local_contact || 'Não informado'}`);
-      
-      // Separador entre agendamentos (exceto no último)
       if (index < schedules.length - 1) {
         lines.push('---');
       }
