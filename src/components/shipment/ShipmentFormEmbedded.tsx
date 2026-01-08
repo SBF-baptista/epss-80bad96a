@@ -67,6 +67,9 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
     }
   };
 
+  // Use schedule.id if available, otherwise fall back to order.id
+  const scheduleId = schedule?.id || order.id;
+
   const updateShipmentMutation = useMutation({
     mutationFn: (data: {
       installation_address_street: string;
@@ -77,7 +80,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
       installation_address_postal_code: string;
       installation_address_complement?: string;
       tracking_code?: string;
-    }) => updateKitScheduleShipment(order.id, data),
+    }) => updateKitScheduleShipment(scheduleId, data),
     onSuccess: () => {
       toast({
         title: "Envio preparado",
@@ -86,7 +89,8 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
       queryClient.invalidateQueries({ queryKey: ["kit-schedules"] });
       onUpdate?.();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error saving shipment:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar informações de envio.",
@@ -95,10 +99,14 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
     },
   });
 
-  // Load tracking code if available
+  // Load tracking code if available from schedule or order
   useEffect(() => {
-    if (order.trackingCode) setTrackingCode(order.trackingCode);
-  }, [order]);
+    if (schedule?.tracking_code) {
+      setTrackingCode(schedule.tracking_code);
+    } else if (order.trackingCode) {
+      setTrackingCode(order.trackingCode);
+    }
+  }, [order, schedule]);
 
   // Pre-fill technician from schedule when technicians are loaded
   useEffect(() => {
