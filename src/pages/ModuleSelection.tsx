@@ -1,17 +1,17 @@
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  LayoutDashboard, 
-  Package, 
-  ClipboardCheck, 
-  Calendar, 
-  Users, 
+import {
+  LayoutDashboard,
+  Package,
+  ClipboardCheck,
+  Calendar,
+  Users,
   Truck,
   FileText,
   Settings,
   History,
-  UserCog
+  UserCog,
 } from "lucide-react";
 
 interface ModuleCard {
@@ -32,7 +32,7 @@ const modules: ModuleCard[] = [
     path: "/dashboard",
     allowedRoles: ["admin", "gestor"],
     bgColor: "bg-blue-500/10 hover:bg-blue-500/20",
-    iconColor: "text-blue-600"
+    iconColor: "text-blue-600",
   },
   {
     title: "Kickoff",
@@ -41,7 +41,7 @@ const modules: ModuleCard[] = [
     path: "/kickoff",
     allowedRoles: ["admin", "gestor", "operador_kickoff"],
     bgColor: "bg-purple-500/10 hover:bg-purple-500/20",
-    iconColor: "text-purple-600"
+    iconColor: "text-purple-600",
   },
   {
     title: "Homologação",
@@ -50,7 +50,7 @@ const modules: ModuleCard[] = [
     path: "/homologation",
     allowedRoles: ["admin", "gestor", "operador_homologacao"],
     bgColor: "bg-green-500/10 hover:bg-green-500/20",
-    iconColor: "text-green-600"
+    iconColor: "text-green-600",
   },
   {
     title: "Planejamento",
@@ -59,7 +59,7 @@ const modules: ModuleCard[] = [
     path: "/planning",
     allowedRoles: ["admin", "gestor", "operador_agendamento"],
     bgColor: "bg-orange-500/10 hover:bg-orange-500/20",
-    iconColor: "text-orange-600"
+    iconColor: "text-orange-600",
   },
   {
     title: "Agendamento",
@@ -68,7 +68,7 @@ const modules: ModuleCard[] = [
     path: "/scheduling",
     allowedRoles: ["admin", "gestor", "operador_agendamento"],
     bgColor: "bg-teal-500/10 hover:bg-teal-500/20",
-    iconColor: "text-teal-600"
+    iconColor: "text-teal-600",
   },
   {
     title: "Logística",
@@ -77,7 +77,7 @@ const modules: ModuleCard[] = [
     path: "/kanban",
     allowedRoles: ["admin", "gestor", "operador_suprimentos"],
     bgColor: "bg-amber-500/10 hover:bg-amber-500/20",
-    iconColor: "text-amber-600"
+    iconColor: "text-amber-600",
   },
   {
     title: "Acompanhamento",
@@ -86,7 +86,7 @@ const modules: ModuleCard[] = [
     path: "/customer-tracking",
     allowedRoles: ["admin", "gestor", "operador_kickoff"],
     bgColor: "bg-indigo-500/10 hover:bg-indigo-500/20",
-    iconColor: "text-indigo-600"
+    iconColor: "text-indigo-600",
   },
   {
     title: "Kits",
@@ -95,7 +95,7 @@ const modules: ModuleCard[] = [
     path: "/kits",
     allowedRoles: ["admin", "gestor", "operador_homologacao"],
     bgColor: "bg-cyan-500/10 hover:bg-cyan-500/20",
-    iconColor: "text-cyan-600"
+    iconColor: "text-cyan-600",
   },
   {
     title: "Técnicos",
@@ -104,7 +104,7 @@ const modules: ModuleCard[] = [
     path: "/technicians",
     allowedRoles: ["admin"],
     bgColor: "bg-rose-500/10 hover:bg-rose-500/20",
-    iconColor: "text-rose-600"
+    iconColor: "text-rose-600",
   },
   {
     title: "Usuários",
@@ -113,7 +113,7 @@ const modules: ModuleCard[] = [
     path: "/users",
     allowedRoles: ["admin"],
     bgColor: "bg-slate-500/10 hover:bg-slate-500/20",
-    iconColor: "text-slate-600"
+    iconColor: "text-slate-600",
   },
   {
     title: "Histórico",
@@ -122,7 +122,7 @@ const modules: ModuleCard[] = [
     path: "/history",
     allowedRoles: ["admin"],
     bgColor: "bg-gray-500/10 hover:bg-gray-500/20",
-    iconColor: "text-gray-600"
+    iconColor: "text-gray-600",
   },
   {
     title: "Configurações",
@@ -131,7 +131,7 @@ const modules: ModuleCard[] = [
     path: "/config",
     allowedRoles: ["admin"],
     bgColor: "bg-zinc-500/10 hover:bg-zinc-500/20",
-    iconColor: "text-zinc-600"
+    iconColor: "text-zinc-600",
   },
 ];
 
@@ -151,7 +151,7 @@ const ModuleSelection = () => {
   }
 
   // Filter modules based on user role
-  const availableModules = modules.filter(module => {
+  const availableModules = modules.filter((module) => {
     if (role === "admin" || role === "gestor") return true;
     return module.allowedRoles.includes(role || "");
   });
@@ -161,12 +161,8 @@ const ModuleSelection = () => {
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            Sistema de Homologação
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Selecione o módulo que deseja acessar
-          </p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">EPSS</h1>
+          <p className="text-lg text-muted-foreground">Selecione o módulo que deseja acessar</p>
         </div>
 
         {/* Modules Grid */}
@@ -178,15 +174,11 @@ const ModuleSelection = () => {
               onClick={() => navigate(module.path)}
             >
               <CardHeader className="pb-2">
-                <div className={`${module.iconColor} mb-2`}>
-                  {module.icon}
-                </div>
+                <div className={`${module.iconColor} mb-2`}>{module.icon}</div>
                 <CardTitle className="text-lg">{module.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-sm">
-                  {module.description}
-                </CardDescription>
+                <CardDescription className="text-sm">{module.description}</CardDescription>
               </CardContent>
             </Card>
           ))}
@@ -195,12 +187,8 @@ const ModuleSelection = () => {
         {/* No modules message */}
         {availableModules.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
-              Você não possui permissão para acessar nenhum módulo.
-            </p>
-            <p className="text-muted-foreground text-sm mt-2">
-              Entre em contato com o administrador do sistema.
-            </p>
+            <p className="text-muted-foreground text-lg">Você não possui permissão para acessar nenhum módulo.</p>
+            <p className="text-muted-foreground text-sm mt-2">Entre em contato com o administrador do sistema.</p>
           </div>
         )}
       </div>
