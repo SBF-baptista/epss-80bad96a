@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { GroupedOrder } from "@/types/groupedOrder";
-import { Eye } from "lucide-react";
+import { Eye, Package } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { cleanItemName } from "@/utils/itemNormalization";
@@ -44,6 +44,9 @@ const GroupedOrderCard = ({
     setIsExpanded(!isExpanded);
   };
 
+  // Check if this is a grouped card (multiple orders) in shipped status
+  const isGroupedShipped = isShipped && groupedOrder.orders.length > 1;
+
   return (
     <Card
       className={`cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 border-l-4 ${
@@ -69,6 +72,12 @@ const GroupedOrderCard = ({
               <h4 className="font-semibold text-foreground text-sm md:text-base truncate">
                 {groupedOrder.company_name || 'Cliente'}
               </h4>
+              {/* Show vehicle count for grouped shipped cards */}
+              {isGroupedShipped && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {groupedOrder.orders.length} veículos
+                </p>
+              )}
             </div>
             
             {/* Action buttons */}
@@ -105,9 +114,32 @@ const GroupedOrderCard = ({
               )}
             </div>
           </div>
+
+          {/* Show tracking codes for shipped grouped cards */}
+          {isGroupedShipped && (
+            <div className="border-t border-border pt-2 space-y-1.5">
+              <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <Package className="h-3 w-3" />
+                Códigos de rastreio:
+              </div>
+              <div className="space-y-1 max-h-24 overflow-y-auto">
+                {groupedOrder.orders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1">
+                    <span className="text-foreground truncate">
+                      {order.vehicles[0]?.brand} {order.vehicles[0]?.model}
+                      {order.plate && <span className="text-muted-foreground ml-1">({order.plate})</span>}
+                    </span>
+                    <span className="font-mono text-success ml-2 flex-shrink-0">
+                      {order.trackingCode || 'N/A'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Expandable details (non-production only) */}
-          {!isInProduction && (
+          {!isInProduction && !isGroupedShipped && (
             <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
               <CollapsibleContent className="space-y-2">
                 <div className="border-t border-border pt-2 mt-2">
