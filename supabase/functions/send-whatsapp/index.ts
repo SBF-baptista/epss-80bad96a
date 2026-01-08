@@ -104,14 +104,16 @@ Deno.serve(async (req) => {
       // Use next day agenda template
       console.log('Using next day agenda template:', nextDayAgendaContentSid);
       formData.append('ContentSid', nextDayAgendaContentSid);
-      
-      const variables = {
-        '1': templateVariables?.technicianName || recipientName,
-        '2': templateVariables?.scheduledDate || '',
-        '3': templateVariables?.scheduleList || '',
-      } as Record<string, string>;
-      formData.append('ContentVariables', JSON.stringify(variables));
 
+      // Some Twilio Content templates use NAMED variables (not numeric placeholders).
+      // To maximize compatibility, we send named variables for this template.
+      const variables = {
+        technicianName: String(templateVariables?.technicianName || recipientName || ''),
+        scheduledDate: String(templateVariables?.scheduledDate || ''),
+        scheduleList: String(templateVariables?.scheduleList || ''),
+      } as Record<string, string>;
+
+      formData.append('ContentVariables', JSON.stringify(variables));
     } else if (templateType === 'technician_schedule' && technicianScheduleContentSid) {
       // Use technician schedule template
       console.log('Using technician schedule template:', technicianScheduleContentSid);
