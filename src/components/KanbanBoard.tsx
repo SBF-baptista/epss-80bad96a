@@ -174,6 +174,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       scheduledDate: schedule.scheduled_date,
       scheduledTime: schedule.installation_time || undefined,
       configuration: (schedule as any).configuration || kit?.name || undefined,
+      trackingCode: schedule.tracking_code || undefined,
     };
   };
 

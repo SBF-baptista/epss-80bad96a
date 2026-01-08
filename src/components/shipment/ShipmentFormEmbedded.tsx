@@ -19,10 +19,11 @@ import { supabase } from "@/integrations/supabase/client";
 interface ShipmentFormEmbeddedProps {
   order: Order;
   onUpdate?: () => void;
+  onClose?: () => void;
   schedule?: KitScheduleWithDetails;
 }
 
-const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbeddedProps) => {
+const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFormEmbeddedProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -105,6 +106,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
       });
       queryClient.invalidateQueries({ queryKey: ["kit-schedules"] });
       onUpdate?.();
+      onClose?.();
     },
     onError: (error) => {
       console.error('Error saving shipment:', error);
