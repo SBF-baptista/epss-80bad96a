@@ -180,39 +180,39 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
-    // Handle technician_next_day_agenda with fallback
+    // Handle technician_next_day_agenda - use NUMERIC variables (new approved template)
     if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
       usedContentSid = nextDayAgendaContentSid;
       
-      // Try NAMED variables first
-      const namedVars = {
-        technicianName: String(templateVariables?.technicianName || recipientName || ''),
-        scheduledDate: String(templateVariables?.scheduledDate || ''),
-        scheduleList: String(templateVariables?.scheduleList || ''),
+      // Use NUMERIC variables for new template (HXcdc2bbc7743de4c3ce7c25bb36072283)
+      const numericVars = {
+        '1': String(templateVariables?.technicianName || recipientName || ''),
+        '2': String(templateVariables?.scheduledDate || ''),
+        '3': String(templateVariables?.scheduleList || ''),
       };
       
       let result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
-        nextDayAgendaContentSid, namedVars, 'named'
+        nextDayAgendaContentSid, numericVars, 'numeric'
       );
 
-      // Check if we got 21656 error - try NUMERIC format
+      // Fallback to named if numeric fails with 21656
       if (!result.ok && result.body.includes('21656')) {
-        console.log('Named variables failed with 21656, trying numeric format...');
-        usedVariablesFormat = 'numeric (fallback)';
+        console.log('Numeric variables failed with 21656, trying named format...');
+        usedVariablesFormat = 'named (fallback)';
         
-        const numericVars = {
-          '1': String(templateVariables?.technicianName || recipientName || ''),
-          '2': String(templateVariables?.scheduledDate || ''),
-          '3': String(templateVariables?.scheduleList || ''),
+        const namedVars = {
+          technicianName: String(templateVariables?.technicianName || recipientName || ''),
+          scheduledDate: String(templateVariables?.scheduledDate || ''),
+          scheduleList: String(templateVariables?.scheduleList || ''),
         };
         
         result = await sendWithVariables(
           twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
-          nextDayAgendaContentSid, numericVars, 'numeric'
+          nextDayAgendaContentSid, namedVars, 'named'
         );
       } else {
-        usedVariablesFormat = 'named';
+        usedVariablesFormat = 'numeric';
       }
 
       if (!result.ok) {
