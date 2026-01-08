@@ -56,7 +56,7 @@ const scheduleFormSchema = z.object({
   reference_point: z.string().min(1, 'Ponto de referência é obrigatório'),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   local_contact: z.string().min(1, 'Contato local é obrigatório'),
-  observation: z.string().min(1, 'Observação é obrigatória'),
+  observation: z.string().optional(),
 });
 
 export type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
