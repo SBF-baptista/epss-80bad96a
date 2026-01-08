@@ -47,6 +47,7 @@ export const getNavigationItems = (role: UserRole) => {
   if (!role) return []
 
   const allItems = [
+    { to: '/modules', label: 'Início', roles: ['admin', 'gestor', 'operador_kickoff', 'operador_homologacao', 'operador_agendamento', 'operador_suprimentos'] },
     { to: '/kickoff', label: 'Kickoff', roles: ['admin', 'gestor', 'operador_kickoff'] },
     { to: '/customer-tracking', label: 'Acompanhamento de Clientes', roles: ['admin', 'gestor', 'operador_kickoff'] },
     { to: '/homologation', label: 'Homologação', roles: ['admin', 'gestor', 'operador_homologacao'] },
