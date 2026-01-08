@@ -14,6 +14,7 @@ import { getTechnicians, Technician } from "@/services/technicianService";
 import { KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector, AddressForm } from "./index";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ShipmentFormEmbeddedProps {
   order: Order;
@@ -71,7 +72,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
   const scheduleId = schedule?.id || order.id;
 
   const updateShipmentMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       installation_address_street: string;
       installation_address_number: string;
       installation_address_neighborhood: string;
@@ -80,11 +81,27 @@ const ShipmentFormEmbedded = ({ order, onUpdate, schedule }: ShipmentFormEmbedde
       installation_address_postal_code: string;
       installation_address_complement?: string;
       tracking_code?: string;
-    }) => updateKitScheduleShipment(scheduleId, data),
+    }) => {
+      // Save shipment data
+      await updateKitScheduleShipment(scheduleId, data);
+      
+      // If tracking code is provided, also update status to 'shipped'
+      if (data.tracking_code && data.tracking_code.trim() !== '') {
+        const { error } = await supabase
+          .from('kit_schedules')
+          .update({ status: 'shipped' })
+          .eq('id', scheduleId);
+        
+        if (error) {
+          console.error('Error updating status to shipped:', error);
+          throw error;
+        }
+      }
+    },
     onSuccess: () => {
       toast({
         title: "Envio preparado",
-        description: "Informações de envio salvas com sucesso.",
+        description: "Informações de envio salvas e pedido movido para Enviado.",
       });
       queryClient.invalidateQueries({ queryKey: ["kit-schedules"] });
       onUpdate?.();

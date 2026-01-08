@@ -150,7 +150,9 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             <div className="space-y-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                {kitData.kit?.name || `Kit ${kitData.kit_id}`}
+                {kitData.vehicle_brand && kitData.vehicle_model 
+                  ? `${kitData.vehicle_brand} ${kitData.vehicle_model}`
+                  : kitData.kit?.name || 'Veículo'}
               </CardTitle>
               {(kitData as any).configuration && (
                 <p className="text-xs text-muted-foreground">
