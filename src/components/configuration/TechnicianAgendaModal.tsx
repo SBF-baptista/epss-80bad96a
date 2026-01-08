@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Send, User, Loader2 } from 'lucide-react';
+import { Send, User, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { getTechnicians } from '@/services/technicianService';
@@ -24,15 +24,24 @@ interface TechnicianScheduleCount {
   scheduleCount: number;
 }
 
+interface SendResult {
+  techId: string;
+  techName: string;
+  status: 'pending' | 'sending' | 'success' | 'error';
+  error?: string;
+}
+
 export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgendaModalProps) => {
   const [technicians, setTechnicians] = useState<TechnicianScheduleCount[]>([]);
   const [selectedTechnicians, setSelectedTechnicians] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [sendResults, setSendResults] = useState<SendResult[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       fetchTechniciansWithSchedules();
+      setSendResults([]);
     }
   }, [isOpen]);
 
@@ -152,11 +161,12 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
         return { success: false, error: sendError.message };
       }
 
-      // Check response for delivery issues
-      if (data?.errorCode) {
+      // Check if the message was actually delivered
+      if (!data?.success || data?.errorCode) {
+        const friendlyMsg = data?.friendlyMessage || data?.errorMessage || 'Verifique se o número está opt-in';
         return { 
           success: false, 
-          error: `Twilio erro ${data.errorCode}: ${data.errorMessage || 'Verifique se o número está opt-in'}` 
+          error: friendlyMsg
         };
       }
 
@@ -182,17 +192,36 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
     setIsSending(true);
     const selectedTechs = technicians.filter(t => selectedTechnicians.includes(t.id));
     
+    // Initialize results as pending
+    const initialResults: SendResult[] = selectedTechs.map(t => ({
+      techId: t.id,
+      techName: t.name,
+      status: 'pending' as const
+    }));
+    setSendResults(initialResults);
+
     let successCount = 0;
     let errorCount = 0;
-    const errors: string[] = [];
 
     for (const tech of selectedTechs) {
+      // Update status to sending
+      setSendResults(prev => prev.map(r => 
+        r.techId === tech.id ? { ...r, status: 'sending' as const } : r
+      ));
+
       const result = await sendAgendaToTechnician(tech);
+      
+      // Update status based on result
+      setSendResults(prev => prev.map(r => 
+        r.techId === tech.id 
+          ? { ...r, status: result.success ? 'success' : 'error', error: result.error } 
+          : r
+      ));
+
       if (result.success) {
         successCount++;
       } else {
         errorCount++;
-        errors.push(`${tech.name}: ${result.error}`);
       }
     }
 
@@ -200,11 +229,23 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
 
     if (successCount > 0 && errorCount === 0) {
       toast.success(`Agenda enviada para ${successCount} técnico(s)!`);
-      onOpenChange(false);
     } else if (successCount > 0 && errorCount > 0) {
-      toast.warning(`Enviado para ${successCount}, falhou para ${errorCount}. ${errors.join(', ')}`);
+      toast.warning(`Enviado para ${successCount}, falhou para ${errorCount}`);
     } else {
-      toast.error(`Falha ao enviar: ${errors.join(', ')}`);
+      toast.error('Falha ao enviar para todos os técnicos');
+    }
+  };
+
+  const getResultIcon = (result: SendResult) => {
+    switch (result.status) {
+      case 'sending':
+        return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'error':
+        return <XCircle className="h-4 w-4 text-destructive" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -219,9 +260,42 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Selecione os técnicos que receberão a agenda de <strong>amanhã</strong> por WhatsApp:
-          </p>
+          {sendResults.length > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Resultado do envio:
+              </p>
+              <ScrollArea className="h-[250px] border rounded-lg p-3">
+                <div className="space-y-2">
+                  {sendResults.map((result) => (
+                    <div 
+                      key={result.techId}
+                      className="flex items-center justify-between p-2 rounded-lg bg-muted/30"
+                    >
+                      <div className="flex items-center gap-2">
+                        {getResultIcon(result)}
+                        <span className="font-medium">{result.techName}</span>
+                      </div>
+                      {result.error && (
+                        <span className="text-xs text-destructive max-w-[200px] truncate" title={result.error}>
+                          {result.error}
+                        </span>
+                      )}
+                      {result.status === 'success' && (
+                        <Badge variant="outline" className="text-xs text-green-600 border-green-600">
+                          Enviado
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Selecione os técnicos que receberão a agenda de <strong>amanhã</strong> por WhatsApp:
+            </p>
+          )}
 
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
@@ -275,7 +349,7 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
                     </div>
                   ))}
 
-                  {technicians.length === 0 && (
+              {technicians.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       Nenhum técnico cadastrado
                     </p>
@@ -288,25 +362,27 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {sendResults.length > 0 ? 'Fechar' : 'Cancelar'}
           </Button>
-          <Button 
-            onClick={handleSendAgenda} 
-            disabled={isSending || selectedTechnicians.length === 0}
-            className="gap-2"
-          >
-            {isSending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" />
-                Enviar Agenda
-              </>
-            )}
-          </Button>
+          {sendResults.length === 0 && (
+            <Button 
+              onClick={handleSendAgenda} 
+              disabled={isSending || selectedTechnicians.length === 0}
+              className="gap-2"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Enviar Agenda
+                </>
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

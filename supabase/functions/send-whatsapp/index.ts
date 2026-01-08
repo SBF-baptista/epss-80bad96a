@@ -74,12 +74,33 @@ async function sendWithVariables(
   return { ok: response.ok, status: response.status, body };
 }
 
+// Twilio error code to user-friendly message mapping
+const twilioErrorMessages: Record<number, string> = {
+  63049: 'Técnico precisa enviar mensagem primeiro para receber notificações (opt-in)',
+  63016: 'Template não aprovado pelo WhatsApp',
+  63007: 'Número não está registrado no WhatsApp',
+  63003: 'Conta WhatsApp Business não configurada corretamente',
+  21211: 'Número de telefone inválido',
+  21408: 'Permissão negada para enviar para este número',
+  21610: 'Número bloqueou mensagens',
+  21614: 'Número não é um celular válido',
+  21656: 'Variáveis do template inválidas',
+  30003: 'Número não alcançável',
+  30005: 'Número desconhecido',
+  30006: 'Número bloqueou o remetente',
+};
+
+function getErrorMessage(errorCode: number | undefined): string | undefined {
+  if (!errorCode) return undefined;
+  return twilioErrorMessages[errorCode] || `Erro Twilio ${errorCode}`;
+}
+
 // Check message status after sending
 async function checkMessageStatus(
   twilioAccountSid: string,
   authHeader: string,
   messageSid: string
-): Promise<{ status: string; errorCode?: number; errorMessage?: string }> {
+): Promise<{ status: string; errorCode?: number; errorMessage?: string; friendlyMessage?: string }> {
   try {
     // Wait a moment for status to update
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -92,10 +113,12 @@ async function checkMessageStatus(
     
     if (response.ok) {
       const data = await response.json();
+      const errorCode = data.error_code || undefined;
       return {
         status: data.status || 'unknown',
-        errorCode: data.error_code || undefined,
+        errorCode,
         errorMessage: data.error_message || undefined,
+        friendlyMessage: getErrorMessage(errorCode),
       };
     }
   } catch (e) {
@@ -335,9 +358,12 @@ Deno.serve(async (req) => {
     const statusCheck = await checkMessageStatus(twilioAccountSid, authHeader, messageSid);
     console.log('Post-send status check:', statusCheck);
 
+    // Determine if it was truly successful
+    const isDeliveryError = statusCheck.errorCode || ['failed', 'undelivered'].includes(statusCheck.status);
+    
     return new Response(
       JSON.stringify({ 
-        success: true, 
+        success: !isDeliveryError, 
         messageSid,
         to: toPhone,
         templateType: templateType || 'none',
@@ -347,8 +373,9 @@ Deno.serve(async (req) => {
         finalStatus: statusCheck.status,
         errorCode: statusCheck.errorCode,
         errorMessage: statusCheck.errorMessage,
-        message: statusCheck.errorCode 
-          ? `Mensagem enviada mas com erro: ${statusCheck.errorMessage || statusCheck.errorCode}`
+        friendlyMessage: statusCheck.friendlyMessage,
+        message: isDeliveryError 
+          ? statusCheck.friendlyMessage || statusCheck.errorMessage || `Erro ${statusCheck.errorCode}`
           : 'WhatsApp message sent successfully'
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
