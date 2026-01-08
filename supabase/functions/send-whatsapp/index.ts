@@ -76,6 +76,7 @@ async function sendWithVariables(
 
 // Twilio error code to user-friendly message mapping
 const twilioErrorMessages: Record<number, string> = {
+  63013: 'Template não aprovado ou SID incorreto - verifique no Twilio Console',
   63049: 'Técnico precisa enviar mensagem primeiro para receber notificações (opt-in)',
   63016: 'Template não aprovado pelo WhatsApp',
   63007: 'Número não está registrado no WhatsApp',
