@@ -119,22 +119,22 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
     const scheduleList = schedules.map((s, index) => {
       const lines = [];
       
-      // Linha 1: Horário, Cliente e Telefone
-      lines.push(`🕗 ${s.scheduled_time || 'A definir'} - Cliente: ${s.customer || 'Não informado'} 📞 ${s.phone || 'Não informado'}`);
+      // Horário
+      lines.push(`🕗 Horário: ${s.scheduled_time || 'A definir'}`);
       
-      // Linha vazia
-      lines.push('');
+      // Cliente
+      lines.push(`👤 Cliente: ${s.customer || 'Não informado'}`);
       
-      // Linha 2: Endereço
-      lines.push(`📍 ${s.address || 'Endereço não informado'}`);
+      // Telefone
+      lines.push(`📞 Telefone: ${s.phone || 'Não informado'}`);
       
-      // Linha 3: Ponto de referência
+      // Endereço
+      lines.push(`📍 Endereço: ${s.address || 'Não informado'}`);
+      
+      // Ponto de referência
       lines.push(`📍 Ponto de referência: ${s.reference_point || 'Não informado'}`);
       
-      // Linha vazia
-      lines.push('');
-      
-      // Linha 4: Contato local
+      // Contato local
       lines.push(`👤 Contato local: ${s.local_contact || 'Não informado'}`);
       
       // Separador entre agendamentos (exceto no último)
