@@ -18,6 +18,12 @@ interface IncomingVehicleData {
   kickoff_completed: boolean | null;
   homologation_status: string | null;
   created_at: string | null;
+  received_at: string | null;
+}
+
+interface HomologationData {
+  status: string | null;
+  updated_at: string | null;
 }
 
 interface InstallationScheduleData {
@@ -29,6 +35,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [installationSchedule, setInstallationSchedule] = useState<InstallationScheduleData | null>(null);
   const [incomingVehicleData, setIncomingVehicleData] = useState<IncomingVehicleData | null>(null);
+  const [homologationData, setHomologationData] = useState<HomologationData | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -49,7 +56,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
       if (kitData.incoming_vehicle_id) {
         const { data: vehicleData } = await supabase
           .from('incoming_vehicles')
-          .select('kickoff_completed, homologation_status, created_at')
+          .select('kickoff_completed, homologation_status, created_at, received_at, created_homologation_id')
           .eq('id', kitData.incoming_vehicle_id)
           .single();
 
@@ -57,8 +64,25 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
           setIncomingVehicleData({
             kickoff_completed: vehicleData.kickoff_completed ?? null,
             homologation_status: vehicleData.homologation_status ?? null,
-            created_at: vehicleData.created_at ?? null
+            created_at: vehicleData.created_at ?? null,
+            received_at: vehicleData.received_at ?? null
           });
+
+          // Fetch homologation card data for date
+          if (vehicleData.created_homologation_id) {
+            const { data: homologData } = await supabase
+              .from('homologation_cards')
+              .select('status, updated_at')
+              .eq('id', vehicleData.created_homologation_id)
+              .single();
+
+            if (homologData) {
+              setHomologationData({
+                status: homologData.status,
+                updated_at: homologData.updated_at
+              });
+            }
+          }
         }
       }
     };
@@ -151,9 +175,9 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
           {/* Timeline de progresso */}
           <KitStatusTimeline 
             kickoffCompleted={incomingVehicleData?.kickoff_completed ?? false}
-            kickoffDate={incomingVehicleData?.created_at}
+            kickoffDate={incomingVehicleData?.received_at || incomingVehicleData?.created_at}
             homologationStatus={incomingVehicleData?.homologation_status}
-            homologationDate={null}
+            homologationDate={homologationData?.updated_at}
             planningStatus={kitData.status}
             planningDate={kitData.scheduled_date}
             logisticsStatus={kitData.status}

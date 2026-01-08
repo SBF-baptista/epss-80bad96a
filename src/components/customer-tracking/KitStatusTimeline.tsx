@@ -41,66 +41,66 @@ export const KitStatusTimeline = ({
 
   // Step 1: Kickoff
   const getKickoffStatus = () => {
-    if (kickoffCompleted) return { status: "completed", label: "Realizado", date: formatDate(kickoffDate) };
-    return { status: "pending", label: "Pendente", date: null };
+    if (kickoffCompleted) return { status: "completed", statusLabel: "Realizado", date: formatDate(kickoffDate) };
+    return { status: "pending", statusLabel: "Pendente", date: null };
   };
 
   // Step 2: Homologação
   const getHomologationStepStatus = () => {
     if (!homologationStatus || homologationStatus === 'homologar') {
-      return { status: "pending", label: "Pendente", date: null };
+      return { status: "pending", statusLabel: "Pendente", date: null };
     }
     if (homologationStatus === 'agendamento_teste' || homologationStatus === 'execucao_teste') {
-      return { status: "in_progress", label: "Agendada", date: formatDate(homologationDate) };
+      return { status: "in_progress", statusLabel: "Agendada", date: formatDate(homologationDate) };
     }
     if (homologationStatus === 'homologado' || homologationStatus === 'armazenamento_plataforma') {
-      return { status: "completed", label: "Homologada", date: formatDate(homologationDate) };
+      return { status: "completed", statusLabel: "Homologada", date: formatDate(homologationDate) };
     }
-    return { status: "in_progress", label: "Em Andamento", date: formatDate(homologationDate) };
+    return { status: "in_progress", statusLabel: "Em Andamento", date: formatDate(homologationDate) };
   };
 
   // Step 3: Planejamento
   const getPlanningStepStatus = () => {
-    if (planningStatus) {
-      return { status: "completed", label: "Realizado", date: formatDate(planningDate) };
+    if (planningStatus && planningStatus !== 'pending') {
+      return { status: "completed", statusLabel: "Realizado", date: formatDate(planningDate) };
     }
-    return { status: "pending", label: "Pendente", date: null };
+    return { status: "pending", statusLabel: "Pendente", date: null };
   };
 
   // Step 4: Logística
   const getLogisticsStepStatus = () => {
     if (!logisticsStatus || logisticsStatus === 'pending') {
-      return { status: "pending", label: "Pendente", date: null };
+      return { status: "pending", statusLabel: "Pendente", date: null };
     }
     if (logisticsStatus === 'scheduled') {
-      return { status: "step1", label: "Pedidos", date: formatDate(logisticsDate) };
+      return { status: "step1", statusLabel: "Pedidos", date: formatDate(logisticsDate) };
     }
     if (logisticsStatus === 'in_progress') {
-      return { status: "step2", label: "Produção", date: formatDate(logisticsDate) };
+      return { status: "step2", statusLabel: "Produção", date: formatDate(logisticsDate) };
     }
     if (logisticsStatus === 'completed') {
-      return { status: "step3", label: "Aguard. Envio", date: formatDate(logisticsDate) };
+      return { status: "step3", statusLabel: "Aguard. Envio", date: formatDate(logisticsDate) };
     }
     if (logisticsStatus === 'shipped') {
-      return { status: "step4", label: "Enviado", date: formatDate(logisticsDate) };
+      return { status: "step4", statusLabel: "Enviado", date: formatDate(logisticsDate) };
     }
-    return { status: "pending", label: "Pendente", date: null };
+    return { status: "pending", statusLabel: "Pendente", date: null };
   };
 
   // Step 5: Agendamento (de instalação)
   const getSchedulingStepStatus = () => {
     if (hasInstallationSchedule) {
-      return { status: "completed", label: "Realizado", date: formatDate(scheduleDate) };
+      return { status: "completed", statusLabel: "Realizado", date: formatDate(scheduleDate) };
     }
-    return { status: "pending", label: "Pendente", date: null };
+    return { status: "pending", statusLabel: "Pendente", date: null };
   };
 
   // Step 6: Instalação
   const getInstallationStepStatus = () => {
     if (installationCompleted) {
-      return { status: "completed", label: "Realizado", date: formatDate(installationDate) };
+      return { status: "completed", statusLabel: "Realizado", date: formatDate(installationDate) };
     }
-    return { status: "pending", label: "Pendente", date: null };
+    return { status: "pending", statusLabel: "Pendente", date: null };
   };
 
   const kickoff = getKickoffStatus();
@@ -115,7 +115,7 @@ export const KitStatusTimeline = ({
       id: "kickoff",
       name: "Kickoff",
       icon: FileCheck,
-      statusLabel: kickoff.label,
+      statusLabel: kickoff.statusLabel,
       statusType: kickoff.status,
       date: kickoff.date
     },
@@ -123,7 +123,7 @@ export const KitStatusTimeline = ({
       id: "homologation",
       name: "Homologação",
       icon: CheckCircle,
-      statusLabel: homologation.label,
+      statusLabel: homologation.statusLabel,
       statusType: homologation.status,
       date: homologation.date
     },
@@ -131,7 +131,7 @@ export const KitStatusTimeline = ({
       id: "planning",
       name: "Planejamento",
       icon: Calendar,
-      statusLabel: planning.label,
+      statusLabel: planning.statusLabel,
       statusType: planning.status,
       date: planning.date
     },
@@ -139,7 +139,7 @@ export const KitStatusTimeline = ({
       id: "logistics",
       name: "Logística",
       icon: Truck,
-      statusLabel: logistics.label,
+      statusLabel: logistics.statusLabel,
       statusType: logistics.status,
       date: logistics.date
     },
@@ -147,7 +147,7 @@ export const KitStatusTimeline = ({
       id: "scheduling",
       name: "Agendamento",
       icon: Clock,
-      statusLabel: scheduling.label,
+      statusLabel: scheduling.statusLabel,
       statusType: scheduling.status,
       date: scheduling.date
     },
@@ -155,7 +155,7 @@ export const KitStatusTimeline = ({
       id: "installation",
       name: "Instalação",
       icon: Wrench,
-      statusLabel: installation.label,
+      statusLabel: installation.statusLabel,
       statusType: installation.status,
       date: installation.date
     }
@@ -180,6 +180,16 @@ export const KitStatusTimeline = ({
     return "text-gray-500";
   };
 
+  const getStatusTextColor = (step: typeof steps[0]) => {
+    if (step.statusType === "completed" || step.statusType === "step4") {
+      return "text-green-600";
+    }
+    if (step.statusType === "in_progress" || step.statusType === "step1" || step.statusType === "step2" || step.statusType === "step3") {
+      return "text-blue-600";
+    }
+    return "text-gray-400";
+  };
+
   return (
     <div className="py-4">
       <div className="flex justify-between items-center relative">
@@ -199,18 +209,20 @@ export const KitStatusTimeline = ({
               </div>
               
               <div className="text-center mt-2 min-w-0">
+                {/* Module name */}
                 <div className={`text-xs font-medium ${getTextColor(step)}`}>
                   {step.name}
                 </div>
-                <div className={`text-[10px] mt-0.5 ${
-                  step.statusType === "completed" || step.statusType === "step4" 
-                    ? "text-green-600 font-medium" 
-                    : step.statusType === "in_progress" || step.statusType === "step1" || step.statusType === "step2" || step.statusType === "step3"
-                    ? "text-blue-600 font-medium"
-                    : "text-gray-400"
-                }`}>
-                  {step.date || step.statusLabel}
+                {/* Status label */}
+                <div className={`text-[10px] mt-0.5 font-medium ${getStatusTextColor(step)}`}>
+                  {step.statusLabel}
                 </div>
+                {/* Date (if available) */}
+                {step.date && (
+                  <div className="text-[10px] text-gray-500">
+                    {step.date}
+                  </div>
+                )}
               </div>
             </div>
           );
