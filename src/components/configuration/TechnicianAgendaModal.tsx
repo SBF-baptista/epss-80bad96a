@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, User, Loader2, CalendarIcon } from 'lucide-react';
+import { Send, User, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { getTechnicians, Technician } from '@/services/technicianService';
+import { getTechnicians } from '@/services/technicianService';
 
 interface TechnicianAgendaModalProps {
   isOpen: boolean;
@@ -32,40 +29,35 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
   const [selectedTechnicians, setSelectedTechnicians] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [startDate, setStartDate] = useState<Date>(new Date());
 
-  useEffect(() => {
-    if (isOpen) {
-      setStartDate(new Date());
-      fetchTechniciansWithSchedules();
-    }
-  }, [isOpen]);
-
-  // Refetch when date changes
   useEffect(() => {
     if (isOpen) {
       fetchTechniciansWithSchedules();
     }
-  }, [startDate]);
+  }, [isOpen]);
 
   const fetchTechniciansWithSchedules = async () => {
     setIsLoading(true);
     try {
       const allTechnicians = await getTechnicians();
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
+      
+      // Get tomorrow's date
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
 
-      // Get schedules from start date onwards
-      const { data: futureSchedules } = await supabase
+      // Get schedules for tomorrow
+      const { data: tomorrowSchedules } = await supabase
         .from('installation_schedules')
         .select('technician_name, scheduled_date')
-        .gte('scheduled_date', startDateStr);
+        .eq('scheduled_date', tomorrowStr);
 
-      // Map technicians with their schedule counts
+      // Map technicians with their schedule counts for tomorrow
       const techsWithCounts: TechnicianScheduleCount[] = allTechnicians.map(tech => ({
         id: tech.id,
         name: tech.name,
         phone: tech.phone,
-        scheduleCount: futureSchedules?.filter(s => s.technician_name === tech.name).length || 0
+        scheduleCount: tomorrowSchedules?.filter(s => s.technician_name === tech.name).length || 0
       }));
 
       // Sort by those with schedules first
@@ -105,67 +97,56 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem telefone cadastrado' };
     }
 
-    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    // Get tomorrow's date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
+    const formattedTomorrow = format(tomorrow, "dd/MM/yyyy", { locale: ptBR });
 
-    // Get all schedules for this technician from start date onwards
+    // Get all schedules for this technician for tomorrow
     const { data: schedules, error } = await supabase
       .from('installation_schedules')
       .select('*')
-      .gte('scheduled_date', startDateStr)
+      .eq('scheduled_date', tomorrowStr)
       .eq('technician_name', technician.name)
-      .order('scheduled_date', { ascending: true })
       .order('scheduled_time', { ascending: true });
 
     if (error || !schedules?.length) {
-      return { success: false, error: 'Sem agendamentos a partir desta data' };
+      return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Group schedules by date
-    const schedulesByDate: Record<string, typeof schedules> = {};
-    schedules.forEach(schedule => {
-      if (!schedulesByDate[schedule.scheduled_date]) {
-        schedulesByDate[schedule.scheduled_date] = [];
-      }
-      schedulesByDate[schedule.scheduled_date].push(schedule);
-    });
-
-    // Format message with all dates
+    // Format message with the new template format
     const messageLines: string[] = [];
     
-    Object.keys(schedulesByDate).sort().forEach(dateStr => {
-      const daySchedules = schedulesByDate[dateStr];
-      const formattedDate = format(parseISO(dateStr), "dd/MM/yyyy (EEEE)", { locale: ptBR });
-      
-      messageLines.push(`📅 *${formattedDate}*`);
-      
-      daySchedules.forEach((s, index) => {
-        messageLines.push(`${index + 1}. ${s.scheduled_time} - ${s.customer}`);
-        messageLines.push(`   📍 ${s.address}`);
-        messageLines.push(`   🚗 ${s.vehicle_model}`);
-        messageLines.push(`   📞 ${s.phone || s.local_contact || 'N/A'}`);
-        if (s.observation) {
-          messageLines.push(`   📝 ${s.observation}`);
-        }
-        messageLines.push('');
-      });
+    schedules.forEach((s) => {
+      messageLines.push(`🕗 ${s.scheduled_time} - Cliente: ${s.customer}`);
+      messageLines.push(`📞 ${s.phone || 'Não informado'}`);
+      messageLines.push('');
+      messageLines.push(`📍 ${s.address}`);
+      if (s.reference_point) {
+        messageLines.push(`📍 Ponto de referência: ${s.reference_point}`);
+      }
+      messageLines.push('');
+      if (s.local_contact) {
+        messageLines.push(`👤 Contato local: ${s.local_contact}`);
+      }
+      messageLines.push('---');
+      messageLines.push('');
     });
 
     const scheduleList = messageLines.join('\n');
-    const totalDays = Object.keys(schedulesByDate).length;
 
     try {
       const { error: sendError } = await supabase.functions.invoke('send-whatsapp', {
         body: {
-          orderId: 'agenda-summary',
-          orderNumber: `Agenda - ${technician.name}`,
+          orderId: 'next-day-agenda',
+          orderNumber: `Agenda Amanhã - ${technician.name}`,
           recipientPhone: technician.phone,
           recipientName: technician.name,
-          templateType: 'technician_agenda_summary',
+          templateType: 'technician_next_day_agenda',
           templateVariables: {
             technicianName: technician.name,
-            startDate: format(startDate, "dd/MM/yyyy", { locale: ptBR }),
-            totalDays: totalDays.toString(),
-            totalSchedules: schedules.length.toString(),
+            scheduledDate: formattedTomorrow,
             scheduleList: scheduleList
           }
         }
@@ -227,36 +208,8 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          {/* Date picker */}
-          <div className="space-y-2">
-            <Label>A partir de:</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !startDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, "dd/MM/yyyy (EEEE)", { locale: ptBR }) : "Selecione uma data"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={(date) => date && setStartDate(date)}
-                  locale={ptBR}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
           <p className="text-sm text-muted-foreground">
-            Selecione os técnicos que receberão a agenda completa por WhatsApp:
+            Selecione os técnicos que receberão a agenda de <strong>amanhã</strong> por WhatsApp:
           </p>
 
           {isLoading ? (

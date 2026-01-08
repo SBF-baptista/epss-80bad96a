@@ -12,7 +12,7 @@ interface WhatsAppMessage {
   companyName?: string;
   customMessage?: string;
   // Template support
-  templateType?: 'order_shipped' | 'technician_schedule';
+  templateType?: 'order_shipped' | 'technician_schedule' | 'technician_next_day_agenda';
   templateVariables?: {
     technicianName?: string;
     scheduledDate?: string;
@@ -20,6 +20,9 @@ interface WhatsAppMessage {
     customerName?: string;
     address?: string;
     contactPhone?: string;
+    referencePoint?: string;
+    localContact?: string;
+    scheduleList?: string;
   };
 }
 
@@ -56,6 +59,7 @@ Deno.serve(async (req) => {
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
     const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || '';
+    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || '';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
       console.error('Missing Twilio credentials');
@@ -96,7 +100,19 @@ Deno.serve(async (req) => {
     formData.append('To', `whatsapp:${toPhone}`);
 
     // Determine which template/message to use
-    if (templateType === 'technician_schedule' && technicianScheduleContentSid) {
+    if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
+      // Use next day agenda template
+      console.log('Using next day agenda template:', nextDayAgendaContentSid);
+      formData.append('ContentSid', nextDayAgendaContentSid);
+      
+      const variables = {
+        '1': templateVariables?.technicianName || recipientName,
+        '2': templateVariables?.scheduledDate || '',
+        '3': templateVariables?.scheduleList || '',
+      } as Record<string, string>;
+      formData.append('ContentVariables', JSON.stringify(variables));
+
+    } else if (templateType === 'technician_schedule' && technicianScheduleContentSid) {
       // Use technician schedule template
       console.log('Using technician schedule template:', technicianScheduleContentSid);
       formData.append('ContentSid', technicianScheduleContentSid);
