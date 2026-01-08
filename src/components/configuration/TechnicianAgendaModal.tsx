@@ -115,26 +115,35 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format message with the new template format
-    const messageLines: string[] = [];
-    
-    schedules.forEach((s) => {
-      messageLines.push(`🕗 ${s.scheduled_time} - Cliente: ${s.customer}`);
-      messageLines.push(`📞 ${s.phone || 'Não informado'}`);
-      messageLines.push('');
-      messageLines.push(`📍 ${s.address}`);
-      if (s.reference_point) {
-        messageLines.push(`📍 Ponto de referência: ${s.reference_point}`);
+    // Format message for Twilio template with variables {{1}}, {{2}}, {{3}}
+    const scheduleList = schedules.map((s, index) => {
+      const lines = [];
+      
+      // Linha 1: Horário, Cliente e Telefone
+      lines.push(`🕗 ${s.scheduled_time || 'A definir'} - Cliente: ${s.customer || 'Não informado'} 📞 ${s.phone || 'Não informado'}`);
+      
+      // Linha vazia
+      lines.push('');
+      
+      // Linha 2: Endereço
+      lines.push(`📍 ${s.address || 'Endereço não informado'}`);
+      
+      // Linha 3: Ponto de referência
+      lines.push(`📍 Ponto de referência: ${s.reference_point || 'Não informado'}`);
+      
+      // Linha vazia
+      lines.push('');
+      
+      // Linha 4: Contato local
+      lines.push(`👤 Contato local: ${s.local_contact || 'Não informado'}`);
+      
+      // Separador entre agendamentos (exceto no último)
+      if (index < schedules.length - 1) {
+        lines.push('---');
       }
-      messageLines.push('');
-      if (s.local_contact) {
-        messageLines.push(`👤 Contato local: ${s.local_contact}`);
-      }
-      messageLines.push('---');
-      messageLines.push('');
-    });
-
-    const scheduleList = messageLines.join('\n');
+      
+      return lines.join('\n');
+    }).join('\n\n');
 
     try {
       const { error: sendError } = await supabase.functions.invoke('send-whatsapp', {
