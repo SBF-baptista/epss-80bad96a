@@ -115,28 +115,6 @@ const GroupedOrderCard = ({
             </div>
           </div>
 
-          {/* Show tracking codes for shipped grouped cards */}
-          {isGroupedShipped && (
-            <div className="border-t border-border pt-2 space-y-1.5">
-              <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                <Package className="h-3 w-3" />
-                Códigos de rastreio:
-              </div>
-              <div className="space-y-1 max-h-24 overflow-y-auto">
-                {groupedOrder.orders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1">
-                    <span className="text-foreground truncate">
-                      {order.vehicles[0]?.brand} {order.vehicles[0]?.model}
-                      {order.plate && <span className="text-muted-foreground ml-1">({order.plate})</span>}
-                    </span>
-                    <span className="font-mono text-success ml-2 flex-shrink-0">
-                      {order.trackingCode || 'N/A'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
           
           {/* Expandable details (non-production only) */}
           {!isInProduction && !isGroupedShipped && (

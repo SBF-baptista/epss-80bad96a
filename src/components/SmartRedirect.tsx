@@ -1,46 +1,33 @@
-import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useUserRole } from '@/hooks/useUserRole'
+import ModuleSelection from '@/pages/ModuleSelection'
 
 const SmartRedirect = () => {
   const { role, loading } = useUserRole()
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Carregando...</p>
         </div>
       </div>
     )
   }
 
-  // Redirect based on user role
-  if (role === 'admin') {
-    return <Navigate to="/homologation" replace />
-  } else if (role === 'gestor') {
-    return <Navigate to="/dashboard" replace />
-  } else if (role === 'operador_kickoff') {
-    return <Navigate to="/kickoff" replace />
-  } else if (role === 'operador_homologacao') {
-    return <Navigate to="/homologation" replace />
-  } else if (role === 'operador_agendamento') {
-    return <Navigate to="/planning" replace />
-  } else if (role === 'operador_suprimentos') {
-    return <Navigate to="/kanban" replace />
-  } else if (role === null) {
-    // User is authenticated but has no role assigned
+  // User has no role assigned - show access denied
+  if (role === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
-          <div className="text-red-600 text-lg font-medium mb-4">
+          <div className="text-destructive text-lg font-medium mb-4">
             Acesso Negado
           </div>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Seu usuário não possui permissões para acessar o sistema.
           </p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-muted-foreground text-sm">
             Entre em contato com o administrador para obter acesso.
           </p>
         </div>
@@ -48,8 +35,8 @@ const SmartRedirect = () => {
     )
   }
 
-  // Fallback (should not reach here)
-  return <Navigate to="/auth" replace />
+  // Show module selection page for all authenticated users with a role
+  return <ModuleSelection />
 }
 
 export default SmartRedirect
