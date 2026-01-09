@@ -28,7 +28,7 @@ import SmartRedirect from "@/components/SmartRedirect";
 import SegsaleTest from "./pages/SegsaleTest";
 import History from "./pages/History";
 import EditRequests from "./pages/EditRequests";
-
+import ModuleSelection from "./pages/ModuleSelection";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -201,7 +201,14 @@ function App() {
                     <Layout>
                       <History />
                     </Layout>
-                  </RoleProtectedRoute>
+              </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/modules" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ModuleSelection />
+                  </Layout>
                 </ProtectedRoute>
               } />
               <Route path="/segsale-test" element={<SegsaleTest />} />
