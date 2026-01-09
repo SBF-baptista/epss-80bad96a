@@ -124,22 +124,25 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format message for Twilio template - keep it simple without special characters
+    // Format message for Twilio template - compact format since newlines become bullets
     const scheduleList = schedules.map((s, index) => {
-      const lines = [];
-      lines.push(`Horario: ${s.scheduled_time || 'A definir'}`);
-      lines.push(`Cliente: ${s.customer || 'Nao informado'}`);
-      lines.push(`Telefone: ${s.phone || 'Nao informado'}`);
-      lines.push(`Endereco: ${s.address || 'Nao informado'}`);
-      lines.push(`Ponto de referencia: ${s.reference_point || 'Nao informado'}`);
-      lines.push(`Contato local: ${s.local_contact || 'Nao informado'}`);
+      const num = index + 1;
+      const time = s.scheduled_time?.substring(0, 5) || '??:??';
+      const client = s.customer || 'Cliente';
+      const phone = s.phone || '-';
+      const addr = s.address || 'Endereco a confirmar';
       
-      if (index < schedules.length - 1) {
-        lines.push('---');
-      }
+      // Compact format: [1] 07:00 - CLIENTE | Tel: 999 | Endereco | Ref | Contato
+      const parts = [
+        `[${num}] ${time} - ${client}`,
+        `Tel: ${phone}`,
+        addr,
+      ];
+      if (s.reference_point) parts.push(`Ref: ${s.reference_point}`);
+      if (s.local_contact) parts.push(`Contato: ${s.local_contact}`);
       
-      return lines.join('\n');
-    }).join('\n\n');
+      return parts.join(' | ');
+    }).join(' ••• ');
 
     try {
       const { data, error: sendError } = await supabase.functions.invoke('send-whatsapp', {
