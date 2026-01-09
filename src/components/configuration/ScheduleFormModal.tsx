@@ -393,7 +393,7 @@ export const ScheduleFormModal = ({
                     <FormLabel className="text-sm">Serviço *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value} disabled={isFromSegsale}>
                       <FormControl>
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className={`h-9 ${isFromSegsale ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}>
                           <SelectValue placeholder="Selecione o serviço" />
                         </SelectTrigger>
                       </FormControl>
@@ -416,7 +416,7 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Placa *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Placa do veículo" {...field} className="h-9" disabled={hasInitialData} />
+                        <Input placeholder="Placa do veículo" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -430,7 +430,7 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Modelo do Veículo *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Modelo do veículo" {...field} className="h-9" disabled={hasInitialData} />
+                        <Input placeholder="Modelo do veículo" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -444,7 +444,7 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Ano</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ano" {...field} className="h-9" disabled={hasInitialData} />
+                        <Input placeholder="Ano" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -459,7 +459,7 @@ export const ScheduleFormModal = ({
                   <FormItem>
                     <FormLabel className="text-sm">Modelo do Rastreador *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Modelo do rastreador" {...field} className="h-9" disabled={hasInitialData} />
+                      <Input placeholder="Modelo do rastreador" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -474,7 +474,7 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Cliente *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nome do cliente" {...field} className="h-9" disabled={hasInitialData} />
+                        <Input placeholder="Nome do cliente" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
