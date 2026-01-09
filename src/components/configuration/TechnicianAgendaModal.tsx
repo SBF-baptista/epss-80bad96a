@@ -124,8 +124,8 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format each schedule with full details and line breaks
-    // Template has 5 slots (variables 3-7) for individual schedules with internal newlines
+    // Format each schedule with full details
+    // Template has 5 slots (variables 3-7) for individual schedules with line breaks
     const formatSchedule = (s: any): string => {
       const time = s.scheduled_time?.substring(0, 5) || '--:--';
       const customer = s.customer || 'Cliente';
@@ -133,9 +133,7 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       const phone = s.phone || '-';
       const address = s.address || 'Endereço a confirmar';
       const refPoint = s.reference_point || '-';
-      const localContact = s.local_contact || '-';
-      
-      return `📌 Horário: ${time} | Cliente: ${customer} | Serviço: ${service}\nEndereço: ${address}\nPonto de referência: ${refPoint}\nContato local: ${localContact}\nTelefone: ${phone}`;
+      return `📌 Horário: ${time} | Cliente: ${customer} | Serviço: ${service} | Telefone do cliente: ${phone} | Endereço: ${address} | Ponto de referência: ${refPoint}`;
     };
 
     // Create array of formatted schedules (up to 5 individual + overflow in last slot)

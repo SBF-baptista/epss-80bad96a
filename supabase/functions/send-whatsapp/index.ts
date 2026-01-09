@@ -107,28 +107,6 @@ function sanitizeTemplateVar(value: string | undefined | null, maxLength: number
   return sanitized || '-';
 }
 
-// Alternative sanitizer that preserves newlines for templates that support them (like daily_agenda individual slots)
-function sanitizeTemplateVarPreserveNewlines(value: string | undefined | null, maxLength: number = 1000): string {
-  if (!value) return '-';
-  
-  let sanitized = String(value)
-    // Remove control characters EXCEPT newlines (\n = 0x0A)
-    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    // Normalize line endings to single \n
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    // Normalize multiple spaces (but not newlines)
-    .replace(/[ \t]+/g, ' ')
-    .trim();
-  
-  // Truncate if too long (Twilio has variable length limits)
-  if (sanitized.length > maxLength) {
-    sanitized = sanitized.substring(0, maxLength - 3) + '...';
-  }
-  
-  return sanitized || '-';
-}
-
 // Twilio error code to user-friendly message mapping
 const twilioErrorMessages: Record<number, string> = {
   63013: 'Template não aprovado ou SID incorreto - verifique no Twilio Console',
@@ -266,12 +244,11 @@ Deno.serve(async (req) => {
       const numericVars: Record<string, string> = {
         '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
         '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
-        // Use preserveNewlines for schedule slots to allow internal line breaks
-        '3': sanitizeTemplateVarPreserveNewlines(templateVariables?.schedule1 || '', 500),
-        '4': sanitizeTemplateVarPreserveNewlines(templateVariables?.schedule2 || '', 500),
-        '5': sanitizeTemplateVarPreserveNewlines(templateVariables?.schedule3 || '', 500),
-        '6': sanitizeTemplateVarPreserveNewlines(templateVariables?.schedule4 || '', 500),
-        '7': sanitizeTemplateVarPreserveNewlines(templateVariables?.schedule5 || '', 800),
+        '3': sanitizeTemplateVar(templateVariables?.schedule1 || '', 300),
+        '4': sanitizeTemplateVar(templateVariables?.schedule2 || '', 300),
+        '5': sanitizeTemplateVar(templateVariables?.schedule3 || '', 300),
+        '6': sanitizeTemplateVar(templateVariables?.schedule4 || '', 300),
+        '7': sanitizeTemplateVar(templateVariables?.schedule5 || '', 500),
       };
       
       console.log('Sending daily_agenda with 7 numeric variables:', JSON.stringify(numericVars));
