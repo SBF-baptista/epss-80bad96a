@@ -124,51 +124,32 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Calculate summary info for better template usage
-    const totalServices = `${schedules.length} instalação${schedules.length > 1 ? 'ões' : ''}`;
-    
-    // Count morning (before 12:00) vs afternoon services
-    const morningCount = schedules.filter(s => {
-      const hour = parseInt(s.scheduled_time?.substring(0, 2) || '0');
-      return hour < 12;
-    }).length;
-    const afternoonCount = schedules.length - morningCount;
-    const periodSummary = `Manhã: ${morningCount} | Tarde: ${afternoonCount}`;
-    
-    // Get first service time
-    const sortedSchedules = [...schedules].sort((a, b) => 
-      (a.scheduled_time || '').localeCompare(b.scheduled_time || '')
-    );
-    const firstTime = sortedSchedules[0]?.scheduled_time?.substring(0, 5) || '07:00';
-    
-    // Format compact schedule list
+    // Format schedule list with REAL newlines for the daily_agenda template
+    // Each appointment on its own lines for readability
     const scheduleList = schedules.map((s, index) => {
       const num = index + 1;
       const time = s.scheduled_time?.substring(0, 5) || '??:??';
-      const client = (s.customer || 'Cliente').substring(0, 20); // Limit name length
+      const client = s.customer || 'Cliente';
       const phone = s.phone || '-';
-      // Shorter address format
-      const addr = s.address?.split(',').slice(0, 2).join(',') || 'End. a confirmar';
+      const addr = s.address || 'Endereço a confirmar';
       
-      // Super compact: [1] 07:00 NOME - End - Tel
-      return `[${num}] ${time} ${client} - ${addr} - Tel: ${phone}`;
-    }).join(' | ');
+      // Format with real newlines - Twilio text fields accept them
+      return `${num}. ${time} - ${client}\nTel: ${phone}\nEnd: ${addr}`;
+    }).join('\n\n'); // Double newline between appointments
 
     try {
       const { data, error: sendError } = await supabase.functions.invoke('send-whatsapp', {
         body: {
-          orderId: 'next-day-agenda',
-          orderNumber: `Agenda Amanhã - ${technician.name}`,
+          orderId: 'daily-agenda',
+          orderNumber: `Agenda ${formattedTomorrow} - ${technician.name}`,
           recipientPhone: technician.phone,
           recipientName: technician.name,
-          templateType: 'technician_next_day_agenda',
+          templateType: 'daily_agenda',
           templateVariables: {
             technicianName: technician.name,
             scheduledDate: formattedTomorrow,
-            totalServices: totalServices,
-            periodSummary: periodSummary,
-            firstTime: `Início: ${firstTime}`,
-            scheduleList: scheduleList
+            scheduleList: scheduleList,
+            totalCount: String(schedules.length)
           }
         }
       });
