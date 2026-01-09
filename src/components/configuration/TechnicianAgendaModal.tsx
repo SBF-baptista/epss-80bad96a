@@ -112,10 +112,10 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
     const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
     const formattedTomorrow = format(tomorrow, "dd/MM/yyyy", { locale: ptBR });
 
-    // Get all schedules for this technician for tomorrow
+    // Get all schedules for this technician for tomorrow with all fields
     const { data: schedules, error } = await supabase
       .from('installation_schedules')
-      .select('*')
+      .select('scheduled_time, customer, phone, address, reference_point, local_contact')
       .eq('scheduled_date', tomorrowStr)
       .eq('technician_name', technician.name)
       .order('scheduled_time', { ascending: true });
@@ -124,18 +124,30 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format schedule list with REAL newlines for the daily_agenda template
-    // Each appointment on its own lines for readability
-    const scheduleList = schedules.map((s, index) => {
-      const num = index + 1;
-      const time = s.scheduled_time?.substring(0, 5) || '??:??';
-      const client = s.customer || 'Cliente';
-      const phone = s.phone || '-';
-      const addr = s.address || 'Endereço a confirmar';
-      
-      // Format with real newlines - Twilio text fields accept them
-      return `${num}. ${time} - ${client}\nTel: ${phone}\nEnd: ${addr}`;
-    }).join('\n\n'); // Double newline between appointments
+    // Format first schedule with individual fields (for elegant display)
+    const firstSchedule = schedules[0];
+    const firstScheduleData = {
+      time: firstSchedule.scheduled_time?.substring(0, 5) || '--:--',
+      customer: firstSchedule.customer || 'Cliente não informado',
+      phone: firstSchedule.phone || '-',
+      address: firstSchedule.address || 'Endereço não informado',
+      referencePoint: firstSchedule.reference_point || '-',
+      localContact: firstSchedule.local_contact || '-'
+    };
+
+    // Format additional schedules (2nd onwards) - each on separate lines for template
+    let additionalSchedules = '';
+    if (schedules.length > 1) {
+      additionalSchedules = schedules.slice(1).map(s => {
+        const time = s.scheduled_time?.substring(0, 5) || '--:--';
+        const customer = s.customer || 'Cliente';
+        const phone = s.phone || '-';
+        const address = s.address || 'Endereço a confirmar';
+        const ref = s.reference_point || '-';
+        const contact = s.local_contact || '-';
+        return `Horário: ${time}\nCliente: ${customer}\nTelefone: ${phone}\nEndereço: ${address}\nPonto de referência: ${ref}\nContato local: ${contact}`;
+      }).join('\n\n');
+    }
 
     try {
       const { data, error: sendError } = await supabase.functions.invoke('send-whatsapp', {
@@ -148,7 +160,8 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
           templateVariables: {
             technicianName: technician.name,
             scheduledDate: formattedTomorrow,
-            scheduleList: scheduleList,
+            firstSchedule: firstScheduleData,
+            additionalSchedules: additionalSchedules,
             totalCount: String(schedules.length)
           }
         }
@@ -167,7 +180,6 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
         };
       }
 
-      // Log the status for debugging
       console.log(`WhatsApp sent to ${technician.name}:`, {
         sid: data?.messageSid,
         status: data?.finalStatus,
