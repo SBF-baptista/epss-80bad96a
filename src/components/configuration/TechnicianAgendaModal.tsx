@@ -124,25 +124,35 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format message for Twilio template - compact format since newlines become bullets
+    // Calculate summary info for better template usage
+    const totalServices = `${schedules.length} instalação${schedules.length > 1 ? 'ões' : ''}`;
+    
+    // Count morning (before 12:00) vs afternoon services
+    const morningCount = schedules.filter(s => {
+      const hour = parseInt(s.scheduled_time?.substring(0, 2) || '0');
+      return hour < 12;
+    }).length;
+    const afternoonCount = schedules.length - morningCount;
+    const periodSummary = `Manhã: ${morningCount} | Tarde: ${afternoonCount}`;
+    
+    // Get first service time
+    const sortedSchedules = [...schedules].sort((a, b) => 
+      (a.scheduled_time || '').localeCompare(b.scheduled_time || '')
+    );
+    const firstTime = sortedSchedules[0]?.scheduled_time?.substring(0, 5) || '07:00';
+    
+    // Format compact schedule list
     const scheduleList = schedules.map((s, index) => {
       const num = index + 1;
       const time = s.scheduled_time?.substring(0, 5) || '??:??';
-      const client = s.customer || 'Cliente';
+      const client = (s.customer || 'Cliente').substring(0, 20); // Limit name length
       const phone = s.phone || '-';
-      const addr = s.address || 'Endereco a confirmar';
+      // Shorter address format
+      const addr = s.address?.split(',').slice(0, 2).join(',') || 'End. a confirmar';
       
-      // Compact format: [1] 07:00 - CLIENTE | Tel: 999 | Endereco | Ref | Contato
-      const parts = [
-        `[${num}] ${time} - ${client}`,
-        `Tel: ${phone}`,
-        addr,
-      ];
-      if (s.reference_point) parts.push(`Ref: ${s.reference_point}`);
-      if (s.local_contact) parts.push(`Contato: ${s.local_contact}`);
-      
-      return parts.join(' | ');
-    }).join(' ••• ');
+      // Super compact: [1] 07:00 NOME - End - Tel
+      return `[${num}] ${time} ${client} - ${addr} - Tel: ${phone}`;
+    }).join(' | ');
 
     try {
       const { data, error: sendError } = await supabase.functions.invoke('send-whatsapp', {
@@ -155,6 +165,9 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
           templateVariables: {
             technicianName: technician.name,
             scheduledDate: formattedTomorrow,
+            totalServices: totalServices,
+            periodSummary: periodSummary,
+            firstTime: `Início: ${firstTime}`,
             scheduleList: scheduleList
           }
         }
