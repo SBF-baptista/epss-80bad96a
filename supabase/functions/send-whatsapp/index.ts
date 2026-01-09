@@ -199,32 +199,13 @@ Deno.serve(async (req) => {
       
       console.log('Sending technician_next_day_agenda with variables:', JSON.stringify(numericVars));
       
-      let result = await sendWithVariables(
+      usedVariablesFormat = 'numeric';
+      
+      const result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
         nextDayAgendaContentSid, numericVars, 'numeric'
       );
 
-      // Fallback to named if numeric fails with 21656
-      if (!result.ok && result.body.includes('21656')) {
-        console.log('Numeric variables failed with 21656, trying named format...');
-        usedVariablesFormat = 'named (fallback)';
-        
-        const namedVars = {
-          technicianName: String(templateVariables?.technicianName || recipientName || 'Técnico'),
-          scheduledDate: String(templateVariables?.scheduledDate || 'A definir'),
-          scheduledTime: 'Ver abaixo',
-          customerName: 'Agenda do dia',
-          address: String(templateVariables?.scheduleList || 'Sem agendamentos'),
-          contactPhone: '-',
-        };
-        
-        result = await sendWithVariables(
-          twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
-          nextDayAgendaContentSid, namedVars, 'named'
-        );
-      } else {
-        usedVariablesFormat = 'numeric';
-      }
       if (!result.ok) {
         console.error('Failed to send WhatsApp message:', result.body);
         return new Response(
@@ -262,32 +243,12 @@ Deno.serve(async (req) => {
       
       console.log('Sending technician_schedule_notification with variables:', JSON.stringify(numericVars));
       
-      let result = await sendWithVariables(
+      usedVariablesFormat = 'numeric';
+      
+      const result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
         technicianScheduleContentSid, numericVars, 'numeric'
       );
-
-      // Check if we got 21656 error - try NAMED format
-      if (!result.ok && result.body.includes('21656')) {
-        console.log('Numeric variables failed with 21656, trying named format...');
-        usedVariablesFormat = 'named (fallback)';
-        
-        const namedVars = {
-          technicianName: String(templateVariables?.technicianName || recipientName || 'Técnico'),
-          scheduledDate: String(templateVariables?.scheduledDate || 'A definir'),
-          scheduledTime: String(templateVariables?.scheduledTime || 'A definir'),
-          customerName: String(templateVariables?.customerName || 'Cliente'),
-          address: String(templateVariables?.address || 'A confirmar'),
-          contactPhone: String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
-        };
-        
-        result = await sendWithVariables(
-          twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
-          technicianScheduleContentSid, namedVars, 'named'
-        );
-      } else {
-        usedVariablesFormat = 'numeric';
-      }
 
       if (!result.ok) {
         console.error('Failed to send WhatsApp message:', result.body);
