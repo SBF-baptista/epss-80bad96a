@@ -50,6 +50,7 @@ const scheduleFormSchema = z.object({
   service: z.string().min(1, 'Serviço é obrigatório'),
   plate: z.string().min(1, 'Placa é obrigatória'),
   vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
+  vehicle_year: z.string().optional(),
   tracker_model: z.string().min(1, 'Modelo do rastreador é obrigatório'),
   customer: z.string().min(1, 'Cliente é obrigatório'),
   address: z.string().min(1, 'Endereço é obrigatório'),
@@ -100,6 +101,10 @@ export const ScheduleFormModal = ({
   initialVehicleData,
 }: ScheduleFormModalProps) => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [isFromSegsale, setIsFromSegsale] = useState(false);
+
+  // Determine if fields should be locked (has initial data from pipeline)
+  const hasInitialData = Boolean(initialVehicleData?.plate || initialVehicleData?.model);
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),
@@ -112,6 +117,7 @@ export const ScheduleFormModal = ({
       service: '',
       plate: '',
       vehicle_model: '',
+      vehicle_year: '',
       tracker_model: '',
       customer: '',
       address: '',
@@ -164,10 +170,15 @@ export const ScheduleFormModal = ({
           form.setValue('plate', initialVehicleData.plate);
         }
         if (initialVehicleData.brand && initialVehicleData.model) {
-          form.setValue('vehicle_model', `${initialVehicleData.brand} ${initialVehicleData.model}${initialVehicleData.year ? ` (${initialVehicleData.year})` : ''}`);
+          form.setValue('vehicle_model', `${initialVehicleData.brand} ${initialVehicleData.model}`);
         }
-        // Modelo do rastreador vazio para o usuário preencher
-        form.setValue('tracker_model', '');
+        if (initialVehicleData.year) {
+          form.setValue('vehicle_year', String(initialVehicleData.year));
+        }
+        // Pre-fill tracker model with configuration from kit
+        if (initialVehicleData.configuration) {
+          form.setValue('tracker_model', initialVehicleData.configuration);
+        }
         if (initialVehicleData.customerName) {
           form.setValue('customer', initialVehicleData.customerName);
         }
@@ -184,7 +195,12 @@ export const ScheduleFormModal = ({
         // For now, we'll check if incomingVehicleId exists (meaning it came from Segsale pipeline)
         if (initialVehicleData.incomingVehicleId) {
           form.setValue('service', 'Instalação');
+          setIsFromSegsale(true);
+        } else {
+          setIsFromSegsale(false);
         }
+      } else {
+        setIsFromSegsale(false);
       }
     } else {
       form.reset();
@@ -375,7 +391,7 @@ export const ScheduleFormModal = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm">Serviço *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isFromSegsale}>
                       <FormControl>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Selecione o serviço" />
@@ -392,7 +408,7 @@ export const ScheduleFormModal = ({
                 )}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <FormField
                   control={form.control}
                   name="plate"
@@ -400,7 +416,7 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Placa *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Placa do veículo" {...field} className="h-9" />
+                        <Input placeholder="Placa do veículo" {...field} className="h-9" disabled={hasInitialData} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -414,7 +430,21 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Modelo do Veículo *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Modelo do veículo" {...field} className="h-9" />
+                        <Input placeholder="Modelo do veículo" {...field} className="h-9" disabled={hasInitialData} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="vehicle_year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Ano</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ano" {...field} className="h-9" disabled={hasInitialData} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -429,7 +459,7 @@ export const ScheduleFormModal = ({
                   <FormItem>
                     <FormLabel className="text-sm">Modelo do Rastreador *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Modelo do rastreador" {...field} className="h-9" />
+                      <Input placeholder="Modelo do rastreador" {...field} className="h-9" disabled={hasInitialData} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -444,7 +474,7 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Cliente *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nome do cliente" {...field} className="h-9" />
+                        <Input placeholder="Nome do cliente" {...field} className="h-9" disabled={hasInitialData} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
