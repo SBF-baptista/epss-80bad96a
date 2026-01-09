@@ -151,10 +151,8 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       }).join(' ');
     }
 
-    // Add closing message
-    if (additionalSchedules) {
-      additionalSchedules += ' ═══════════════════ Por favor, confirme sua disponibilidade para os atendimentos agendados.';
-    }
+    // Note: Closing message is now part of the Twilio template (after {{9}})
+    // to comply with WhatsApp requirement that templates cannot end with a variable
 
     try {
       const { data, error: sendError } = await supabase.functions.invoke('send-whatsapp', {
