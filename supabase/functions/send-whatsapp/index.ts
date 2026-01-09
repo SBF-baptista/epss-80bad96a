@@ -216,10 +216,10 @@ Deno.serve(async (req) => {
       const numericVars: Record<string, string> = {
         '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
         '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
-        '3': 'Ver abaixo',
-        '4': 'Agenda do dia',
+        '3': sanitizeTemplateVar(templateVariables?.totalServices || 'Ver agenda', 50),
+        '4': sanitizeTemplateVar(templateVariables?.periodSummary || 'Agenda do dia', 80),
         '5': sanitizeTemplateVar(templateVariables?.scheduleList, 900),
-        '6': '-',
+        '6': sanitizeTemplateVar(templateVariables?.firstTime || '-', 50),
       };
       
       console.log('Sending technician_next_day_agenda with numeric variables:', JSON.stringify(numericVars));
