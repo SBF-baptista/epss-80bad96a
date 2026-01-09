@@ -241,12 +241,12 @@ Deno.serve(async (req) => {
       // Extract first schedule data
       const firstSchedule = templateVariables?.firstSchedule || {} as FirstScheduleData;
       
-      // Sanitize additional schedules - Twilio Content API does NOT accept newlines in variables
-      const additionalSchedulesSanitized = (templateVariables?.additionalSchedules || '')
-        .replace(/\n\n/g, ' ║ ')  // Double newlines become separator
-        .replace(/\n/g, ' • ')    // Single newlines become bullet
-        .replace(/[\x00-\x1F\x7F]/g, '') // Remove control chars
-        .substring(0, 1500);
+      // Additional schedules already formatted inline by the client
+      // Just sanitize control characters
+      const additionalSchedulesSanitized = sanitizeTemplateVar(
+        templateVariables?.additionalSchedules || '',
+        1500
+      );
       
       // 9 variables for the elegant format:
       // {{1}} - Technician name

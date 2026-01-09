@@ -135,7 +135,8 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       localContact: firstSchedule.local_contact || '-'
     };
 
-    // Format additional schedules (2nd onwards) - each on separate lines for template
+    // Format additional schedules (2nd onwards) - using separator for Twilio template
+    // Note: Twilio does not accept \n in variables, so we use ═══ as visual separator
     let additionalSchedules = '';
     if (schedules.length > 1) {
       additionalSchedules = schedules.slice(1).map(s => {
@@ -145,8 +146,14 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
         const address = s.address || 'Endereço a confirmar';
         const ref = s.reference_point || '-';
         const contact = s.local_contact || '-';
-        return `Horário: ${time}\nCliente: ${customer}\nTelefone: ${phone}\nEndereço: ${address}\nPonto de referência: ${ref}\nContato local: ${contact}`;
-      }).join('\n\n');
+        // Use visual separator that works inline (Twilio rejects \n in variables)
+        return `═══════════════════ ║ Horário: ${time} ║ Cliente: ${customer} ║ Telefone: ${phone} ║ Endereço: ${address} ║ Ponto de referência: ${ref} ║ Contato local: ${contact}`;
+      }).join(' ');
+    }
+
+    // Add closing message
+    if (additionalSchedules) {
+      additionalSchedules += ' ═══════════════════ Por favor, confirme sua disponibilidade para os atendimentos agendados.';
     }
 
     try {
