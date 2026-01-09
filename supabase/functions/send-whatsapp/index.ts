@@ -11,7 +11,7 @@ interface WhatsAppMessage {
   recipientName: string;
   companyName?: string;
   customMessage?: string;
-  templateType?: 'order_shipped' | 'technician_schedule' | 'technician_next_day_agenda' | 'technician_schedule_notification';
+  templateType?: 'order_shipped' | 'technician_schedule' | 'technician_next_day_agenda' | 'technician_schedule_notification' | 'daily_agenda';
   templateVariables?: {
     technicianName?: string;
     scheduledDate?: string;
@@ -24,6 +24,7 @@ interface WhatsAppMessage {
     localContact?: string;
     contactPhone?: string;
     scheduleList?: string;
+    totalCount?: string;
   };
 }
 
@@ -166,6 +167,7 @@ Deno.serve(async (req) => {
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
     const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || '';
     const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || '';
+    const dailyAgendaContentSid = Deno.env.get('DAILY_AGENDA_CONTENT_SID') || '';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
       console.error('Missing Twilio credentials');
@@ -207,9 +209,49 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
-    // technician_next_day_agenda uses 6 numeric variables: {{1}}..{{6}}
-    // {{1}} Name, {{2}} Date, {{3}} Time, {{4}} Customer, {{5}} Address (schedule list), {{6}} Contact
-    if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
+    // daily_agenda template: {{1}} Name, {{2}} Date, {{3}} Schedule List (with newlines), {{4}} Total count
+    if (templateType === 'daily_agenda' && dailyAgendaContentSid) {
+      usedContentSid = dailyAgendaContentSid;
+      usedVariablesFormat = 'numeric';
+      
+      // For this template, we DON'T sanitize newlines in the schedule list - Twilio text fields accept them
+      const scheduleListRaw = templateVariables?.scheduleList || '-';
+      
+      const numericVars: Record<string, string> = {
+        '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
+        '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
+        '3': scheduleListRaw.substring(0, 1500), // Keep newlines, just truncate if too long
+        '4': sanitizeTemplateVar(templateVariables?.totalCount || '0', 20),
+      };
+      
+      console.log('Sending daily_agenda with numeric variables:', JSON.stringify(numericVars));
+      
+      const result = await sendWithVariables(
+        twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
+        dailyAgendaContentSid, numericVars, 'numeric'
+      );
+
+      if (!result.ok) {
+        console.error('Failed to send WhatsApp message:', result.body);
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to send WhatsApp message',
+            contentSid: usedContentSid,
+            templateType,
+            variablesFormat: usedVariablesFormat,
+            receivedTemplateVariables: templateVariables || null,
+            attemptedVariables: numericVars,
+            details: result.body,
+            hint: 'O template daily_agenda espera 4 variáveis numéricas (1-4).',
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try { twilioResult = JSON.parse(result.body); } catch (_) { twilioResult = { sid: 'unknown' }; }
+
+    } else if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
+      // Fallback to old template if daily_agenda not configured
       usedContentSid = nextDayAgendaContentSid;
       usedVariablesFormat = 'numeric';
       
