@@ -183,27 +183,26 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
-    // technician_next_day_agenda uses same 6-variable template as individual schedule
+    // technician_next_day_agenda uses 6 numeric variables: {{1}}..{{6}}
     // {{1}} Name, {{2}} Date, {{3}} Time, {{4}} Customer, {{5}} Address (schedule list), {{6}} Contact
     if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
       usedContentSid = nextDayAgendaContentSid;
-      usedVariablesFormat = 'named';
+      usedVariablesFormat = 'numeric';
       
-      // Use named variables matching Twilio Content Editor Variables section
-      const namedVars: Record<string, string> = {
-        'technicianName': String(templateVariables?.technicianName || recipientName || 'Técnico'),
-        'scheduledDate': String(templateVariables?.scheduledDate || 'A definir'),
-        'scheduledTime': 'Ver abaixo',
-        'customerName': 'Agenda do dia',
-        'address': String(templateVariables?.scheduleList || 'Sem agendamentos'),
-        'contactPhone': '-',
+      const numericVars: Record<string, string> = {
+        '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
+        '2': String(templateVariables?.scheduledDate || 'A definir'),
+        '3': 'Ver abaixo',
+        '4': 'Agenda do dia',
+        '5': String(templateVariables?.scheduleList || 'Sem agendamentos'),
+        '6': '-',
       };
       
-      console.log('Sending technician_next_day_agenda with named variables:', JSON.stringify(namedVars));
+      console.log('Sending technician_next_day_agenda with numeric variables:', JSON.stringify(numericVars));
       
       const result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
-        nextDayAgendaContentSid, namedVars, 'named'
+        nextDayAgendaContentSid, numericVars, 'numeric'
       );
 
       if (!result.ok) {
@@ -215,9 +214,9 @@ Deno.serve(async (req) => {
             templateType,
             variablesFormat: usedVariablesFormat,
             receivedTemplateVariables: templateVariables || null,
-            attemptedVariables: namedVars,
+            attemptedVariables: numericVars,
             details: result.body,
-            hint: 'Verifique a aba Variables no Twilio Content Editor para ver os nomes exatos das variáveis do template.',
+            hint: 'O template espera variáveis numéricas (1-6). Verifique se o Content SID está correto.',
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -227,24 +226,23 @@ Deno.serve(async (req) => {
 
     } else if ((templateType === 'technician_schedule' || templateType === 'technician_schedule_notification') && technicianScheduleContentSid) {
       usedContentSid = technicianScheduleContentSid;
-      usedVariablesFormat = 'named';
+      usedVariablesFormat = 'numeric';
       
-      // Use named variables matching Twilio Content Editor Variables section
-      const namedVars: Record<string, string> = {
-        'technicianName': String(templateVariables?.technicianName || recipientName || 'Técnico'),
-        'scheduledDate': String(templateVariables?.scheduledDate || 'A definir'),
-        'scheduledTime': String(templateVariables?.scheduledTime || 'A definir'),
-        'customerName': String(templateVariables?.customerName || 'Cliente'),
-        'address': String(templateVariables?.address || 'A confirmar'),
-        'contactPhone': String(templateVariables?.contactPhone || templateVariables?.customerPhone || templateVariables?.localContact || '-'),
+      const numericVars: Record<string, string> = {
+        '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
+        '2': String(templateVariables?.scheduledDate || 'A definir'),
+        '3': String(templateVariables?.scheduledTime || 'A definir'),
+        '4': String(templateVariables?.customerName || 'Cliente'),
+        '5': String(templateVariables?.address || 'A confirmar'),
+        '6': String(templateVariables?.contactPhone || templateVariables?.customerPhone || templateVariables?.localContact || '-'),
       };
       
       console.log('technician_schedule received templateVariables:', JSON.stringify(templateVariables));
-      console.log('Sending technician_schedule with named variables:', JSON.stringify(namedVars));
+      console.log('Sending technician_schedule with numeric variables:', JSON.stringify(numericVars));
       
       const result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
-        technicianScheduleContentSid, namedVars, 'named'
+        technicianScheduleContentSid, numericVars, 'numeric'
       );
 
       if (!result.ok) {
@@ -256,9 +254,9 @@ Deno.serve(async (req) => {
             templateType,
             variablesFormat: usedVariablesFormat,
             receivedTemplateVariables: templateVariables || null,
-            attemptedVariables: namedVars,
+            attemptedVariables: numericVars,
             details: result.body,
-            hint: 'Verifique a aba Variables no Twilio Content Editor para ver os nomes exatos das variáveis do template.',
+            hint: 'O template espera variáveis numéricas (1-6). Verifique se o Content SID está correto.',
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
