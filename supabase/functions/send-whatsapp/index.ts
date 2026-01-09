@@ -210,7 +210,19 @@ Deno.serve(async (req) => {
     let usedVariablesFormat = '';
 
     // daily_agenda template: {{1}} Name, {{2}} Date, {{3}} Schedule List (with newlines), {{4}} Total count
-    if (templateType === 'daily_agenda' && dailyAgendaContentSid) {
+    if (templateType === 'daily_agenda') {
+      if (!dailyAgendaContentSid) {
+        console.error('DAILY_AGENDA_CONTENT_SID not configured');
+        return new Response(
+          JSON.stringify({
+            error: 'Template daily_agenda não configurado',
+            templateType,
+            hint: 'Adicione o secret DAILY_AGENDA_CONTENT_SID no Supabase com o Content SID do template do Twilio.',
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       usedContentSid = dailyAgendaContentSid;
       usedVariablesFormat = 'numeric';
       
@@ -250,7 +262,18 @@ Deno.serve(async (req) => {
 
       try { twilioResult = JSON.parse(result.body); } catch (_) { twilioResult = { sid: 'unknown' }; }
 
-    } else if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
+    } else if (templateType === 'technician_next_day_agenda') {
+      if (!nextDayAgendaContentSid) {
+        console.error('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID not configured');
+        return new Response(
+          JSON.stringify({
+            error: 'Template technician_next_day_agenda não configurado',
+            templateType,
+            hint: 'Adicione o secret TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID no Supabase.',
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       // Fallback to old template if daily_agenda not configured
       usedContentSid = nextDayAgendaContentSid;
       usedVariablesFormat = 'numeric';
@@ -290,7 +313,18 @@ Deno.serve(async (req) => {
 
       try { twilioResult = JSON.parse(result.body); } catch (_) { twilioResult = { sid: 'unknown' }; }
 
-    } else if ((templateType === 'technician_schedule' || templateType === 'technician_schedule_notification') && technicianScheduleContentSid) {
+    } else if (templateType === 'technician_schedule' || templateType === 'technician_schedule_notification') {
+      if (!technicianScheduleContentSid) {
+        console.error('TECHNICIAN_SCHEDULE_CONTENT_SID not configured');
+        return new Response(
+          JSON.stringify({
+            error: 'Template technician_schedule não configurado',
+            templateType,
+            hint: 'Adicione o secret TECHNICIAN_SCHEDULE_CONTENT_SID no Supabase.',
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       usedContentSid = technicianScheduleContentSid;
       usedVariablesFormat = 'numeric';
       
