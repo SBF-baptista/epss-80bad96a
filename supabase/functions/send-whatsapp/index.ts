@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
-    const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || 'HX200830b344a780a532b7bf378e41b204';
+    const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
     const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || '';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
@@ -231,20 +231,16 @@ Deno.serve(async (req) => {
     } else if ((templateType === 'technician_schedule' || templateType === 'technician_schedule_notification') && technicianScheduleContentSid) {
       usedContentSid = technicianScheduleContentSid;
       
-      // New template with 9 variables:
-      // {{1}} Technician Name, {{2}} Date, {{3}} Time, {{4}} Service, {{5}} Customer,
-      // {{6}} Customer Phone, {{7}} Address, {{8}} Reference Point, {{9}} Local Contact
+      // New template with 6 variables:
+      // {{1}} Technician Name, {{2}} Date, {{3}} Time, {{4}} Customer, {{5}} Address, {{6}} Contact
       // IMPORTANT: All variables must have non-empty values to avoid 21656 error
       const numericVars = {
         '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
         '2': String(templateVariables?.scheduledDate || 'A definir'),
         '3': String(templateVariables?.scheduledTime || 'A definir'),
-        '4': String(templateVariables?.serviceType || 'Instalação'),
-        '5': String(templateVariables?.customerName || 'Cliente'),
-        '6': String(templateVariables?.customerPhone || '-'),
-        '7': String(templateVariables?.address || 'A confirmar'),
-        '8': String(templateVariables?.referencePoint || '-'),
-        '9': String(templateVariables?.localContact || '-'),
+        '4': String(templateVariables?.customerName || 'Cliente'),
+        '5': String(templateVariables?.address || 'A confirmar'),
+        '6': String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
       };
       
       console.log('Sending technician_schedule_notification with variables:', JSON.stringify(numericVars));
@@ -260,15 +256,12 @@ Deno.serve(async (req) => {
         usedVariablesFormat = 'named (fallback)';
         
         const namedVars = {
-          technicianName: String(templateVariables?.technicianName || recipientName || ''),
-          scheduledDate: String(templateVariables?.scheduledDate || ''),
+          technicianName: String(templateVariables?.technicianName || recipientName || 'Técnico'),
+          scheduledDate: String(templateVariables?.scheduledDate || 'A definir'),
           scheduledTime: String(templateVariables?.scheduledTime || 'A definir'),
-          serviceType: String(templateVariables?.serviceType || 'Instalação'),
-          customerName: String(templateVariables?.customerName || ''),
-          customerPhone: String(templateVariables?.customerPhone || 'Não informado'),
-          address: String(templateVariables?.address || ''),
-          referencePoint: String(templateVariables?.referencePoint || 'Não informado'),
-          localContact: String(templateVariables?.localContact || 'Não informado'),
+          customerName: String(templateVariables?.customerName || 'Cliente'),
+          address: String(templateVariables?.address || 'A confirmar'),
+          contactPhone: String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
         };
         
         result = await sendWithVariables(
