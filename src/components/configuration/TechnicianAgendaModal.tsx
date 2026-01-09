@@ -133,7 +133,8 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       const phone = s.phone || '-';
       const address = s.address || 'Endereço a confirmar';
       const refPoint = s.reference_point || '-';
-      return `📌 Horário: ${time} | Cliente: ${customer} | Serviço: ${service} | Telefone do cliente: ${phone} | Endereço: ${address} | Ponto de referência: ${refPoint}`;
+      const localContact = s.local_contact || '-';
+      return `📌 Horário: ${time} | Cliente: ${customer} | Serviço: ${service} | Endereço: ${address} | Ponto de referência: ${refPoint} | Telefone cliente: ${phone} | Contato local: ${localContact}`;
     };
 
     // Create array of formatted schedules (up to 5 individual + overflow in last slot)
