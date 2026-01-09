@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
-    const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || '';
+    const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || 'HX200830b344a780a532b7bf378e41b204';
     const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || '';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
