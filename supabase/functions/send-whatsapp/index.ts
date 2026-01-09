@@ -3,6 +3,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface FirstScheduleData {
+  time: string;
+  customer: string;
+  phone: string;
+  address: string;
+  referencePoint: string;
+  localContact: string;
+}
+
 interface WhatsAppMessage {
   orderId: string;
   orderNumber: string;
@@ -25,6 +34,8 @@ interface WhatsAppMessage {
     contactPhone?: string;
     scheduleList?: string;
     totalCount?: string;
+    firstSchedule?: FirstScheduleData;
+    additionalSchedules?: string;
   };
 }
 
@@ -209,7 +220,8 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
-    // daily_agenda template: {{1}} Name, {{2}} Date, {{3}} Schedule List (with newlines), {{4}} Total count
+    // daily_agenda template: Elegant format with 9 variables
+    // {{1}} Name, {{2}} Date, {{3-8}} First schedule details, {{9}} Additional schedules
     if (templateType === 'daily_agenda') {
       if (!dailyAgendaContentSid) {
         console.error('DAILY_AGENDA_CONTENT_SID not configured');
@@ -226,21 +238,39 @@ Deno.serve(async (req) => {
       usedContentSid = dailyAgendaContentSid;
       usedVariablesFormat = 'numeric';
       
-      // Twilio Content API variables do NOT accept newlines - must sanitize
-      const scheduleListSanitized = (templateVariables?.scheduleList || '-')
-        .replace(/\n\n/g, ' | ')  // Double newlines become separator
+      // Extract first schedule data
+      const firstSchedule = templateVariables?.firstSchedule || {} as FirstScheduleData;
+      
+      // Sanitize additional schedules - Twilio Content API does NOT accept newlines in variables
+      const additionalSchedulesSanitized = (templateVariables?.additionalSchedules || '')
+        .replace(/\n\n/g, ' ║ ')  // Double newlines become separator
         .replace(/\n/g, ' • ')    // Single newlines become bullet
         .replace(/[\x00-\x1F\x7F]/g, '') // Remove control chars
         .substring(0, 1500);
       
+      // 9 variables for the elegant format:
+      // {{1}} - Technician name
+      // {{2}} - Date
+      // {{3}} - First schedule: Time
+      // {{4}} - First schedule: Customer
+      // {{5}} - First schedule: Phone
+      // {{6}} - First schedule: Address
+      // {{7}} - First schedule: Reference point
+      // {{8}} - First schedule: Local contact
+      // {{9}} - Additional schedules (inline formatted) or closing message
       const numericVars: Record<string, string> = {
         '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
         '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
-        '3': scheduleListSanitized,
-        '4': sanitizeTemplateVar(templateVariables?.totalCount || '0', 20),
+        '3': sanitizeTemplateVar(firstSchedule.time || '--:--', 20),
+        '4': sanitizeTemplateVar(firstSchedule.customer || '-', 100),
+        '5': sanitizeTemplateVar(firstSchedule.phone || '-', 30),
+        '6': sanitizeTemplateVar(firstSchedule.address || '-', 200),
+        '7': sanitizeTemplateVar(firstSchedule.referencePoint || '-', 100),
+        '8': sanitizeTemplateVar(firstSchedule.localContact || '-', 100),
+        '9': additionalSchedulesSanitized || 'Por favor, confirme sua disponibilidade para o atendimento agendado.',
       };
       
-      console.log('Sending daily_agenda with numeric variables:', JSON.stringify(numericVars));
+      console.log('Sending daily_agenda with 9 numeric variables:', JSON.stringify(numericVars));
       
       const result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
@@ -258,7 +288,7 @@ Deno.serve(async (req) => {
             receivedTemplateVariables: templateVariables || null,
             attemptedVariables: numericVars,
             details: result.body,
-            hint: 'O template daily_agenda espera 4 variáveis numéricas (1-4).',
+            hint: 'O template daily_agenda espera 9 variáveis numéricas (1-9). Verifique se o template no Twilio foi atualizado.',
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
