@@ -3,15 +3,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface FirstScheduleData {
-  time: string;
-  customer: string;
-  phone: string;
-  address: string;
-  referencePoint: string;
-  localContact: string;
-}
-
 interface WhatsAppMessage {
   orderId: string;
   orderNumber: string;
@@ -34,8 +25,12 @@ interface WhatsAppMessage {
     contactPhone?: string;
     scheduleList?: string;
     totalCount?: string;
-    firstSchedule?: FirstScheduleData;
-    additionalSchedules?: string;
+    // New format: 5 individual schedule slots
+    schedule1?: string;
+    schedule2?: string;
+    schedule3?: string;
+    schedule4?: string;
+    schedule5?: string;
   };
 }
 
@@ -220,8 +215,8 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
-    // daily_agenda template: Elegant format with 9 variables
-    // {{1}} Name, {{2}} Date, {{3-8}} First schedule details, {{9}} Additional schedules
+    // daily_agenda template: 7 variables with line breaks between schedules
+    // {{1}} Name, {{2}} Date, {{3-7}} Individual schedule slots (each on its own line in template)
     if (templateType === 'daily_agenda') {
       if (!dailyAgendaContentSid) {
         console.error('DAILY_AGENDA_CONTENT_SID not configured');
@@ -236,41 +231,27 @@ Deno.serve(async (req) => {
       }
 
       usedContentSid = dailyAgendaContentSid;
-      usedVariablesFormat = 'numeric';
+      usedVariablesFormat = 'numeric-7vars';
       
-      // Extract first schedule data
-      const firstSchedule = templateVariables?.firstSchedule || {} as FirstScheduleData;
-      
-      // Additional schedules already formatted inline by the client
-      // Just sanitize control characters
-      const additionalSchedulesSanitized = sanitizeTemplateVar(
-        templateVariables?.additionalSchedules || '',
-        1500
-      );
-      
-      // 9 variables for the elegant format:
+      // 7 variables for the new format:
       // {{1}} - Technician name
       // {{2}} - Date
-      // {{3}} - First schedule: Time
-      // {{4}} - First schedule: Customer
-      // {{5}} - First schedule: Phone
-      // {{6}} - First schedule: Address
-      // {{7}} - First schedule: Reference point
-      // {{8}} - First schedule: Local contact
-      // {{9}} - Additional schedules (inline formatted) or closing message
+      // {{3}} - Schedule 1 (formatted: 📌 HH:MM | Cliente | Tel: XX | Endereço)
+      // {{4}} - Schedule 2
+      // {{5}} - Schedule 3
+      // {{6}} - Schedule 4
+      // {{7}} - Schedule 5 (may contain overflow if more than 5 schedules)
       const numericVars: Record<string, string> = {
         '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
         '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
-        '3': sanitizeTemplateVar(firstSchedule.time || '--:--', 20),
-        '4': sanitizeTemplateVar(firstSchedule.customer || '-', 100),
-        '5': sanitizeTemplateVar(firstSchedule.phone || '-', 30),
-        '6': sanitizeTemplateVar(firstSchedule.address || '-', 200),
-        '7': sanitizeTemplateVar(firstSchedule.referencePoint || '-', 100),
-        '8': sanitizeTemplateVar(firstSchedule.localContact || '-', 100),
-        '9': additionalSchedulesSanitized || 'Por favor, confirme sua disponibilidade para o atendimento agendado.',
+        '3': sanitizeTemplateVar(templateVariables?.schedule1 || '', 300),
+        '4': sanitizeTemplateVar(templateVariables?.schedule2 || '', 300),
+        '5': sanitizeTemplateVar(templateVariables?.schedule3 || '', 300),
+        '6': sanitizeTemplateVar(templateVariables?.schedule4 || '', 300),
+        '7': sanitizeTemplateVar(templateVariables?.schedule5 || '', 500),
       };
       
-      console.log('Sending daily_agenda with 9 numeric variables:', JSON.stringify(numericVars));
+      console.log('Sending daily_agenda with 7 numeric variables:', JSON.stringify(numericVars));
       
       const result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
@@ -288,7 +269,7 @@ Deno.serve(async (req) => {
             receivedTemplateVariables: templateVariables || null,
             attemptedVariables: numericVars,
             details: result.body,
-            hint: 'O template daily_agenda espera 9 variáveis numéricas (1-9). Verifique se o template no Twilio foi atualizado.',
+            hint: 'O template daily_agenda espera 7 variáveis numéricas (1-7). Verifique se o template no Twilio foi atualizado.',
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
