@@ -247,8 +247,10 @@ Deno.serve(async (req) => {
         '3': String(templateVariables?.scheduledTime || 'A definir'),
         '4': String(templateVariables?.customerName || 'Cliente'),
         '5': String(templateVariables?.address || 'A confirmar'),
-        '6': String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
+        '6': String(templateVariables?.contactPhone || templateVariables?.customerPhone || templateVariables?.localContact || '-'),
       };
+      
+      console.log('technician_schedule received templateVariables:', JSON.stringify(templateVariables));
       
       console.log('Sending technician_schedule_notification with variables:', JSON.stringify(numericVars));
       
