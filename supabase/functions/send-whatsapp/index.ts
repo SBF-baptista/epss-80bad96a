@@ -140,8 +140,8 @@ Deno.serve(async (req) => {
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
-    const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
-    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
+    const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || '';
+    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || '';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
       console.error('Missing Twilio credentials');
@@ -228,7 +228,15 @@ Deno.serve(async (req) => {
       if (!result.ok) {
         console.error('Failed to send WhatsApp message:', result.body);
         return new Response(
-          JSON.stringify({ error: 'Failed to send WhatsApp message', details: result.body }),
+          JSON.stringify({
+            error: 'Failed to send WhatsApp message',
+            contentSid: usedContentSid,
+            templateType,
+            variablesFormat: usedVariablesFormat,
+            receivedTemplateVariables: templateVariables || null,
+            attemptedVariables: numericVars,
+            details: result.body,
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -284,7 +292,15 @@ Deno.serve(async (req) => {
       if (!result.ok) {
         console.error('Failed to send WhatsApp message:', result.body);
         return new Response(
-          JSON.stringify({ error: 'Failed to send WhatsApp message', details: result.body }),
+          JSON.stringify({
+            error: 'Failed to send WhatsApp message',
+            contentSid: usedContentSid,
+            templateType,
+            variablesFormat: usedVariablesFormat,
+            receivedTemplateVariables: templateVariables || null,
+            attemptedVariables: numericVars,
+            details: result.body,
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
