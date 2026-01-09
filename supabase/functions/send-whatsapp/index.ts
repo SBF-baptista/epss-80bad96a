@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
     const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
-    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || 'HXcaef78f6be0e69264314f29c347794f6';
+    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
       console.error('Missing Twilio credentials');
@@ -183,14 +183,18 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
-    // technician_next_day_agenda uses 3 variables: {{1}} Name, {{2}} Date, {{3}} Schedule List
+    // technician_next_day_agenda uses same 6-variable template as individual schedule
+    // {{1}} Name, {{2}} Date, {{3}} Time, {{4}} Customer, {{5}} Address (schedule list), {{6}} Contact
     if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
       usedContentSid = nextDayAgendaContentSid;
       
       const numericVars = {
         '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
         '2': String(templateVariables?.scheduledDate || 'A definir'),
-        '3': String(templateVariables?.scheduleList || 'Sem agendamentos'),
+        '3': 'Ver abaixo',
+        '4': 'Agenda do dia',
+        '5': String(templateVariables?.scheduleList || 'Sem agendamentos'),
+        '6': '-',
       };
       
       console.log('Sending technician_next_day_agenda with variables:', JSON.stringify(numericVars));
@@ -208,7 +212,10 @@ Deno.serve(async (req) => {
         const namedVars = {
           technicianName: String(templateVariables?.technicianName || recipientName || 'Técnico'),
           scheduledDate: String(templateVariables?.scheduledDate || 'A definir'),
-          scheduleList: String(templateVariables?.scheduleList || 'Sem agendamentos'),
+          scheduledTime: 'Ver abaixo',
+          customerName: 'Agenda do dia',
+          address: String(templateVariables?.scheduleList || 'Sem agendamentos'),
+          contactPhone: '-',
         };
         
         result = await sendWithVariables(
@@ -218,7 +225,6 @@ Deno.serve(async (req) => {
       } else {
         usedVariablesFormat = 'numeric';
       }
-
       if (!result.ok) {
         console.error('Failed to send WhatsApp message:', result.body);
         return new Response(
