@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
     const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
-    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || '';
+    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
       console.error('Missing Twilio credentials');
@@ -183,16 +183,22 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
-    // Handle technician_next_day_agenda - use NUMERIC variables (new approved template)
     if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
       usedContentSid = nextDayAgendaContentSid;
       
-      // Use NUMERIC variables for new template (HXcdc2bbc7743de4c3ce7c25bb36072283)
+      // New template with 6 variables:
+      // {{1}} Technician Name, {{2}} Date, {{3}} Time, {{4}} Customer, {{5}} Address, {{6}} Contact
+      // For agenda, we put the schedule list in the address field
       const numericVars = {
-        '1': String(templateVariables?.technicianName || recipientName || ''),
-        '2': String(templateVariables?.scheduledDate || ''),
-        '3': String(templateVariables?.scheduleList || ''),
+        '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
+        '2': String(templateVariables?.scheduledDate || 'A definir'),
+        '3': String(templateVariables?.scheduledTime || 'A definir'),
+        '4': String(templateVariables?.customerName || 'Múltiplos clientes'),
+        '5': String(templateVariables?.scheduleList || templateVariables?.address || 'Ver detalhes'),
+        '6': String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
       };
+      
+      console.log('Sending technician_next_day_agenda with variables:', JSON.stringify(numericVars));
       
       let result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
@@ -205,9 +211,12 @@ Deno.serve(async (req) => {
         usedVariablesFormat = 'named (fallback)';
         
         const namedVars = {
-          technicianName: String(templateVariables?.technicianName || recipientName || ''),
-          scheduledDate: String(templateVariables?.scheduledDate || ''),
-          scheduleList: String(templateVariables?.scheduleList || ''),
+          technicianName: String(templateVariables?.technicianName || recipientName || 'Técnico'),
+          scheduledDate: String(templateVariables?.scheduledDate || 'A definir'),
+          scheduledTime: String(templateVariables?.scheduledTime || 'A definir'),
+          customerName: String(templateVariables?.customerName || 'Múltiplos clientes'),
+          address: String(templateVariables?.scheduleList || templateVariables?.address || 'Ver detalhes'),
+          contactPhone: String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
         };
         
         result = await sendWithVariables(
