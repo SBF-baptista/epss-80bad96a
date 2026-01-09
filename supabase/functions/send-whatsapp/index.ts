@@ -76,6 +76,30 @@ async function sendWithVariables(
   return { ok: response.ok, status: response.status, body };
 }
 
+// Sanitize string for WhatsApp template variables
+// Twilio Content API may reject newlines or special characters in variables
+function sanitizeTemplateVar(value: string | undefined | null, maxLength: number = 1000): string {
+  if (!value) return '-';
+  
+  let sanitized = String(value)
+    // Replace newlines with bullet separator for readability
+    .replace(/\r\n/g, ' • ')
+    .replace(/\n/g, ' • ')
+    .replace(/\r/g, ' • ')
+    // Remove any control characters except space
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    // Normalize multiple spaces
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // Truncate if too long (Twilio has variable length limits)
+  if (sanitized.length > maxLength) {
+    sanitized = sanitized.substring(0, maxLength - 3) + '...';
+  }
+  
+  return sanitized || '-';
+}
+
 // Twilio error code to user-friendly message mapping
 const twilioErrorMessages: Record<number, string> = {
   63013: 'Template não aprovado ou SID incorreto - verifique no Twilio Console',
@@ -87,7 +111,7 @@ const twilioErrorMessages: Record<number, string> = {
   21408: 'Permissão negada para enviar para este número',
   21610: 'Número bloqueou mensagens',
   21614: 'Número não é um celular válido',
-  21656: 'Variáveis do template inválidas',
+  21656: 'Variáveis do template inválidas - verifique formato e caracteres especiais',
   30003: 'Número não alcançável',
   30005: 'Número desconhecido',
   30006: 'Número bloqueou o remetente',
@@ -190,11 +214,11 @@ Deno.serve(async (req) => {
       usedVariablesFormat = 'numeric';
       
       const numericVars: Record<string, string> = {
-        '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
-        '2': String(templateVariables?.scheduledDate || 'A definir'),
+        '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
+        '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
         '3': 'Ver abaixo',
         '4': 'Agenda do dia',
-        '5': String(templateVariables?.scheduleList || 'Sem agendamentos'),
+        '5': sanitizeTemplateVar(templateVariables?.scheduleList, 900),
         '6': '-',
       };
       
@@ -216,7 +240,7 @@ Deno.serve(async (req) => {
             receivedTemplateVariables: templateVariables || null,
             attemptedVariables: numericVars,
             details: result.body,
-            hint: 'O template espera variáveis numéricas (1-6). Verifique se o Content SID está correto.',
+            hint: 'O template espera variáveis numéricas (1-6). Caracteres especiais foram sanitizados.',
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -229,12 +253,12 @@ Deno.serve(async (req) => {
       usedVariablesFormat = 'numeric';
       
       const numericVars: Record<string, string> = {
-        '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
-        '2': String(templateVariables?.scheduledDate || 'A definir'),
-        '3': String(templateVariables?.scheduledTime || 'A definir'),
-        '4': String(templateVariables?.customerName || 'Cliente'),
-        '5': String(templateVariables?.address || 'A confirmar'),
-        '6': String(templateVariables?.contactPhone || templateVariables?.customerPhone || templateVariables?.localContact || '-'),
+        '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
+        '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
+        '3': sanitizeTemplateVar(templateVariables?.scheduledTime, 50),
+        '4': sanitizeTemplateVar(templateVariables?.customerName, 100),
+        '5': sanitizeTemplateVar(templateVariables?.address, 300),
+        '6': sanitizeTemplateVar(templateVariables?.contactPhone || templateVariables?.customerPhone || templateVariables?.localContact, 50),
       };
       
       console.log('technician_schedule received templateVariables:', JSON.stringify(templateVariables));
@@ -256,7 +280,7 @@ Deno.serve(async (req) => {
             receivedTemplateVariables: templateVariables || null,
             attemptedVariables: numericVars,
             details: result.body,
-            hint: 'O template espera variáveis numéricas (1-6). Verifique se o Content SID está correto.',
+            hint: 'O template espera variáveis numéricas (1-6). Caracteres especiais foram sanitizados.',
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
