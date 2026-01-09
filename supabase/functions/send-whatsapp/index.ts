@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
     const orderShippedContentSid = Deno.env.get('WHATSAPP_ORDER_SHIPPED_CONTENT_SID') || '';
     const technicianScheduleContentSid = Deno.env.get('TECHNICIAN_SCHEDULE_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
-    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || 'HX9ca7951f9b29a29c4c66373752da5a55';
+    const nextDayAgendaContentSid = Deno.env.get('TECHNICIAN_NEXT_DAY_AGENDA_CONTENT_SID') || 'HXcaef78f6be0e69264314f29c347794f6';
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsAppNumber) {
       console.error('Missing Twilio credentials');
@@ -183,19 +183,14 @@ Deno.serve(async (req) => {
     let usedContentSid = '';
     let usedVariablesFormat = '';
 
+    // technician_next_day_agenda uses 3 variables: {{1}} Name, {{2}} Date, {{3}} Schedule List
     if (templateType === 'technician_next_day_agenda' && nextDayAgendaContentSid) {
       usedContentSid = nextDayAgendaContentSid;
       
-      // New template with 6 variables:
-      // {{1}} Technician Name, {{2}} Date, {{3}} Time, {{4}} Customer, {{5}} Address, {{6}} Contact
-      // For agenda, we put the schedule list in the address field
       const numericVars = {
         '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
         '2': String(templateVariables?.scheduledDate || 'A definir'),
-        '3': String(templateVariables?.scheduledTime || 'A definir'),
-        '4': String(templateVariables?.customerName || 'Múltiplos clientes'),
-        '5': String(templateVariables?.scheduleList || templateVariables?.address || 'Ver detalhes'),
-        '6': String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
+        '3': String(templateVariables?.scheduleList || 'Sem agendamentos'),
       };
       
       console.log('Sending technician_next_day_agenda with variables:', JSON.stringify(numericVars));
@@ -213,10 +208,7 @@ Deno.serve(async (req) => {
         const namedVars = {
           technicianName: String(templateVariables?.technicianName || recipientName || 'Técnico'),
           scheduledDate: String(templateVariables?.scheduledDate || 'A definir'),
-          scheduledTime: String(templateVariables?.scheduledTime || 'A definir'),
-          customerName: String(templateVariables?.customerName || 'Múltiplos clientes'),
-          address: String(templateVariables?.scheduleList || templateVariables?.address || 'Ver detalhes'),
-          contactPhone: String(templateVariables?.customerPhone || templateVariables?.localContact || '-'),
+          scheduleList: String(templateVariables?.scheduleList || 'Sem agendamentos'),
         };
         
         result = await sendWithVariables(
