@@ -11,16 +11,18 @@ interface WhatsAppMessage {
   recipientName: string;
   companyName?: string;
   customMessage?: string;
-  templateType?: 'order_shipped' | 'technician_schedule' | 'technician_next_day_agenda';
+  templateType?: 'order_shipped' | 'technician_schedule' | 'technician_next_day_agenda' | 'technician_schedule_notification';
   templateVariables?: {
     technicianName?: string;
     scheduledDate?: string;
     scheduledTime?: string;
+    serviceType?: string;
     customerName?: string;
+    customerPhone?: string;
     address?: string;
-    contactPhone?: string;
     referencePoint?: string;
     localContact?: string;
+    contactPhone?: string;
     scheduleList?: string;
   };
 }
@@ -226,17 +228,22 @@ Deno.serve(async (req) => {
 
       try { twilioResult = JSON.parse(result.body); } catch (_) { twilioResult = { sid: 'unknown' }; }
 
-    } else if (templateType === 'technician_schedule' && technicianScheduleContentSid) {
+    } else if ((templateType === 'technician_schedule' || templateType === 'technician_schedule_notification') && technicianScheduleContentSid) {
       usedContentSid = technicianScheduleContentSid;
       
-      // Try NUMERIC variables first
+      // New template with 9 variables:
+      // {{1}} Technician Name, {{2}} Date, {{3}} Time, {{4}} Service, {{5}} Customer,
+      // {{6}} Customer Phone, {{7}} Address, {{8}} Reference Point, {{9}} Local Contact
       const numericVars = {
         '1': String(templateVariables?.technicianName || recipientName || ''),
         '2': String(templateVariables?.scheduledDate || ''),
         '3': String(templateVariables?.scheduledTime || 'A definir'),
-        '4': String(templateVariables?.customerName || ''),
-        '5': String(templateVariables?.address || ''),
-        '6': String(templateVariables?.contactPhone || 'Não informado'),
+        '4': String(templateVariables?.serviceType || 'Instalação'),
+        '5': String(templateVariables?.customerName || ''),
+        '6': String(templateVariables?.customerPhone || 'Não informado'),
+        '7': String(templateVariables?.address || ''),
+        '8': String(templateVariables?.referencePoint || 'Não informado'),
+        '9': String(templateVariables?.localContact || 'Não informado'),
       };
       
       let result = await sendWithVariables(
@@ -253,9 +260,12 @@ Deno.serve(async (req) => {
           technicianName: String(templateVariables?.technicianName || recipientName || ''),
           scheduledDate: String(templateVariables?.scheduledDate || ''),
           scheduledTime: String(templateVariables?.scheduledTime || 'A definir'),
+          serviceType: String(templateVariables?.serviceType || 'Instalação'),
           customerName: String(templateVariables?.customerName || ''),
+          customerPhone: String(templateVariables?.customerPhone || 'Não informado'),
           address: String(templateVariables?.address || ''),
-          contactPhone: String(templateVariables?.contactPhone || 'Não informado'),
+          referencePoint: String(templateVariables?.referencePoint || 'Não informado'),
+          localContact: String(templateVariables?.localContact || 'Não informado'),
         };
         
         result = await sendWithVariables(
