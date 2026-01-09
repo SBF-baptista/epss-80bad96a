@@ -124,35 +124,33 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format first schedule with individual fields (for elegant display)
-    const firstSchedule = schedules[0];
-    const firstScheduleData = {
-      time: firstSchedule.scheduled_time?.substring(0, 5) || '--:--',
-      customer: firstSchedule.customer || 'Cliente não informado',
-      phone: firstSchedule.phone || '-',
-      address: firstSchedule.address || 'Endereço não informado',
-      referencePoint: firstSchedule.reference_point || '-',
-      localContact: firstSchedule.local_contact || '-'
+    // Format each schedule in compact format: 📌 HH:MM | Cliente | Tel: XX | Endereço
+    // Template has 5 slots (variables 3-7) for individual schedules with line breaks
+    const formatSchedule = (s: any): string => {
+      const time = s.scheduled_time?.substring(0, 5) || '--:--';
+      const customer = s.customer || 'Cliente';
+      const phone = s.phone || '-';
+      const address = s.address || 'Endereço a confirmar';
+      return `📌 ${time} | ${customer} | Tel: ${phone} | ${address}`;
     };
 
-    // Format additional schedules (2nd onwards) - using separator for Twilio template
-    // Note: Twilio does not accept \n in variables, so we use ═══ as visual separator
-    let additionalSchedules = '';
-    if (schedules.length > 1) {
-      additionalSchedules = schedules.slice(1).map(s => {
-        const time = s.scheduled_time?.substring(0, 5) || '--:--';
-        const customer = s.customer || 'Cliente';
-        const phone = s.phone || '-';
-        const address = s.address || 'Endereço a confirmar';
-        const ref = s.reference_point || '-';
-        const contact = s.local_contact || '-';
-        // Use visual separator that works inline (Twilio rejects \n in variables)
-        return `═══════════════════ ║ Horário: ${time} ║ Cliente: ${customer} ║ Telefone: ${phone} ║ Endereço: ${address} ║ Ponto de referência: ${ref} ║ Contato local: ${contact}`;
-      }).join(' ');
+    // Create array of formatted schedules (up to 5 individual + overflow in last slot)
+    const formattedSchedules: string[] = [];
+    
+    for (let i = 0; i < Math.min(schedules.length, 5); i++) {
+      formattedSchedules.push(formatSchedule(schedules[i]));
+    }
+    
+    // If more than 5 schedules, append remaining to the 5th slot
+    if (schedules.length > 5) {
+      const overflow = schedules.slice(5).map(formatSchedule).join(' • ');
+      formattedSchedules[4] = formattedSchedules[4] + ' • ' + overflow;
     }
 
-    // Note: Closing message is now part of the Twilio template (after {{9}})
-    // to comply with WhatsApp requirement that templates cannot end with a variable
+    // Pad with empty strings if less than 5 schedules
+    while (formattedSchedules.length < 5) {
+      formattedSchedules.push('');
+    }
 
     try {
       const { data, error: sendError } = await supabase.functions.invoke('send-whatsapp', {
@@ -165,9 +163,11 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
           templateVariables: {
             technicianName: technician.name,
             scheduledDate: formattedTomorrow,
-            firstSchedule: firstScheduleData,
-            additionalSchedules: additionalSchedules,
-            totalCount: String(schedules.length)
+            schedule1: formattedSchedules[0],
+            schedule2: formattedSchedules[1],
+            schedule3: formattedSchedules[2],
+            schedule4: formattedSchedules[3],
+            schedule5: formattedSchedules[4]
           }
         }
       });
