@@ -234,17 +234,20 @@ Deno.serve(async (req) => {
       // New template with 9 variables:
       // {{1}} Technician Name, {{2}} Date, {{3}} Time, {{4}} Service, {{5}} Customer,
       // {{6}} Customer Phone, {{7}} Address, {{8}} Reference Point, {{9}} Local Contact
+      // IMPORTANT: All variables must have non-empty values to avoid 21656 error
       const numericVars = {
-        '1': String(templateVariables?.technicianName || recipientName || ''),
-        '2': String(templateVariables?.scheduledDate || ''),
+        '1': String(templateVariables?.technicianName || recipientName || 'Técnico'),
+        '2': String(templateVariables?.scheduledDate || 'A definir'),
         '3': String(templateVariables?.scheduledTime || 'A definir'),
         '4': String(templateVariables?.serviceType || 'Instalação'),
-        '5': String(templateVariables?.customerName || ''),
-        '6': String(templateVariables?.customerPhone || 'Não informado'),
-        '7': String(templateVariables?.address || ''),
-        '8': String(templateVariables?.referencePoint || 'Não informado'),
-        '9': String(templateVariables?.localContact || 'Não informado'),
+        '5': String(templateVariables?.customerName || 'Cliente'),
+        '6': String(templateVariables?.customerPhone || '-'),
+        '7': String(templateVariables?.address || 'A confirmar'),
+        '8': String(templateVariables?.referencePoint || '-'),
+        '9': String(templateVariables?.localContact || '-'),
       };
+      
+      console.log('Sending technician_schedule_notification with variables:', JSON.stringify(numericVars));
       
       let result = await sendWithVariables(
         twilioUrl, authHeader, twilioWhatsAppNumber, toPhone,
