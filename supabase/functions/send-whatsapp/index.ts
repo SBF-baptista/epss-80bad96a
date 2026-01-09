@@ -226,13 +226,17 @@ Deno.serve(async (req) => {
       usedContentSid = dailyAgendaContentSid;
       usedVariablesFormat = 'numeric';
       
-      // For this template, we DON'T sanitize newlines in the schedule list - Twilio text fields accept them
-      const scheduleListRaw = templateVariables?.scheduleList || '-';
+      // Twilio Content API variables do NOT accept newlines - must sanitize
+      const scheduleListSanitized = (templateVariables?.scheduleList || '-')
+        .replace(/\n\n/g, ' | ')  // Double newlines become separator
+        .replace(/\n/g, ' • ')    // Single newlines become bullet
+        .replace(/[\x00-\x1F\x7F]/g, '') // Remove control chars
+        .substring(0, 1500);
       
       const numericVars: Record<string, string> = {
         '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
         '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
-        '3': scheduleListRaw.substring(0, 1500), // Keep newlines, just truncate if too long
+        '3': scheduleListSanitized,
         '4': sanitizeTemplateVar(templateVariables?.totalCount || '0', 20),
       };
       
