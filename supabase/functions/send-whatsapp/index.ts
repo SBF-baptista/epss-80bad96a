@@ -93,6 +93,8 @@ function sanitizeTemplateVar(value: string | undefined | null, maxLength: number
     .replace(/\r\n/g, ' • ')
     .replace(/\n/g, ' • ')
     .replace(/\r/g, ' • ')
+    // Remove parentheses - Twilio error 21656 can occur with these
+    .replace(/[()]/g, '')
     // Remove any control characters except space
     .replace(/[\x00-\x1F\x7F]/g, '')
     // Normalize multiple spaces
