@@ -150,12 +150,12 @@ export const ScheduleFormModal = ({
     if (open) {
       loadTechnicians();
       
-      // Pre-fill date and time from planning
-      if (initialVehicleData?.scheduledDate) {
-        const date = new Date(initialVehicleData.scheduledDate + 'T12:00:00');
-        form.setValue('date', date);
-      } else if (selectedDate) {
+      // Para novo agendamento, usar data selecionada ou data atual
+      // A data do kit_schedules (scheduledDate) é apenas uma previsão antiga e não deve ser usada
+      if (selectedDate) {
         form.setValue('date', selectedDate);
+      } else {
+        form.setValue('date', new Date());
       }
       
       if (initialVehicleData?.installationTime) {
