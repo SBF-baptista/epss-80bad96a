@@ -90,11 +90,9 @@ function sanitizeTemplateVar(value: string | undefined | null, maxLength: number
   
   let sanitized = String(value)
     // Replace newlines with bullet separator for readability
-    .replace(/\r\n/g, ' - ')
-    .replace(/\n/g, ' - ')
-    .replace(/\r/g, ' - ')
-    // Remove parentheses that may cause template issues
-    .replace(/[()]/g, '')
+    .replace(/\r\n/g, ' • ')
+    .replace(/\n/g, ' • ')
+    .replace(/\r/g, ' • ')
     // Remove any control characters except space
     .replace(/[\x00-\x1F\x7F]/g, '')
     // Normalize multiple spaces
@@ -243,20 +241,14 @@ Deno.serve(async (req) => {
       // {{5}} - Schedule 3
       // {{6}} - Schedule 4
       // {{7}} - Schedule 5 (may contain overflow if more than 5 schedules)
-      // Helper for schedule slots - returns single space for empty slots (Twilio requires non-empty values)
-      const sanitizeScheduleSlot = (value: string | undefined | null, maxLength: number = 300): string => {
-        if (!value || value.trim() === '') return ' ';
-        return sanitizeTemplateVar(value, maxLength);
-      };
-
       const numericVars: Record<string, string> = {
         '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
         '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
-        '3': sanitizeScheduleSlot(templateVariables?.schedule1, 300),
-        '4': sanitizeScheduleSlot(templateVariables?.schedule2, 300),
-        '5': sanitizeScheduleSlot(templateVariables?.schedule3, 300),
-        '6': sanitizeScheduleSlot(templateVariables?.schedule4, 300),
-        '7': sanitizeScheduleSlot(templateVariables?.schedule5, 500),
+        '3': sanitizeTemplateVar(templateVariables?.schedule1 || '', 300),
+        '4': sanitizeTemplateVar(templateVariables?.schedule2 || '', 300),
+        '5': sanitizeTemplateVar(templateVariables?.schedule3 || '', 300),
+        '6': sanitizeTemplateVar(templateVariables?.schedule4 || '', 300),
+        '7': sanitizeTemplateVar(templateVariables?.schedule5 || '', 500),
       };
       
       console.log('Sending daily_agenda with 7 numeric variables:', JSON.stringify(numericVars));
