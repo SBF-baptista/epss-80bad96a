@@ -243,9 +243,9 @@ Deno.serve(async (req) => {
       // {{5}} - Schedule 3
       // {{6}} - Schedule 4
       // {{7}} - Schedule 5 (may contain overflow if more than 5 schedules)
-      // Helper for schedule slots - returns empty string instead of dash for empty slots
+      // Helper for schedule slots - returns single space for empty slots (Twilio requires non-empty values)
       const sanitizeScheduleSlot = (value: string | undefined | null, maxLength: number = 300): string => {
-        if (!value || value.trim() === '') return '';
+        if (!value || value.trim() === '') return ' ';
         return sanitizeTemplateVar(value, maxLength);
       };
 
