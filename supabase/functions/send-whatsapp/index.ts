@@ -241,14 +241,20 @@ Deno.serve(async (req) => {
       // {{5}} - Schedule 3
       // {{6}} - Schedule 4
       // {{7}} - Schedule 5 (may contain overflow if more than 5 schedules)
+      // Helper for schedule slots - returns empty string instead of dash for empty slots
+      const sanitizeScheduleSlot = (value: string | undefined | null, maxLength: number = 300): string => {
+        if (!value || value.trim() === '') return '';
+        return sanitizeTemplateVar(value, maxLength);
+      };
+
       const numericVars: Record<string, string> = {
         '1': sanitizeTemplateVar(templateVariables?.technicianName || recipientName, 100),
         '2': sanitizeTemplateVar(templateVariables?.scheduledDate, 50),
-        '3': sanitizeTemplateVar(templateVariables?.schedule1 || '', 300),
-        '4': sanitizeTemplateVar(templateVariables?.schedule2 || '', 300),
-        '5': sanitizeTemplateVar(templateVariables?.schedule3 || '', 300),
-        '6': sanitizeTemplateVar(templateVariables?.schedule4 || '', 300),
-        '7': sanitizeTemplateVar(templateVariables?.schedule5 || '', 500),
+        '3': sanitizeScheduleSlot(templateVariables?.schedule1, 300),
+        '4': sanitizeScheduleSlot(templateVariables?.schedule2, 300),
+        '5': sanitizeScheduleSlot(templateVariables?.schedule3, 300),
+        '6': sanitizeScheduleSlot(templateVariables?.schedule4, 300),
+        '7': sanitizeScheduleSlot(templateVariables?.schedule5, 500),
       };
       
       console.log('Sending daily_agenda with 7 numeric variables:', JSON.stringify(numericVars));
