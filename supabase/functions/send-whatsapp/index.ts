@@ -90,9 +90,11 @@ function sanitizeTemplateVar(value: string | undefined | null, maxLength: number
   
   let sanitized = String(value)
     // Replace newlines with bullet separator for readability
-    .replace(/\r\n/g, ' • ')
-    .replace(/\n/g, ' • ')
-    .replace(/\r/g, ' • ')
+    .replace(/\r\n/g, ' - ')
+    .replace(/\n/g, ' - ')
+    .replace(/\r/g, ' - ')
+    // Remove parentheses that may cause template issues
+    .replace(/[()]/g, '')
     // Remove any control characters except space
     .replace(/[\x00-\x1F\x7F]/g, '')
     // Normalize multiple spaces
