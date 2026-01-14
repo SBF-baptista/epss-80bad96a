@@ -28,7 +28,7 @@ serve(async (req) => {
 
     console.log(`Fetching Segsale extras for category: ${category || 'all'}`);
 
-    const response = await fetch('http://ws-tomcat-a-1.segsat.lan:8182/segsale/produto/6/extras', {
+    const response = await fetch('https://ws-sale-teste.segsat.com/segsale/produto/6/extras', {
       method: 'GET',
       headers: {
         'Token': apiToken,
