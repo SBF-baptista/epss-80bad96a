@@ -21,9 +21,9 @@ serve(async (req) => {
   try {
     const { category } = await req.json();
     
-    const apiToken = Deno.env.get('SEGSALE_API_TOKEN');
+    const apiToken = Deno.env.get('SEGSALE_ACCESSORIES_TOKEN');
     if (!apiToken) {
-      throw new Error('SEGSALE_API_TOKEN not configured');
+      throw new Error('SEGSALE_ACCESSORIES_TOKEN not configured');
     }
 
     console.log(`Fetching Segsale extras for category: ${category || 'all'}`);
