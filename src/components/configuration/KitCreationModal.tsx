@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,10 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Package, Wrench, Box, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Package, Wrench, Box, AlertTriangle, Cpu, Loader2 } from 'lucide-react';
 import { createHomologationKit, type CreateKitRequest, type HomologationKitItem } from '@/services/homologationKitService';
 import { SelectOrCreateInput } from '@/components/kit-items';
 import { checkItemHomologation } from '@/services/kitHomologationService';
+import { useSegsaleExtras } from '@/hooks/useSegsaleExtras';
 
 interface KitCreationModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface KitFormData {
   category: string;
   equipment: Omit<HomologationKitItem, 'id'>[];
   accessories: Omit<HomologationKitItem, 'id'>[];
+  modules: Omit<HomologationKitItem, 'id'>[];
   supplies: Omit<HomologationKitItem, 'id'>[];
 }
 
@@ -38,6 +40,7 @@ const initialFormData: KitFormData = {
   category: '',
   equipment: [{ item_name: '', item_type: 'equipment', quantity: 1, description: '', notes: '' }],
   accessories: [{ item_name: '', item_type: 'accessory', quantity: 1, description: '', notes: '' }],
+  modules: [{ item_name: '', item_type: 'accessory', quantity: 1, description: '', notes: '' }],
   supplies: [{ item_name: '', item_type: 'supply', quantity: 1, description: '', notes: '' }]
 };
 
@@ -46,11 +49,13 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
   const [nonHomologatedItems, setNonHomologatedItems] = useState<Set<string>>(new Set());
+  const { accessories: segsaleAccessories, modules: segsaleModules, loading: segsaleLoading } = useSegsaleExtras();
 
-  const addItem = (type: 'equipment' | 'accessories' | 'supplies') => {
+  const addItem = (type: 'equipment' | 'accessories' | 'modules' | 'supplies') => {
+    const itemType = type === 'equipment' ? 'equipment' : type === 'supplies' ? 'supply' : 'accessory';
     const newItem = { 
       item_name: '', 
-      item_type: type === 'equipment' ? 'equipment' : type === 'accessories' ? 'accessory' : 'supply',
+      item_type: itemType,
       quantity: 1, 
       description: '', 
       notes: '' 
@@ -61,14 +66,14 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     }));
   };
 
-  const removeItem = (type: 'equipment' | 'accessories' | 'supplies', index: number) => {
+  const removeItem = (type: 'equipment' | 'accessories' | 'modules' | 'supplies', index: number) => {
     setFormData(prev => ({
       ...prev,
       [type]: prev[type].filter((_, i) => i !== index)
     }));
   };
 
-  const updateItem = (type: 'equipment' | 'accessories' | 'supplies', index: number, field: string, value: string | number) => {
+  const updateItem = (type: 'equipment' | 'accessories' | 'modules' | 'supplies', index: number, field: string, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [type]: prev[type].map((item, i) => 
@@ -77,12 +82,11 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     }));
   };
 
-  const handleItemNameChange = async (type: 'equipment' | 'accessories' | 'supplies', index: number, itemName: string) => {
+  const handleItemNameChange = async (type: 'equipment' | 'accessories' | 'modules' | 'supplies', index: number, itemName: string) => {
     updateItem(type, index, 'item_name', itemName);
     
-    if (itemName.trim()) {
-      const itemType = type === 'equipment' ? 'equipment' : type === 'accessories' ? 'accessory' : 'supply';
-      const isHomologated = await checkItemHomologation(itemName.trim(), itemType);
+    if (itemName.trim() && type === 'equipment') {
+      const isHomologated = await checkItemHomologation(itemName.trim(), 'equipment');
       const itemKey = `${type}-${index}`;
       
       setNonHomologatedItems(prev => {
@@ -111,7 +115,11 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
 
     // Filter out empty items
     const equipment = formData.equipment.filter(item => item.item_name.trim() !== '');
-    const accessories = formData.accessories.filter(item => item.item_name.trim() !== '');
+    // Combine accessories and modules as they are both 'accessory' type
+    const accessories = [
+      ...formData.accessories.filter(item => item.item_name.trim() !== ''),
+      ...formData.modules.filter(item => item.item_name.trim() !== '')
+    ];
     const supplies = formData.supplies.filter(item => item.item_name.trim() !== '');
 
     if (equipment.length === 0 && accessories.length === 0 && supplies.length === 0) {
@@ -158,23 +166,18 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     }
   };
 
-  const renderItemSection = (
-    title: string,
-    type: 'equipment' | 'accessories' | 'supplies',
-    icon: React.ReactNode,
-    items: Omit<HomologationKitItem, 'id'>[]
-  ) => (
+  const renderEquipmentSection = () => (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label className="flex items-center gap-2 text-base font-medium">
-          {icon}
-          {title}
+          <Wrench className="w-4 h-4" />
+          Equipamentos
         </Label>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => addItem(type)}
+          onClick={() => addItem('equipment')}
         >
           <Plus className="w-3 h-3 mr-1" />
           Adicionar
@@ -182,8 +185,8 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       </div>
 
       <div className="space-y-2 max-h-52 overflow-y-auto">
-        {items.map((item, index) => {
-          const itemKey = `${type}-${index}`;
+        {formData.equipment.map((item, index) => {
+          const itemKey = `equipment-${index}`;
           const isNonHomologated = nonHomologatedItems.has(itemKey);
           
           return (
@@ -191,9 +194,9 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
               <div className="col-span-4 relative">
                 <SelectOrCreateInput
                   value={item.item_name}
-                  onChange={(value) => handleItemNameChange(type, index, value)}
-                  itemType={type === 'equipment' ? 'equipment' : type === 'accessories' ? 'accessory' : 'supply'}
-                  placeholder="Nome do item"
+                  onChange={(value) => handleItemNameChange('equipment', index, value)}
+                  itemType="equipment"
+                  placeholder="Nome do equipamento"
                   className="h-8"
                   allowCreate={false}
                 />
@@ -209,7 +212,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   placeholder="Qtd"
                   min="1"
                   value={item.quantity}
-                  onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
+                  onChange={(e) => updateItem('equipment', index, 'quantity', parseInt(e.target.value) || 1)}
                   className="h-8"
                 />
               </div>
@@ -217,7 +220,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 <Input
                   placeholder="Descrição (opcional)"
                   value={item.description || ''}
-                  onChange={(e) => updateItem(type, index, 'description', e.target.value)}
+                  onChange={(e) => updateItem('equipment', index, 'description', e.target.value)}
                   className="h-8"
                 />
               </div>
@@ -226,7 +229,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => removeItem(type, index)}
+                  onClick={() => removeItem('equipment', index)}
                   className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                 >
                   <Minus className="w-3 h-3" />
@@ -240,6 +243,152 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+
+  const renderSegsaleDropdownSection = (
+    title: string,
+    type: 'accessories' | 'modules',
+    icon: React.ReactNode,
+    items: Omit<HomologationKitItem, 'id'>[],
+    segsaleOptions: { id: number; nome: string }[]
+  ) => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-2 text-base font-medium">
+          {icon}
+          {title}
+          {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+        </Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => addItem(type)}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Adicionar
+        </Button>
+      </div>
+
+      <div className="space-y-2 max-h-52 overflow-y-auto">
+        {items.map((item, index) => (
+          <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
+            <div className="col-span-4">
+              <Select
+                value={item.item_name}
+                onValueChange={(value) => handleItemNameChange(type, index, value)}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder={`Selecione ${type === 'accessories' ? 'acessório' : 'módulo'}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {segsaleOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.nome}>
+                      {option.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2">
+              <Input
+                type="number"
+                placeholder="Qtd"
+                min="1"
+                value={item.quantity}
+                onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
+                className="h-8"
+              />
+            </div>
+            <div className="col-span-5">
+              <Input
+                placeholder="Descrição (opcional)"
+                value={item.description || ''}
+                onChange={(e) => updateItem(type, index, 'description', e.target.value)}
+                className="h-8"
+              />
+            </div>
+            <div className="col-span-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeItem(type, index)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <Minus className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderSuppliesSection = () => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-2 text-base font-medium">
+          <Box className="w-4 h-4" />
+          Insumos
+        </Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => addItem('supplies')}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Adicionar
+        </Button>
+      </div>
+
+      <div className="space-y-2 max-h-52 overflow-y-auto">
+        {formData.supplies.map((item, index) => (
+          <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
+            <div className="col-span-4">
+              <SelectOrCreateInput
+                value={item.item_name}
+                onChange={(value) => handleItemNameChange('supplies', index, value)}
+                itemType="supply"
+                placeholder="Nome do insumo"
+                className="h-8"
+                allowCreate={false}
+              />
+            </div>
+            <div className="col-span-2">
+              <Input
+                type="number"
+                placeholder="Qtd"
+                min="1"
+                value={item.quantity}
+                onChange={(e) => updateItem('supplies', index, 'quantity', parseInt(e.target.value) || 1)}
+                className="h-8"
+              />
+            </div>
+            <div className="col-span-5">
+              <Input
+                placeholder="Descrição (opcional)"
+                value={item.description || ''}
+                onChange={(e) => updateItem('supplies', index, 'description', e.target.value)}
+                className="h-8"
+              />
+            </div>
+            <div className="col-span-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeItem('supplies', index)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <Minus className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -299,9 +448,10 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
             </div>
 
             {/* Items Sections */}
-            {renderItemSection('Equipamentos', 'equipment', <Wrench className="w-4 h-4" />, formData.equipment)}
-            {renderItemSection('Acessórios', 'accessories', <Package className="w-4 h-4" />, formData.accessories)}
-            {renderItemSection('Insumos', 'supplies', <Box className="w-4 h-4" />, formData.supplies)}
+            {renderEquipmentSection()}
+            {renderSegsaleDropdownSection('Acessórios', 'accessories', <Package className="w-4 h-4" />, formData.accessories, segsaleAccessories)}
+            {renderSegsaleDropdownSection('Módulos', 'modules', <Cpu className="w-4 h-4" />, formData.modules, segsaleModules)}
+            {renderSuppliesSection()}
           </div>
 
           {/* Actions */}
