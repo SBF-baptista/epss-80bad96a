@@ -178,7 +178,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
           <KitStatusTimeline 
             kickoffCompleted={incomingVehicleData?.kickoff_completed ?? false}
             kickoffDate={incomingVehicleData?.received_at || incomingVehicleData?.created_at}
-            homologationStatus={incomingVehicleData?.homologation_status}
+            homologationStatus={homologationData?.status || incomingVehicleData?.homologation_status}
             homologationDate={homologationData?.updated_at}
             planningStatus={kitData.status}
             planningDate={kitData.scheduled_date}
