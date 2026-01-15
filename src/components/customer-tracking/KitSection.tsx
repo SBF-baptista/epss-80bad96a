@@ -190,8 +190,8 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             planningStatus={kitData.status}
             planningDate={kitData.scheduled_date}
             logisticsStatus={kitData.status}
-            logisticsDate={(kitData as any).updated_at || kitData.scheduled_date}
-            trackingCode={(kitData as any).tracking_code}
+            logisticsDate={kitData.updated_at || kitData.scheduled_date}
+            trackingCode={kitData.tracking_code}
             hasInstallationSchedule={!!installationSchedule}
             scheduleDate={installationSchedule?.scheduled_date}
             installationCompleted={false}
