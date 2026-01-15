@@ -193,17 +193,21 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Technician Selection */}
-      <Card className="border-blue-500/40 bg-blue-50 dark:bg-blue-950/30">
+      <Card className="border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/50 shadow-md">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-blue-700 dark:text-blue-400">Técnico</CardTitle>
+          <CardTitle className="text-lg font-bold text-blue-800 dark:text-blue-300">
+            📦 Técnico Responsável
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="technician" className="text-foreground font-medium">Selecione o técnico</Label>
+          <div className="space-y-3">
+            <Label htmlFor="technician" className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+              Selecione o técnico
+            </Label>
             <Select value={selectedTechnicianId} onValueChange={handleTechnicianChange}>
-              <SelectTrigger className="bg-white dark:bg-background border-blue-300 dark:border-blue-700">
+              <SelectTrigger className="bg-white dark:bg-background border-2 border-blue-400 dark:border-blue-600 font-medium text-foreground">
                 <SelectValue placeholder="Selecione um técnico" />
               </SelectTrigger>
               <SelectContent>
@@ -214,17 +218,19 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Ao selecionar um técnico, o endereço será preenchido automaticamente
+            <p className="text-sm text-blue-700 dark:text-blue-400 font-medium">
+              💡 Ao selecionar um técnico, o endereço será preenchido automaticamente
             </p>
           </div>
         </CardContent>
       </Card>
 
       {/* Address Section */}
-      <Card className="border-blue-500/40 bg-blue-50 dark:bg-blue-950/30">
+      <Card className="border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/50 shadow-md">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-blue-700 dark:text-blue-400">Endereço de Entrega</CardTitle>
+          <CardTitle className="text-lg font-bold text-blue-800 dark:text-blue-300">
+            📍 Endereço de Entrega
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <AddressForm
@@ -237,28 +243,37 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       </Card>
 
       {/* Tracking Code Section */}
-      <Card className="border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30">
+      <Card className="border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 shadow-md">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-emerald-700 dark:text-emerald-400">Código de Rastreio</CardTitle>
+          <CardTitle className="text-lg font-bold text-emerald-800 dark:text-emerald-300">
+            🚚 Código de Rastreio
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="tracking_code" className="text-foreground font-medium">Código de Rastreio dos Correios</Label>
+          <div className="space-y-3">
+            <Label htmlFor="tracking_code" className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+              Código de Rastreio dos Correios
+            </Label>
             <Input
               id="tracking_code"
               value={trackingCode}
               onChange={(e) => setTrackingCode(e.target.value)}
               placeholder="Ex: AA123456789BR"
-              className="bg-white dark:bg-background border-emerald-300 dark:border-emerald-700 font-mono text-base"
+              className="bg-white dark:bg-background border-2 border-emerald-400 dark:border-emerald-600 font-mono text-lg font-semibold tracking-wider"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Action Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={!isFormValid() || updateShipmentMutation.isPending} className="bg-success hover:bg-success/90 text-success-foreground">
-          {updateShipmentMutation.isPending ? "Salvando..." : "Salvar Informações de Envio"}
+      <div className="flex justify-end pt-2">
+        <Button 
+          onClick={handleSave} 
+          disabled={!isFormValid() || updateShipmentMutation.isPending} 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base px-6 py-3 shadow-lg"
+          size="lg"
+        >
+          {updateShipmentMutation.isPending ? "Salvando..." : "✅ Salvar Informações de Envio"}
         </Button>
       </div>
     </div>
