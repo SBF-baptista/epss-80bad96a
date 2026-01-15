@@ -651,6 +651,7 @@ export type Database = {
           quantity: number | null
           received_at: string
           sale_summary_id: number | null
+          tomticket_protocol: string | null
           usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle: string
           year: number | null
@@ -681,6 +682,7 @@ export type Database = {
           quantity?: number | null
           received_at?: string
           sale_summary_id?: number | null
+          tomticket_protocol?: string | null
           usage_type: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle: string
           year?: number | null
@@ -711,6 +713,7 @@ export type Database = {
           quantity?: number | null
           received_at?: string
           sale_summary_id?: number | null
+          tomticket_protocol?: string | null
           usage_type?: Database["public"]["Enums"]["vehicle_usage_type"]
           vehicle?: string
           year?: number | null

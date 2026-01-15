@@ -3,6 +3,68 @@ import { checkAutomationRuleExists } from './vehicle-services.ts'
 import { generateAutoOrderNumber, createAutomaticOrder } from './order-services.ts'
 import { createHomologationCard } from './homologation-services.ts'
 
+// Search TomTicket for a protocol by plate number
+async function searchTomTicketByPlate(plate: string): Promise<string | null> {
+  if (!plate) return null;
+  
+  const token = Deno.env.get('TOMTICKET_API_TOKEN');
+  if (!token) {
+    console.log('TOMTICKET_API_TOKEN not configured, skipping TomTicket search');
+    return null;
+  }
+
+  try {
+    console.log(`Searching TomTicket for plate: ${plate}`);
+    const plateUpper = plate.toUpperCase().trim();
+    
+    // Search up to 10 pages to find the protocol
+    for (let page = 1; page <= 10; page++) {
+      const response = await fetch(`https://api.tomticket.com/v2.0/ticket/list?page=${page}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.log('TomTicket rate limit hit, waiting...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+        console.error('TomTicket API error:', response.status);
+        break;
+      }
+
+      const data = await response.json();
+      const tickets = data.data || [];
+      
+      if (tickets.length === 0) break;
+
+      // Search for plate in all ticket fields
+      for (const ticket of tickets) {
+        const ticketString = JSON.stringify(ticket).toUpperCase();
+        if (ticketString.includes(plateUpper)) {
+          console.log(`Found TomTicket protocol ${ticket.protocol} for plate ${plate}`);
+          return ticket.protocol;
+        }
+      }
+
+      // Add delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (tickets.length < 50) break;
+    }
+    
+    console.log(`No TomTicket protocol found for plate: ${plate}`);
+    return null;
+  } catch (error) {
+    console.error('Error searching TomTicket:', error);
+    return null;
+  }
+}
+
 export async function processVehicleGroups(
   supabase: any, 
   requestBody: VehicleGroup[], 
@@ -134,6 +196,22 @@ export async function processVehicleGroups(
         }
 
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
+
+        // Search TomTicket for protocol if vehicle has a plate
+        if (vehicleData.plate) {
+          console.log(`[${timestamp}][${requestId}] Searching TomTicket for plate: ${vehicleData.plate}`)
+          const tomticketProtocol = await searchTomTicketByPlate(vehicleData.plate);
+          
+          if (tomticketProtocol) {
+            console.log(`[${timestamp}][${requestId}] Found TomTicket protocol: ${tomticketProtocol}`)
+            await supabase
+              .from('incoming_vehicles')
+              .update({ tomticket_protocol: tomticketProtocol })
+              .eq('id', incomingVehicle.id)
+          } else {
+            console.log(`[${timestamp}][${requestId}] No TomTicket protocol found for plate: ${vehicleData.plate}`)
+          }
+        }
 
         // Process contract_items (from Segsale) if this is the first vehicle in the group
         if (vehicleIndex === 0 && (group as any).contract_items) {
