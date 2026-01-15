@@ -14,7 +14,6 @@ import { getTechnicians, Technician } from "@/services/technicianService";
 import { KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector, AddressForm } from "./index";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ShipmentFormEmbeddedProps {
   order: Order;
@@ -83,21 +82,8 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       installation_address_complement?: string;
       tracking_code?: string;
     }) => {
-      // Save shipment data
+      // Save shipment data - status is automatically set to 'shipped' by the service if tracking_code is provided
       await updateKitScheduleShipment(scheduleId, data);
-      
-      // If tracking code is provided, also update status to 'shipped'
-      if (data.tracking_code && data.tracking_code.trim() !== '') {
-        const { error } = await supabase
-          .from('kit_schedules')
-          .update({ status: 'shipped' })
-          .eq('id', scheduleId);
-        
-        if (error) {
-          console.error('Error updating status to shipped:', error);
-          throw error;
-        }
-      }
     },
     onSuccess: () => {
       toast({
