@@ -174,12 +174,12 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
     });
   });
 
-  // Ordenar por data de pendência mais antiga primeiro
+  // Ordenar por data de pendência mais recente primeiro (DESC)
   const clients = Array.from(clientsMap.values())
     .sort((a, b) => {
-      const dateA = a.oldest_received_at ? new Date(a.oldest_received_at).getTime() : Infinity;
-      const dateB = b.oldest_received_at ? new Date(b.oldest_received_at).getTime() : Infinity;
-      return dateA - dateB;
+      const dateA = a.oldest_received_at ? new Date(a.oldest_received_at).getTime() : 0;
+      const dateB = b.oldest_received_at ? new Date(b.oldest_received_at).getTime() : 0;
+      return dateB - dateA;
     });
 
   return {

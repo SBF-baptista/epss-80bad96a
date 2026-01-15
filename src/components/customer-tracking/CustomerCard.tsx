@@ -44,7 +44,7 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
           <CardContent>
             <div className="space-y-4">
               <h4 className="font-semibold text-gray-900 border-b pb-2">
-                Kits Vinculados ({customerKits.length})
+                Veículos ({customerKits.length})
               </h4>
               
               {customerKits.length === 0 ? (

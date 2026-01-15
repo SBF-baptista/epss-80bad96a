@@ -28,13 +28,15 @@ import {
   Loader2, 
   Plus, 
   Trash2,
-  ArrowRight 
+  ArrowRight,
+  Cpu
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { HomologationKit, HomologationKitItem, KitCategory } from "@/types/homologationKit";
 import { SelectOrCreateInput } from "@/components/kit-items";
+import { useSegsaleExtras } from "@/hooks/useSegsaleExtras";
 
 interface KitEditRequestModalProps {
   open: boolean;
@@ -52,12 +54,14 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [observation, setObservation] = useState("");
+  const { accessories: segsaleAccessories, modules: segsaleModules, loading: segsaleLoading } = useSegsaleExtras();
   
   // Form state for edited values
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState<string>("");
   const [newEquipment, setNewEquipment] = useState<HomologationKitItem[]>([]);
   const [newAccessories, setNewAccessories] = useState<HomologationKitItem[]>([]);
+  const [newModules, setNewModules] = useState<HomologationKitItem[]>([]);
   const [newSupplies, setNewSupplies] = useState<HomologationKitItem[]>([]);
 
   // Reset form when kit changes
@@ -66,7 +70,9 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
       setNewName(kit.name);
       setNewCategory(kit.category || "");
       setNewEquipment(kit.equipment.map(e => ({ ...e })));
+      // Separate modules from accessories based on item naming patterns or keep all as accessories
       setNewAccessories(kit.accessories.map(a => ({ ...a })));
+      setNewModules([]);
       setNewSupplies(kit.supplies.map(s => ({ ...s })));
       setObservation("");
     }
@@ -78,10 +84,10 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
   };
 
   // Item management functions
-  const addItem = (type: 'equipment' | 'accessory' | 'supply') => {
+  const addItem = (type: 'equipment' | 'accessory' | 'module' | 'supply') => {
     const newItem: HomologationKitItem = {
       item_name: '',
-      item_type: type,
+      item_type: type === 'module' ? 'accessory' : type,
       quantity: 1
     };
     
@@ -89,22 +95,26 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
       setNewEquipment([...newEquipment, newItem]);
     } else if (type === 'accessory') {
       setNewAccessories([...newAccessories, newItem]);
+    } else if (type === 'module') {
+      setNewModules([...newModules, newItem]);
     } else {
       setNewSupplies([...newSupplies, newItem]);
     }
   };
 
-  const removeItem = (type: 'equipment' | 'accessory' | 'supply', index: number) => {
+  const removeItem = (type: 'equipment' | 'accessory' | 'module' | 'supply', index: number) => {
     if (type === 'equipment') {
       setNewEquipment(newEquipment.filter((_, i) => i !== index));
     } else if (type === 'accessory') {
       setNewAccessories(newAccessories.filter((_, i) => i !== index));
+    } else if (type === 'module') {
+      setNewModules(newModules.filter((_, i) => i !== index));
     } else {
       setNewSupplies(newSupplies.filter((_, i) => i !== index));
     }
   };
 
-  const updateItem = (type: 'equipment' | 'accessory' | 'supply', index: number, field: string, value: string | number) => {
+  const updateItem = (type: 'equipment' | 'accessory' | 'module' | 'supply', index: number, field: string, value: string | number) => {
     const updateFn = (items: HomologationKitItem[]) => 
       items.map((item, i) => i === index ? { ...item, [field]: value } : item);
     
@@ -112,10 +122,13 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
       setNewEquipment(updateFn(newEquipment));
     } else if (type === 'accessory') {
       setNewAccessories(updateFn(newAccessories));
+    } else if (type === 'module') {
+      setNewModules(updateFn(newModules));
     } else {
       setNewSupplies(updateFn(newSupplies));
     }
   };
+
 
   // Check if there are any changes
   const hasChanges = () => {
@@ -274,6 +287,7 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
         <div className="flex items-center gap-2">
           {icon}
           <Label className="text-sm font-medium">{label}</Label>
+          {type === 'accessory' && segsaleLoading && <Loader2 className="h-3 w-3 animate-spin" />}
         </div>
         <Button
           type="button"
@@ -293,12 +307,30 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
           {items.map((item, index) => (
             <div key={index} className="flex items-center gap-2">
               <div className="flex-1">
-                <SelectOrCreateInput
-                  itemType={type}
-                  value={item.item_name}
-                  onChange={(value) => updateItem(type, index, 'item_name', value)}
-                  placeholder={`Nome do ${type === 'equipment' ? 'equipamento' : type === 'accessory' ? 'acessório' : 'insumo'}`}
-                />
+                {type === 'accessory' ? (
+                  <Select
+                    value={item.item_name}
+                    onValueChange={(value) => updateItem(type, index, 'item_name', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione acessório" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {segsaleAccessories.map((option) => (
+                        <SelectItem key={option.id} value={option.nome}>
+                          {option.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <SelectOrCreateInput
+                    itemType={type}
+                    value={item.item_name}
+                    onChange={(value) => updateItem(type, index, 'item_name', value)}
+                    placeholder={`Nome do ${type === 'equipment' ? 'equipamento' : 'insumo'}`}
+                  />
+                )}
               </div>
               <Input
                 type="number"
@@ -312,6 +344,71 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
                 variant="ghost"
                 size="sm"
                 onClick={() => removeItem(type, index)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderModulesSection = () => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Cpu className="h-4 w-4 text-muted-foreground" />
+          <Label className="text-sm font-medium">Módulos</Label>
+          {segsaleLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => addItem('module')}
+        >
+          <Plus className="h-3 w-3 mr-1" />
+          Adicionar
+        </Button>
+      </div>
+      
+      {newModules.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">Nenhum módulo</p>
+      ) : (
+        <div className="space-y-2">
+          {newModules.map((item, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div className="flex-1">
+                <Select
+                  value={item.item_name}
+                  onValueChange={(value) => updateItem('module', index, 'item_name', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione módulo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {segsaleModules.map((option) => (
+                      <SelectItem key={option.id} value={option.nome}>
+                        {option.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                type="number"
+                min={1}
+                value={item.quantity}
+                onChange={(e) => updateItem('module', index, 'quantity', parseInt(e.target.value) || 1)}
+                className="w-20"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeItem('module', index)}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
@@ -398,6 +495,11 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
               <Box className="h-4 w-4 text-muted-foreground" />,
               'Acessórios'
             )}
+
+            <Separator />
+
+            {/* Modules */}
+            {renderModulesSection()}
 
             <Separator />
 

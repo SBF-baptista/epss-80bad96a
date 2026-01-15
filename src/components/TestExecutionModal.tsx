@@ -103,13 +103,15 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
       await updateHomologationConfiguration(card.id, newConfiguration.trim());
       await loadConfigurations();
       
-      setFormData({ ...formData, testConfiguration: newConfiguration.trim() });
+      // Selecionar a nova configuração no dropdown automaticamente
+      const createdConfigName = newConfiguration.trim();
+      setFormData({ ...formData, testConfiguration: createdConfigName });
       setNewConfiguration("");
       setNewTrackerModel("");
       setIsNewConfigOpen(false);
       onUpdate();
       
-      showSuccess("Nova configuração criada e aplicada com sucesso");
+      showSuccess("Nova configuração criada e selecionada automaticamente");
     } catch (error) {
       showError(error as Error, {
         action: 'create_configuration',
