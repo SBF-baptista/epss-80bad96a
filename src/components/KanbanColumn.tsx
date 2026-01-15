@@ -32,8 +32,9 @@ const KanbanColumn = ({
   onScanClick,
   onShipmentClick
 }: KanbanColumnProps) => {
-  // Only group orders by company when status is "shipped" (column ID), otherwise show individually
-  const shouldGroup = status === 'shipped';
+  // Group orders in 'novos' (Pedidos), 'producao' (Em Produção) and 'shipped' (Enviado)
+  // Keep individual in 'aguardando' (Aguardando envio)
+  const shouldGroup = status === 'novos' || status === 'producao' || status === 'shipped';
   const groupedOrders = groupOrdersByCompany(orders, shouldGroup);
   
   const handleGroupClick = (groupedOrder: GroupedOrder) => {

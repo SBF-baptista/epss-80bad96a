@@ -39,19 +39,25 @@ export const groupOrdersByCompany = (orders: Order[], shouldGroup: boolean = tru
     }));
   }
 
+  // Agrupar por company_name E data (para evitar agrupar pedidos de datas diferentes)
   const groupedMap = new Map<string, Order[]>();
   
-  // Group orders by company_name, using "Sem Empresa" for orders without company
   orders.forEach(order => {
     const companyKey = order.company_name || "Sem Empresa";
-    if (!groupedMap.has(companyKey)) {
-      groupedMap.set(companyKey, []);
+    // Extrair data do createdAt (YYYY-MM-DD)
+    const orderDate = order.createdAt ? order.createdAt.split('T')[0] : 'unknown';
+    const groupKey = `${companyKey}|${orderDate}`;
+    
+    if (!groupedMap.has(groupKey)) {
+      groupedMap.set(groupKey, []);
     }
-    groupedMap.get(companyKey)!.push(order);
+    groupedMap.get(groupKey)!.push(order);
   });
 
   // Convert to GroupedOrder array
-  return Array.from(groupedMap.entries()).map(([company_name, companyOrders]) => {
+  return Array.from(groupedMap.entries()).map(([groupKey, companyOrders]) => {
+    // Extrair company_name do groupKey
+    const company_name = groupKey.split('|')[0];
     const totalVehicles = companyOrders.reduce((sum, order) => 
       sum + order.vehicles.reduce((vSum, vehicle) => vSum + vehicle.quantity, 0), 0
     );

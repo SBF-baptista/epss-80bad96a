@@ -150,9 +150,16 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             <div className="space-y-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                {kitData.vehicle_brand && kitData.vehicle_model 
-                  ? `${kitData.vehicle_brand} ${kitData.vehicle_model}`
-                  : kitData.kit?.name || 'Veículo'}
+                <span>
+                  {kitData.vehicle_brand && kitData.vehicle_model 
+                    ? `${kitData.vehicle_brand} ${kitData.vehicle_model}`
+                    : kitData.kit?.name || 'Veículo'}
+                </span>
+                {(kitData as any).tomticket_protocol && (
+                  <span className="text-xs font-normal text-muted-foreground ml-2">
+                    Protocolo TomTicket: {(kitData as any).tomticket_protocol}
+                  </span>
+                )}
               </CardTitle>
               {(kitData as any).configuration && (
                 <p className="text-xs text-muted-foreground">

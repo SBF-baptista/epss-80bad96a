@@ -671,14 +671,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => duplicateKit(kit)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
                                   onClick={() => deleteKit(kit.id!)}
                                   className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                                 >

@@ -39,6 +39,15 @@ export const KitStatusTimeline = ({
     }
   };
 
+  const formatTime = (dateString?: string | null) => {
+    if (!dateString) return null;
+    try {
+      return new Date(dateString).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return null;
+    }
+  };
+
   // Step 1: Kickoff
   const getKickoffStatus = () => {
     if (kickoffCompleted) return { status: "completed", statusLabel: "Realizado", date: formatDate(kickoffDate) };
@@ -221,6 +230,17 @@ export const KitStatusTimeline = ({
                 {step.date && (
                   <div className="text-[10px] text-gray-500">
                     {step.date}
+                    {/* Show time if available */}
+                    {(() => {
+                      const dateStr = step.id === 'kickoff' ? kickoffDate :
+                                     step.id === 'homologation' ? homologationDate :
+                                     step.id === 'planning' ? planningDate :
+                                     step.id === 'logistics' ? logisticsDate :
+                                     step.id === 'scheduling' ? scheduleDate :
+                                     step.id === 'installation' ? installationDate : null;
+                      const time = formatTime(dateStr);
+                      return time ? <span className="ml-0.5">{time}</span> : null;
+                    })()}
                   </div>
                 )}
               </div>
