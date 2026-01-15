@@ -29,6 +29,7 @@ interface HomologationData {
 interface InstallationScheduleData {
   id: string;
   scheduled_date: string;
+  created_at: string;
 }
 
 export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
@@ -42,10 +43,10 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
     const loadData = async () => {
       if (!kitData.id) return;
 
-      // Check if there's an installation schedule
+      // Check if there's an installation schedule - include created_at for timeline
       const { data: installationData, error: installationError } = await supabase
         .from('installation_schedules')
-        .select('id, scheduled_date')
+        .select('id, scheduled_date, created_at')
         .eq('kit_schedule_id', kitData.id)
         .limit(1);
 
@@ -204,12 +205,12 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             homologationStatus={homologationData?.status || incomingVehicleData?.homologation_status}
             homologationDate={homologationData?.updated_at}
             planningStatus={kitData.status}
-            planningDate={kitData.scheduled_date}
+            planningDate={kitData.created_at}
             logisticsStatus={kitData.status}
-            logisticsDate={kitData.updated_at || kitData.scheduled_date}
+            logisticsDate={kitData.updated_at}
             trackingCode={kitData.tracking_code}
             hasInstallationSchedule={!!installationSchedule}
-            scheduleDate={installationSchedule?.scheduled_date}
+            scheduleDate={installationSchedule?.created_at}
             installationCompleted={false}
             installationDate={null}
           />
