@@ -113,9 +113,10 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
     const formattedTomorrow = format(tomorrow, "dd/MM/yyyy", { locale: ptBR });
 
     // Get all schedules for this technician for tomorrow with all fields
+    // Include kit_schedule_id to fetch the TomTicket protocol
     const { data: schedules, error } = await supabase
       .from('installation_schedules')
-      .select('scheduled_time, customer, phone, address, reference_point, local_contact, service')
+      .select('scheduled_time, customer, phone, address, reference_point, local_contact, service, kit_schedule_id')
       .eq('scheduled_date', tomorrowStr)
       .eq('technician_name', technician.name)
       .order('scheduled_time', { ascending: true });
@@ -124,7 +125,41 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       return { success: false, error: 'Sem agendamentos para amanhã' };
     }
 
-    // Format each schedule with full details
+    // Fetch TomTicket protocols for all schedules via kit_schedules -> incoming_vehicles
+    const kitScheduleIds = schedules.map(s => s.kit_schedule_id).filter(Boolean);
+    let protocolMap = new Map<string, string>();
+    
+    if (kitScheduleIds.length > 0) {
+      const { data: kitSchedulesData } = await supabase
+        .from('kit_schedules')
+        .select('id, incoming_vehicle_id')
+        .in('id', kitScheduleIds);
+      
+      if (kitSchedulesData) {
+        const incomingVehicleIds = kitSchedulesData.map(k => k.incoming_vehicle_id).filter(Boolean);
+        
+        if (incomingVehicleIds.length > 0) {
+          const { data: vehiclesData } = await supabase
+            .from('incoming_vehicles')
+            .select('id, tomticket_protocol')
+            .in('id', incomingVehicleIds);
+          
+          if (vehiclesData) {
+            // Create mapping: kit_schedule_id -> protocol
+            for (const ks of kitSchedulesData) {
+              if (ks.incoming_vehicle_id) {
+                const vehicle = vehiclesData.find(v => v.id === ks.incoming_vehicle_id);
+                if (vehicle?.tomticket_protocol) {
+                  protocolMap.set(ks.id, vehicle.tomticket_protocol);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Format each schedule with full details including protocol
     // Template has 5 slots (variables 3-7) for individual schedules with line breaks
     const formatSchedule = (s: any): string => {
       const time = s.scheduled_time?.substring(0, 5) || '--:--';
@@ -134,7 +169,8 @@ export const TechnicianAgendaModal = ({ isOpen, onOpenChange }: TechnicianAgenda
       const address = s.address || 'Endereço a confirmar';
       const refPoint = s.reference_point || '-';
       const localContact = s.local_contact || '-';
-      return `📌 *Horário:* ${time} | *Cliente:* ${customer} | *Serviço:* ${service} | *Endereço:* ${address} | *Ponto de referência:* ${refPoint} | *Telefone cliente:* ${phone} | *Contato local:* ${localContact}`;
+      const protocol = s.kit_schedule_id ? (protocolMap.get(s.kit_schedule_id) || '-') : '-';
+      return `📌 *Horário:* ${time} | *Cliente:* ${customer} | *Serviço:* ${service} | *Endereço:* ${address} | *Ponto de referência:* ${refPoint} | *Telefone cliente:* ${phone} | *Contato local:* ${localContact} | *Protocolo:* ${protocol}`;
     };
 
     // Create array of formatted schedules (up to 5 individual + overflow in last slot)
