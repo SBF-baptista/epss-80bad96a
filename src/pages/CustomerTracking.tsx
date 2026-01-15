@@ -38,6 +38,7 @@ export interface CustomerKitData {
   // Tracking and updated_at for timeline
   tracking_code?: string;
   updated_at?: string;
+  created_at?: string;
   // TomTicket protocol
   tomticket_protocol?: string;
 }
@@ -169,7 +170,8 @@ const CustomerTracking = () => {
         configuration: scheduleWithIds.configuration,
         // Tracking and timeline data
         tracking_code: scheduleWithIds.tracking_code,
-        updated_at: scheduleWithIds.updated_at
+        updated_at: scheduleWithIds.updated_at,
+        created_at: scheduleWithIds.created_at
       };
     });
   };
