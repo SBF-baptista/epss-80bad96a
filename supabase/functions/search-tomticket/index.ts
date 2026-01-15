@@ -6,13 +6,12 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { searchTerm } = await req.json();
+    const { searchTerm, maxPages = 50, debug = false } = await req.json();
     
     if (!searchTerm) {
       return new Response(
@@ -29,73 +28,102 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Buscando placa "${searchTerm}" no TomTicket...`);
+    console.log(`Buscando "${searchTerm}" no TomTicket (max ${maxPages} páginas)...`);
 
-    // Buscar tickets recentes da API do TomTicket
-    const response = await fetch('https://api.tomticket.com/v2.0/ticket/list', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro na API TomTicket:', response.status, errorText);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Erro ao consultar TomTicket', 
-          status: response.status,
-          details: errorText 
-        }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const data = await response.json();
-    console.log(`Recebidos ${data.data?.length || 0} tickets do TomTicket`);
-
-    // Buscar o termo nos tickets (subject, message, ou campos personalizados)
     const searchTermUpper = searchTerm.toUpperCase();
     const matchingTickets = [];
+    let totalTicketsSearched = 0;
+    let sampleTicket = null;
 
-    if (data.data && Array.isArray(data.data)) {
-      for (const ticket of data.data) {
-        const subject = (ticket.subject || '').toUpperCase();
-        const message = (ticket.message || '').toUpperCase();
-        const customFields = JSON.stringify(ticket.custom_fields || {}).toUpperCase();
+    // Buscar tickets com paginação simples
+    for (let page = 1; page <= maxPages; page++) {
+      console.log(`Buscando página ${page}...`);
+      
+      const response = await fetch(`https://api.tomticket.com/v2.0/ticket/list?page=${page}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-        if (subject.includes(searchTermUpper) || 
-            message.includes(searchTermUpper) || 
-            customFields.includes(searchTermUpper)) {
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro API:', response.status, errorText);
+        break;
+      }
+
+      const data = await response.json();
+      const tickets = data.data || [];
+      
+      console.log(`Página ${page}: ${tickets.length} tickets`);
+      
+      if (tickets.length === 0) {
+        console.log('Sem mais tickets, finalizando busca.');
+        break;
+      }
+      
+      // Guardar exemplo para debug
+      if (!sampleTicket && tickets.length > 0) {
+        sampleTicket = tickets[0];
+      }
+
+      totalTicketsSearched += tickets.length;
+
+      // Buscar em todos os campos do ticket
+      for (const ticket of tickets) {
+        const ticketString = JSON.stringify(ticket).toUpperCase();
+        
+        if (ticketString.includes(searchTermUpper)) {
           matchingTickets.push({
             protocol: ticket.protocol,
             id: ticket.id,
             subject: ticket.subject,
-            status: ticket.status,
-            created_at: ticket.created_at,
-            customer_name: ticket.customer?.name || 'N/A'
+            situation: ticket.situation,
+            status: ticket.status?.description || 'N/A',
+            created_at: ticket.creation_date,
+            customer_name: ticket.customer?.name || 'N/A',
+            department: ticket.department?.name || 'N/A',
+            operator: ticket.operator?.name || 'N/A',
+            page_found: page
           });
+          console.log(`✓ Encontrado! Protocolo: ${ticket.protocol}`);
         }
+      }
+
+      // Verificar paginação - se retornou menos de 50, não há mais
+      if (tickets.length < 50) {
+        console.log('Última página alcançada.');
+        break;
       }
     }
 
-    console.log(`Encontrados ${matchingTickets.length} tickets com "${searchTerm}"`);
+    console.log(`Busca finalizada: ${totalTicketsSearched} tickets verificados, ${matchingTickets.length} encontrados`);
+
+    const result: any = {
+      success: true,
+      searchTerm,
+      totalTicketsSearched,
+      matchingTickets,
+      found: matchingTickets.length > 0,
+      protocols: matchingTickets.map(t => t.protocol)
+    };
+
+    if (debug && sampleTicket) {
+      result.debug = {
+        sampleSubject: sampleTicket.subject,
+        sampleCustomer: sampleTicket.customer?.name,
+        sampleMessage: sampleTicket.message?.substring(0, 200)
+      };
+    }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        searchTerm,
-        totalTicketsSearched: data.data?.length || 0,
-        matchingTickets,
-        found: matchingTickets.length > 0
-      }),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Erro na edge function:', error);
+    console.error('Erro:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
