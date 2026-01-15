@@ -119,7 +119,29 @@ const EditRequests = () => {
       return await applyChangesToKit(request);
     }
     
-    // Handle accessory/supply type
+    // Handle delete action
+    if (request.requested_changes?.action === 'delete') {
+      const originalId = request.original_data?.id;
+      if (!originalId) {
+        console.error('Missing ID for deletion');
+        return false;
+      }
+      
+      try {
+        const { error } = await supabase
+          .from('kit_item_options')
+          .delete()
+          .eq('id', originalId);
+
+        if (error) throw error;
+        return true;
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        return false;
+      }
+    }
+    
+    // Handle accessory/supply rename type
     const originalId = request.original_data?.id;
     const newName = request.requested_changes?.item_name;
 
@@ -232,8 +254,11 @@ const EditRequests = () => {
 
       if (error) throw error;
       
+      const isDeleteRequest = request.requested_changes?.action === 'delete';
       const successMessage = request.item_type === 'kit'
         ? `O kit "${request.requested_changes?.name}" foi atualizado com sucesso`
+        : isDeleteRequest
+        ? `O item "${request.original_data?.item_name}" foi excluído com sucesso`
         : `O item foi renomeado para "${request.requested_changes?.item_name}"`;
       
       toast.success('Solicitação aprovada com sucesso', {
@@ -464,6 +489,18 @@ const EditRequests = () => {
                   </div>
                 </div>
               )}
+            </div>
+          ) : request.requested_changes?.action === 'delete' ? (
+            // Delete action display
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-md">
+                <span className="text-xs text-red-600 block mb-1">Excluir:</span>
+                <span className="font-medium text-red-800">{request.original_data?.item_name}</span>
+              </div>
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <X className="h-3 w-3" />
+                Solicitação de Exclusão
+              </Badge>
             </div>
           ) : (
             // Accessory/Supply simple change display

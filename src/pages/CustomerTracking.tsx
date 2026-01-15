@@ -38,6 +38,8 @@ export interface CustomerKitData {
   // Tracking and updated_at for timeline
   tracking_code?: string;
   updated_at?: string;
+  // TomTicket protocol
+  tomticket_protocol?: string;
 }
 
 const CustomerTracking = () => {

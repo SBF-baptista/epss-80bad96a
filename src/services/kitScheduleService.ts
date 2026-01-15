@@ -1,76 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logCreate, logUpdate, logDelete } from "./logService";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-
-// Send WhatsApp notification to technician about new schedule using Twilio Template
-const sendTechnicianWhatsAppNotification = async (
-  technicianId: string,
-  scheduleData: CreateKitScheduleData
-): Promise<void> => {
-  try {
-    // Fetch technician details
-    const { data: technician, error: techError } = await supabase
-      .from('technicians')
-      .select('name, phone')
-      .eq('id', technicianId)
-      .single();
-
-    if (techError || !technician) {
-      console.error('Error fetching technician for WhatsApp:', techError);
-      return;
-    }
-
-    if (!technician.phone) {
-      console.log('Technician has no phone number, skipping WhatsApp notification');
-      return;
-    }
-
-    // Format date for template variable
-    const formattedDate = format(new Date(scheduleData.scheduled_date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR });
-    
-    // Format time for template variable
-    const formattedTime = scheduleData.installation_time || "A definir";
-    
-    // Format address for template variable
-    const addressParts = [
-      scheduleData.installation_address_street,
-      scheduleData.installation_address_number,
-      scheduleData.installation_address_neighborhood,
-      scheduleData.installation_address_city,
-      scheduleData.installation_address_state
-    ].filter(Boolean);
-    const fullAddress = addressParts.join(', ') || 'Endereço não informado';
-
-    // Call edge function with template variables (not customMessage)
-    const { error } = await supabase.functions.invoke('send-whatsapp', {
-      body: {
-        orderId: 'schedule-notification',
-        orderNumber: `Agendamento - ${scheduleData.customer_name}`,
-        recipientPhone: technician.phone,
-        recipientName: technician.name,
-        // Use template for technician scheduling
-        templateType: 'technician_schedule',
-        templateVariables: {
-          technicianName: technician.name,
-          scheduledDate: formattedDate,
-          scheduledTime: formattedTime,
-          customerName: scheduleData.customer_name || 'Cliente não informado',
-          address: fullAddress,
-          contactPhone: scheduleData.customer_phone || 'Não informado'
-        }
-      }
-    });
-
-    if (error) {
-      console.error('Error sending WhatsApp to technician:', error);
-    } else {
-      console.log('WhatsApp template notification sent to technician:', technician.name);
-    }
-  } catch (error) {
-    console.error('Error in sendTechnicianWhatsAppNotification:', error);
-  }
-};
 
 export interface KitSchedule {
   id?: string;
@@ -204,10 +133,7 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
     schedule.id
   );
 
-  // Send WhatsApp notification to technician (async, don't block)
-  sendTechnicianWhatsAppNotification(data.technician_id, data).catch(err => {
-    console.error('Failed to send WhatsApp notification:', err);
-  });
+  // WhatsApp notification removed - only sent via "Disparar Agenda" button
 
   return {
     ...schedule,

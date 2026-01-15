@@ -22,60 +22,6 @@ interface CustomerScheduleSectionProps {
   onScheduleSuccess: () => void;
 }
 
-// Send WhatsApp notification to technician
-const sendTechnicianWhatsApp = async (
-  technicianId: string,
-  scheduleData: {
-    date: string;
-    time: string;
-    customer: string;
-    address: string;
-    local_contact: string;
-    phone?: string;
-  }
-): Promise<{ success: boolean; technicianName?: string; error?: string }> => {
-  try {
-    const { data: technician, error: techError } = await supabase
-      .from('technicians')
-      .select('name, phone')
-      .eq('id', technicianId)
-      .single();
-
-    if (techError || !technician || !technician.phone) {
-      return { success: false, error: 'Técnico sem telefone' };
-    }
-
-    const { ptBR } = await import('date-fns/locale');
-    const formattedDate = format(new Date(scheduleData.date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR });
-
-    const { error } = await supabase.functions.invoke('send-whatsapp', {
-      body: {
-        orderId: 'schedule-notification',
-        orderNumber: `Agendamento - ${scheduleData.customer}`,
-        recipientPhone: technician.phone,
-        recipientName: technician.name,
-        templateType: 'technician_schedule',
-        templateVariables: {
-          technicianName: technician.name,
-          scheduledDate: formattedDate,
-          scheduledTime: scheduleData.time,
-          customerName: scheduleData.customer,
-          address: scheduleData.address,
-          contactPhone: scheduleData.phone || scheduleData.local_contact || 'Não informado'
-        }
-      }
-    });
-
-    if (error) {
-      return { success: false, technicianName: technician.name, error: error.message };
-    }
-    
-    return { success: true, technicianName: technician.name };
-  } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
-  }
-};
-
 export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleSectionProps) => {
   const [pendingSchedules, setPendingSchedules] = useState<VehicleScheduleData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -261,21 +207,7 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
         console.error('Error updating kit_schedule status:', updateError);
       }
 
-      // Send WhatsApp notification (non-blocking)
-      if (data.technician_id) {
-        sendTechnicianWhatsApp(data.technician_id, {
-          date: scheduleData.scheduled_date,
-          time: scheduleData.scheduled_time,
-          customer: scheduleData.customer,
-          address: scheduleData.address,
-          local_contact: data.local_contact || '',
-          phone: data.phone,
-        }).then(result => {
-          if (result.success) {
-            toast.success(`WhatsApp enviado para ${result.technicianName}`);
-          }
-        });
-      }
+      // WhatsApp notification removed - only sent via "Disparar Agenda" button
 
       toast.success('Agendamento criado com sucesso!');
       setIsFormModalOpen(false);
