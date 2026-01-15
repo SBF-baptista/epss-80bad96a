@@ -18,7 +18,6 @@ import {
   Search,
   ChevronDown,
   ChevronRight,
-  Copy,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -246,36 +245,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       });
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const duplicateKit = async (kit: HomologationKit) => {
-    try {
-      const kitData: CreateKitRequest = {
-        homologation_card_id: homologationCardId || undefined,
-        name: `${kit.name} (Cópia)`,
-        description: kit.description,
-        equipment: kit.equipment.map(item => ({ ...item, id: undefined })),
-        accessories: kit.accessories.map(item => ({ ...item, id: undefined })),
-        supplies: kit.supplies.map(item => ({ ...item, id: undefined })),
-      };
-
-      const newKit = await createHomologationKit(kitData);
-      setKits(prev => [newKit, ...prev]);
-      // Reload homologation statuses
-      setTimeout(() => loadHomologationStatuses(), 100);
-
-      toast({
-        title: "Kit duplicado",
-        description: "O kit foi duplicado com sucesso.",
-      });
-    } catch (error) {
-      console.error('Error duplicating kit:', error);
-      toast({
-        title: "Erro ao duplicar kit",
-        description: "Não foi possível duplicar o kit. Tente novamente.",
-        variant: "destructive"
-      });
     }
   };
 
