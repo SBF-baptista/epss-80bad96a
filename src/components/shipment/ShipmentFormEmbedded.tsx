@@ -209,15 +209,15 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
   return (
     <div className="space-y-4">
       {/* Technician Selection */}
-      <Card>
+      <Card className="border-primary/20 bg-primary/5">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Técnico</CardTitle>
+          <CardTitle className="text-base text-primary">Técnico</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="technician">Selecione o técnico</Label>
+            <Label htmlFor="technician" className="text-foreground font-medium">Selecione o técnico</Label>
             <Select value={selectedTechnicianId} onValueChange={handleTechnicianChange}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background border-input">
                 <SelectValue placeholder="Selecione um técnico" />
               </SelectTrigger>
               <SelectContent>
@@ -236,9 +236,9 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       </Card>
 
       {/* Address Section */}
-      <Card>
+      <Card className="border-primary/20 bg-primary/5">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Endereço de Entrega</CardTitle>
+          <CardTitle className="text-base text-primary">Endereço de Entrega</CardTitle>
         </CardHeader>
         <CardContent>
           <AddressForm
@@ -251,18 +251,19 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       </Card>
 
       {/* Tracking Code Section */}
-      <Card>
+      <Card className="border-success/30 bg-success/10">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Código de Rastreio</CardTitle>
+          <CardTitle className="text-base text-success">Código de Rastreio</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="tracking_code">Código de Rastreio dos Correios</Label>
+            <Label htmlFor="tracking_code" className="text-foreground font-medium">Código de Rastreio dos Correios</Label>
             <Input
               id="tracking_code"
               value={trackingCode}
               onChange={(e) => setTrackingCode(e.target.value)}
               placeholder="Ex: AA123456789BR"
+              className="bg-background border-input font-mono text-base"
             />
           </div>
         </CardContent>
@@ -270,7 +271,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
 
       {/* Action Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={!isFormValid() || updateShipmentMutation.isPending}>
+        <Button onClick={handleSave} disabled={!isFormValid() || updateShipmentMutation.isPending} className="bg-success hover:bg-success/90 text-success-foreground">
           {updateShipmentMutation.isPending ? "Salvando..." : "Salvar Informações de Envio"}
         </Button>
       </div>
