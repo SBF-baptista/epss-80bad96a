@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom'
 import { useUserRole } from '@/hooks/useUserRole'
-import ModuleSelection from '@/pages/ModuleSelection'
 
 const SmartRedirect = () => {
   const { role, loading } = useUserRole()
@@ -35,8 +34,8 @@ const SmartRedirect = () => {
     )
   }
 
-  // Show module selection page for all authenticated users with a role
-  return <ModuleSelection />
+  // Redirect to module selection page (which has Layout wrapper)
+  return <Navigate to="/modules" replace />
 }
 
 export default SmartRedirect
