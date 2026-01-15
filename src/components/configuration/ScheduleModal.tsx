@@ -119,11 +119,13 @@ const sendTechnicianWhatsApp = async (
   }
 };
 
-// Helper to normalize item names (remove quantity suffix, trim, uppercase, remove special chars)
+// Helper to normalize item names (remove quantity suffix, trim, uppercase, normalize accents)
 const normalizeName = (name: string): string => {
   return name
     .replace(/\s*\(\d+x\)\s*$/i, '') // Remove quantity suffix like "(3x)"
-    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+    .normalize('NFD') // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove accent marks
+    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove remaining special characters
     .trim()
     .toUpperCase();
 };
