@@ -195,15 +195,15 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
   return (
     <div className="space-y-4">
       {/* Technician Selection */}
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="border-blue-500/40 bg-blue-50 dark:bg-blue-950/30">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-primary">Técnico</CardTitle>
+          <CardTitle className="text-base text-blue-700 dark:text-blue-400">Técnico</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <Label htmlFor="technician" className="text-foreground font-medium">Selecione o técnico</Label>
             <Select value={selectedTechnicianId} onValueChange={handleTechnicianChange}>
-              <SelectTrigger className="bg-background border-input">
+              <SelectTrigger className="bg-white dark:bg-background border-blue-300 dark:border-blue-700">
                 <SelectValue placeholder="Selecione um técnico" />
               </SelectTrigger>
               <SelectContent>
@@ -222,9 +222,9 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       </Card>
 
       {/* Address Section */}
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="border-blue-500/40 bg-blue-50 dark:bg-blue-950/30">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-primary">Endereço de Entrega</CardTitle>
+          <CardTitle className="text-base text-blue-700 dark:text-blue-400">Endereço de Entrega</CardTitle>
         </CardHeader>
         <CardContent>
           <AddressForm
@@ -237,9 +237,9 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       </Card>
 
       {/* Tracking Code Section */}
-      <Card className="border-success/30 bg-success/10">
+      <Card className="border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-success">Código de Rastreio</CardTitle>
+          <CardTitle className="text-base text-emerald-700 dark:text-emerald-400">Código de Rastreio</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -249,7 +249,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
               value={trackingCode}
               onChange={(e) => setTrackingCode(e.target.value)}
               placeholder="Ex: AA123456789BR"
-              className="bg-background border-input font-mono text-base"
+              className="bg-white dark:bg-background border-emerald-300 dark:border-emerald-700 font-mono text-base"
             />
           </div>
         </CardContent>
