@@ -35,6 +35,9 @@ export interface CustomerKitData {
   selected_kit_ids?: string[];
   selected_kit_names?: string[];
   configuration?: string;
+  // Tracking and updated_at for timeline
+  tracking_code?: string;
+  updated_at?: string;
 }
 
 const CustomerTracking = () => {
@@ -161,7 +164,10 @@ const CustomerTracking = () => {
         // Selected kits
         selected_kit_ids: scheduleWithIds.selected_kit_ids,
         selected_kit_names: selectedKitNames,
-        configuration: scheduleWithIds.configuration
+        configuration: scheduleWithIds.configuration,
+        // Tracking and timeline data
+        tracking_code: scheduleWithIds.tracking_code,
+        updated_at: scheduleWithIds.updated_at
       };
     });
   };
