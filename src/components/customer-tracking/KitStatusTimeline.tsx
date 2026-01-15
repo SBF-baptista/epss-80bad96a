@@ -9,6 +9,7 @@ interface KitStatusTimelineProps {
   planningDate?: string | null;
   logisticsStatus?: string;
   logisticsDate?: string | null;
+  trackingCode?: string | null; // Added to detect shipped status as fallback
   hasInstallationSchedule?: boolean;
   scheduleDate?: string | null;
   installationCompleted?: boolean;
@@ -24,6 +25,7 @@ export const KitStatusTimeline = ({
   planningDate,
   logisticsStatus,
   logisticsDate,
+  trackingCode,
   hasInstallationSchedule,
   scheduleDate,
   installationCompleted,
@@ -85,7 +87,13 @@ export const KitStatusTimeline = ({
   };
 
   // Step 4: Logística
+  // If trackingCode is present, consider as 'shipped' regardless of status (fallback for data inconsistency)
   const getLogisticsStepStatus = () => {
+    // Fallback: if tracking_code exists, treat as shipped
+    if (trackingCode && trackingCode.trim() !== '') {
+      return { status: "step4", statusLabel: "Enviado", date: formatDate(logisticsDate) };
+    }
+    
     if (!logisticsStatus || logisticsStatus === 'pending') {
       return { status: "pending", statusLabel: "Pendente", date: null };
     }

@@ -96,6 +96,7 @@ export const updateOrderShipment = async (
 };
 
 // Update kit_schedules shipment information (for Kanban flow)
+// If tracking_code is provided, automatically set status to 'shipped'
 export const updateKitScheduleShipment = async (
   scheduleId: string, 
   shipmentData: {
@@ -109,9 +110,17 @@ export const updateKitScheduleShipment = async (
     tracking_code?: string;
   }
 ) => {
+  // If tracking_code is provided and not empty, include status: 'shipped' in the update
+  const updateData = {
+    ...shipmentData,
+    ...(shipmentData.tracking_code && shipmentData.tracking_code.trim() !== '' 
+        ? { status: 'shipped' } 
+        : {})
+  };
+
   const { error } = await supabase
     .from('kit_schedules')
-    .update(shipmentData)
+    .update(updateData)
     .eq('id', scheduleId);
 
   if (error) {
