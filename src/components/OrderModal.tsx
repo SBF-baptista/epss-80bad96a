@@ -509,16 +509,16 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                         : sched.kit?.name || 'N/A';
 
                       return (
-                        <div key={sched.id || idx} className="p-4 bg-card border-2 border-primary/20 rounded-lg space-y-4">
+                        <div key={sched.id || idx} className="p-4 bg-card border-2 border-primary/40 rounded-lg space-y-4 shadow-sm">
                           {/* Vehicle Header */}
                           <div className="flex items-center gap-2 flex-wrap">
                             {sched.vehicle_plate && (
-                              <Badge variant="outline" className="text-base font-bold px-3 py-1">
+                              <Badge variant="outline" className="text-base font-bold px-3 py-1 border-2 border-primary">
                                 {sched.vehicle_plate}
                               </Badge>
                             )}
                             {(sched.vehicle_brand || sched.vehicle_model) && (
-                              <span className="text-sm text-foreground font-medium">
+                              <span className="text-base text-foreground font-semibold">
                                 {[sched.vehicle_brand, sched.vehicle_model].filter(Boolean).join(' ')}
                               </span>
                             )}
@@ -526,22 +526,22 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
 
                           {/* Kit info */}
                           <div className="space-y-2">
-                            <Label className="text-sm text-muted-foreground">Kit Selecionado</Label>
+                            <Label className="text-sm font-semibold text-primary">Kit Selecionado</Label>
                             <Input 
                               value={selectedKitNames} 
                               disabled 
-                              className="bg-muted/50"
+                              className="bg-muted/30 border-primary/30 font-semibold text-foreground disabled:opacity-100"
                             />
                           </div>
 
                           {/* Técnico */}
                           {sched.technician?.name && (
                             <div className="space-y-2">
-                              <Label className="text-sm text-muted-foreground">Técnico</Label>
+                              <Label className="text-sm font-semibold text-primary">Técnico</Label>
                               <Input 
                                 value={sched.technician.name} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-semibold text-foreground disabled:opacity-100"
                               />
                             </div>
                           )}
@@ -549,19 +549,19 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                           {/* Address: Rua, Número */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2 md:col-span-2">
-                              <Label className="text-sm text-muted-foreground">Rua/Logradouro</Label>
+                              <Label className="text-sm font-semibold text-primary">Rua/Logradouro</Label>
                               <Input 
                                 value={sched.installation_address_street || 'N/A'} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-medium text-foreground disabled:opacity-100"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm text-muted-foreground">Número</Label>
+                              <Label className="text-sm font-semibold text-primary">Número</Label>
                               <Input 
                                 value={sched.installation_address_number || 'N/A'} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-medium text-foreground disabled:opacity-100"
                               />
                             </div>
                           </div>
@@ -569,19 +569,19 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                           {/* Bairro, Complemento */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label className="text-sm text-muted-foreground">Bairro</Label>
+                              <Label className="text-sm font-semibold text-primary">Bairro</Label>
                               <Input 
                                 value={sched.installation_address_neighborhood || 'N/A'} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-medium text-foreground disabled:opacity-100"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm text-muted-foreground">Complemento</Label>
+                              <Label className="text-sm font-semibold text-primary">Complemento</Label>
                               <Input 
                                 value={sched.installation_address_complement || '-'} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-medium text-foreground disabled:opacity-100"
                               />
                             </div>
                           </div>
@@ -589,38 +589,38 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                           {/* Cidade, UF, CEP */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                              <Label className="text-sm text-muted-foreground">Cidade</Label>
+                              <Label className="text-sm font-semibold text-primary">Cidade</Label>
                               <Input 
                                 value={sched.installation_address_city || 'N/A'} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-medium text-foreground disabled:opacity-100"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm text-muted-foreground">UF</Label>
+                              <Label className="text-sm font-semibold text-primary">UF</Label>
                               <Input 
                                 value={sched.installation_address_state || 'N/A'} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-medium text-foreground disabled:opacity-100"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm text-muted-foreground">CEP</Label>
+                              <Label className="text-sm font-semibold text-primary">CEP</Label>
                               <Input 
                                 value={sched.installation_address_postal_code || 'N/A'} 
                                 disabled 
-                                className="bg-muted/50"
+                                className="bg-muted/30 border-primary/30 font-medium text-foreground disabled:opacity-100"
                               />
                             </div>
                           </div>
 
                           {/* Código de Rastreio */}
                           <div className="space-y-2">
-                            <Label className="text-sm text-primary font-semibold">Código de Rastreio</Label>
+                            <Label className="text-sm text-emerald-700 dark:text-emerald-400 font-bold">Código de Rastreio</Label>
                             <Input 
                               value={sched.tracking_code || 'N/A'} 
                               disabled 
-                              className="bg-success-light/50 border-success/30 font-mono"
+                              className="bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-500 font-mono font-bold text-emerald-800 dark:text-emerald-300 text-base disabled:opacity-100"
                             />
                           </div>
                         </div>
