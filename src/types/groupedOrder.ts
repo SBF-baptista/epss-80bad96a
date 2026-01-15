@@ -39,15 +39,13 @@ export const groupOrdersByCompany = (orders: Order[], shouldGroup: boolean = tru
     }));
   }
 
-  // Agrupar por company_name E data de agendamento (para evitar agrupar pedidos de datas diferentes)
+  // Agrupar por company_name E data de criação (para evitar agrupar pedidos de datas diferentes)
   const groupedMap = new Map<string, Order[]>();
   
   orders.forEach(order => {
     const companyKey = order.company_name || "Sem Empresa";
-    // Usar scheduledDate para agrupamento (data do agendamento/previsão de instalação)
-    // Se não houver scheduledDate, usar createdAt como fallback
-    const dateToUse = order.scheduledDate || order.createdAt;
-    const orderDate = dateToUse ? dateToUse.split('T')[0] : 'unknown';
+    // Extrair data do createdAt (YYYY-MM-DD)
+    const orderDate = order.createdAt ? order.createdAt.split('T')[0] : 'unknown';
     const groupKey = `${companyKey}|${orderDate}`;
     
     if (!groupedMap.has(groupKey)) {
