@@ -36,6 +36,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [installationSchedule, setInstallationSchedule] = useState<InstallationScheduleData | null>(null);
   const [incomingVehicleData, setIncomingVehicleData] = useState<IncomingVehicleData | null>(null);
   const [homologationData, setHomologationData] = useState<HomologationData | null>(null);
+  const [tomticketProtocol, setTomticketProtocol] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -85,10 +86,25 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
           }
         }
       }
+
+      // Fetch TomTicket protocol if vehicle has a plate
+      if (kitData.vehicle_plate) {
+        try {
+          const { data: tomticketData, error: tomticketError } = await supabase.functions.invoke('search-tomticket', {
+            body: { searchTerm: kitData.vehicle_plate, maxPages: 20 }
+          });
+
+          if (!tomticketError && tomticketData?.found && tomticketData?.protocols?.length > 0) {
+            setTomticketProtocol(tomticketData.protocols[0]);
+          }
+        } catch (error) {
+          console.error('Error fetching TomTicket protocol:', error);
+        }
+      }
     };
 
     loadData();
-  }, [kitData.id, kitData.incoming_vehicle_id]);
+  }, [kitData.id, kitData.incoming_vehicle_id, kitData.vehicle_plate]);
 
   const getStatusInfo = () => {
     // If there's an installation schedule, the vehicle has already been shipped
@@ -155,9 +171,9 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
                     ? `${kitData.vehicle_brand} ${kitData.vehicle_model}`
                     : kitData.kit?.name || 'Veículo'}
                 </span>
-                {(kitData as any).tomticket_protocol && (
+                {(tomticketProtocol || kitData.tomticket_protocol) && (
                   <span className="text-xs font-normal text-muted-foreground ml-2">
-                    Protocolo TomTicket: {(kitData as any).tomticket_protocol}
+                    Protocolo TomTicket: {tomticketProtocol || kitData.tomticket_protocol}
                   </span>
                 )}
               </CardTitle>
