@@ -38,6 +38,7 @@ export interface KickoffClient {
   total_vehicles: number;
   usage_types: KickoffUsageType[];
   vehicles: KickoffVehicle[];
+  oldest_received_at: string | null;
 }
 
 export interface KickoffSummary {
@@ -50,10 +51,10 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
   // Buscar todos os incoming_vehicles do Segsale que não tenham kickoff completo
   const { data: vehicles, error } = await supabase
     .from('incoming_vehicles')
-    .select('id, usage_type, company_name, quantity, sale_summary_id, brand, vehicle, year, plate, kickoff_completed')
+    .select('id, usage_type, company_name, quantity, sale_summary_id, brand, vehicle, year, plate, kickoff_completed, received_at')
     .not('sale_summary_id', 'is', null)
     .eq('kickoff_completed', false)
-    .order('company_name');
+    .order('received_at', { ascending: true });
   
   if (error) {
     console.error('Error fetching kickoff vehicles:', error);
@@ -126,8 +127,15 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
         total_quantity: 0,
         total_vehicles: 0,
         usage_types: [],
-        vehicles: []
+        vehicles: [],
+        oldest_received_at: vehicle.received_at || null
       });
+    } else {
+      // Atualizar a data mais antiga se este veículo for mais antigo
+      const client = clientsMap.get(companyKey)!;
+      if (vehicle.received_at && (!client.oldest_received_at || vehicle.received_at < client.oldest_received_at)) {
+        client.oldest_received_at = vehicle.received_at;
+      }
     }
 
     const client = clientsMap.get(companyKey)!;
@@ -166,8 +174,13 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
     });
   });
 
+  // Ordenar por data de pendência mais antiga primeiro
   const clients = Array.from(clientsMap.values())
-    .sort((a, b) => a.company_name.localeCompare(b.company_name));
+    .sort((a, b) => {
+      const dateA = a.oldest_received_at ? new Date(a.oldest_received_at).getTime() : Infinity;
+      const dateB = b.oldest_received_at ? new Date(b.oldest_received_at).getTime() : Infinity;
+      return dateA - dateB;
+    });
 
   return {
     total_vehicles: totalVehicles,
