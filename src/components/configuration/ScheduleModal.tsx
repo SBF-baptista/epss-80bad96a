@@ -142,7 +142,9 @@ const isSimilarAccessoryName = (vehicleAccessory: string, homologatedAccessory: 
   // Common synonyms and variations
   const synonyms: Record<string, string[]> = {
     'SIRENE': ['SIRENE', 'SIREN'],
-    'BLOQUEIO': ['BLOQUEIO', 'RELE', 'RELÉ', 'RELAY', 'RELE 12V', 'RELE 24V'],
+    'BLOQUEIO': ['BLOQUEIO', 'RELE', 'RELÉ', 'RELAY', 'RELE 12V', 'RELE 24V', 'BLOQUEIO DE COMBUSTIVEL', 'BLOQUEIO COMBUSTIVEL', 'BLOQUEIO DE PARTIDA', 'BLOQUEIO PARTIDA'],
+    'BLOQUEIO DE COMBUSTIVEL': ['BLOQUEIO DE COMBUSTIVEL', 'BLOQUEIO COMBUSTIVEL', 'BLOQUEIO'],
+    'BLOQUEIO DE PARTIDA': ['BLOQUEIO DE PARTIDA', 'BLOQUEIO PARTIDA', 'BLOQUEIO'],
     'IBUTTON': ['IBUTTON', 'ID IBUTTON', 'IDENTIFICADOR IBUTTON'],
     'RFID': ['RFID', 'LEITOR RFID', 'ID CONDUTOR RFID', 'ID RFID', 'IDENTIFICADOR RFID', 'LEITOR RFID KNOV', 'LEITOR RFID SGBRAS'],
     'BLUETOOTH': ['BLUETOOTH', 'ID BLUETOOTH', 'IDENTIFICADOR BLUETOOTH'],
@@ -195,7 +197,9 @@ const isSimilarItem = (item1: string, item2: string): boolean => {
   // 3. Equivalências semânticas
   const equivalences = [
     ['RFID', 'LEITOR RFID', 'LEITORA RFID', 'ID CONDUTOR RFID', 'CONDUTOR RFID'],
-    ['BLOQUEIO', 'RELE', 'RELÉ', 'BLOQUEIO MOTOR', 'BLOQUEIO COMBUSTIVEL', 'BLOQUEIO PARTIDA'],
+    ['BLOQUEIO', 'RELE', 'RELÉ', 'BLOQUEIO MOTOR', 'BLOQUEIO COMBUSTIVEL', 'BLOQUEIO PARTIDA', 'BLOQUEIO DE COMBUSTIVEL', 'BLOQUEIO DE PARTIDA'],
+    ['BLOQUEIO DE COMBUSTIVEL', 'BLOQUEIO COMBUSTIVEL'],
+    ['BLOQUEIO DE PARTIDA', 'BLOQUEIO PARTIDA'],
     ['IBUTTON', 'ID IBUTTON', 'CONDUTOR IBUTTON'],
     ['SIRENE', 'SIRENE DUPLA', 'SIRENE PADRAO'],
     ['BLUETOOTH', 'ID BLUETOOTH', 'CONDUTOR BLUETOOTH'],
@@ -1242,7 +1246,6 @@ export const ScheduleModal = ({
                       <table className="w-full">
                         <thead className="bg-muted">
                           <tr>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Placa</th>
                             <th className="px-4 py-3 text-left text-sm font-medium">Ano</th>
@@ -1262,24 +1265,6 @@ export const ScheduleModal = ({
                             return (
                             <>
                             <tr key={vehicleSchedule.plate} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}>
-                              <td className="px-4 py-3">
-                                {hasConflict ? (
-                                  <Badge className="bg-red-100 text-red-800 border-red-300">
-                                    <X className="w-3 h-3 mr-1" />
-                                    Conflito
-                                  </Badge>
-                                ) : vehicleReady ? (
-                                  <Badge className="bg-green-100 text-green-800 border-green-300">
-                                    <Check className="w-3 h-3 mr-1" />
-                                    Pronto
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-orange-100 text-orange-800 border-orange-300">
-                                    <X className="w-3 h-3 mr-1" />
-                                    Pendente
-                                  </Badge>
-                                 )}
-                              </td>
                               <td className="px-4 py-3 text-sm">
                                 {vehicleSchedule.brand} {vehicleSchedule.model}
                               </td>

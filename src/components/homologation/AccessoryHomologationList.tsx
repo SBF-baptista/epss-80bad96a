@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { fetchKitItemOptions, deleteKitItemOption } from "@/services/kitItemOptionsService";
@@ -12,6 +13,7 @@ import { Trash2, Package, FileText, ChevronDown, Search, Pencil } from "lucide-r
 import { useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EditRequestModal } from "./EditRequestModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface KitItemOption {
   id: string;
@@ -22,6 +24,7 @@ interface KitItemOption {
 }
 
 export const AccessoryHomologationList = () => {
+  const { user } = useAuth();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,6 +33,7 @@ export const AccessoryHomologationList = () => {
   const queryClient = useQueryClient();
   const { isAdmin, isGestor } = useUserRole();
   const [editModalItem, setEditModalItem] = useState<KitItemOption | null>(null);
+  const [deleteModalItem, setDeleteModalItem] = useState<KitItemOption | null>(null);
 
   const { data: accessories = [], isLoading } = useQuery({
     queryKey: ['kit-item-options', 'accessory'],
@@ -84,6 +88,52 @@ export const AccessoryHomologationList = () => {
       ...accessory,
       item_type: 'accessory'
     } as KitItemOption);
+  };
+
+  const handleOpenDeleteModal = (accessory: KitItemOption) => {
+    setDeleteModalItem({
+      ...accessory,
+      item_type: 'accessory'
+    } as KitItemOption);
+  };
+
+  const handleSubmitDeleteRequest = async () => {
+    if (!deleteModalItem) return;
+    
+    try {
+      const { error } = await supabase
+        .from('item_edit_requests')
+        .insert({
+          item_type: deleteModalItem.item_type,
+          item_name: deleteModalItem.item_name,
+          original_data: {
+            id: deleteModalItem.id,
+            item_name: deleteModalItem.item_name,
+            description: deleteModalItem.description || null
+          },
+          requested_changes: {
+            action: 'delete'
+          },
+          reason: 'Solicitação de exclusão',
+          requested_by: user?.id,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Solicitação enviada",
+        description: "A solicitação de exclusão foi enviada para aprovação do gestor."
+      });
+      setDeleteModalItem(null);
+    } catch (error) {
+      console.error('Error submitting delete request:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar solicitação de exclusão.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
@@ -205,6 +255,25 @@ export const AccessoryHomologationList = () => {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+
+                      {/* Botão de Solicitação de Exclusão */}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenDeleteModal(accessory)}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Solicitar exclusão ao gestor</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 ))}
@@ -220,6 +289,25 @@ export const AccessoryHomologationList = () => {
         onClose={() => setEditModalItem(null)}
         item={editModalItem ? { ...editModalItem, item_type: 'accessory' } : null}
       />
+
+      {/* Modal de Confirmação de Exclusão */}
+      <AlertDialog open={!!deleteModalItem} onOpenChange={(open) => !open && setDeleteModalItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Solicitar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja solicitar a exclusão do acessório <strong>{deleteModalItem?.item_name}</strong>? 
+              Esta solicitação será enviada para aprovação do gestor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmitDeleteRequest} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Solicitar Exclusão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Collapsible>
   );
 };
