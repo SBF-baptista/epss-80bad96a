@@ -6,7 +6,16 @@ export interface GroupedOrder {
   totalVehicles: number;
   totalTrackers: number;
   totalAccessories: number;
-  status: "novos" | "producao" | "aguardando" | "enviado" | "standby";
+  status:
+    | "novos"
+    | "producao"
+    | "aguardando"
+    | "enviado"
+    | "standby"
+    | "scheduled"
+    | "in_progress"
+    | "completed"
+    | "shipped";
   configurations: string[];
   createdAt: string; // Will use the earliest order's createdAt
   // New fields from scheduling
@@ -18,10 +27,13 @@ export interface GroupedOrder {
   configuration?: string;
 }
 
-export const groupOrdersByCompany = (orders: Order[], shouldGroup: boolean = true): GroupedOrder[] => {
+export const groupOrdersByCompany = (
+  orders: Order[],
+  shouldGroup: boolean = true
+): GroupedOrder[] => {
   // If we shouldn't group, return each order as its own "group"
   if (!shouldGroup) {
-    return orders.map(order => ({
+    return orders.map((order) => ({
       company_name: order.company_name || "Sem Empresa",
       orders: [order],
       totalVehicles: order.vehicles.reduce((sum, v) => sum + v.quantity, 0),
@@ -39,47 +51,48 @@ export const groupOrdersByCompany = (orders: Order[], shouldGroup: boolean = tru
     }));
   }
 
-  // Agrupar por company_name E data de criação (para evitar agrupar pedidos de datas diferentes)
+  // Agrupar apenas por company_name (sem usar a data)
   const groupedMap = new Map<string, Order[]>();
-  
-  orders.forEach(order => {
-    const companyKey = order.company_name || "Sem Empresa";
-    // Extrair data do createdAt (YYYY-MM-DD)
-    const orderDate = order.createdAt ? order.createdAt.split('T')[0] : 'unknown';
-    const groupKey = `${companyKey}|${orderDate}`;
-    
-    if (!groupedMap.has(groupKey)) {
-      groupedMap.set(groupKey, []);
+
+  orders.forEach((order) => {
+    const companyKey = (order.company_name || "Sem Empresa").trim().toUpperCase();
+
+    if (!groupedMap.has(companyKey)) {
+      groupedMap.set(companyKey, []);
     }
-    groupedMap.get(groupKey)!.push(order);
+
+    groupedMap.get(companyKey)!.push(order);
   });
 
   // Convert to GroupedOrder array
-  return Array.from(groupedMap.entries()).map(([groupKey, companyOrders]) => {
-    // Extrair company_name do groupKey
-    const company_name = groupKey.split('|')[0];
-    const totalVehicles = companyOrders.reduce((sum, order) => 
-      sum + order.vehicles.reduce((vSum, vehicle) => vSum + vehicle.quantity, 0), 0
+  return Array.from(groupedMap.entries()).map(([companyKey, companyOrders]) => {
+    // Preferir o nome original do primeiro pedido (mantém acentos/capitalização)
+    const company_name = companyOrders[0].company_name || companyKey;
+
+    const totalVehicles = companyOrders.reduce(
+      (sum, order) => sum + order.vehicles.reduce((vSum, vehicle) => vSum + vehicle.quantity, 0),
+      0
     );
-    
-    const totalTrackers = companyOrders.reduce((sum, order) => 
-      sum + order.trackers.reduce((tSum, tracker) => tSum + tracker.quantity, 0), 0
+
+    const totalTrackers = companyOrders.reduce(
+      (sum, order) => sum + order.trackers.reduce((tSum, tracker) => tSum + tracker.quantity, 0),
+      0
     );
-    
-    const totalAccessories = companyOrders.reduce((sum, order) => 
-      sum + (order.accessories?.reduce((aSum, accessory) => aSum + accessory.quantity, 0) || 0), 0
+
+    const totalAccessories = companyOrders.reduce(
+      (sum, order) =>
+        sum + (order.accessories?.reduce((aSum, accessory) => aSum + accessory.quantity, 0) || 0),
+      0
     );
 
     // Get unique configurations
-    const configurations = [...new Set(companyOrders.map(order => order.configurationType))];
-    
+    const configurations = [...new Set(companyOrders.map((order) => order.configurationType))];
+
     // Use the status of the first order (they should all be in the same column)
     const status = companyOrders[0].status;
-    
+
     // Use the earliest creation date
-    const createdAt = companyOrders
-      .map(order => order.createdAt)
-      .sort()[0];
+    const createdAt = companyOrders.map((order) => order.createdAt).sort()[0];
 
     // Get first order's additional details
     const firstOrder = companyOrders[0];
