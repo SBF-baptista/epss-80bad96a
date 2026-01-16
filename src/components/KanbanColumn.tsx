@@ -32,9 +32,9 @@ const KanbanColumn = ({
   onScanClick,
   onShipmentClick
 }: KanbanColumnProps) => {
-  // Group orders in 'novos' (Pedidos), 'producao' (Em Produção) and 'enviado' (Enviado)
-  // Keep individual in 'aguardando' (Aguardando envio)
-  const shouldGroup = status === 'novos' || status === 'producao' || status === 'enviado';
+  // Group orders in 'scheduled' (Pedidos), 'in_progress' (Em Produção) and 'shipped' (Enviado)
+  // Keep individual in 'completed' (Aguardando envio)
+  const shouldGroup = status === 'scheduled' || status === 'in_progress' || status === 'shipped';
   const groupedOrders = groupOrdersByCompany(orders, shouldGroup);
   
   const handleGroupClick = (groupedOrder: GroupedOrder) => {
