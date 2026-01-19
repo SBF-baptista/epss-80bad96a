@@ -447,6 +447,13 @@ export const deleteHomologationPhoto = async (photoId: string, filePath: string)
     console.error('Error deleting photo record:', dbError);
     throw dbError;
   }
+
+  // Registrar log
+  await logDelete(
+    "Homologação",
+    "foto de homologação",
+    photoId
+  );
 };
 
 export const getPhotoUrl = (filePath: string): string => {

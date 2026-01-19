@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { logUpdate } from "@/services/logService";
 
 interface EditVehicleModalProps {
   open: boolean;
@@ -155,6 +156,14 @@ export const EditVehicleModal = ({
         .eq('id', vehicleId);
 
       if (error) throw error;
+
+      // Registrar log da atualização
+      await logUpdate(
+        "Kickoff",
+        "veículo",
+        vehicleId,
+        `Marca: ${selectedBrand}, Modelo: ${selectedModel}${selectedYear ? `, Ano: ${selectedYear}` : ''}`
+      );
 
       toast.success("Veículo atualizado com sucesso!");
       onSuccess();
