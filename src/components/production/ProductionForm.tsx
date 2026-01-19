@@ -1,4 +1,3 @@
-
 import { Order } from "@/services/orderService";
 import { ProductionItem } from "@/services/productionService";
 import ProductionStatus from "./ProductionStatus";
@@ -55,6 +54,7 @@ const ProductionForm = ({
         scannedCount={scannedCount}
         totalTrackers={totalTrackers}
         isProductionComplete={isProductionComplete}
+        currentStatus={order.status}
         onStartProduction={onStartProduction}
         onCompleteProduction={onCompleteProduction}
       />

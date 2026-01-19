@@ -27,6 +27,7 @@ import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText, Car, 
 import { supabase } from "@/integrations/supabase/client";
 import { cleanItemName, normalizeItemName } from "@/utils/itemNormalization";
 import ProductionForm from "./production/ProductionForm";
+import ProductionStatus from "./production/ProductionStatus";
 import ProductionItemsList from "./production/ProductionItemsList";
 import { useProductionItems } from "@/hooks/useProductionItems";
 import { useProductionScannerModal } from "@/hooks/useProductionScannerModal";
@@ -74,6 +75,11 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
     registerForceCleanup,
   } = useProductionScannerModal(order, isOpen);
 
+  const handleStatusChange = () => {
+    onUpdate?.();
+    onClose();
+  };
+
   const {
     productionItems,
     isLoading: productionLoading,
@@ -81,7 +87,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
     handleScanItem,
     handleStartProduction,
     handleCompleteProduction,
-  } = useProductionItems(order, isOpen);
+  } = useProductionItems(order, isOpen, undefined, handleStatusChange);
 
   const onScanItemClick = async () => {
     const success = await handleScanItem(imei, productionLineCode);
@@ -444,6 +450,22 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                     )}
                   </div>
                 </div>
+              </>
+            )}
+
+            {/* "Pedidos" (novos status): Show Start Production button */}
+            {order.status === "novos" && viewMode === "scanner" && (
+              <>
+                <Separator />
+                <ProductionStatus
+                  orderNumber={order.number}
+                  scannedCount={productionItems.length}
+                  totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
+                  isProductionComplete={false}
+                  currentStatus={order.status}
+                  onStartProduction={onStartProduction}
+                  onCompleteProduction={onCompleteProduction}
+                />
               </>
             )}
 
