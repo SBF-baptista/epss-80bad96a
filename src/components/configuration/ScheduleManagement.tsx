@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, getWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
@@ -118,14 +118,18 @@ export const ScheduleManagement = () => {
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEntry | null>(null);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => 
+  const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>('all');
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
-  
+
+  // Header/body column alignment (compensate scrollbar width)
+  const bodyScrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
+
   const { isAdmin, isGestor } = useUserRole();
   const canDispatchAgenda = isAdmin() || isGestor();
 
@@ -159,7 +163,30 @@ export const ScheduleManagement = () => {
   useEffect(() => {
     fetchSchedules();
     fetchTechnicians();
+  }, []);
 
+  useLayoutEffect(() => {
+    const el = bodyScrollRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      // offsetWidth includes scrollbar, clientWidth excludes it
+      const width = Math.max(0, el.offsetWidth - el.clientWidth);
+      setScrollbarWidth(width);
+    };
+
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+
+    // In some browsers the scrollbar can appear/disappear after first paint
+    const raf = requestAnimationFrame(measure);
+
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   // Filter schedules by selected technician
@@ -492,54 +519,62 @@ export const ScheduleManagement = () => {
             <div className="w-[140px] hidden sm:block" />
           </div>
 
-          {/* Tabela unificada para alinhamento perfeito das colunas */}
+          {/* Grade semanal (header + body) com colunas sincronizadas */}
           <div className="overflow-hidden">
-            <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
-              <colgroup>
-                <col style={{ width: '80px' }} />
-                <col />
-                <col />
-                <col />
-                <col />
-                <col />
-                <col />
-                <col />
-              </colgroup>
-              <thead className="sticky top-0 z-10 bg-background">
-                <tr className="border-b">
-                  <th className="p-2 border-r bg-muted/20" />
-                  {weekDays.map((day, index) => {
-                    const isTodayDate = isToday(day);
-                    return (
-                      <th
-                        key={index}
-                        className={cn(
-                          "p-2 sm:p-3 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent/50 transition-colors font-normal",
-                          isTodayDate && "bg-primary/10"
-                        )}
-                        onClick={() => handleDateSelect(day)}
-                      >
-                        <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {format(day, 'EEE', { locale: ptBR })}
-                        </p>
-                        <p className={cn(
-                          "text-lg sm:text-2xl font-bold mt-1",
-                          isTodayDate && "text-primary"
-                        )}>
-                          {format(day, 'd')}
-                        </p>
-                        {isTodayDate && (
-                          <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-            </table>
-            
-            {/* Corpo da tabela com scroll */}
-            <div className="max-h-[600px] overflow-y-auto">
+            {/* Header: adiciona padding-right = largura do scrollbar do body para alinhar divisórias verticais */}
+            <div className="overflow-hidden" style={{ paddingRight: scrollbarWidth }}>
+              <table
+                className="w-full border-collapse"
+                style={{ tableLayout: 'fixed' }}
+              >
+                <colgroup>
+                  <col style={{ width: '80px' }} />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                </colgroup>
+                <thead className="sticky top-0 z-10 bg-background">
+                  <tr className="border-b">
+                    <th className="p-2 border-r bg-muted/20" />
+                    {weekDays.map((day, index) => {
+                      const isTodayDate = isToday(day);
+                      return (
+                        <th
+                          key={index}
+                          className={cn(
+                            "p-2 sm:p-3 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent/50 transition-colors font-normal",
+                            isTodayDate && "bg-primary/10"
+                          )}
+                          onClick={() => handleDateSelect(day)}
+                        >
+                          <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {format(day, 'EEE', { locale: ptBR })}
+                          </p>
+                          <p
+                            className={cn(
+                              "text-lg sm:text-2xl font-bold mt-1",
+                              isTodayDate && "text-primary"
+                            )}
+                          >
+                            {format(day, 'd')}
+                          </p>
+                          {isTodayDate && (
+                            <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />
+                          )}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+              </table>
+            </div>
+
+            {/* Body (scroll) */}
+            <div ref={bodyScrollRef} className="max-h-[600px] overflow-y-auto">
               <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
                 <colgroup>
                   <col style={{ width: '80px' }} />
