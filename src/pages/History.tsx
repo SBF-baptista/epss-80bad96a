@@ -29,9 +29,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Clock, AlertTriangle } from "lucide-react";
+import { Search, Filter, Clock, AlertTriangle, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import LogDetailModal from "@/components/history/LogDetailModal";
 
 interface AppLog {
   id: string;
@@ -53,6 +54,8 @@ const History = () => {
   const [endDate, setEndDate] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedLog, setSelectedLog] = useState<AppLog | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Verificar se o usuário é admin
   if (!roleLoading && role !== "admin") {
@@ -288,8 +291,8 @@ const History = () => {
                 <TableHead>Data e Hora</TableHead>
                 <TableHead>Ação</TableHead>
                 <TableHead>Módulo</TableHead>
-                <TableHead>Detalhes</TableHead>
                 <TableHead>IP</TableHead>
+                <TableHead className="w-16 text-center">Detalhes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -335,11 +338,30 @@ const History = () => {
                         {log.module}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-md truncate">
-                      {log.details || "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground font-mono text-xs">
                       {log.ip_address || "-"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                setSelectedLog(log);
+                                setShowDetailModal(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ver detalhes completos</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))
@@ -377,6 +399,16 @@ const History = () => {
           </div>
         )}
       </Card>
+
+      {/* Modal de Detalhes */}
+      <LogDetailModal
+        log={selectedLog}
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedLog(null);
+        }}
+      />
     </div>
   );
 };

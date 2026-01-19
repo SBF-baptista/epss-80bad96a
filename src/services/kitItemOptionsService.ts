@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ItemType } from "@/types/homologationKit";
+import { logCreate, logDelete } from "./logService";
 
 export interface KitItemOption {
   id: string;
@@ -63,6 +64,13 @@ export const createKitItemOption = async (optionData: CreateKitItemOptionRequest
       throw error;
     }
 
+    // Registrar log da criação
+    await logCreate(
+      "Acessórios e Insumos",
+      `${optionData.item_type === 'accessory' ? 'acessório' : optionData.item_type === 'supply' ? 'insumo' : 'equipamento'} "${optionData.item_name}"`,
+      data.id
+    );
+
     return {
       ...data,
       item_type: data.item_type as ItemType
@@ -75,6 +83,13 @@ export const createKitItemOption = async (optionData: CreateKitItemOptionRequest
 
 export const deleteKitItemOption = async (optionId: string): Promise<{ count: number }> => {
   try {
+    // Buscar o item antes de deletar para registrar no log
+    const { data: itemData } = await supabase
+      .from('kit_item_options')
+      .select('item_name, item_type')
+      .eq('id', optionId)
+      .single();
+
     const { error, count } = await supabase
       .from('kit_item_options')
       .delete({ count: 'exact' })
@@ -88,6 +103,15 @@ export const deleteKitItemOption = async (optionId: string): Promise<{ count: nu
     // If no rows were deleted, it likely means RLS blocked the operation or the item doesn't exist
     if (!count || count === 0) {
       throw new Error('Sem permissão para excluir ou item não encontrado.');
+    }
+
+    // Registrar log da exclusão
+    if (itemData) {
+      await logDelete(
+        "Acessórios e Insumos",
+        `${itemData.item_type === 'accessory' ? 'acessório' : itemData.item_type === 'supply' ? 'insumo' : 'equipamento'} "${itemData.item_name}"`,
+        optionId
+      );
     }
 
     return { count };

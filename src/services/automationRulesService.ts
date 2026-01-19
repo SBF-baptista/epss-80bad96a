@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client'
+import { logCreate, logUpdate, logDelete } from './logService'
 
 export interface AutomationRule {
   id: number
@@ -53,6 +54,13 @@ export const createAutomationRule = async (ruleData: CreateAutomationRuleData): 
     throw error
   }
 
+  // Registrar log
+  await logCreate(
+    "Regras de Automação",
+    `regra "${ruleData.brand} ${ruleData.model}" (${ruleData.configuration})`,
+    data.id.toString()
+  )
+
   return data
 }
 
@@ -75,6 +83,14 @@ export const updateAutomationRule = async (id: number, ruleData: Partial<CreateA
     throw new Error(`Automation rule with id ${id} not found`)
   }
 
+  // Registrar log
+  await logUpdate(
+    "Regras de Automação",
+    "regra de automação",
+    id.toString(),
+    Object.keys(ruleData).join(", ")
+  )
+
   return data
 }
 
@@ -90,6 +106,13 @@ export const deleteAutomationRule = async (id: number): Promise<void> => {
     console.error('Error deleting automation rule:', error)
     throw error
   }
+
+  // Registrar log
+  await logDelete(
+    "Regras de Automação",
+    "regra de automação",
+    id.toString()
+  )
 }
 
 export const findAutomationRule = async (brand: string, model: string, modelYear?: string): Promise<AutomationRule | null> => {
