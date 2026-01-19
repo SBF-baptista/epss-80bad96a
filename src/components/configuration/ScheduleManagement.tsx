@@ -14,6 +14,7 @@ import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, F
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getTechnicians, Technician } from '@/services/technicianService';
+import { useUserRole } from '@/hooks/useUserRole';
 
 // Send WhatsApp notification to technician using Twilio template - returns success/failure info
 const sendTechnicianWhatsApp = async (
@@ -124,6 +125,9 @@ export const ScheduleManagement = () => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>('all');
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
+  
+  const { isAdmin, isGestor } = useUserRole();
+  const canDispatchAgenda = isAdmin() || isGestor();
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -409,11 +413,13 @@ export const ScheduleManagement = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Botão Disparar Agenda */}
-            <Button variant="outline" onClick={() => setIsAgendaModalOpen(true)} className="gap-2">
-              <Send className="h-4 w-4" />
-              Disparar Agenda
-            </Button>
+            {/* Botão Disparar Agenda - Apenas para Admin e Gestor */}
+            {canDispatchAgenda && (
+              <Button variant="outline" onClick={() => setIsAgendaModalOpen(true)} className="gap-2">
+                <Send className="h-4 w-4" />
+                Disparar Agenda
+              </Button>
+            )}
             
             {/* Botão Criar Agendamento */}
             <Button onClick={() => handleDateSelect(new Date())} className="gap-2">
@@ -487,112 +493,123 @@ export const ScheduleManagement = () => {
           </div>
 
           {/* Cabeçalho dos dias da semana */}
-          <div className="grid grid-cols-[60px_repeat(7,1fr)] sm:grid-cols-[80px_repeat(7,1fr)] border-b">
-            <div className="p-2 border-r bg-muted/20" />
-            {weekDays.map((day, index) => {
-              const isTodayDate = isToday(day);
-              return (
-                <div
-                  key={index}
-                  className={cn(
-                    "p-2 sm:p-3 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent/50 transition-colors",
-                    isTodayDate && "bg-primary/10"
-                  )}
-                  onClick={() => handleDateSelect(day)}
-                >
-                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {format(day, 'EEE', { locale: ptBR })}
-                  </p>
-                  <p className={cn(
-                    "text-lg sm:text-2xl font-bold mt-1",
-                    isTodayDate && "text-primary"
-                  )}>
-                    {format(day, 'd')}
-                  </p>
-                  {isTodayDate && (
-                    <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Grade de horários */}
-          <div className="max-h-[600px] overflow-y-auto">
-            {timeSlots.map((time, timeIndex) => (
-              <div key={time} className="grid grid-cols-[60px_repeat(7,1fr)] sm:grid-cols-[80px_repeat(7,1fr)] border-b last:border-b-0">
-                <div 
-                  className="p-2 text-xs text-muted-foreground text-right pr-2 sm:pr-3 border-r bg-muted/20 flex items-center justify-end"
-                  style={{ minHeight: '110px' }}
-                >
-                  {time}
-                </div>
-                {weekDays.map((day, dayIndex) => {
+          {/* Cabeçalho dos dias - usando table para alinhamento perfeito */}
+          <table className="w-full border-collapse table-fixed">
+            <thead>
+              <tr className="border-b">
+                <th className="w-[60px] sm:w-[80px] p-2 border-r bg-muted/20" />
+                {weekDays.map((day, index) => {
                   const isTodayDate = isToday(day);
-                  const daySchedules = getSchedulesForDateAndTime(day, time);
                   return (
-                    <div
-                      key={`${timeIndex}-${dayIndex}`}
+                    <th
+                      key={index}
                       className={cn(
-                        "border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1 overflow-y-auto",
-                        isTodayDate && "bg-primary/5",
-                        draggedSchedule && "bg-accent/20"
+                        "p-2 sm:p-3 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent/50 transition-colors font-normal",
+                        isTodayDate && "bg-primary/10"
                       )}
-                      style={{ minHeight: '110px' }}
-                      onClick={() => handleDateSelect(day, time)}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, day, time)}
+                      onClick={() => handleDateSelect(day)}
                     >
-                      {daySchedules.map(schedule => (
-                        <div
-                          key={schedule.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, schedule)}
-                          onDragEnd={handleDragEnd}
-                          className={cn(
-                            "bg-primary/90 text-primary-foreground rounded-lg p-2 text-[10px] sm:text-xs mb-1 cursor-grab active:cursor-grabbing hover:bg-primary transition-all shadow-sm hover:shadow-md",
-                            draggedSchedule?.id === schedule.id && "opacity-50"
-                          )}
-                          onClick={(e) => handleScheduleClick(schedule, e)}
-                        >
-                          {/* Drag handle and technician name as title */}
-                          <div className="flex items-center gap-1 mb-1.5">
-                            <GripVertical className="h-3 w-3 opacity-50 flex-shrink-0" />
-                            <span className="font-bold text-sm sm:text-base truncate">
-                              Técnico: {schedule.technician_name}
-                            </span>
-                          </div>
-                          
-                          {/* Schedule details with labels */}
-                          <div className="space-y-0.5 pl-4">
-                            <div className="flex items-center gap-1 truncate">
-                              <Clock className="h-3 w-3 flex-shrink-0 opacity-70" />
-                              <span className="opacity-70">Horário:</span>
-                              <span>{schedule.scheduled_time}</span>
-                            </div>
-                            <div className="flex items-center gap-1 truncate">
-                              <User className="h-3 w-3 flex-shrink-0 opacity-70" />
-                              <span className="opacity-70">Cliente:</span>{' '}
-                              <span className="font-medium">{schedule.customer}</span>
-                            </div>
-                            <div className="flex items-center gap-1 truncate">
-                              <Wrench className="h-3 w-3 flex-shrink-0 opacity-70" />
-                              <span className="opacity-70">Serviço:</span>{' '}
-                              <span className="font-medium">{schedule.service}</span>
-                            </div>
-                            <div className="flex items-center gap-1 truncate">
-                              <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />
-                              <span className="opacity-70">Endereço:</span>
-                              <span className="truncate">{schedule.address}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                      <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        {format(day, 'EEE', { locale: ptBR })}
+                      </p>
+                      <p className={cn(
+                        "text-lg sm:text-2xl font-bold mt-1",
+                        isTodayDate && "text-primary"
+                      )}>
+                        {format(day, 'd')}
+                      </p>
+                      {isTodayDate && (
+                        <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />
+                      )}
+                    </th>
                   );
                 })}
-              </div>
-            ))}
+              </tr>
+            </thead>
+          </table>
+
+          {/* Grade de horários - usando table para alinhamento perfeito das linhas */}
+          <div className="max-h-[600px] overflow-y-auto">
+            <table className="w-full border-collapse table-fixed">
+              <tbody>
+                {timeSlots.map((time, timeIndex) => (
+                  <tr key={time} className="border-b last:border-b-0">
+                    <td 
+                      className="w-[60px] sm:w-[80px] p-2 text-xs text-muted-foreground text-right pr-2 sm:pr-3 border-r bg-muted/20 align-top"
+                      style={{ height: '110px' }}
+                    >
+                      {time}
+                    </td>
+                    {weekDays.map((day, dayIndex) => {
+                      const isTodayDate = isToday(day);
+                      const daySchedules = getSchedulesForDateAndTime(day, time);
+                      return (
+                        <td
+                          key={`${timeIndex}-${dayIndex}`}
+                          className={cn(
+                            "border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1 align-top",
+                            isTodayDate && "bg-primary/5",
+                            draggedSchedule && "bg-accent/20"
+                          )}
+                          style={{ height: '110px' }}
+                          onClick={() => handleDateSelect(day, time)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, day, time)}
+                        >
+                          <div className="h-full overflow-y-auto">
+                            {daySchedules.map(schedule => (
+                              <div
+                                key={schedule.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, schedule)}
+                                onDragEnd={handleDragEnd}
+                                className={cn(
+                                  "bg-primary/90 text-primary-foreground rounded-lg p-2 text-[10px] sm:text-xs mb-1 cursor-grab active:cursor-grabbing hover:bg-primary transition-all shadow-sm hover:shadow-md",
+                                  draggedSchedule?.id === schedule.id && "opacity-50"
+                                )}
+                                onClick={(e) => handleScheduleClick(schedule, e)}
+                              >
+                                {/* Drag handle and technician name as title */}
+                                <div className="flex items-center gap-1 mb-1.5">
+                                  <GripVertical className="h-3 w-3 opacity-50 flex-shrink-0" />
+                                  <span className="font-bold text-sm sm:text-base truncate">
+                                    Técnico: {schedule.technician_name}
+                                  </span>
+                                </div>
+                                
+                                {/* Schedule details with labels */}
+                                <div className="space-y-0.5 pl-4">
+                                  <div className="flex items-center gap-1 truncate">
+                                    <Clock className="h-3 w-3 flex-shrink-0 opacity-70" />
+                                    <span className="opacity-70">Horário:</span>
+                                    <span>{schedule.scheduled_time}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 truncate">
+                                    <User className="h-3 w-3 flex-shrink-0 opacity-70" />
+                                    <span className="opacity-70">Cliente:</span>{' '}
+                                    <span className="font-medium">{schedule.customer}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 truncate">
+                                    <Wrench className="h-3 w-3 flex-shrink-0 opacity-70" />
+                                    <span className="opacity-70">Serviço:</span>{' '}
+                                    <span className="font-medium">{schedule.service}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 truncate">
+                                    <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />
+                                    <span className="opacity-70">Endereço:</span>
+                                    <span className="truncate">{schedule.address}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
