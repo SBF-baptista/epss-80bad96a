@@ -37,6 +37,11 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     registerForceCleanup,
   } = useProductionScannerModal(order, isOpen);
 
+  const handleStatusChange = () => {
+    onUpdate();
+    onClose();
+  };
+
   const {
     productionItems,
     isLoading,
@@ -44,7 +49,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     handleScanItem,
     handleStartProduction,
     handleCompleteProduction,
-  } = useProductionItems(order, isOpen);
+  } = useProductionItems(order, isOpen, undefined, handleStatusChange);
 
   const onScanItemClick = async () => {
     const success = await handleScanItem(imei, productionLineCode);

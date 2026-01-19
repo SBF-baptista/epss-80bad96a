@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
+import { logUpdate } from "@/services/logService";
 
 export interface ProductionItem {
   id: string;
@@ -14,7 +14,12 @@ export interface ProductionItem {
   created_by?: string;
 }
 
-export const useProductionItems = (order: Order | null, isOpen: boolean, scheduleId?: string) => {
+export const useProductionItems = (
+  order: Order | null, 
+  isOpen: boolean, 
+  scheduleId?: string,
+  onStatusChange?: () => void
+) => {
   const { toast } = useToast();
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,20 +110,96 @@ export const useProductionItems = (order: Order | null, isOpen: boolean, schedul
     }
   };
 
+  // Start production: update status from 'scheduled' to 'in_progress'
   const handleStartProduction = async () => {
-    toast({
-      title: "Produção iniciada",
-      description: `Produção foi iniciada`
-    });
-    return true;
+    const currentScheduleId = getScheduleId();
+    if (!currentScheduleId) return false;
+
+    try {
+      const { error } = await supabase
+        .from('kit_schedules')
+        .update({ status: 'in_progress' })
+        .eq('id', currentScheduleId);
+
+      if (error) {
+        console.error('Error starting production:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao iniciar produção",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      await logUpdate(
+        "Logística",
+        "status do pedido",
+        currentScheduleId,
+        "Status alterado de Pedidos para Em Produção"
+      );
+
+      toast({
+        title: "Produção iniciada",
+        description: "Pedido movido para Em Produção"
+      });
+      
+      onStatusChange?.();
+      return true;
+    } catch (error) {
+      console.error('Error starting production:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao iniciar produção",
+        variant: "destructive"
+      });
+      return false;
+    }
   };
 
+  // Complete production: update status from 'in_progress' to 'completed' (Aguardando Envio)
   const handleCompleteProduction = async () => {
-    toast({
-      title: "Produção concluída",
-      description: `Produção foi concluída`
-    });
-    return true;
+    const currentScheduleId = getScheduleId();
+    if (!currentScheduleId) return false;
+
+    try {
+      const { error } = await supabase
+        .from('kit_schedules')
+        .update({ status: 'completed' })
+        .eq('id', currentScheduleId);
+
+      if (error) {
+        console.error('Error completing production:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao concluir produção",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      await logUpdate(
+        "Logística",
+        "status do pedido",
+        currentScheduleId,
+        "Status alterado de Em Produção para Aguardando Envio"
+      );
+
+      toast({
+        title: "Produção concluída",
+        description: "Pedido movido para Aguardando Envio"
+      });
+      
+      onStatusChange?.();
+      return true;
+    } catch (error) {
+      console.error('Error completing production:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao concluir produção",
+        variant: "destructive"
+      });
+      return false;
+    }
   };
 
   useEffect(() => {
