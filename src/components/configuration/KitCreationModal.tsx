@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Package, Wrench, Box, AlertTriangle, Cpu, Loader2 } from 'lucide-react';
+import { Plus, Minus, Package, Wrench, Box, AlertTriangle, Cpu, Loader2, Link2 } from 'lucide-react';
 import { createHomologationKit, type CreateKitRequest, type HomologationKitItem } from '@/services/homologationKitService';
 import { SelectOrCreateInput } from '@/components/kit-items';
 import { checkItemHomologation } from '@/services/kitHomologationService';
@@ -18,6 +18,12 @@ interface KitCreationModalProps {
   onSuccess: () => void;
 }
 
+interface SegsaleMirror {
+  product: string;
+  module: string;
+  accessory: string;
+}
+
 interface KitFormData {
   name: string;
   description: string;
@@ -26,6 +32,7 @@ interface KitFormData {
   accessories: Omit<HomologationKitItem, 'id'>[];
   modules: Omit<HomologationKitItem, 'id'>[];
   supplies: Omit<HomologationKitItem, 'id'>[];
+  segsaleMirror: SegsaleMirror;
 }
 
 const KIT_CATEGORIES = [
@@ -41,7 +48,8 @@ const initialFormData: KitFormData = {
   equipment: [{ item_name: '', item_type: 'equipment', quantity: 1, description: '', notes: '' }],
   accessories: [{ item_name: '', item_type: 'accessory', quantity: 1, description: '', notes: '' }],
   modules: [{ item_name: '', item_type: 'accessory', quantity: 1, description: '', notes: '' }],
-  supplies: [{ item_name: '', item_type: 'supply', quantity: 1, description: '', notes: '' }]
+  supplies: [{ item_name: '', item_type: 'supply', quantity: 1, description: '', notes: '' }],
+  segsaleMirror: { product: '', module: '', accessory: '' }
 };
 
 export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModalProps) => {
@@ -49,7 +57,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
   const [nonHomologatedItems, setNonHomologatedItems] = useState<Set<string>>(new Set());
-  const { accessories: segsaleAccessories, modules: segsaleModules, loading: segsaleLoading } = useSegsaleExtras();
+  const { accessories: segsaleAccessories, modules: segsaleModules, products: segsaleProducts, loading: segsaleLoading } = useSegsaleExtras();
 
   const addItem = (type: 'equipment' | 'accessories' | 'modules' | 'supplies') => {
     const itemType = type === 'equipment' ? 'equipment' : type === 'supplies' ? 'supply' : 'accessory';
@@ -79,6 +87,13 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       [type]: prev[type].map((item, i) => 
         i === index ? { ...item, [field]: value } : item
       )
+    }));
+  };
+
+  const updateSegsaleMirror = (field: keyof SegsaleMirror, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      segsaleMirror: { ...prev.segsaleMirror, [field]: value }
     }));
   };
 
@@ -134,9 +149,21 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     try {
       setIsSaving(true);
       
+      // Build description with Segsale mirror info
+      let description = formData.description.trim();
+      const { product, module, accessory } = formData.segsaleMirror;
+      if (product || module || accessory) {
+        const mirrorParts = [];
+        if (product) mirrorParts.push(`Produto: ${product}`);
+        if (module) mirrorParts.push(`Módulo: ${module}`);
+        if (accessory) mirrorParts.push(`Acessório: ${accessory}`);
+        const mirrorInfo = `[Espelho Segsale: ${mirrorParts.join(' | ')}]`;
+        description = description ? `${description}\n${mirrorInfo}` : mirrorInfo;
+      }
+
       const kitData: CreateKitRequest = {
         name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
+        description: description || undefined,
         category: formData.category || undefined,
         equipment,
         accessories,
@@ -165,6 +192,75 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       setIsSaving(false);
     }
   };
+
+  const renderSegsaleMirrorSection = () => (
+    <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+      <div className="flex items-center gap-2">
+        <Link2 className="w-4 h-4 text-primary" />
+        <Label className="text-base font-medium">Espelho Segsale</Label>
+        {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Vincule este kit aos produtos do Segsale para referência e rastreabilidade.
+      </p>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Produto</Label>
+          <Select
+            value={formData.segsaleMirror.product}
+            onValueChange={(value) => updateSegsaleMirror('product', value)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione produto" />
+            </SelectTrigger>
+            <SelectContent>
+              {segsaleProducts.map((product) => (
+                <SelectItem key={product.id} value={product.nome}>
+                  {product.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Módulo</Label>
+          <Select
+            value={formData.segsaleMirror.module}
+            onValueChange={(value) => updateSegsaleMirror('module', value)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione módulo" />
+            </SelectTrigger>
+            <SelectContent>
+              {segsaleModules.map((module) => (
+                <SelectItem key={module.id} value={module.nome}>
+                  {module.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Acessório</Label>
+          <Select
+            value={formData.segsaleMirror.accessory}
+            onValueChange={(value) => updateSegsaleMirror('accessory', value)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione acessório" />
+            </SelectTrigger>
+            <SelectContent>
+              {segsaleAccessories.map((accessory) => (
+                <SelectItem key={accessory.id} value={accessory.nome}>
+                  {accessory.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderEquipmentSection = () => (
     <div className="space-y-3">
@@ -446,6 +542,9 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 </Select>
               </div>
             </div>
+
+            {/* Segsale Mirror Section */}
+            {renderSegsaleMirrorSection()}
 
             {/* Items Sections */}
             {renderEquipmentSection()}

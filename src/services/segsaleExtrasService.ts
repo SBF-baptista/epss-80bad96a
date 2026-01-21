@@ -7,6 +7,13 @@ export interface SegsaleExtra {
   descricao?: string;
 }
 
+export interface SegsaleProduct {
+  id: number;
+  nome: string;
+  descricao?: string;
+  descricaovenda?: string;
+}
+
 export interface SegsaleExtrasResponse {
   items: SegsaleExtra[];
   error?: string;
@@ -31,6 +38,29 @@ export const fetchSegsaleExtras = async (category?: 'Acessórios' | 'Módulos'):
     return data.items || [];
   } catch (error) {
     console.error('Error fetching Segsale extras:', error);
+    throw error;
+  }
+};
+
+export const fetchSegsaleProducts = async (): Promise<SegsaleProduct[]> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('fetch-segsale-extras', {
+      body: { type: 'products' }
+    });
+
+    if (error) {
+      console.error('Error calling fetch-segsale-extras for products:', error);
+      throw error;
+    }
+
+    if (data.error) {
+      console.error('API error:', data.error);
+      throw new Error(data.error);
+    }
+
+    return data.items || [];
+  } catch (error) {
+    console.error('Error fetching Segsale products:', error);
     throw error;
   }
 };
