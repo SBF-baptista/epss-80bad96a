@@ -56,12 +56,12 @@ serve(async (req) => {
         console.log('Sample product from API:', JSON.stringify(data[0]));
       }
 
-      // Format products as "descricao - descricaoVenda"
+      // Format products as "descricao - descricaoVenda" or just "descricao" if descricaoVenda is missing
       const items = data.map(item => ({
         id: item.id,
-        nome: `${item.descricao} - ${item.descricaoVenda}`.trim(),
+        nome: item.descricaoVenda ? `${item.descricao} - ${item.descricaoVenda}`.trim() : item.descricao,
         descricao: item.descricao,
-        descricaovenda: item.descricaoVenda
+        descricaovenda: item.descricaoVenda || ''
       }));
 
       return new Response(JSON.stringify({ items }), {
