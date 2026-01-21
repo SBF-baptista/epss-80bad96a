@@ -24,6 +24,9 @@ export interface HomologationKit {
   equipment: HomologationKitItem[];
   accessories: HomologationKitItem[];
   supplies: HomologationKitItem[];
+  segsale_product?: string | null;
+  segsale_module?: string | null;
+  segsale_accessory?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -36,6 +39,9 @@ export interface CreateKitRequest {
   equipment: Omit<HomologationKitItem, 'id'>[];
   accessories: Omit<HomologationKitItem, 'id'>[];
   supplies: Omit<HomologationKitItem, 'id'>[];
+  segsale_product?: string;
+  segsale_module?: string;
+  segsale_accessory?: string;
 }
 
 export interface UpdateKitRequest {

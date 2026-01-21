@@ -165,25 +165,19 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     try {
       setIsSaving(true);
 
-      // Build description with Segsale mirror info
-      let description = formData.description.trim();
+      // Get Segsale mirror data
       const { product, module, accessory } = formData.segsaleMirror;
-      if (product || module || accessory) {
-        const mirrorParts = [];
-        if (product) mirrorParts.push(`Produto: ${product}`);
-        if (module) mirrorParts.push(`Módulo: ${module}`);
-        if (accessory) mirrorParts.push(`Acessório: ${accessory}`);
-        const mirrorInfo = `[Espelho Segsale: ${mirrorParts.join(" | ")}]`;
-        description = description ? `${description}\n${mirrorInfo}` : mirrorInfo;
-      }
 
       const kitData: CreateKitRequest = {
         name: formData.name.trim(),
-        description: description || undefined,
+        description: formData.description.trim() || undefined,
         category: formData.category || undefined,
         equipment,
         accessories,
         supplies,
+        segsale_product: product || undefined,
+        segsale_module: module || undefined,
+        segsale_accessory: accessory || undefined,
       };
 
       await createHomologationKit(kitData);

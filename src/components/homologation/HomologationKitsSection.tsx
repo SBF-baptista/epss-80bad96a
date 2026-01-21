@@ -22,6 +22,7 @@ import {
   CheckCircle,
   Clock,
   FileUp,
+  Link2,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
@@ -656,6 +657,36 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 !kit.description.includes("Importado automaticamente de arquivo TXT") && (
                                   <p className="text-sm text-muted-foreground">{kit.description}</p>
                                 )}
+
+                              {/* Espelho Segsale Section */}
+                              {(kit.segsale_product || kit.segsale_module || kit.segsale_accessory) && (
+                                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Link2 className="h-4 w-4 text-primary" />
+                                    <span className="text-sm font-medium text-primary">Espelho Segsale</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                                    {kit.segsale_product && (
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground">Produto</span>
+                                        <span className="font-medium">{kit.segsale_product}</span>
+                                      </div>
+                                    )}
+                                    {kit.segsale_module && (
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground">Módulo</span>
+                                        <span className="font-medium">{kit.segsale_module}</span>
+                                      </div>
+                                    )}
+                                    {kit.segsale_accessory && (
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground">Acessório</span>
+                                        <span className="font-medium">{kit.segsale_accessory}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
                               {/* Homologation Status Details */}
                               {homologationStatus && !isHomologated && (
