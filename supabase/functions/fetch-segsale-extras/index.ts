@@ -26,20 +26,20 @@ serve(async (req) => {
 
   try {
     const { category, type } = await req.json();
-    
-    const apiToken = Deno.env.get('SEGSALE_ACCESSORIES_TOKEN');
-    if (!apiToken) {
-      throw new Error('SEGSALE_ACCESSORIES_TOKEN not configured');
-    }
 
     // Fetch products if type is 'products'
     if (type === 'products') {
-      console.log('Fetching Segsale products');
+      const productsToken = Deno.env.get('SEGSALE_PRODUTOSS');
+      if (!productsToken) {
+        throw new Error('SEGSALE_PRODUTOSS not configured');
+      }
+      
+      console.log('Fetching Segsale products with SEGSALE_PRODUTOSS token');
       
       const response = await fetch('https://ws-sale-teste.segsat.com/segsale/produto/6/itens', {
         method: 'GET',
         headers: {
-          'Token': apiToken,
+          'Token': productsToken,
           'Content-Type': 'application/json',
         },
       });
@@ -66,13 +66,18 @@ serve(async (req) => {
       });
     }
 
-    // Default: fetch extras (accessories/modules)
+    // Default: fetch extras (accessories/modules) - uses SEGSALE_ACCESSORIES_TOKEN
+    const accessoriesToken = Deno.env.get('SEGSALE_ACCESSORIES_TOKEN');
+    if (!accessoriesToken) {
+      throw new Error('SEGSALE_ACCESSORIES_TOKEN not configured');
+    }
+    
     console.log(`Fetching Segsale extras for category: ${category || 'all'}`);
 
     const response = await fetch('https://ws-sale-teste.segsat.com/segsale/produto/6/extras', {
       method: 'GET',
       headers: {
-        'Token': apiToken,
+        'Token': accessoriesToken,
         'Content-Type': 'application/json',
       },
     });
