@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus,
   Trash2,
@@ -21,19 +21,30 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  FileUp
-} from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { toast } from '@/hooks/use-toast';
-import { cleanItemName } from '@/utils/itemNormalization';
-import { HomologationKit, HomologationKitItem, ItemType, CreateKitRequest, UpdateKitRequest } from '@/types/homologationKit';
-import { fetchHomologationKits, createHomologationKit, updateHomologationKit, deleteHomologationKit } from '@/services/homologationKitService';
-import { SelectOrCreateInput } from '@/components/kit-items';
-import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
-import { supabase } from '@/integrations/supabase/client';
-import KitImportModal from './KitImportModal';
-import { KitCreationModal } from '@/components/configuration/KitCreationModal';
-import { KitEditRequestModal } from './KitEditRequestModal';
+  FileUp,
+} from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { toast } from "@/hooks/use-toast";
+import { cleanItemName } from "@/utils/itemNormalization";
+import {
+  HomologationKit,
+  HomologationKitItem,
+  ItemType,
+  CreateKitRequest,
+  UpdateKitRequest,
+} from "@/types/homologationKit";
+import {
+  fetchHomologationKits,
+  createHomologationKit,
+  updateHomologationKit,
+  deleteHomologationKit,
+} from "@/services/homologationKitService";
+import { SelectOrCreateInput } from "@/components/kit-items";
+import { checkMultipleKitsHomologation, type HomologationStatus } from "@/services/kitHomologationService";
+import { supabase } from "@/integrations/supabase/client";
+import KitImportModal from "./KitImportModal";
+import { KitCreationModal } from "@/components/configuration/KitCreationModal";
+import { KitEditRequestModal } from "./KitEditRequestModal";
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
@@ -48,8 +59,8 @@ interface KitFormData {
 }
 
 const initialFormData: KitFormData = {
-  name: '',
-  description: '',
+  name: "",
+  description: "",
   equipment: [],
   accessories: [],
   supplies: [],
@@ -63,7 +74,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [editingKitId, setEditingKitId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
   const [homologationStatuses, setHomologationStatuses] = useState<Map<string, HomologationStatus>>(new Map());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -85,21 +96,21 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   // Set up real-time subscription for kit_item_options changes
   useEffect(() => {
     const channel = supabase
-      .channel('kit-homologation-sync')
+      .channel("kit-homologation-sync")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'kit_item_options'
+          event: "*",
+          schema: "public",
+          table: "kit_item_options",
         },
         (payload) => {
-          console.log('Kit item option changed:', payload);
+          console.log("Kit item option changed:", payload);
           // Reload homologation statuses when kit_item_options changes
           if (kits.length > 0) {
             loadHomologationStatuses();
           }
-        }
+        },
       )
       .subscribe();
 
@@ -113,12 +124,13 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
     if (!searchTerm.trim()) {
       setFilteredKits(kits);
     } else {
-      const filtered = kits.filter(kit =>
-        kit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        kit.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        kit.equipment.some(item => item.item_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        kit.accessories.some(item => item.item_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        kit.supplies.some(item => item.item_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      const filtered = kits.filter(
+        (kit) =>
+          kit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          kit.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          kit.equipment.some((item) => item.item_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          kit.accessories.some((item) => item.item_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          kit.supplies.some((item) => item.item_name.toLowerCase().includes(searchTerm.toLowerCase())),
       );
       setFilteredKits(filtered);
     }
@@ -132,11 +144,11 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       const fetchedKits = await fetchHomologationKits(homologationCardId);
       setKits(fetchedKits);
     } catch (error) {
-      console.error('Error loading kits:', error);
+      console.error("Error loading kits:", error);
       toast({
         title: "Erro ao carregar kits",
         description: "Não foi possível carregar os kits.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -148,11 +160,11 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       const statuses = await checkMultipleKitsHomologation(kits);
       setHomologationStatuses(statuses);
     } catch (error) {
-      console.error('Error loading homologation statuses:', error);
+      console.error("Error loading homologation statuses:", error);
       toast({
         title: "Erro ao verificar homologações",
         description: "Não foi possível verificar o status de homologação dos kits.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -183,7 +195,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       };
 
       const newKit = await createHomologationKit(kitData);
-      setKits(prev => [newKit, ...prev]);
+      setKits((prev) => [newKit, ...prev]);
       // Reload homologation statuses for the updated list
       setTimeout(() => loadHomologationStatuses(), 100);
       setFormData(initialFormData);
@@ -194,11 +206,11 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
         description: homologationCardId ? "O kit foi adicionado à homologação." : "O kit foi criado com sucesso.",
       });
     } catch (error) {
-      console.error('Error creating kit:', error);
+      console.error("Error creating kit:", error);
       toast({
         title: "Erro ao criar kit",
         description: "Não foi possível criar o kit. Tente novamente.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -219,12 +231,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       };
 
       const updatedKit = await updateHomologationKit(editingKitId, updateData);
-      
-      setKits(prev =>
-        prev.map(kit =>
-          kit.id === editingKitId ? updatedKit : kit
-        )
-      );
+
+      setKits((prev) => prev.map((kit) => (kit.id === editingKitId ? updatedKit : kit)));
 
       // Reload homologation statuses for the updated list
       setTimeout(() => loadHomologationStatuses(), 100);
@@ -237,11 +245,11 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
         description: "As alterações foram salvas com sucesso.",
       });
     } catch (error) {
-      console.error('Error updating kit:', error);
+      console.error("Error updating kit:", error);
       toast({
         title: "Erro ao atualizar kit",
         description: "Não foi possível atualizar o kit. Tente novamente.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -251,9 +259,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const deleteKit = async (kitId: string) => {
     try {
       await deleteHomologationKit(kitId);
-      setKits(prev => prev.filter(kit => kit.id !== kitId));
+      setKits((prev) => prev.filter((kit) => kit.id !== kitId));
       // Remove from expanded set if it was expanded
-      setExpandedKits(prev => {
+      setExpandedKits((prev) => {
         const newSet = new Set(prev);
         newSet.delete(kitId);
         return newSet;
@@ -263,49 +271,47 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
         description: "O kit foi removido da homologação.",
       });
     } catch (error) {
-      console.error('Error deleting kit:', error);
+      console.error("Error deleting kit:", error);
       toast({
         title: "Erro ao remover kit",
         description: "Não foi possível remover o kit. Tente novamente.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
-
 
   // Item operations for each type
   const addItem = (type: ItemType) => {
     const newItem: HomologationKitItem = {
       id: Date.now().toString() + Math.random(),
-      item_name: '',
+      item_name: "",
       item_type: type,
       quantity: 1,
-      description: '',
-      notes: '',
+      description: "",
+      notes: "",
     };
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [type === 'equipment' ? 'equipment' : type === 'accessory' ? 'accessories' : 'supplies']: [
-        ...prev[type === 'equipment' ? 'equipment' : type === 'accessory' ? 'accessories' : 'supplies'],
+      [type === "equipment" ? "equipment" : type === "accessory" ? "accessories" : "supplies"]: [
+        ...prev[type === "equipment" ? "equipment" : type === "accessory" ? "accessories" : "supplies"],
         newItem,
       ],
     }));
   };
 
   const removeItem = (type: ItemType, index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [type === 'equipment' ? 'equipment' : type === 'accessory' ? 'accessories' : 'supplies']:
-        prev[type === 'equipment' ? 'equipment' : type === 'accessory' ? 'accessories' : 'supplies'].filter(
-          (_, i) => i !== index
-        ),
+      [type === "equipment" ? "equipment" : type === "accessory" ? "accessories" : "supplies"]: prev[
+        type === "equipment" ? "equipment" : type === "accessory" ? "accessories" : "supplies"
+      ].filter((_, i) => i !== index),
     }));
   };
 
   const updateItem = (type: ItemType, index: number, field: keyof HomologationKitItem, value: string | number) => {
-    setFormData(prev => {
-      const itemsKey = type === 'equipment' ? 'equipment' : type === 'accessory' ? 'accessories' : 'supplies';
+    setFormData((prev) => {
+      const itemsKey = type === "equipment" ? "equipment" : type === "accessory" ? "accessories" : "supplies";
       const items = [...prev[itemsKey]];
       items[index] = { ...items[index], [field]: value };
       return { ...prev, [itemsKey]: items };
@@ -325,12 +331,12 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast({
         title: "Nome obrigatório",
         description: "Por favor, informe o nome do kit.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -340,20 +346,20 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       toast({
         title: "Items obrigatórios",
         description: "Adicione pelo menos um equipamento, acessório ou insumo ao kit.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     // Check for empty item names in any category
     const allItems = [...formData.equipment, ...formData.accessories, ...formData.supplies];
-    const hasEmptyItem = allItems.some(item => !item.item_name.trim());
-    
+    const hasEmptyItem = allItems.some((item) => !item.item_name.trim());
+
     if (hasEmptyItem) {
       toast({
         title: "Items incompletos",
         description: "Todos os items devem ter um nome.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -367,29 +373,29 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
 
   const getTypeIcon = (type: ItemType) => {
     switch (type) {
-      case 'equipment':
+      case "equipment":
         return <Wrench className="h-4 w-4" />;
-      case 'accessory':
+      case "accessory":
         return <Box className="h-4 w-4" />;
-      case 'supply':
+      case "supply":
         return <Package className="h-4 w-4" />;
     }
   };
 
   const getTypeLabel = (type: ItemType) => {
     switch (type) {
-      case 'equipment':
-        return 'Equipamento';
-      case 'accessory':
-        return 'Acessório';
-      case 'supply':
-        return 'Insumo';
+      case "equipment":
+        return "Equipamento";
+      case "accessory":
+        return "Acessório";
+      case "supply":
+        return "Insumo";
     }
   };
 
   const renderItemSection = (type: ItemType, items: HomologationKitItem[]) => {
-    const sectionTitle = type === 'equipment' ? 'Equipamentos' : type === 'accessory' ? 'Acessórios' : 'Insumos';
-    
+    const sectionTitle = type === "equipment" ? "Equipamentos" : type === "accessory" ? "Acessórios" : "Insumos";
+
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -432,9 +438,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                 <Label className="text-xs">Nome *</Label>
                 <SelectOrCreateInput
                   value={item.item_name}
-                  onChange={(value) => updateItem(type, index, 'item_name', value)}
+                  onChange={(value) => updateItem(type, index, "item_name", value)}
                   itemType={type}
-                  placeholder={`Selecione ${type === 'equipment' ? 'equipamento' : type === 'accessory' ? 'acessório' : 'insumo'}...`}
+                  placeholder={`Selecione ${type === "equipment" ? "equipamento" : type === "accessory" ? "acessório" : "insumo"}...`}
                   className="w-full"
                 />
               </div>
@@ -444,15 +450,15 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                   type="number"
                   min="1"
                   value={item.quantity}
-                  onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
+                  onChange={(e) => updateItem(type, index, "quantity", parseInt(e.target.value) || 1)}
                   className="h-8"
                 />
               </div>
               <div>
                 <Label className="text-xs">Descrição</Label>
                 <Input
-                  value={item.description || ''}
-                  onChange={(e) => updateItem(type, index, 'description', e.target.value)}
+                  value={item.description || ""}
+                  onChange={(e) => updateItem(type, index, "description", e.target.value)}
                   placeholder="Descrição opcional"
                   className="h-8"
                 />
@@ -462,8 +468,8 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
             <div>
               <Label className="text-xs">Observações</Label>
               <Textarea
-                value={item.notes || ''}
-                onChange={(e) => updateItem(type, index, 'notes', e.target.value)}
+                value={item.notes || ""}
+                onChange={(e) => updateItem(type, index, "notes", e.target.value)}
                 placeholder="Observações opcionais"
                 className="min-h-[60px] resize-none"
               />
@@ -487,9 +493,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5" />
           Gerenciamento de Kits
-          <div className="text-sm text-muted-foreground font-normal">
-            Status de homologação e distribuição dos kits
-          </div>
+          <div className="text-sm text-muted-foreground font-normal"></div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -517,7 +521,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                   />
                 </div>
               )}
-              
+
               {/* Add Kit Button */}
               {!isCreating && (
                 <Button onClick={() => setIsKitModalOpen(true)} className="shrink-0">
@@ -532,43 +536,40 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
               <div className="space-y-3">
                 {filteredKits.map((kit) => {
                   const isExpanded = expandedKits.has(kit.id!);
-                  const primaryEquipment = kit.equipment[0]?.item_name || 'Nenhum equipamento';
+                  const primaryEquipment = kit.equipment[0]?.item_name || "Nenhum equipamento";
                   const homologationStatus = homologationStatuses.get(kit.id!);
                   const isHomologated = homologationStatus?.isHomologated ?? false;
-                  const pendingItemsCount = homologationStatus ? 
-                    (homologationStatus.pendingItems.equipment.length + 
-                     homologationStatus.pendingItems.accessories.length + 
-                     homologationStatus.pendingItems.supplies.length) : 0;
-                  
+                  const pendingItemsCount = homologationStatus
+                    ? homologationStatus.pendingItems.equipment.length +
+                      homologationStatus.pendingItems.accessories.length +
+                      homologationStatus.pendingItems.supplies.length
+                    : 0;
+
                   // Determinar categoria do kit - usa o campo category ou fallback para lógica de equipamentos
                   const getCategoryLabel = () => {
                     if (kit.category) {
                       const categoryMap: Record<string, string> = {
-                        'telemetria': 'Telemetria',
-                        'videomonitoramento': 'Videomonitoramento',
-                        'rastreamento': 'Rastreamento'
+                        telemetria: "Telemetria",
+                        videomonitoramento: "Videomonitoramento",
+                        rastreamento: "Rastreamento",
                       };
                       return categoryMap[kit.category] || null;
                     }
                     // Fallback para lógica antiga baseada em equipamentos
-                    const hasFMC150 = kit.equipment.some(e => {
+                    const hasFMC150 = kit.equipment.some((e) => {
                       const name = e.item_name.toLowerCase();
-                      return name.includes('fmc150') || name.includes('fmc 150');
+                      return name.includes("fmc150") || name.includes("fmc 150");
                     });
-                    const hasFMC130 = kit.equipment.some(e => {
+                    const hasFMC130 = kit.equipment.some((e) => {
                       const name = e.item_name.toLowerCase();
-                      return name.includes('fmc130') || name.includes('fmc 130');
+                      return name.includes("fmc130") || name.includes("fmc 130");
                     });
-                    return hasFMC150 ? 'Telemetria' : hasFMC130 ? 'Rastreamento' : null;
+                    return hasFMC150 ? "Telemetria" : hasFMC130 ? "Rastreamento" : null;
                   };
                   const kitCategory = getCategoryLabel();
-                  
+
                   return (
-                    <Collapsible
-                      key={kit.id}
-                      open={isExpanded}
-                      onOpenChange={() => toggleKitExpansion(kit.id!)}
-                    >
+                    <Collapsible key={kit.id} open={isExpanded} onOpenChange={() => toggleKitExpansion(kit.id!)}>
                       <Card className="overflow-hidden">
                         <CollapsibleTrigger asChild>
                           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
@@ -583,12 +584,12 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                   <CardTitle className="text-lg">{kit.name}</CardTitle>
                                   {/* Kit Category Badge */}
                                   {kitCategory && (
-                                    <Badge 
+                                    <Badge
                                       variant="outline"
                                       className={
-                                        kitCategory === 'Telemetria' 
-                                          ? "bg-blue-50 text-blue-700 border-blue-200" 
-                                          : kitCategory === 'Videomonitoramento'
+                                        kitCategory === "Telemetria"
+                                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                                          : kitCategory === "Videomonitoramento"
                                             ? "bg-purple-50 text-purple-700 border-purple-200"
                                             : "bg-orange-50 text-orange-700 border-orange-200"
                                       }
@@ -597,12 +598,12 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     </Badge>
                                   )}
                                   {/* Homologation Status Badge */}
-                                   {homologationStatus && (
-                                    <Badge 
-                                      variant={isHomologated ? "default" : "destructive"} 
+                                  {homologationStatus && (
+                                    <Badge
+                                      variant={isHomologated ? "default" : "destructive"}
                                       className={`flex items-center gap-1 ${
-                                        isHomologated 
-                                          ? "bg-success-light text-success border-success-border" 
+                                        isHomologated
+                                          ? "bg-success-light text-success border-success-border"
                                           : "bg-warning-light text-warning border-warning-border"
                                       }`}
                                     >
@@ -622,12 +623,10 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 </div>
                                 <div className="flex items-center gap-2 mt-2">
                                   <Wrench className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm text-muted-foreground">
-                                    {primaryEquipment}
-                                  </span>
+                                  <span className="text-sm text-muted-foreground">{primaryEquipment}</span>
                                 </div>
                               </div>
-                              
+
                               <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                                 <Button
                                   variant="ghost"
@@ -649,15 +648,14 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                             </div>
                           </CardHeader>
                         </CollapsibleTrigger>
-                        
+
                         <CollapsibleContent>
                           <CardContent className="pt-0">
                             <div className="space-y-4">
-                              {kit.description && !kit.description.includes('Importado automaticamente de arquivo TXT') && (
-                                <p className="text-sm text-muted-foreground">
-                                  {kit.description}
-                                </p>
-                              )}
+                              {kit.description &&
+                                !kit.description.includes("Importado automaticamente de arquivo TXT") && (
+                                  <p className="text-sm text-muted-foreground">{kit.description}</p>
+                                )}
 
                               {/* Homologation Status Details */}
                               {homologationStatus && !isHomologated && (
@@ -672,13 +670,28 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                   </div>
                                   <div className="text-xs text-warning space-y-1">
                                     {homologationStatus.pendingItems.equipment.length > 0 && (
-                                      <p>• {homologationStatus.pendingItems.equipment.length} equipamento(s): {homologationStatus.pendingItems.equipment.map(item => cleanItemName(item.item_name)).join(', ')}</p>
+                                      <p>
+                                        • {homologationStatus.pendingItems.equipment.length} equipamento(s):{" "}
+                                        {homologationStatus.pendingItems.equipment
+                                          .map((item) => cleanItemName(item.item_name))
+                                          .join(", ")}
+                                      </p>
                                     )}
                                     {homologationStatus.pendingItems.accessories.length > 0 && (
-                                      <p>• {homologationStatus.pendingItems.accessories.length} acessório(s): {homologationStatus.pendingItems.accessories.map(item => cleanItemName(item.item_name)).join(', ')}</p>
+                                      <p>
+                                        • {homologationStatus.pendingItems.accessories.length} acessório(s):{" "}
+                                        {homologationStatus.pendingItems.accessories
+                                          .map((item) => cleanItemName(item.item_name))
+                                          .join(", ")}
+                                      </p>
                                     )}
                                     {homologationStatus.pendingItems.supplies.length > 0 && (
-                                      <p>• {homologationStatus.pendingItems.supplies.length} insumo(s): {homologationStatus.pendingItems.supplies.map(item => cleanItemName(item.item_name)).join(', ')}</p>
+                                      <p>
+                                        • {homologationStatus.pendingItems.supplies.length} insumo(s):{" "}
+                                        {homologationStatus.pendingItems.supplies
+                                          .map((item) => cleanItemName(item.item_name))
+                                          .join(", ")}
+                                      </p>
                                     )}
                                   </div>
                                   <p className="text-xs text-warning mt-2 font-medium">
@@ -691,9 +704,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 <div className="bg-success-light border border-success-border rounded-lg p-3">
                                   <div className="flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-success" />
-                                    <span className="text-sm font-medium text-success">
-                                      Kit Totalmente Homologado
-                                    </span>
+                                    <span className="text-sm font-medium text-success">Kit Totalmente Homologado</span>
                                   </div>
                                   <p className="text-xs text-success mt-1">
                                     Todos os itens foram homologados. O kit está pronto para distribuição aos técnicos.
@@ -705,23 +716,26 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <Wrench className="h-4 w-4" />
-                                    <span className="text-sm font-medium">
-                                      Equipamentos ({kit.equipment.length})
-                                    </span>
+                                    <span className="text-sm font-medium">Equipamentos ({kit.equipment.length})</span>
                                   </div>
                                   <div className="pl-6 space-y-1">
                                     {kit.equipment.map((item, index) => {
-                                      const isItemHomologated = homologationStatus?.homologatedItems.equipment.some(hItem => hItem.item_name === item.item_name);
+                                      const isItemHomologated = homologationStatus?.homologatedItems.equipment.some(
+                                        (hItem) => hItem.item_name === item.item_name,
+                                      );
                                       return (
-                                        <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
+                                        <div
+                                          key={index}
+                                          className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm"
+                                        >
                                           <div className="flex items-center gap-2">
                                             <span>{item.item_name}</span>
                                             {homologationStatus && (
-                                              <Badge 
-                                                variant={isItemHomologated ? "default" : "secondary"} 
+                                              <Badge
+                                                variant={isItemHomologated ? "default" : "secondary"}
                                                 className={`text-xs ${
-                                                  isItemHomologated 
-                                                    ? "bg-success-light text-success" 
+                                                  isItemHomologated
+                                                    ? "bg-success-light text-success"
                                                     : "bg-warning-light text-warning"
                                                 }`}
                                               >
@@ -754,23 +768,26 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <Box className="h-4 w-4" />
-                                    <span className="text-sm font-medium">
-                                      Acessórios ({kit.accessories.length})
-                                    </span>
+                                    <span className="text-sm font-medium">Acessórios ({kit.accessories.length})</span>
                                   </div>
                                   <div className="pl-6 space-y-1">
                                     {kit.accessories.map((item, index) => {
-                                      const isItemHomologated = homologationStatus?.homologatedItems.accessories.some(hItem => hItem.item_name === item.item_name);
+                                      const isItemHomologated = homologationStatus?.homologatedItems.accessories.some(
+                                        (hItem) => hItem.item_name === item.item_name,
+                                      );
                                       return (
-                                        <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
+                                        <div
+                                          key={index}
+                                          className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm"
+                                        >
                                           <div className="flex items-center gap-2">
                                             <span>{item.item_name}</span>
                                             {homologationStatus && (
-                                              <Badge 
-                                                variant={isItemHomologated ? "default" : "secondary"} 
+                                              <Badge
+                                                variant={isItemHomologated ? "default" : "secondary"}
                                                 className={`text-xs ${
-                                                  isItemHomologated 
-                                                    ? "bg-success-light text-success" 
+                                                  isItemHomologated
+                                                    ? "bg-success-light text-success"
                                                     : "bg-warning-light text-warning"
                                                 }`}
                                               >
@@ -803,23 +820,26 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <Package className="h-4 w-4" />
-                                    <span className="text-sm font-medium">
-                                      Insumos ({kit.supplies.length})
-                                    </span>
+                                    <span className="text-sm font-medium">Insumos ({kit.supplies.length})</span>
                                   </div>
                                   <div className="pl-6 space-y-1">
                                     {kit.supplies.map((item, index) => {
-                                      const isItemHomologated = homologationStatus?.homologatedItems.supplies.some(hItem => hItem.item_name === item.item_name);
+                                      const isItemHomologated = homologationStatus?.homologatedItems.supplies.some(
+                                        (hItem) => hItem.item_name === item.item_name,
+                                      );
                                       return (
-                                        <div key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm">
+                                        <div
+                                          key={index}
+                                          className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm"
+                                        >
                                           <div className="flex items-center gap-2">
                                             <span>{item.item_name}</span>
                                             {homologationStatus && (
-                                              <Badge 
-                                                variant={isItemHomologated ? "default" : "secondary"} 
+                                              <Badge
+                                                variant={isItemHomologated ? "default" : "secondary"}
                                                 className={`text-xs ${
-                                                  isItemHomologated 
-                                                    ? "bg-success-light text-success" 
+                                                  isItemHomologated
+                                                    ? "bg-success-light text-success"
                                                     : "bg-warning-light text-warning"
                                                 }`}
                                               >
@@ -862,10 +882,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                 <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Nenhum kit na biblioteca</h3>
                 <p className="text-muted-foreground">
-                  {homologationCardId 
+                  {homologationCardId
                     ? 'Use o botão "Novo Kit" para criar kits organizados com equipamentos, acessórios e insumos'
-                    : 'A biblioteca de kits está vazia. Use o botão "Novo Kit" para começar'
-                  }
+                    : 'A biblioteca de kits está vazia. Use o botão "Novo Kit" para começar'}
                 </p>
               </div>
             )}
@@ -875,9 +894,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
               <div className="text-center py-8">
                 <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Nenhum kit encontrado</h3>
-                <p className="text-muted-foreground">
-                  Tente ajustar os termos de busca
-                </p>
+                <p className="text-muted-foreground">Tente ajustar os termos de busca</p>
               </div>
             )}
 
@@ -885,9 +902,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
             {isCreating && (
               <Card>
                 <CardHeader>
-                  <CardTitle>
-                    {editingKitId ? 'Editar Kit' : 'Novo Kit'}
-                  </CardTitle>
+                  <CardTitle>{editingKitId ? "Editar Kit" : "Novo Kit"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
@@ -897,7 +912,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                         <Input
                           id="kitName"
                           value={formData.name}
-                          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                           placeholder="Nome do kit"
                           required
                         />
@@ -907,7 +922,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                         <Input
                           id="kitDescription"
                           value={formData.description}
-                          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                           placeholder="Descrição opcional"
                         />
                       </div>
@@ -915,29 +930,20 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
 
                     <ScrollArea className="h-96 pr-4">
                       <div className="space-y-6">
-                        {renderItemSection('equipment', formData.equipment)}
+                        {renderItemSection("equipment", formData.equipment)}
                         <Separator />
-                        {renderItemSection('accessory', formData.accessories)}
+                        {renderItemSection("accessory", formData.accessories)}
                         <Separator />
-                        {renderItemSection('supply', formData.supplies)}
+                        {renderItemSection("supply", formData.supplies)}
                       </div>
                     </ScrollArea>
 
                     <div className="flex gap-2">
-                      <Button 
-                        type="submit" 
-                        className="flex-1"
-                        disabled={isSaving}
-                      >
+                      <Button type="submit" className="flex-1" disabled={isSaving}>
                         {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        {editingKitId ? 'Salvar Alterações' : 'Criar Kit'}
+                        {editingKitId ? "Salvar Alterações" : "Criar Kit"}
                       </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={cancelEdit}
-                        disabled={isSaving}
-                      >
+                      <Button type="button" variant="outline" onClick={cancelEdit} disabled={isSaving}>
                         Cancelar
                       </Button>
                     </div>
@@ -968,11 +974,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       />
 
       {/* Kit Edit Request Modal */}
-      <KitEditRequestModal
-        open={!!editRequestKit}
-        onClose={() => setEditRequestKit(null)}
-        kit={editRequestKit}
-      />
+      <KitEditRequestModal open={!!editRequestKit} onClose={() => setEditRequestKit(null)} kit={editRequestKit} />
     </Card>
   );
 };
