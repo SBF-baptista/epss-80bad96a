@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Package, Wrench, Box, AlertTriangle, Cpu, Loader2, Link2 } from 'lucide-react';
-import { createHomologationKit, type CreateKitRequest, type HomologationKitItem } from '@/services/homologationKitService';
-import { SelectOrCreateInput } from '@/components/kit-items';
-import { checkItemHomologation } from '@/services/kitHomologationService';
-import { useSegsaleExtras } from '@/hooks/useSegsaleExtras';
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Minus, Package, Wrench, Box, AlertTriangle, Cpu, Loader2, Link2 } from "lucide-react";
+import {
+  createHomologationKit,
+  type CreateKitRequest,
+  type HomologationKitItem,
+} from "@/services/homologationKitService";
+import { SelectOrCreateInput } from "@/components/kit-items";
+import { checkItemHomologation } from "@/services/kitHomologationService";
+import { useSegsaleExtras } from "@/hooks/useSegsaleExtras";
 
 interface KitCreationModalProps {
   isOpen: boolean;
@@ -28,28 +32,28 @@ interface KitFormData {
   name: string;
   description: string;
   category: string;
-  equipment: Omit<HomologationKitItem, 'id'>[];
-  accessories: Omit<HomologationKitItem, 'id'>[];
-  modules: Omit<HomologationKitItem, 'id'>[];
-  supplies: Omit<HomologationKitItem, 'id'>[];
+  equipment: Omit<HomologationKitItem, "id">[];
+  accessories: Omit<HomologationKitItem, "id">[];
+  modules: Omit<HomologationKitItem, "id">[];
+  supplies: Omit<HomologationKitItem, "id">[];
   segsaleMirror: SegsaleMirror;
 }
 
 const KIT_CATEGORIES = [
-  { value: 'telemetria', label: 'Telemetria' },
-  { value: 'videomonitoramento', label: 'Videomonitoramento' },
-  { value: 'rastreamento', label: 'Rastreamento' }
+  { value: "telemetria", label: "Telemetria" },
+  { value: "videomonitoramento", label: "Videomonitoramento" },
+  { value: "rastreamento", label: "Rastreamento" },
 ];
 
 const initialFormData: KitFormData = {
-  name: '',
-  description: '',
-  category: '',
-  equipment: [{ item_name: '', item_type: 'equipment', quantity: 1, description: '', notes: '' }],
-  accessories: [{ item_name: '', item_type: 'accessory', quantity: 1, description: '', notes: '' }],
-  modules: [{ item_name: '', item_type: 'accessory', quantity: 1, description: '', notes: '' }],
-  supplies: [{ item_name: '', item_type: 'supply', quantity: 1, description: '', notes: '' }],
-  segsaleMirror: { product: '', module: '', accessory: '' }
+  name: "",
+  description: "",
+  category: "",
+  equipment: [{ item_name: "", item_type: "equipment", quantity: 1, description: "", notes: "" }],
+  accessories: [{ item_name: "", item_type: "accessory", quantity: 1, description: "", notes: "" }],
+  modules: [{ item_name: "", item_type: "accessory", quantity: 1, description: "", notes: "" }],
+  supplies: [{ item_name: "", item_type: "supply", quantity: 1, description: "", notes: "" }],
+  segsaleMirror: { product: "", module: "", accessory: "" },
 };
 
 export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModalProps) => {
@@ -57,54 +61,66 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
   const [nonHomologatedItems, setNonHomologatedItems] = useState<Set<string>>(new Set());
-  const { accessories: segsaleAccessories, modules: segsaleModules, products: segsaleProducts, loading: segsaleLoading } = useSegsaleExtras();
+  const {
+    accessories: segsaleAccessories,
+    modules: segsaleModules,
+    products: segsaleProducts,
+    loading: segsaleLoading,
+  } = useSegsaleExtras();
 
-  const addItem = (type: 'equipment' | 'accessories' | 'modules' | 'supplies') => {
-    const itemType = type === 'equipment' ? 'equipment' : type === 'supplies' ? 'supply' : 'accessory';
-    const newItem = { 
-      item_name: '', 
+  const addItem = (type: "equipment" | "accessories" | "modules" | "supplies") => {
+    const itemType = type === "equipment" ? "equipment" : type === "supplies" ? "supply" : "accessory";
+    const newItem = {
+      item_name: "",
       item_type: itemType,
-      quantity: 1, 
-      description: '', 
-      notes: '' 
+      quantity: 1,
+      description: "",
+      notes: "",
     };
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [type]: [...prev[type], newItem]
+      [type]: [...prev[type], newItem],
     }));
   };
 
-  const removeItem = (type: 'equipment' | 'accessories' | 'modules' | 'supplies', index: number) => {
-    setFormData(prev => ({
+  const removeItem = (type: "equipment" | "accessories" | "modules" | "supplies", index: number) => {
+    setFormData((prev) => ({
       ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
+      [type]: prev[type].filter((_, i) => i !== index),
     }));
   };
 
-  const updateItem = (type: 'equipment' | 'accessories' | 'modules' | 'supplies', index: number, field: string, value: string | number) => {
-    setFormData(prev => ({
+  const updateItem = (
+    type: "equipment" | "accessories" | "modules" | "supplies",
+    index: number,
+    field: string,
+    value: string | number,
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [type]: prev[type].map((item, i) => 
-        i === index ? { ...item, [field]: value } : item
-      )
+      [type]: prev[type].map((item, i) => (i === index ? { ...item, [field]: value } : item)),
     }));
   };
 
   const updateSegsaleMirror = (field: keyof SegsaleMirror, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      segsaleMirror: { ...prev.segsaleMirror, [field]: value }
+      segsaleMirror: { ...prev.segsaleMirror, [field]: value },
     }));
   };
 
-  const handleItemNameChange = async (type: 'equipment' | 'accessories' | 'modules' | 'supplies', index: number, itemName: string) => {
-    updateItem(type, index, 'item_name', itemName);
-    
-    if (itemName.trim() && type === 'equipment') {
-      const isHomologated = await checkItemHomologation(itemName.trim(), 'equipment');
+  const handleItemNameChange = async (
+    type: "equipment" | "accessories" | "modules" | "supplies",
+    index: number,
+    itemName: string,
+  ) => {
+    updateItem(type, index, "item_name", itemName);
+
+    if (itemName.trim() && type === "equipment") {
+      const isHomologated = await checkItemHomologation(itemName.trim(), "equipment");
       const itemKey = `${type}-${index}`;
-      
-      setNonHomologatedItems(prev => {
+
+      setNonHomologatedItems((prev) => {
         const newSet = new Set(prev);
         if (!isHomologated) {
           newSet.add(itemKey);
@@ -123,32 +139,32 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       toast({
         title: "Erro de validação",
         description: "Nome do kit é obrigatório",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     // Filter out empty items
-    const equipment = formData.equipment.filter(item => item.item_name.trim() !== '');
+    const equipment = formData.equipment.filter((item) => item.item_name.trim() !== "");
     // Combine accessories and modules as they are both 'accessory' type
     const accessories = [
-      ...formData.accessories.filter(item => item.item_name.trim() !== ''),
-      ...formData.modules.filter(item => item.item_name.trim() !== '')
+      ...formData.accessories.filter((item) => item.item_name.trim() !== ""),
+      ...formData.modules.filter((item) => item.item_name.trim() !== ""),
     ];
-    const supplies = formData.supplies.filter(item => item.item_name.trim() !== '');
+    const supplies = formData.supplies.filter((item) => item.item_name.trim() !== "");
 
     if (equipment.length === 0 && accessories.length === 0 && supplies.length === 0) {
       toast({
         title: "Erro de validação",
         description: "Adicione pelo menos um item ao kit",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     try {
       setIsSaving(true);
-      
+
       // Build description with Segsale mirror info
       let description = formData.description.trim();
       const { product, module, accessory } = formData.segsaleMirror;
@@ -157,7 +173,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         if (product) mirrorParts.push(`Produto: ${product}`);
         if (module) mirrorParts.push(`Módulo: ${module}`);
         if (accessory) mirrorParts.push(`Acessório: ${accessory}`);
-        const mirrorInfo = `[Espelho Segsale: ${mirrorParts.join(' | ')}]`;
+        const mirrorInfo = `[Espelho Segsale: ${mirrorParts.join(" | ")}]`;
         description = description ? `${description}\n${mirrorInfo}` : mirrorInfo;
       }
 
@@ -167,14 +183,14 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         category: formData.category || undefined,
         equipment,
         accessories,
-        supplies
+        supplies,
       };
 
       await createHomologationKit(kitData);
-      
+
       toast({
         title: "Kit criado",
-        description: `Kit "${formData.name}" foi criado com sucesso!`
+        description: `Kit "${formData.name}" foi criado com sucesso!`,
       });
 
       // Reset form and close
@@ -182,11 +198,11 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error creating kit:', error);
+      console.error("Error creating kit:", error);
       toast({
         title: "Erro",
         description: "Erro ao criar o kit. Tente novamente.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -200,15 +216,13 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         <Label className="text-base font-medium">Espelho Segsale</Label>
         {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Vincule este kit aos produtos do Segsale para referência e rastreabilidade.
-      </p>
+      <p className="text-xs text-muted-foreground"></p>
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Produto</Label>
           <Select
             value={formData.segsaleMirror.product}
-            onValueChange={(value) => updateSegsaleMirror('product', value)}
+            onValueChange={(value) => updateSegsaleMirror("product", value)}
           >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione produto" />
@@ -224,10 +238,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Módulo</Label>
-          <Select
-            value={formData.segsaleMirror.module}
-            onValueChange={(value) => updateSegsaleMirror('module', value)}
-          >
+          <Select value={formData.segsaleMirror.module} onValueChange={(value) => updateSegsaleMirror("module", value)}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione módulo" />
             </SelectTrigger>
@@ -244,7 +255,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
           <Label className="text-xs text-muted-foreground">Acessório</Label>
           <Select
             value={formData.segsaleMirror.accessory}
-            onValueChange={(value) => updateSegsaleMirror('accessory', value)}
+            onValueChange={(value) => updateSegsaleMirror("accessory", value)}
           >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione acessório" />
@@ -269,12 +280,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
           <Wrench className="w-4 h-4" />
           Equipamentos
         </Label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addItem('equipment')}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => addItem("equipment")}>
           <Plus className="w-3 h-3 mr-1" />
           Adicionar
         </Button>
@@ -284,13 +290,16 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         {formData.equipment.map((item, index) => {
           const itemKey = `equipment-${index}`;
           const isNonHomologated = nonHomologatedItems.has(itemKey);
-          
+
           return (
-            <div key={index} className={`grid grid-cols-12 gap-2 items-end p-2 border rounded-md ${isNonHomologated ? 'border-orange-300 bg-orange-50' : ''}`}>
+            <div
+              key={index}
+              className={`grid grid-cols-12 gap-2 items-end p-2 border rounded-md ${isNonHomologated ? "border-orange-300 bg-orange-50" : ""}`}
+            >
               <div className="col-span-4 relative">
                 <SelectOrCreateInput
                   value={item.item_name}
-                  onChange={(value) => handleItemNameChange('equipment', index, value)}
+                  onChange={(value) => handleItemNameChange("equipment", index, value)}
                   itemType="equipment"
                   placeholder="Nome do equipamento"
                   className="h-8"
@@ -308,15 +317,15 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   placeholder="Qtd"
                   min="1"
                   value={item.quantity}
-                  onChange={(e) => updateItem('equipment', index, 'quantity', parseInt(e.target.value) || 1)}
+                  onChange={(e) => updateItem("equipment", index, "quantity", parseInt(e.target.value) || 1)}
                   className="h-8"
                 />
               </div>
               <div className="col-span-5">
                 <Input
                   placeholder="Descrição (opcional)"
-                  value={item.description || ''}
-                  onChange={(e) => updateItem('equipment', index, 'description', e.target.value)}
+                  value={item.description || ""}
+                  onChange={(e) => updateItem("equipment", index, "description", e.target.value)}
                   className="h-8"
                 />
               </div>
@@ -325,7 +334,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => removeItem('equipment', index)}
+                  onClick={() => removeItem("equipment", index)}
                   className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                 >
                   <Minus className="w-3 h-3" />
@@ -345,10 +354,10 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
 
   const renderSegsaleDropdownSection = (
     title: string,
-    type: 'accessories' | 'modules',
+    type: "accessories" | "modules",
     icon: React.ReactNode,
-    items: Omit<HomologationKitItem, 'id'>[],
-    segsaleOptions: { id: number; nome: string }[]
+    items: Omit<HomologationKitItem, "id">[],
+    segsaleOptions: { id: number; nome: string }[],
   ) => (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -357,12 +366,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
           {title}
           {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
         </Label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addItem(type)}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => addItem(type)}>
           <Plus className="w-3 h-3 mr-1" />
           Adicionar
         </Button>
@@ -372,12 +376,9 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         {items.map((item, index) => (
           <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
             <div className="col-span-4">
-              <Select
-                value={item.item_name}
-                onValueChange={(value) => handleItemNameChange(type, index, value)}
-              >
+              <Select value={item.item_name} onValueChange={(value) => handleItemNameChange(type, index, value)}>
                 <SelectTrigger className="h-8">
-                  <SelectValue placeholder={`Selecione ${type === 'accessories' ? 'acessório' : 'módulo'}`} />
+                  <SelectValue placeholder={`Selecione ${type === "accessories" ? "acessório" : "módulo"}`} />
                 </SelectTrigger>
                 <SelectContent>
                   {segsaleOptions.map((option) => (
@@ -394,15 +395,15 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 placeholder="Qtd"
                 min="1"
                 value={item.quantity}
-                onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
+                onChange={(e) => updateItem(type, index, "quantity", parseInt(e.target.value) || 1)}
                 className="h-8"
               />
             </div>
             <div className="col-span-5">
               <Input
                 placeholder="Descrição (opcional)"
-                value={item.description || ''}
-                onChange={(e) => updateItem(type, index, 'description', e.target.value)}
+                value={item.description || ""}
+                onChange={(e) => updateItem(type, index, "description", e.target.value)}
                 className="h-8"
               />
             </div>
@@ -430,12 +431,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
           <Box className="w-4 h-4" />
           Insumos
         </Label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addItem('supplies')}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => addItem("supplies")}>
           <Plus className="w-3 h-3 mr-1" />
           Adicionar
         </Button>
@@ -447,7 +443,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
             <div className="col-span-4">
               <SelectOrCreateInput
                 value={item.item_name}
-                onChange={(value) => handleItemNameChange('supplies', index, value)}
+                onChange={(value) => handleItemNameChange("supplies", index, value)}
                 itemType="supply"
                 placeholder="Nome do insumo"
                 className="h-8"
@@ -460,15 +456,15 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 placeholder="Qtd"
                 min="1"
                 value={item.quantity}
-                onChange={(e) => updateItem('supplies', index, 'quantity', parseInt(e.target.value) || 1)}
+                onChange={(e) => updateItem("supplies", index, "quantity", parseInt(e.target.value) || 1)}
                 className="h-8"
               />
             </div>
             <div className="col-span-5">
               <Input
                 placeholder="Descrição (opcional)"
-                value={item.description || ''}
-                onChange={(e) => updateItem('supplies', index, 'description', e.target.value)}
+                value={item.description || ""}
+                onChange={(e) => updateItem("supplies", index, "description", e.target.value)}
                 className="h-8"
               />
             </div>
@@ -477,7 +473,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeItem('supplies', index)}
+                onClick={() => removeItem("supplies", index)}
                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
               >
                 <Minus className="w-3 h-3" />
@@ -508,7 +504,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="Ex: Kit Básico Ruptela Smart5"
                   required
                 />
@@ -518,7 +514,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Descreva o kit e seu uso..."
                   rows={3}
                 />
@@ -527,7 +523,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 <Label htmlFor="category">Tipo do Kit</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
@@ -548,8 +544,20 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
 
             {/* Items Sections */}
             {renderEquipmentSection()}
-            {renderSegsaleDropdownSection('Acessórios', 'accessories', <Package className="w-4 h-4" />, formData.accessories, segsaleAccessories)}
-            {renderSegsaleDropdownSection('Módulos', 'modules', <Cpu className="w-4 h-4" />, formData.modules, segsaleModules)}
+            {renderSegsaleDropdownSection(
+              "Acessórios",
+              "accessories",
+              <Package className="w-4 h-4" />,
+              formData.accessories,
+              segsaleAccessories,
+            )}
+            {renderSegsaleDropdownSection(
+              "Módulos",
+              "modules",
+              <Cpu className="w-4 h-4" />,
+              formData.modules,
+              segsaleModules,
+            )}
             {renderSuppliesSection()}
           </div>
 
@@ -559,7 +567,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
               Cancelar
             </Button>
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Criando...' : 'Criar Kit'}
+              {isSaving ? "Criando..." : "Criar Kit"}
             </Button>
           </div>
         </form>
