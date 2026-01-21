@@ -15,7 +15,7 @@ interface SegsaleExtra {
 interface SegsaleProduct {
   id: number;
   descricao: string;
-  descricaovenda: string;
+  descricaoVenda: string;
 }
 
 serve(async (req) => {
@@ -52,13 +52,16 @@ serve(async (req) => {
 
       const data: SegsaleProduct[] = await response.json();
       console.log(`Received ${data.length} products from Segsale`);
+      if (data.length > 0) {
+        console.log('Sample product from API:', JSON.stringify(data[0]));
+      }
 
-      // Format products as "descricao - descricaovenda"
+      // Format products as "descricao - descricaoVenda"
       const items = data.map(item => ({
         id: item.id,
-        nome: `${item.descricao} - ${item.descricaovenda}`.trim(),
+        nome: `${item.descricao} - ${item.descricaoVenda}`.trim(),
         descricao: item.descricao,
-        descricaovenda: item.descricaovenda
+        descricaovenda: item.descricaoVenda
       }));
 
       return new Response(JSON.stringify({ items }), {
