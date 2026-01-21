@@ -47,6 +47,9 @@ export async function fetchHomologationKits(cardId?: string): Promise<Homologati
       
       return {
         ...kit,
+        segsale_product: kit.segsale_product || null,
+        segsale_module: kit.segsale_module || null,
+        segsale_accessory: kit.segsale_accessory || null,
         equipment: kitItems.filter(item => item.item_type === 'equipment').map(item => ({
           id: item.id,
           item_name: item.item_name,
@@ -92,6 +95,9 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
         name: kitData.name,
         description: kitData.description,
         category: kitData.category,
+        segsale_product: kitData.segsale_product || null,
+        segsale_module: kitData.segsale_module || null,
+        segsale_accessory: kitData.segsale_accessory || null,
       })
       .select()
       .single();
