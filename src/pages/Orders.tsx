@@ -140,12 +140,12 @@ const Orders = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter || "all"} onValueChange={(val) => setStatusFilter(val === "all" ? "" : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todos os status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="all">Todos os status</SelectItem>
                     <SelectItem value="novos">Novos Pedidos</SelectItem>
                     <SelectItem value="producao">Em Produção</SelectItem>
                     <SelectItem value="aguardando">Aguardando Envio</SelectItem>
@@ -156,12 +156,12 @@ const Orders = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="config">Configuração</Label>
-                <Select value={configFilter} onValueChange={setConfigFilter}>
+                <Select value={configFilter || "all"} onValueChange={(val) => setConfigFilter(val === "all" ? "" : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todas as configurações" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as configurações</SelectItem>
+                    <SelectItem value="all">Todas as configurações</SelectItem>
                     <SelectItem value="HCV">HCV (Heavy Commercial Vehicle)</SelectItem>
                     <SelectItem value="LCV">LCV (Light Commercial Vehicle)</SelectItem>
                   </SelectContent>
