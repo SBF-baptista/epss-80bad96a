@@ -225,9 +225,21 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   };
 
   const handleDragStart = (order: Order) => {
-    // Find only the specific schedule being dragged (each vehicle is independent)
-    const schedule = schedules.find(s => s.id === order.id);
-    setDraggedSchedules(schedule ? [schedule] : []);
+    // Find ALL schedules for the same company_name to move them together
+    const companyName = order.company_name?.trim().toUpperCase();
+    if (!companyName) {
+      const schedule = schedules.find(s => s.id === order.id);
+      setDraggedSchedules(schedule ? [schedule] : []);
+      return;
+    }
+    
+    // Get all schedules with the same company name and status
+    const allCompanySchedules = schedules.filter(s => {
+      const scheduleCompany = s.customer_name?.trim().toUpperCase();
+      return scheduleCompany === companyName && s.status === order.status.replace('novos', 'scheduled').replace('producao', 'in_progress').replace('aguardando', 'completed').replace('enviado', 'shipped');
+    });
+    
+    setDraggedSchedules(allCompanySchedules.length > 0 ? allCompanySchedules : []);
   };
 
   const handleDragOver = (e: React.DragEvent) => {

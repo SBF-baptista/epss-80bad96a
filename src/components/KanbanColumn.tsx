@@ -49,7 +49,7 @@ const KanbanColumn = ({
   };
 
   const handleGroupDragStart = (groupedOrder: GroupedOrder) => {
-    // For drag operations, use the first order in the group
+    // For drag operations, pass the first order - KanbanBoard will find all orders for same company
     onDragStart(groupedOrder.orders[0]);
   };
 
