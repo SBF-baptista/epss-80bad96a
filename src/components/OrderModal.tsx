@@ -87,7 +87,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
     handleScanItem,
     handleStartProduction,
     handleCompleteProduction,
-  } = useProductionItems(order, isOpen, undefined, handleStatusChange);
+  } = useProductionItems(order, isOpen, undefined, handleStatusChange, order?.company_name);
 
   const onScanItemClick = async () => {
     const success = await handleScanItem(imei, productionLineCode);
