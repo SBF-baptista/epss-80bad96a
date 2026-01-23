@@ -94,9 +94,9 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
     // IMPORTANTE: Módulos não precisam de homologação
     const accessories = kit.accessories || [];
     accessories.forEach(item => {
-      // Ignorar módulos - eles não passam por homologação
+      // Ignorar módulos - eles não passam por homologação (por nome ou por item_type)
       const normalizedName = normalizeItemName(item.item_name);
-      const isModule = normalizedName.includes('modulo');
+      const isModule = normalizedName.includes('modulo') || item.item_type === 'module';
       if (isModule) {
         // Módulos são automaticamente considerados OK
         homologatedKitItems.accessories.push(item);
@@ -109,6 +109,13 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
       } else {
         pendingItems.accessories.push(item);
       }
+    });
+
+    // Processar módulos separados - eles nunca precisam de homologação
+    const modules = kit.modules || [];
+    modules.forEach(item => {
+      // Módulos são automaticamente considerados OK
+      homologatedKitItems.accessories.push(item);
     });
 
     // Processar insumos - add safety check
@@ -193,9 +200,9 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
       // IMPORTANTE: Módulos não precisam de homologação
       const accessories = kit.accessories || [];
       accessories.forEach(item => {
-        // Ignorar módulos - eles não passam por homologação
+        // Ignorar módulos - eles não passam por homologação (por nome ou por item_type)
         const normalizedName = normalizeItemName(item.item_name);
-        const isModule = normalizedName.includes('modulo');
+        const isModule = normalizedName.includes('modulo') || item.item_type === 'module';
         if (isModule) {
           // Módulos são automaticamente considerados OK
           homologatedKitItems.accessories.push(item);
@@ -208,6 +215,13 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
         } else {
           pendingItems.accessories.push(item);
         }
+      });
+
+      // Processar módulos separados - eles nunca precisam de homologação
+      const modules = kit.modules || [];
+      modules.forEach(item => {
+        // Módulos são automaticamente considerados OK
+        homologatedKitItems.accessories.push(item);
       });
 
       // Verificar insumos - add safety check

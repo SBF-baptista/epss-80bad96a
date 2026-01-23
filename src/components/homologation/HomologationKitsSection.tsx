@@ -539,7 +539,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
               <div className="space-y-3">
                 {filteredKits.map((kit) => {
                   const isExpanded = expandedKits.has(kit.id!);
-                  const primaryEquipment = kit.equipment[0]?.item_name || "Nenhum equipamento";
                   const homologationStatus = homologationStatuses.get(kit.id!);
                   const isHomologated = homologationStatus?.isHomologated ?? false;
                   const pendingItemsCount = homologationStatus
@@ -623,10 +622,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                       )}
                                     </Badge>
                                   )}
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm text-muted-foreground">{primaryEquipment}</span>
                                 </div>
                               </div>
 

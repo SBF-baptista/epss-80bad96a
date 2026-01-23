@@ -18,7 +18,8 @@ export const useProductionItems = (
   order: Order | null, 
   isOpen: boolean, 
   scheduleId?: string,
-  onStatusChange?: () => void
+  onStatusChange?: () => void,
+  companyName?: string
 ) => {
   const { toast } = useToast();
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
@@ -27,6 +28,9 @@ export const useProductionItems = (
 
   // Get the schedule ID - either passed directly or from order.id
   const getScheduleId = () => scheduleId || order?.id || null;
+  
+  // Get company name for bulk operations
+  const getCompanyName = () => companyName || order?.company_name || null;
 
   const loadProductionItems = async () => {
     const currentScheduleId = getScheduleId();
@@ -110,16 +114,37 @@ export const useProductionItems = (
     }
   };
 
-  // Start production: update status from 'scheduled' to 'in_progress'
+  // Start production: update status from 'scheduled' to 'in_progress' for ALL schedules of same company
   const handleStartProduction = async () => {
     const currentScheduleId = getScheduleId();
+    const currentCompanyName = getCompanyName();
     if (!currentScheduleId) return false;
 
     try {
+      let scheduleIds: string[] = [currentScheduleId];
+      
+      // If we have a company name, find all schedules for that company with 'scheduled' status
+      if (currentCompanyName) {
+        const normalizedCompanyName = currentCompanyName.trim().toUpperCase();
+        const { data: companySchedules } = await supabase
+          .from('kit_schedules')
+          .select('id, customer_name')
+          .eq('status', 'scheduled');
+        
+        if (companySchedules) {
+          const matchingIds = companySchedules
+            .filter(s => s.customer_name?.trim().toUpperCase() === normalizedCompanyName)
+            .map(s => s.id);
+          if (matchingIds.length > 0) {
+            scheduleIds = matchingIds;
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('kit_schedules')
         .update({ status: 'in_progress' })
-        .eq('id', currentScheduleId);
+        .in('id', scheduleIds);
 
       if (error) {
         console.error('Error starting production:', error);
@@ -131,16 +156,21 @@ export const useProductionItems = (
         return false;
       }
 
-      await logUpdate(
-        "Logística",
-        "status do pedido",
-        currentScheduleId,
-        "Status alterado de Pedidos para Em Produção"
-      );
+      // Log each schedule movement
+      for (const id of scheduleIds) {
+        await logUpdate(
+          "Logística",
+          "status do pedido",
+          id,
+          "Status alterado de Pedidos para Em Produção"
+        );
+      }
 
       toast({
         title: "Produção iniciada",
-        description: "Pedido movido para Em Produção"
+        description: scheduleIds.length > 1 
+          ? `${scheduleIds.length} pedidos movidos para Em Produção`
+          : "Pedido movido para Em Produção"
       });
       
       onStatusChange?.();
@@ -156,16 +186,37 @@ export const useProductionItems = (
     }
   };
 
-  // Complete production: update status from 'in_progress' to 'completed' (Aguardando Envio)
+  // Complete production: update status from 'in_progress' to 'completed' for ALL schedules of same company
   const handleCompleteProduction = async () => {
     const currentScheduleId = getScheduleId();
+    const currentCompanyName = getCompanyName();
     if (!currentScheduleId) return false;
 
     try {
+      let scheduleIds: string[] = [currentScheduleId];
+      
+      // If we have a company name, find all schedules for that company with 'in_progress' status
+      if (currentCompanyName) {
+        const normalizedCompanyName = currentCompanyName.trim().toUpperCase();
+        const { data: companySchedules } = await supabase
+          .from('kit_schedules')
+          .select('id, customer_name')
+          .eq('status', 'in_progress');
+        
+        if (companySchedules) {
+          const matchingIds = companySchedules
+            .filter(s => s.customer_name?.trim().toUpperCase() === normalizedCompanyName)
+            .map(s => s.id);
+          if (matchingIds.length > 0) {
+            scheduleIds = matchingIds;
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('kit_schedules')
         .update({ status: 'completed' })
-        .eq('id', currentScheduleId);
+        .in('id', scheduleIds);
 
       if (error) {
         console.error('Error completing production:', error);
@@ -177,16 +228,21 @@ export const useProductionItems = (
         return false;
       }
 
-      await logUpdate(
-        "Logística",
-        "status do pedido",
-        currentScheduleId,
-        "Status alterado de Em Produção para Aguardando Envio"
-      );
+      // Log each schedule movement
+      for (const id of scheduleIds) {
+        await logUpdate(
+          "Logística",
+          "status do pedido",
+          id,
+          "Status alterado de Em Produção para Aguardando Envio"
+        );
+      }
 
       toast({
         title: "Produção concluída",
-        description: "Pedido movido para Aguardando Envio"
+        description: scheduleIds.length > 1 
+          ? `${scheduleIds.length} pedidos movidos para Aguardando Envio`
+          : "Pedido movido para Aguardando Envio"
       });
       
       onStatusChange?.();
