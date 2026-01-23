@@ -5,9 +5,9 @@ import { getNavigationItems } from "@/services/permissionsService";
 
 const Navigation = () => {
   const location = useLocation();
-  const { role } = useUserRole();
+  const { role, permissions } = useUserRole();
 
-  const navItems = getNavigationItems(role);
+  const navItems = getNavigationItems(role, permissions);
 
   return (
     <nav className="flex gap-2 flex-wrap">

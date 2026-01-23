@@ -3,21 +3,24 @@ import { logCreate, logUpdate } from './logService'
 
 export interface User {
   id: string
-  email?: string
+  email: string
   created_at: string
   last_sign_in_at?: string
   roles: string[]
+  permissions?: { module: string; permission: string }[]
 }
 
 export interface CreateUserData {
   email: string
   password: string
-  role: 'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos'
+  baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador'
+  permissions?: Record<string, string>
 }
 
 export interface UpdateUserData {
   userId: string
-  role?: 'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos'
+  baseRole?: 'admin' | 'gestor' | 'operador' | 'visualizador'
+  permissions?: Record<string, string>
   resetPassword?: boolean
 }
 
@@ -39,30 +42,21 @@ class UserManagementService {
         action: 'create',
         email: userData.email,
         password: userData.password,
-        role: userData.role
+        baseRole: userData.baseRole,
+        permissions: userData.permissions
       };
-
-      console.log('Request body:', JSON.stringify(requestBody));
 
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: requestBody
       });
-
-      console.log('Response data:', data);
-      console.log('Response error:', error);
 
       if (error) {
         console.error('Supabase function error:', error);
         throw error;
       }
 
-      // Registrar log da criação de usuário
       if (data.success && data.user) {
-        await logCreate(
-          "Usuários",
-          "usuário",
-          data.user.id
-        );
+        await logCreate("Usuários", "usuário", data.user.id);
       }
 
       return data;
@@ -80,30 +74,26 @@ class UserManagementService {
       console.log('Sending update user request:', updateData);
       
       const requestBody = {
-        action: 'update',
+        action: updateData.permissions ? 'update-permissions' : 'update',
         userId: updateData.userId,
-        role: updateData.role,
+        baseRole: updateData.baseRole,
+        permissions: updateData.permissions,
         resetPassword: updateData.resetPassword
       };
-
-      console.log('Update request body:', JSON.stringify(requestBody));
 
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: requestBody
       });
-
-      console.log('Update response data:', data);
-      console.log('Update response error:', error);
 
       if (error) {
         console.error('Supabase function error:', error);
         throw error;
       }
 
-      // Registrar log da atualização de usuário
       if (data.success) {
         const changes = [];
-        if (updateData.role) changes.push(`Papel: ${updateData.role}`);
+        if (updateData.baseRole) changes.push(`Função: ${updateData.baseRole}`);
+        if (updateData.permissions) changes.push("Permissões atualizadas");
         if (updateData.resetPassword) changes.push("Senha resetada");
         
         await logUpdate(
@@ -130,9 +120,6 @@ class UserManagementService {
       
       const { data, error } = await supabase.functions.invoke('manage-users');
 
-      console.log('List users response data:', data);
-      console.log('List users response error:', error);
-
       if (error) {
         console.error('Supabase function error:', error);
         throw error;
@@ -155,10 +142,10 @@ class UserManagementService {
     })
   }
 
-  async updateUserRole(userId: string, role: 'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos'): Promise<UserManagementResponse> {
+  async updateUserRole(userId: string, baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador'): Promise<UserManagementResponse> {
     return this.updateUser({
       userId,
-      role
+      baseRole
     })
   }
 }

@@ -9,179 +9,107 @@ const corsHeaders = {
 interface CreateUserRequest {
   email: string;
   password: string;
-  role: 'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos';
+  baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador';
+  permissions?: Record<string, string>;
 }
 
 interface UpdateUserRequest {
   userId: string;
-  role?: 'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos';
+  baseRole?: 'admin' | 'gestor' | 'operador' | 'visualizador';
+  permissions?: Record<string, string>;
   resetPassword?: boolean;
 }
+
+const ALL_MODULES = [
+  'kickoff', 'customer_tracking', 'homologation', 'kits', 
+  'accessories_supplies', 'planning', 'scheduling', 'kanban', 
+  'orders', 'dashboard', 'technicians', 'users'
+];
 
 const handler = async (req: Request): Promise<Response> => {
   console.log(`========= NEW REQUEST =========`);
   console.log(`Request method: ${req.method}`);
-  console.log(`Request URL: ${req.url}`);
-  
-  // Log all headers for debugging
-  console.log('All headers:');
-  for (const [key, value] of req.headers.entries()) {
-    if (key.toLowerCase() === 'authorization') {
-      console.log(`  ${key}: Bearer ${value.substring(7, 20)}...`);
-    } else {
-      console.log(`  ${key}: ${value}`);
-    }
-  }
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Returning CORS preflight response');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Check environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      return new Response(JSON.stringify({ 
-        error: 'Server configuration error'
-      }), {
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Create admin client with service role key
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      supabaseServiceKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
 
-    // Authentication and authorization check
+    // Authentication check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('Missing or invalid authorization header');
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Missing or invalid authorization header' 
-      }), {
+      return new Response(JSON.stringify({ success: false, error: 'Missing authorization' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Verify the user is authenticated and get their ID
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
-      console.error('Failed to authenticate user:', authError);
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Invalid or expired token' 
-      }), { 
+      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), { 
         status: 401, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
     
-    // Check if user has admin role
-    const { data: userRole, error: roleError } = await supabaseAdmin
-      .rpc('get_user_role', { _user_id: user.id });
-    
-    if (roleError) {
-      console.error('Failed to get user role:', roleError);
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Failed to verify user permissions' 
-      }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
+    // Check admin role
+    const { data: userRole } = await supabaseAdmin.rpc('get_user_role', { _user_id: user.id });
     
     if (userRole !== 'admin') {
-      console.error(`Access denied: User ${user.id} has role ${userRole}, admin required`);
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Forbidden - Admin role required to manage users' 
-      }), { 
+      return new Response(JSON.stringify({ success: false, error: 'Admin role required' }), { 
         status: 403, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
-    
-    console.log(`Admin user ${user.id} authorized to manage users`);
 
     // Parse request
     let requestData: any = {};
     let action = 'list';
 
     if (req.method === 'POST') {
-      try {
-        const rawBody = await req.text();
-        console.log('Raw request body:', rawBody);
-        
-        if (rawBody) {
-          requestData = JSON.parse(rawBody);
-          action = requestData.action || 'create';
-        }
-      } catch (error) {
-        return new Response(JSON.stringify({ 
-          error: 'Invalid request format',
-          details: (error as any)?.message || 'Unknown error' 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      const rawBody = await req.text();
+      if (rawBody) {
+        requestData = JSON.parse(rawBody);
+        action = requestData.action || 'create';
       }
     }
 
     console.log('Action:', action);
 
-    // Handle create user (POST)
+    // CREATE USER
     if (req.method === 'POST' && action === 'create') {
-      const { email, password, role } = requestData;
+      const { email, password, baseRole, permissions } = requestData;
       
-      if (!email || !password || !role) {
-        return new Response(JSON.stringify({ error: 'Missing required fields: email, password, role' }), {
+      if (!email || !password || !baseRole) {
+        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid email format' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        );
-      }
-      
-      // Validate password length
-      if (password.length < 8) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Password must be at least 8 characters long' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        );
-      }
-      
-      // Validate role
-      const validRoles = ['admin', 'gestor', 'operador_kickoff', 'operador_homologacao', 'operador_agendamento', 'operador_suprimentos'];
-      if (!validRoles.includes(role)) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid role specified' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        );
+      const validRoles = ['admin', 'gestor', 'operador', 'visualizador'];
+      if (!validRoles.includes(baseRole)) {
+        return new Response(JSON.stringify({ error: 'Invalid role' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
 
       // Create user
@@ -204,19 +132,25 @@ const handler = async (req: Request): Promise<Response> => {
         email: newUser.user!.email!
       });
 
-      // Assign role
-      const { error: roleAssignError } = await supabaseAdmin
-        .from('user_roles')
-        .insert({
-          user_id: newUser.user!.id,
-          role
-        });
+      // Assign base role
+      await supabaseAdmin.from('user_roles').insert({
+        user_id: newUser.user!.id,
+        role: baseRole
+      });
 
-      if (roleAssignError) {
-        return new Response(JSON.stringify({ error: 'Failed to assign role' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      // Set module permissions
+      if (permissions) {
+        const permissionRecords = Object.entries(permissions)
+          .filter(([_, level]) => level !== 'none')
+          .map(([module, level]) => ({
+            user_id: newUser.user!.id,
+            module,
+            permission: level
+          }));
+
+        if (permissionRecords.length > 0) {
+          await supabaseAdmin.from('user_module_permissions').insert(permissionRecords);
+        }
       }
 
       return new Response(JSON.stringify({ 
@@ -229,84 +163,65 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Handle update user (POST with action 'update')
-    if (req.method === 'POST' && action === 'update') {
-      console.log('Processing update request...');
-      const { userId, role, resetPassword } = requestData;
-      console.log('Update request:', { userId, role, resetPassword });
-
+    // UPDATE USER PERMISSIONS
+    if (req.method === 'POST' && action === 'update-permissions') {
+      const { userId, baseRole, permissions } = requestData;
+      
       if (!userId) {
-        console.log('Missing userId in request');
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Missing userId' 
-        }), {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      if (!role && !resetPassword) {
-        console.log('No role or resetPassword provided');
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'No role or resetPassword provided' 
-        }), {
+      // Update base role
+      if (baseRole) {
+        await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+        await supabaseAdmin.from('user_roles').insert({ user_id: userId, role: baseRole });
+      }
+
+      // Update module permissions
+      if (permissions) {
+        // Delete existing permissions
+        await supabaseAdmin.from('user_module_permissions').delete().eq('user_id', userId);
+        
+        // Insert new permissions
+        const permissionRecords = Object.entries(permissions)
+          .filter(([_, level]) => level !== 'none')
+          .map(([module, level]) => ({
+            user_id: userId,
+            module,
+            permission: level
+          }));
+
+        if (permissionRecords.length > 0) {
+          await supabaseAdmin.from('user_module_permissions').insert(permissionRecords);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, message: 'Permissions updated' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // UPDATE USER (legacy role update)
+    if (req.method === 'POST' && action === 'update') {
+      const { userId, role, resetPassword } = requestData;
+
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
       if (role) {
-        console.log(`Updating role for user ${userId} to ${role}`);
-        
-        // Update user role - first delete existing roles, then insert new one
-        const { data: deleteData, error: deleteError } = await supabaseAdmin
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId);
-
-        console.log('Delete operation result:', { deleteData, deleteError });
-
-        if (deleteError) {
-          console.error('Error deleting old roles:', deleteError);
-          return new Response(JSON.stringify({ 
-            success: false,
-            error: 'Failed to update role',
-            details: deleteError.message 
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        // Insert new role
-        const { data: insertData, error: insertError } = await supabaseAdmin
-          .from('user_roles')
-          .insert({
-            user_id: userId,
-            role
-          });
-
-        console.log('Insert operation result:', { insertData, insertError });
-
-        if (insertError) {
-          console.error('Error inserting new role:', insertError);
-          return new Response(JSON.stringify({ 
-            success: false,
-            error: 'Failed to assign new role',
-            details: insertError.message 
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        console.log('Role updated successfully');
+        await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+        await supabaseAdmin.from('user_roles').insert({ user_id: userId, role });
       }
 
       if (resetPassword) {
-        // Generate cryptographically secure temporary password
         const array = new Uint8Array(16);
         crypto.getRandomValues(array);
         const tempPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 12);
@@ -333,45 +248,37 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      return new Response(JSON.stringify({ 
-        success: true,
-        message: 'User updated successfully'
-      }), {
+      return new Response(JSON.stringify({ success: true, message: 'User updated' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Handle list users (GET or default)
+    // LIST USERS
     console.log('Listing users...');
     const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (usersError) {
-      console.error('Error fetching users:', usersError);
       return new Response(JSON.stringify({ error: 'Failed to fetch users' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('Users fetched:', users.users.length);
-
     // Get roles for all users
-    const { data: roles } = await supabaseAdmin
-      .from('user_roles')
-      .select('user_id, role');
-
-    console.log('Roles fetched:', roles?.length || 0);
+    const { data: roles } = await supabaseAdmin.from('user_roles').select('user_id, role');
+    
+    // Get permissions for all users
+    const { data: allPermissions } = await supabaseAdmin.from('user_module_permissions').select('*');
 
     const usersWithRoles = users.users.map(user => ({
       id: user.id,
       email: user.email,
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
-      roles: roles?.filter(r => r.user_id === user.id).map(r => r.role) || []
+      roles: roles?.filter(r => r.user_id === user.id).map(r => r.role) || [],
+      permissions: allPermissions?.filter(p => p.user_id === user.id) || []
     }));
-
-    console.log('Returning users with roles:', usersWithRoles.length);
 
     return new Response(JSON.stringify({ users: usersWithRoles }), {
       status: 200,
@@ -382,7 +289,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error('Error in manage-users function:', error);
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      details: (error as any)?.message || 'Unknown error' 
+      details: (error as any)?.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
