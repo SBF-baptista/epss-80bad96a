@@ -93,13 +93,13 @@ const navigationGroups: NavGroup[] = [
   },
 ];
 
-// Single items between groups - Planejamento and Agendamento are separate
-const planningItems: NavItem[] = [
-  { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" },
-  { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" },
-];
+// Single item - Planejamento (before Logística)
+const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" };
 
-// Additional single items after Logística
+// Single item - Agendamento (after Logística)
+const schedulingItem: NavItem = { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" };
+
+// Additional single items after Agendamento
 const additionalSingleItems: NavItem[] = [
   { to: "/customer-tracking", label: "Acompanhamento de Clientes", icon: UserCheck, module: "customer_tracking" },
 ];
@@ -181,11 +181,9 @@ export function AppNavigation() {
 
   const visibleGroups = getVisibleGroups();
   const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
-  const visiblePlanningItems = planningItems.filter(canAccessItem);
+  const canSeePlanning = canAccessItem(planningItem);
+  const canSeeScheduling = canAccessItem(schedulingItem);
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
-
-  // Find Logística group index to insert items after it
-  const logisticaIndex = visibleGroups.findIndex(g => g.label === "Logística");
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -290,25 +288,22 @@ export function AppNavigation() {
                 );
               })}
 
-              {/* Planejamento and Agendamento - Separate items */}
-              {visiblePlanningItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.to)}
-                      tooltip={isCollapsed ? item.label : undefined}
-                      className="touch-manipulation tap-target"
-                    >
-                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {/* Planejamento - Before Logística */}
+              {canSeePlanning && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(planningItem.to)}
+                    tooltip={isCollapsed ? planningItem.label : undefined}
+                    className="touch-manipulation tap-target"
+                  >
+                    <NavLink to={planningItem.to} className="flex items-center gap-3 px-2 py-2">
+                      <planningItem.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium text-sm truncate">{planningItem.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
 
               {/* Logística Group */}
               {visibleGroups.filter(g => g.label === "Logística").map((group) => {
@@ -360,7 +355,24 @@ export function AppNavigation() {
                 );
               })}
 
-              {/* Acompanhamento de Clientes - After Logística */}
+              {/* Agendamento - After Logística */}
+              {canSeeScheduling && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(schedulingItem.to)}
+                    tooltip={isCollapsed ? schedulingItem.label : undefined}
+                    className="touch-manipulation tap-target"
+                  >
+                    <NavLink to={schedulingItem.to} className="flex items-center gap-3 px-2 py-2">
+                      <schedulingItem.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium text-sm truncate">{schedulingItem.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* Acompanhamento de Clientes - After Agendamento */}
               {visibleAdditionalItems.map((item) => {
                 const Icon = item.icon;
                 return (
