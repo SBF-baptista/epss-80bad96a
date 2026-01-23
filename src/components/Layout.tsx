@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="mx-1 md:mx-2 h-4 w-px bg-sidebar-border" />
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <h1 className="text-sm md:text-lg font-semibold text-gray-900 truncate">
-                Sistema EPSS
+                OPM - SEGSAT
               </h1>
             </div>
           </header>
