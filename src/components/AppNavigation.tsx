@@ -56,7 +56,12 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// Navigation structure
+// Single navigation items (shown first after Home)
+const singleNavigationItems: NavItem[] = [
+  { to: "/kickoff", label: "Kickoff", icon: Rocket, module: "kickoff" },
+];
+
+// Navigation structure (groups shown after single items)
 const navigationGroups: NavGroup[] = [
   {
     label: "Homologação",
@@ -70,20 +75,19 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   {
-    label: "Logística",
-    icon: BarChart3,
-    items: [
-      { to: "/kanban", label: "Kanban", icon: Kanban, module: "kanban" },
-      { to: "/orders", label: "Pedidos", icon: Package, module: "orders" },
-      { to: "/dashboard", label: "Dash Logística", icon: BarChart3, module: "dashboard" },
-    ]
-  },
-  {
     label: "Planejamento",
     icon: Calendar,
     items: [
       { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" },
       { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" },
+    ]
+  },
+  {
+    label: "Logística",
+    icon: BarChart3,
+    items: [
+      { to: "/kanban", label: "Kanban", icon: Kanban, module: "kanban" },
+      { to: "/dashboard", label: "Dash Logística", icon: BarChart3, module: "dashboard" },
     ]
   },
   {
@@ -96,9 +100,8 @@ const navigationGroups: NavGroup[] = [
   },
 ];
 
-// Single navigation items
-const singleNavigationItems: NavItem[] = [
-  { to: "/kickoff", label: "Kickoff", icon: Rocket, module: "kickoff" },
+// Additional single items after groups
+const additionalSingleItems: NavItem[] = [
   { to: "/customer-tracking", label: "Acompanhamento de Clientes", icon: UserCheck, module: "customer_tracking" },
 ];
 
@@ -184,6 +187,7 @@ export function AppNavigation() {
 
   const visibleGroups = getVisibleGroups();
   const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
+  const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
   const visibleAdminItems = (role === 'admin' || role === 'gestor') 
     ? adminOnlyItems.filter(canAccessItem) 
     : [];
@@ -287,6 +291,26 @@ export function AppNavigation() {
                         })}
                       </CollapsibleContent>
                     </Collapsible>
+                  </SidebarMenuItem>
+                );
+              })}
+
+              {/* Additional Single Items (after groups) */}
+              {visibleAdditionalItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.to)}
+                      tooltip={isCollapsed ? item.label : undefined}
+                      className="touch-manipulation tap-target"
+                    >
+                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}

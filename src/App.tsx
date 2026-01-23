@@ -16,7 +16,7 @@ import AccessorySupplyHomologation from "./pages/AccessorySupplyHomologation";
 import TechnicianManagement from "./pages/TechnicianManagement";
 import Planning from "./pages/Planning";
 import Scheduling from "./pages/Scheduling";
-import Orders from "./pages/Orders";
+
 import ConfigurationManagement from "./pages/ConfigurationManagement";
 import UserManagement from "./pages/UserManagement";
 import Kickoff from "./pages/Kickoff";
@@ -184,16 +184,6 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              {/* Orders - requires orders module access */}
-              <Route path="/orders" element={
-                <ProtectedRoute>
-                  <RoleProtectedRoute requiredModule="orders">
-                    <Layout>
-                      <Orders />
-                    </Layout>
-                  </RoleProtectedRoute>
-                </ProtectedRoute>
-              } />
               
               {/* Configuration - requires scheduling module access */}
               <Route path="/config" element={
