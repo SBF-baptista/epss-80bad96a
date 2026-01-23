@@ -176,6 +176,7 @@ export function convertToCreateRequest(parsedKit: ParsedKit, homologationCardId?
     description: `Importado automaticamente de arquivo TXT`,
     equipment: parsedKit.equipment,
     accessories: parsedKit.accessories,
+    modules: [],
     supplies: parsedKit.supplies,
   };
 }

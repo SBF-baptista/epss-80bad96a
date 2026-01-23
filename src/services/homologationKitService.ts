@@ -48,8 +48,8 @@ export async function fetchHomologationKits(cardId?: string): Promise<Homologati
       return {
         ...kit,
         segsale_product: kit.segsale_product || null,
-        segsale_module: kit.segsale_module || null,
-        segsale_accessory: kit.segsale_accessory || null,
+        segsale_modules: kit.segsale_module || null,
+        segsale_accessories: kit.segsale_accessory || null,
         equipment: kitItems.filter(item => item.item_type === 'equipment').map(item => ({
           id: item.id,
           item_name: item.item_name,
@@ -59,6 +59,14 @@ export async function fetchHomologationKits(cardId?: string): Promise<Homologati
           notes: item.notes || undefined,
         })),
         accessories: kitItems.filter(item => item.item_type === 'accessory').map(item => ({
+          id: item.id,
+          item_name: item.item_name,
+          item_type: item.item_type as ItemType,
+          quantity: item.quantity,
+          description: item.description || undefined,
+          notes: item.notes || undefined,
+        })),
+        modules: kitItems.filter(item => item.item_type === 'module').map(item => ({
           id: item.id,
           item_name: item.item_name,
           item_type: item.item_type as ItemType,
@@ -96,8 +104,8 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
         description: kitData.description,
         category: kitData.category,
         segsale_product: kitData.segsale_product || null,
-        segsale_module: kitData.segsale_module || null,
-        segsale_accessory: kitData.segsale_accessory || null,
+        segsale_module: kitData.segsale_modules || null,
+        segsale_accessory: kitData.segsale_accessories || null,
       })
       .select()
       .single();
@@ -108,7 +116,7 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
     }
 
     // Normalize item names to ensure consistency
-    // Create all items (equipment, accessories, supplies)
+    // Create all items (equipment, accessories, modules, supplies)
     const allItems = [
       ...kitData.equipment.map(item => ({
         kit_id: kit.id,
@@ -122,6 +130,14 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
         kit_id: kit.id,
         item_name: getCanonicalItemName(item.item_name),
         item_type: 'accessory' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
+      ...kitData.modules.map(item => ({
+        kit_id: kit.id,
+        item_name: getCanonicalItemName(item.item_name),
+        item_type: 'module' as ItemType,
         quantity: item.quantity,
         description: item.description,
         notes: item.notes,
@@ -152,6 +168,7 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
       ...kit,
       equipment: kitData.equipment,
       accessories: kitData.accessories,
+      modules: kitData.modules,
       supplies: kitData.supplies,
     };
   } catch (error) {
@@ -209,6 +226,14 @@ export async function updateHomologationKit(kitId: string, updateData: UpdateKit
         description: item.description,
         notes: item.notes,
       })),
+      ...(updateData.modules || []).map(item => ({
+        kit_id: kitId,
+        item_name: getCanonicalItemName(item.item_name),
+        item_type: 'module' as ItemType,
+        quantity: item.quantity,
+        description: item.description,
+        notes: item.notes,
+      })),
       ...(updateData.supplies || []).map(item => ({
         kit_id: kitId,
         item_name: getCanonicalItemName(item.item_name),
@@ -235,6 +260,7 @@ export async function updateHomologationKit(kitId: string, updateData: UpdateKit
       ...kit,
       equipment: updateData.equipment || [],
       accessories: updateData.accessories || [],
+      modules: updateData.modules || [],
       supplies: updateData.supplies || [],
     };
   } catch (error) {

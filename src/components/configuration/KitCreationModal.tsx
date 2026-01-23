@@ -24,8 +24,8 @@ interface KitCreationModalProps {
 
 interface SegsaleMirror {
   product: string;
-  module: string;
-  accessory: string;
+  modules: string[];
+  accessories: string[];
 }
 
 interface KitFormData {
@@ -53,7 +53,7 @@ const initialFormData: KitFormData = {
   accessories: [{ item_name: "", item_type: "accessory", quantity: 1, description: "", notes: "" }],
   modules: [{ item_name: "", item_type: "accessory", quantity: 1, description: "", notes: "" }],
   supplies: [{ item_name: "", item_type: "supply", quantity: 1, description: "", notes: "" }],
-  segsaleMirror: { product: "", module: "", accessory: "" },
+  segsaleMirror: { product: "", modules: [], accessories: [] },
 };
 
 export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModalProps) => {
@@ -102,11 +102,27 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     }));
   };
 
-  const updateSegsaleMirror = (field: keyof SegsaleMirror, value: string) => {
+  const updateSegsaleMirrorProduct = (value: string) => {
     setFormData((prev) => ({
       ...prev,
-      segsaleMirror: { ...prev.segsaleMirror, [field]: value },
+      segsaleMirror: { ...prev.segsaleMirror, product: value },
     }));
+  };
+
+  const toggleSegsaleMirrorItem = (field: 'modules' | 'accessories', value: string) => {
+    setFormData((prev) => {
+      const currentItems = prev.segsaleMirror[field];
+      const isSelected = currentItems.includes(value);
+      return {
+        ...prev,
+        segsaleMirror: {
+          ...prev.segsaleMirror,
+          [field]: isSelected
+            ? currentItems.filter((item) => item !== value)
+            : [...currentItems, value],
+        },
+      };
+    });
   };
 
   const handleItemNameChange = async (
@@ -146,14 +162,11 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
 
     // Filter out empty items
     const equipment = formData.equipment.filter((item) => item.item_name.trim() !== "");
-    // Combine accessories and modules as they are both 'accessory' type
-    const accessories = [
-      ...formData.accessories.filter((item) => item.item_name.trim() !== ""),
-      ...formData.modules.filter((item) => item.item_name.trim() !== ""),
-    ];
+    const accessories = formData.accessories.filter((item) => item.item_name.trim() !== "");
+    const modules = formData.modules.filter((item) => item.item_name.trim() !== "");
     const supplies = formData.supplies.filter((item) => item.item_name.trim() !== "");
 
-    if (equipment.length === 0 && accessories.length === 0 && supplies.length === 0) {
+    if (equipment.length === 0 && accessories.length === 0 && modules.length === 0 && supplies.length === 0) {
       toast({
         title: "Erro de validação",
         description: "Adicione pelo menos um item ao kit",
@@ -166,7 +179,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       setIsSaving(true);
 
       // Get Segsale mirror data
-      const { product, module, accessory } = formData.segsaleMirror;
+      const { product, modules: segsaleMods, accessories: segsaleAccs } = formData.segsaleMirror;
 
       const kitData: CreateKitRequest = {
         name: formData.name.trim(),
@@ -174,10 +187,11 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         category: formData.category || undefined,
         equipment,
         accessories,
+        modules,
         supplies,
         segsale_product: product || undefined,
-        segsale_module: module || undefined,
-        segsale_accessory: accessory || undefined,
+        segsale_modules: segsaleMods.length > 0 ? segsaleMods : undefined,
+        segsale_accessories: segsaleAccs.length > 0 ? segsaleAccs : undefined,
       };
 
       await createHomologationKit(kitData);
@@ -211,12 +225,12 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
       </div>
       <p className="text-xs text-muted-foreground"></p>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Produto</Label>
           <Select
             value={formData.segsaleMirror.product}
-            onValueChange={(value) => updateSegsaleMirror("product", value)}
+            onValueChange={(value) => updateSegsaleMirrorProduct(value)}
           >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione produto" />
@@ -231,37 +245,60 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Módulo</Label>
-          <Select value={formData.segsaleMirror.module} onValueChange={(value) => updateSegsaleMirror("module", value)}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Selecione módulo" />
-            </SelectTrigger>
-            <SelectContent>
-              {segsaleModules.map((module) => (
-                <SelectItem key={module.id} value={module.nome}>
-                  {module.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-xs text-muted-foreground">Módulos (múltipla seleção)</Label>
+          <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1 bg-background">
+            {segsaleModules.map((module) => {
+              const isSelected = formData.segsaleMirror.modules.includes(module.nome);
+              return (
+                <label
+                  key={module.id}
+                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/10' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSegsaleMirrorItem('modules', module.nome)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <span className="text-sm truncate">{module.nome}</span>
+                </label>
+              );
+            })}
+            {segsaleModules.length === 0 && (
+              <span className="text-xs text-muted-foreground">Nenhum módulo disponível</span>
+            )}
+          </div>
+          {formData.segsaleMirror.modules.length > 0 && (
+            <p className="text-xs text-muted-foreground">{formData.segsaleMirror.modules.length} selecionado(s)</p>
+          )}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Acessório</Label>
-          <Select
-            value={formData.segsaleMirror.accessory}
-            onValueChange={(value) => updateSegsaleMirror("accessory", value)}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Selecione acessório" />
-            </SelectTrigger>
-            <SelectContent>
-              {segsaleAccessories.map((accessory) => (
-                <SelectItem key={accessory.id} value={accessory.nome}>
-                  {accessory.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-xs text-muted-foreground">Acessórios (múltipla seleção)</Label>
+          <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1 bg-background">
+            {segsaleAccessories.map((accessory) => {
+              const isSelected = formData.segsaleMirror.accessories.includes(accessory.nome);
+              return (
+                <label
+                  key={accessory.id}
+                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/10' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSegsaleMirrorItem('accessories', accessory.nome)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <span className="text-sm truncate">{accessory.nome}</span>
+                </label>
+              );
+            })}
+            {segsaleAccessories.length === 0 && (
+              <span className="text-xs text-muted-foreground">Nenhum acessório disponível</span>
+            )}
+          </div>
+          {formData.segsaleMirror.accessories.length > 0 && (
+            <p className="text-xs text-muted-foreground">{formData.segsaleMirror.accessories.length} selecionado(s)</p>
+          )}
         </div>
       </div>
     </div>
@@ -513,28 +550,30 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   rows={3}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Tipo do Kit</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {KIT_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             {/* Segsale Mirror Section */}
             {renderSegsaleMirrorSection()}
+
+            {/* Tipo do Kit - Below Segsale Mirror */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Tipo do Kit</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {KIT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Items Sections - 2x2 Grid Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

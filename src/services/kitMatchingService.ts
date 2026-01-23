@@ -174,6 +174,16 @@ export const fetchAllKits = async (): Promise<HomologationKit[]> => {
             description: item.description || undefined,
             notes: item.notes || undefined,
           })),
+        modules: kitItems
+          .filter(item => item.item_type === 'module')
+          .map(item => ({
+            id: item.id,
+            item_name: item.item_name,
+            item_type: 'module' as const,
+            quantity: item.quantity,
+            description: item.description || undefined,
+            notes: item.notes || undefined,
+          })),
         supplies: kitItems
           .filter(item => item.item_type === 'supply')
           .map(item => ({
