@@ -18,17 +18,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Wand2 } from 'lucide-react'
+import { Wand2, AlertCircle } from 'lucide-react'
 import { userManagementService } from '@/services/userManagementService'
-import { PermissionMatrix } from './PermissionMatrix'
-import { 
-  AppModule, 
-  PermissionLevel, 
-  BASE_ROLE_LABELS,
-  getDefaultPermissionsForRole 
-} from '@/types/permissions'
-
-type BaseRole = 'admin' | 'gestor' | 'operador' | 'visualizador'
+import { accessProfileService, AccessProfile } from '@/services/accessProfileService'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Link } from 'react-router-dom'
 
 interface CreateUserModalProps {
   open: boolean
@@ -39,17 +33,22 @@ interface CreateUserModalProps {
 export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalProps) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [baseRole, setBaseRole] = useState<BaseRole>('visualizador')
-  const [permissions, setPermissions] = useState<Record<AppModule, PermissionLevel>>(() => 
-    getDefaultPermissionsForRole('visualizador')
-  )
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('')
+  const [profiles, setProfiles] = useState<AccessProfile[]>([])
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  // Update permissions when base role changes
+  // Fetch profiles when modal opens
   useEffect(() => {
-    setPermissions(getDefaultPermissionsForRole(baseRole))
-  }, [baseRole])
+    if (open) {
+      setIsLoadingProfiles(true)
+      accessProfileService.listProfiles()
+        .then(data => setProfiles(data))
+        .catch(console.error)
+        .finally(() => setIsLoadingProfiles(false))
+    }
+  }, [open])
 
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
@@ -72,14 +71,34 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
       return
     }
 
+    if (!selectedProfileId) {
+      toast({
+        title: 'Perfil obrigatório',
+        description: 'Por favor, selecione um perfil de acesso',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    const selectedProfile = profiles.find(p => p.id === selectedProfileId)
+    if (!selectedProfile) {
+      toast({
+        title: 'Erro',
+        description: 'Perfil selecionado não encontrado',
+        variant: 'destructive'
+      })
+      return
+    }
+
     setIsLoading(true)
     
     try {
       const response = await userManagementService.createUser({
         email, 
         password, 
-        baseRole, 
-        permissions
+        baseRole: selectedProfile.base_role, 
+        permissions: selectedProfile.permissions,
+        accessProfileId: selectedProfileId
       })
 
       if (response.success) {
@@ -92,8 +111,7 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
         // Reset form
         setEmail('')
         setPassword('')
-        setBaseRole('visualizador')
-        setPermissions(getDefaultPermissionsForRole('visualizador'))
+        setSelectedProfileId('')
       } else {
         toast({
           title: 'Erro',
@@ -114,17 +132,17 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Criar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Preencha os dados e configure as permissões do novo usuário.
+            Preencha os dados e selecione o perfil de acesso do novo usuário.
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
@@ -154,35 +172,39 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
             </div>
           </div>
 
-          {/* Base Role */}
+          {/* Profile Selection */}
           <div className="space-y-2">
-            <Label htmlFor="baseRole">Função Base</Label>
-            <Select value={baseRole} onValueChange={(value: BaseRole) => setBaseRole(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma função" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(BASE_ROLE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              A função base define as permissões padrão. Você pode personalizar abaixo.
-            </p>
-          </div>
-
-          {/* Permission Matrix */}
-          <div className="space-y-2">
-            <Label>Permissões por Módulo</Label>
-            <PermissionMatrix 
-              permissions={permissions} 
-              onChange={setPermissions}
-              disabled={baseRole === 'admin'}
-            />
-            {baseRole === 'admin' && (
+            <Label htmlFor="profile">Perfil de Acesso *</Label>
+            {isLoadingProfiles ? (
+              <div className="text-sm text-muted-foreground">Carregando perfis...</div>
+            ) : profiles.length === 0 ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Nenhum perfil de acesso cadastrado.{' '}
+                  <Link to="/access-profiles" className="underline font-medium" onClick={() => onOpenChange(false)}>
+                    Crie um perfil primeiro
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Select value={selectedProfileId} onValueChange={setSelectedProfileId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {selectedProfileId && (
               <p className="text-xs text-muted-foreground">
-                Administradores têm acesso total a todos os módulos.
+                {profiles.find(p => p.id === selectedProfileId)?.description || 
+                  'As permissões serão definidas pelo perfil selecionado.'}
               </p>
             )}
           </div>
@@ -191,7 +213,7 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || profiles.length === 0}>
               {isLoading ? 'Criando...' : 'Criar Usuário'}
             </Button>
           </DialogFooter>
