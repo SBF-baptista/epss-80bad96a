@@ -671,7 +671,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     {kit.segsale_product && (
                                       <div className="flex flex-col">
                                         <span className="text-xs text-muted-foreground">Produto</span>
-                                        <span className="font-medium">{kit.segsale_product}</span>
+                                        <span className="font-medium capitalize">{kit.segsale_product}</span>
                                       </div>
                                     )}
                                     {kit.segsale_modules && kit.segsale_modules.length > 0 && (
@@ -679,7 +679,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                         <span className="text-xs text-muted-foreground">Módulo(s)</span>
                                         <div className="font-medium">
                                           {kit.segsale_modules.map((mod, idx) => (
-                                            <span key={idx} className="block">{mod}</span>
+                                            <span key={idx} className="block capitalize">{mod}</span>
                                           ))}
                                         </div>
                                       </div>
@@ -689,7 +689,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                         <span className="text-xs text-muted-foreground">Acessório(s)</span>
                                         <div className="font-medium">
                                           {kit.segsale_accessories.map((acc, idx) => (
-                                            <span key={idx} className="block">{acc}</span>
+                                            <span key={idx} className="block capitalize">{acc}</span>
                                           ))}
                                         </div>
                                       </div>
@@ -770,7 +770,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                           className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm"
                                         >
                                           <div className="flex items-center gap-2">
-                                            <span>{item.item_name}</span>
+                                            <span className="capitalize">{item.item_name}</span>
                                             {homologationStatus && (
                                               <Badge
                                                 variant={isItemHomologated ? "default" : "secondary"}
@@ -822,7 +822,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                           className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm"
                                         >
                                           <div className="flex items-center gap-2">
-                                            <span>{item.item_name}</span>
+                                            <span className="capitalize">{item.item_name}</span>
                                             {homologationStatus && (
                                               <Badge
                                                 variant={isItemHomologated ? "default" : "secondary"}
@@ -857,7 +857,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                               )}
 
                               {/* Modules List */}
-                              {kit.modules.length > 0 && (
+                              {kit.modules && kit.modules.length > 0 && (
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <Cpu className="h-4 w-4" />
@@ -874,7 +874,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                           className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm"
                                         >
                                           <div className="flex items-center gap-2">
-                                            <span>{item.item_name}</span>
+                                            <span className="capitalize">{item.item_name}</span>
                                             {homologationStatus && (
                                               <Badge
                                                 variant={isItemHomologated ? "default" : "secondary"}
@@ -926,7 +926,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                           className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-sm"
                                         >
                                           <div className="flex items-center gap-2">
-                                            <span>{item.item_name}</span>
+                                            <span className="capitalize">{item.item_name}</span>
                                             {homologationStatus && (
                                               <Badge
                                                 variant={isItemHomologated ? "default" : "secondary"}
