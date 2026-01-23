@@ -75,14 +75,6 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   {
-    label: "Planejamento",
-    icon: Calendar,
-    items: [
-      { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" },
-      { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" },
-    ]
-  },
-  {
     label: "Logística",
     icon: BarChart3,
     items: [
@@ -96,18 +88,20 @@ const navigationGroups: NavGroup[] = [
     items: [
       { to: "/technicians", label: "Técnicos", icon: Users, module: "technicians" },
       { to: "/users", label: "Usuários", icon: UserCog, module: "users" },
+      { to: "/history", label: "Histórico", icon: Clock, module: "users" },
     ]
   },
 ];
 
-// Additional single items after groups
-const additionalSingleItems: NavItem[] = [
-  { to: "/customer-tracking", label: "Acompanhamento de Clientes", icon: UserCheck, module: "customer_tracking" },
+// Single items between groups - Planejamento and Agendamento are separate
+const planningItems: NavItem[] = [
+  { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" },
+  { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" },
 ];
 
-// Special items that require specific roles
-const adminOnlyItems: NavItem[] = [
-  { to: "/history", label: "Histórico", icon: Clock, module: "users" },
+// Additional single items after Logística
+const additionalSingleItems: NavItem[] = [
+  { to: "/customer-tracking", label: "Acompanhamento de Clientes", icon: UserCheck, module: "customer_tracking" },
 ];
 
 export function AppNavigation() {
@@ -187,10 +181,11 @@ export function AppNavigation() {
 
   const visibleGroups = getVisibleGroups();
   const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
+  const visiblePlanningItems = planningItems.filter(canAccessItem);
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
-  const visibleAdminItems = (role === 'admin' || role === 'gestor') 
-    ? adminOnlyItems.filter(canAccessItem) 
-    : [];
+
+  // Find Logística group index to insert items after it
+  const logisticaIndex = visibleGroups.findIndex(g => g.label === "Logística");
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -236,8 +231,8 @@ export function AppNavigation() {
                 );
               })}
 
-              {/* Navigation Groups */}
-              {visibleGroups.map((group) => {
+              {/* Homologação Group */}
+              {visibleGroups.filter(g => g.label === "Homologação").map((group) => {
                 const GroupIcon = group.icon;
                 const isOpen = openGroups[group.label] || false;
                 const groupActive = isGroupActive(group.items);
@@ -295,7 +290,77 @@ export function AppNavigation() {
                 );
               })}
 
-              {/* Additional Single Items (after groups) */}
+              {/* Planejamento and Agendamento - Separate items */}
+              {visiblePlanningItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.to)}
+                      tooltip={isCollapsed ? item.label : undefined}
+                      className="touch-manipulation tap-target"
+                    >
+                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+
+              {/* Logística Group */}
+              {visibleGroups.filter(g => g.label === "Logística").map((group) => {
+                const GroupIcon = group.icon;
+                const isOpen = openGroups[group.label] || false;
+                const groupActive = isGroupActive(group.items);
+                
+                return (
+                  <SidebarMenuItem key={group.label}>
+                    <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={isCollapsed ? group.label : undefined}
+                          className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
+                        >
+                          <GroupIcon className="h-4 w-4 flex-shrink-0" />
+                          {!isCollapsed && (
+                            <>
+                              <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
+                              {isOpen ? (
+                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                              )}
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-4">
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </SidebarMenuItem>
+                );
+              })}
+
+              {/* Acompanhamento de Clientes - After Logística */}
               {visibleAdditionalItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -315,31 +380,52 @@ export function AppNavigation() {
                 );
               })}
 
-              {/* Admin Only Items */}
-              {visibleAdminItems.map((item) => {
-                const Icon = item.icon;
+              {/* Configuração Group - With Histórico inside */}
+              {visibleGroups.filter(g => g.label === "Configuração").map((group) => {
+                const GroupIcon = group.icon;
+                const isOpen = openGroups[group.label] || false;
+                const groupActive = isGroupActive(group.items);
+                
                 return (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.to)}
-                      tooltip={isCollapsed ? item.label : undefined}
-                      className="touch-manipulation tap-target"
-                    >
-                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && (
-                          <div className="flex items-center gap-2 flex-1">
-                            <span className="font-medium text-sm truncate">{item.label}</span>
-                            {item.showBadge && editRequestsCount > 0 && (
-                              <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                {editRequestsCount}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
+                  <SidebarMenuItem key={group.label}>
+                    <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={isCollapsed ? group.label : undefined}
+                          className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
+                        >
+                          <GroupIcon className="h-4 w-4 flex-shrink-0" />
+                          {!isCollapsed && (
+                            <>
+                              <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
+                              {isOpen ? (
+                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                              )}
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-4">
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </Collapsible>
                   </SidebarMenuItem>
                 );
               })}
