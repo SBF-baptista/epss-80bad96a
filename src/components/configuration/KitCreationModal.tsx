@@ -536,23 +536,29 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
             {/* Segsale Mirror Section */}
             {renderSegsaleMirrorSection()}
 
-            {/* Items Sections */}
-            {renderEquipmentSection()}
-            {renderSegsaleDropdownSection(
-              "Acessórios",
-              "accessories",
-              <Package className="w-4 h-4" />,
-              formData.accessories,
-              segsaleAccessories,
-            )}
-            {renderSegsaleDropdownSection(
-              "Módulos",
-              "modules",
-              <Cpu className="w-4 h-4" />,
-              formData.modules,
-              segsaleModules,
-            )}
-            {renderSuppliesSection()}
+            {/* Items Sections - 2x2 Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>{renderEquipmentSection()}</div>
+              <div>
+                {renderSegsaleDropdownSection(
+                  "Acessórios",
+                  "accessories",
+                  <Package className="w-4 h-4" />,
+                  formData.accessories,
+                  segsaleAccessories,
+                )}
+              </div>
+              <div>
+                {renderSegsaleDropdownSection(
+                  "Módulos",
+                  "modules",
+                  <Cpu className="w-4 h-4" />,
+                  formData.modules,
+                  segsaleModules,
+                )}
+              </div>
+              <div>{renderSuppliesSection()}</div>
+            </div>
           </div>
 
           {/* Actions */}
