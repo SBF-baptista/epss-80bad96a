@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Minus, Package, Wrench, Box, AlertTriangle, Cpu, Loader2, Link2 } from "lucide-react";
 import {
@@ -215,6 +216,9 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     }
   };
 
+  const moduleOptions = segsaleModules.map((m) => ({ value: m.nome, label: m.nome }));
+  const accessoryOptions = segsaleAccessories.map((a) => ({ value: a.nome, label: a.nome }));
+
   const renderSegsaleMirrorSection = () => (
     <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
       <div className="flex items-center gap-2">
@@ -222,7 +226,6 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         <Label className="text-base font-medium">Espelho Segsale</Label>
         {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
       </div>
-      <p className="text-xs text-muted-foreground"></p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Produto</Label>
@@ -241,59 +244,33 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Módulos</Label>
-          <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1 bg-background">
-            {segsaleModules.map((module) => {
-              const isSelected = formData.segsaleMirror.modules.includes(module.nome);
-              return (
-                <label
-                  key={module.id}
-                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? "bg-primary/10" : ""}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleSegsaleMirrorItem("modules", module.nome)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <span className="text-sm truncate">{module.nome}</span>
-                </label>
-              );
-            })}
-            {segsaleModules.length === 0 && (
-              <span className="text-xs text-muted-foreground">Nenhum módulo disponível</span>
-            )}
-          </div>
-          {formData.segsaleMirror.modules.length > 0 && (
-            <p className="text-xs text-muted-foreground">{formData.segsaleMirror.modules.length} selecionado(s)</p>
-          )}
+          <MultiSelect
+            options={moduleOptions}
+            selected={formData.segsaleMirror.modules}
+            onChange={(values) =>
+              setFormData((prev) => ({
+                ...prev,
+                segsaleMirror: { ...prev.segsaleMirror, modules: values },
+              }))
+            }
+            placeholder="Selecione módulos"
+            disabled={segsaleLoading}
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Acessórios</Label>
-          <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1 bg-background">
-            {segsaleAccessories.map((accessory) => {
-              const isSelected = formData.segsaleMirror.accessories.includes(accessory.nome);
-              return (
-                <label
-                  key={accessory.id}
-                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? "bg-primary/10" : ""}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleSegsaleMirrorItem("accessories", accessory.nome)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <span className="text-sm truncate">{accessory.nome}</span>
-                </label>
-              );
-            })}
-            {segsaleAccessories.length === 0 && (
-              <span className="text-xs text-muted-foreground">Nenhum acessório disponível</span>
-            )}
-          </div>
-          {formData.segsaleMirror.accessories.length > 0 && (
-            <p className="text-xs text-muted-foreground">{formData.segsaleMirror.accessories.length} selecionado(s)</p>
-          )}
+          <MultiSelect
+            options={accessoryOptions}
+            selected={formData.segsaleMirror.accessories}
+            onChange={(values) =>
+              setFormData((prev) => ({
+                ...prev,
+                segsaleMirror: { ...prev.segsaleMirror, accessories: values },
+              }))
+            }
+            placeholder="Selecione acessórios"
+            disabled={segsaleLoading}
+          />
         </div>
       </div>
     </div>
