@@ -15,12 +15,14 @@ export interface CreateUserData {
   password: string
   baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador'
   permissions?: Record<string, string>
+  accessProfileId?: string
 }
 
 export interface UpdateUserData {
   userId: string
   baseRole?: 'admin' | 'gestor' | 'operador' | 'visualizador'
   permissions?: Record<string, string>
+  accessProfileId?: string
   resetPassword?: boolean
 }
 

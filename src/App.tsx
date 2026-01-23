@@ -28,6 +28,7 @@ import SegsaleTest from "./pages/SegsaleTest";
 import History from "./pages/History";
 import EditRequests from "./pages/EditRequests";
 import ModuleSelection from "./pages/ModuleSelection";
+import AccessProfiles from "./pages/AccessProfiles";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -242,6 +243,15 @@ function App() {
                   <Layout>
                     <ModuleSelection />
                   </Layout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Access Profiles - requires admin */}
+              <Route path="/access-profiles" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <AccessProfiles />
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
               
