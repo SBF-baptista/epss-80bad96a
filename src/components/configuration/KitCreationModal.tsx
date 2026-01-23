@@ -109,7 +109,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     }));
   };
 
-  const toggleSegsaleMirrorItem = (field: 'modules' | 'accessories', value: string) => {
+  const toggleSegsaleMirrorItem = (field: "modules" | "accessories", value: string) => {
     setFormData((prev) => {
       const currentItems = prev.segsaleMirror[field];
       const isSelected = currentItems.includes(value);
@@ -117,9 +117,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         ...prev,
         segsaleMirror: {
           ...prev.segsaleMirror,
-          [field]: isSelected
-            ? currentItems.filter((item) => item !== value)
-            : [...currentItems, value],
+          [field]: isSelected ? currentItems.filter((item) => item !== value) : [...currentItems, value],
         },
       };
     });
@@ -228,10 +226,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Produto</Label>
-          <Select
-            value={formData.segsaleMirror.product}
-            onValueChange={(value) => updateSegsaleMirrorProduct(value)}
-          >
+          <Select value={formData.segsaleMirror.product} onValueChange={(value) => updateSegsaleMirrorProduct(value)}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione produto" />
             </SelectTrigger>
@@ -245,19 +240,19 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Módulos (múltipla seleção)</Label>
+          <Label className="text-xs text-muted-foreground">Módulos</Label>
           <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1 bg-background">
             {segsaleModules.map((module) => {
               const isSelected = formData.segsaleMirror.modules.includes(module.nome);
               return (
                 <label
                   key={module.id}
-                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/10' : ''}`}
+                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? "bg-primary/10" : ""}`}
                 >
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => toggleSegsaleMirrorItem('modules', module.nome)}
+                    onChange={() => toggleSegsaleMirrorItem("modules", module.nome)}
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <span className="text-sm truncate">{module.nome}</span>
@@ -273,19 +268,19 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
           )}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Acessórios (múltipla seleção)</Label>
+          <Label className="text-xs text-muted-foreground">Acessórios</Label>
           <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1 bg-background">
             {segsaleAccessories.map((accessory) => {
               const isSelected = formData.segsaleMirror.accessories.includes(accessory.nome);
               return (
                 <label
                   key={accessory.id}
-                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/10' : ''}`}
+                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 ${isSelected ? "bg-primary/10" : ""}`}
                 >
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => toggleSegsaleMirrorItem('accessories', accessory.nome)}
+                    onChange={() => toggleSegsaleMirrorItem("accessories", accessory.nome)}
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <span className="text-sm truncate">{accessory.nome}</span>
