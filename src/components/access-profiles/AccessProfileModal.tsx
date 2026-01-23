@@ -11,24 +11,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { accessProfileService, AccessProfile } from '@/services/accessProfileService'
 import { PermissionMatrix } from '@/components/user-management/PermissionMatrix'
 import { 
   AppModule, 
   PermissionLevel, 
-  BASE_ROLE_LABELS,
   getDefaultPermissionsForRole 
 } from '@/types/permissions'
-
-type BaseRole = 'admin' | 'gestor' | 'operador' | 'visualizador'
 
 interface AccessProfileModalProps {
   open: boolean
@@ -42,9 +32,8 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
   
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [baseRole, setBaseRole] = useState<BaseRole>('visualizador')
   const [permissions, setPermissions] = useState<Record<AppModule, PermissionLevel>>(() => 
-    getDefaultPermissionsForRole('visualizador')
+    getDefaultPermissionsForRole('operador')
   )
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -55,24 +44,14 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
       if (profile) {
         setName(profile.name)
         setDescription(profile.description || '')
-        setBaseRole(profile.base_role)
         setPermissions(profile.permissions)
       } else {
         setName('')
         setDescription('')
-        setBaseRole('visualizador')
-        setPermissions(getDefaultPermissionsForRole('visualizador'))
+        setPermissions(getDefaultPermissionsForRole('operador'))
       }
     }
   }, [open, profile])
-
-  // Update permissions when base role changes (only for new profiles)
-  const handleRoleChange = (newRole: BaseRole) => {
-    setBaseRole(newRole)
-    if (!isEditing) {
-      setPermissions(getDefaultPermissionsForRole(newRole))
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,14 +74,14 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
         result = await accessProfileService.updateProfile(profile.id, {
           name,
           description: description || undefined,
-          base_role: baseRole,
+          base_role: 'operador',
           permissions
         })
       } else {
         result = await accessProfileService.createProfile({
           name,
           description: description || undefined,
-          base_role: baseRole,
+          base_role: 'operador',
           permissions
         })
       }
@@ -158,29 +137,15 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="baseRole">Função Base</Label>
-              <Select value={baseRole} onValueChange={(value: BaseRole) => handleRoleChange(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma função" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(BASE_ROLE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descreva o propósito deste perfil..."
+                rows={2}
+              />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descreva o propósito deste perfil..."
-              rows={2}
-            />
           </div>
 
           {/* Permission Matrix */}
@@ -189,13 +154,7 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
             <PermissionMatrix 
               permissions={permissions} 
               onChange={setPermissions}
-              disabled={baseRole === 'admin'}
             />
-            {baseRole === 'admin' && (
-              <p className="text-xs text-muted-foreground">
-                Perfis de Administrador têm acesso total a todos os módulos.
-              </p>
-            )}
           </div>
 
           <DialogFooter>
