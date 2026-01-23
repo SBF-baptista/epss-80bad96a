@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   AppModule, 
   PermissionLevel, 
@@ -54,15 +53,27 @@ export const PermissionMatrix = ({
     }
   };
 
+  const groupEntries = Object.entries(MODULE_GROUPS);
+  const firstGroupKey = groupEntries[0]?.[0] || 'kickoff';
+
   return (
-    <div className="space-y-6">
-      {Object.entries(MODULE_GROUPS).map(([groupKey, group]) => (
-        <Card key={groupKey}>
-          <CardHeader className="py-3">
-            <CardTitle className="text-base font-medium">{group.label}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-4">
+    <div className="space-y-4">
+      <Tabs defaultValue={firstGroupKey} className="w-full">
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
+          {groupEntries.map(([groupKey, group]) => (
+            <TabsTrigger 
+              key={groupKey} 
+              value={groupKey}
+              className="flex-1 min-w-[100px] text-xs sm:text-sm"
+            >
+              {group.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {groupEntries.map(([groupKey, group]) => (
+          <TabsContent key={groupKey} value={groupKey} className="mt-4">
+            <div className="space-y-4 border rounded-lg p-4">
               {/* Header row */}
               <div className="grid grid-cols-5 gap-2 text-xs font-medium text-muted-foreground border-b pb-2">
                 <div>Módulo</div>
@@ -95,42 +106,38 @@ export const PermissionMatrix = ({
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      ))}
+          </TabsContent>
+        ))}
+      </Tabs>
 
       {/* Summary */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-base font-medium">Resumo de Permissões</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(permissions)
-              .filter(([_, level]) => level !== 'none')
-              .map(([module, level]) => {
-                const moduleConfig = Object.values(MODULE_GROUPS)
-                  .flatMap(g => g.modules)
-                  .find(m => m.key === module);
-                
-                return (
-                  <Badge 
-                    key={module} 
-                    variant={getPermissionBadgeVariant(level)}
-                    className="text-xs"
-                  >
-                    {moduleConfig?.label}: {PERMISSION_LABELS[level]}
-                  </Badge>
-                );
-              })}
-            {Object.values(permissions).every(level => level === 'none') && (
-              <span className="text-sm text-muted-foreground">
-                Nenhuma permissão configurada
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="border rounded-lg p-4">
+        <h4 className="text-sm font-medium mb-3">Resumo de Permissões</h4>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(permissions)
+            .filter(([_, level]) => level !== 'none')
+            .map(([module, level]) => {
+              const moduleConfig = Object.values(MODULE_GROUPS)
+                .flatMap(g => g.modules)
+                .find(m => m.key === module);
+              
+              return (
+                <Badge 
+                  key={module} 
+                  variant={getPermissionBadgeVariant(level)}
+                  className="text-xs"
+                >
+                  {moduleConfig?.label}: {PERMISSION_LABELS[level]}
+                </Badge>
+              );
+            })}
+          {Object.values(permissions).every(level => level === 'none') && (
+            <span className="text-sm text-muted-foreground">
+              Nenhuma permissão configurada
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
