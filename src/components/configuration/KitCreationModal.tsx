@@ -52,7 +52,7 @@ const initialFormData: KitFormData = {
   category: "",
   equipment: [{ item_name: "", item_type: "equipment", quantity: 1, description: "", notes: "" }],
   accessories: [{ item_name: "", item_type: "accessory", quantity: 1, description: "", notes: "" }],
-  modules: [{ item_name: "", item_type: "accessory", quantity: 1, description: "", notes: "" }],
+  modules: [{ item_name: "", item_type: "module", quantity: 1, description: "", notes: "" }],
   supplies: [{ item_name: "", item_type: "supply", quantity: 1, description: "", notes: "" }],
   segsaleMirror: { product: "", modules: [], accessories: [] },
 };
@@ -70,10 +70,15 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
   } = useSegsaleExtras();
 
   const addItem = (type: "equipment" | "accessories" | "modules" | "supplies") => {
-    const itemType = type === "equipment" ? "equipment" : type === "supplies" ? "supply" : "accessory";
+    const itemTypeMap: Record<string, string> = {
+      equipment: "equipment",
+      accessories: "accessory",
+      modules: "module",
+      supplies: "supply"
+    };
     const newItem = {
       item_name: "",
-      item_type: itemType,
+      item_type: itemTypeMap[type],
       quantity: 1,
       description: "",
       notes: "",
