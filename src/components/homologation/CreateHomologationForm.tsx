@@ -18,14 +18,15 @@ interface CreateHomologationFormProps {
 
 const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const { toast } = useToast();
-  const { isOperadorHomologacao } = useUserRole();
+  const { canEditModule } = useUserRole();
+  const canEditHomologation = canEditModule('homologation');
   const [isCreating, setIsCreating] = useState(false);
   const [selectedBrandCode, setSelectedBrandCode] = useState("");
   const [selectedBrandName, setSelectedBrandName] = useState("");
   const [selectedModelCode, setSelectedModelCode] = useState("");
   const [selectedModelName, setSelectedModelName] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [nextStep, setNextStep] = useState<"queue" | "execute" | "">(isOperadorHomologacao() ? "execute" : "");
+  const [nextStep, setNextStep] = useState<"queue" | "execute" | "">(canEditHomologation ? "execute" : "");
   const [openBrand, setOpenBrand] = useState(false);
   const [openModel, setOpenModel] = useState(false);
   const [openYear, setOpenYear] = useState(false);
@@ -35,10 +36,10 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const { years, loading: loadingYears } = useFipeYears(selectedBrandCode, selectedModelCode);
 
   const handleCreateCard = async () => {
-    if (!selectedBrandName || !selectedModelName || (!isOperadorHomologacao() && !nextStep)) {
+    if (!selectedBrandName || !selectedModelName || (!canEditHomologation && !nextStep)) {
       toast({
         title: "Campos obrigatórios",
-        description: isOperadorHomologacao() 
+        description: canEditHomologation 
           ? "Por favor, selecione marca e modelo" 
           : "Por favor, selecione marca, modelo e como deseja prosseguir",
         variant: "destructive"
@@ -50,7 +51,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
 
     setIsCreating(true);
     try {
-      const executeNow = isOperadorHomologacao() || nextStep === "execute";
+      const executeNow = canEditHomologation || nextStep === "execute";
       const newCard = await createHomologationCard(selectedBrandName, selectedModelName, year, undefined, executeNow);
       
       // Registrar log da criação
@@ -66,7 +67,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
       setSelectedModelCode("");
       setSelectedModelName("");
       setSelectedYear("");
-      setNextStep(isOperadorHomologacao() ? "execute" : "");
+      setNextStep(canEditHomologation ? "execute" : "");
       
       onUpdate();
       const statusMessage = executeNow ? " e movido para execução de testes" : " e adicionado à fila";
@@ -342,7 +343,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
           </div>
         </div>
         
-        {!isOperadorHomologacao() && (
+        {!canEditHomologation && (
           <div>
             <Label className="block text-sm font-medium text-gray-700 mb-3">
               Como deseja prosseguir? *
@@ -374,7 +375,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
           </div>
         )}
         
-        {isOperadorHomologacao() && (
+        {canEditHomologation && (
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800 font-medium">
               Como operador de homologação, este card será automaticamente direcionado para execução de testes.

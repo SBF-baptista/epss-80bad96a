@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,7 +18,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { Wand2 } from 'lucide-react'
 import { userManagementService } from '@/services/userManagementService'
+import { PermissionMatrix } from './PermissionMatrix'
+import { 
+  AppModule, 
+  PermissionLevel, 
+  BASE_ROLE_LABELS,
+  getDefaultPermissionsForRole 
+} from '@/types/permissions'
+
+type BaseRole = 'admin' | 'gestor' | 'operador' | 'visualizador'
 
 interface CreateUserModalProps {
   open: boolean
@@ -29,25 +39,34 @@ interface CreateUserModalProps {
 export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalProps) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'admin' | 'gestor' | 'operador_kickoff' | 'operador_homologacao' | 'operador_agendamento' | 'operador_suprimentos'>('operador_homologacao')
+  const [baseRole, setBaseRole] = useState<BaseRole>('visualizador')
+  const [permissions, setPermissions] = useState<Record<AppModule, PermissionLevel>>(() => 
+    getDefaultPermissionsForRole('visualizador')
+  )
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
+  // Update permissions when base role changes
+  useEffect(() => {
+    setPermissions(getDefaultPermissionsForRole(baseRole))
+  }, [baseRole])
+
   const generatePassword = () => {
-    // Generate a cryptographically secure random password
-    const array = new Uint8Array(16);
-    crypto.getRandomValues(array);
-    const password = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 12);
-    setPassword(password);
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
+    let result = ''
+    for (let i = 0; i < 12; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setPassword(result)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!email || !password || !role) {
+    if (!email || !password) {
       toast({
-        title: 'Erro',
-        description: 'Todos os campos são obrigatórios',
+        title: 'Campos obrigatórios',
+        description: 'Por favor, preencha email e senha',
         variant: 'destructive'
       })
       return
@@ -57,21 +76,24 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
     
     try {
       const response = await userManagementService.createUser({
-        email,
-        password,
-        role
+        email, 
+        password, 
+        baseRole, 
+        permissions
       })
 
       if (response.success) {
         toast({
           title: 'Sucesso',
-          description: response.message || 'Usuário criado com sucesso'
+          description: 'Usuário criado com sucesso'
         })
+        onUserCreated()
+        onOpenChange(false)
+        // Reset form
         setEmail('')
         setPassword('')
-        setRole('operador_homologacao')
-        onOpenChange(false)
-        onUserCreated()
+        setBaseRole('visualizador')
+        setPermissions(getDefaultPermissionsForRole('visualizador'))
       } else {
         toast({
           title: 'Erro',
@@ -92,64 +114,77 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Criar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Preencha os dados para criar um novo usuário no sistema.
+            Preencha os dados e configure as permissões do novo usuário.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="usuario@exemplo.com"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
               <Input
-                id="password"
-                type="text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Senha temporária"
-                required
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="usuario@empresa.com"
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={generatePassword}
-                className="px-3"
-              >
-                Gerar
-              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="password"
+                  type="text"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Senha temporária"
+                  className="flex-1"
+                />
+                <Button type="button" variant="outline" size="icon" onClick={generatePassword}>
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
+          {/* Base Role */}
           <div className="space-y-2">
-            <Label htmlFor="role">Função</Label>
-            <Select value={role} onValueChange={(value: any) => setRole(value)}>
+            <Label htmlFor="baseRole">Função Base</Label>
+            <Select value={baseRole} onValueChange={(value: BaseRole) => setBaseRole(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma função" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="gestor">Gestor</SelectItem>
-                <SelectItem value="operador_kickoff">Operador de Kickoff</SelectItem>
-                <SelectItem value="operador_homologacao">Operador de Homologação</SelectItem>
-                <SelectItem value="operador_agendamento">Operador de Agendamento</SelectItem>
-                <SelectItem value="operador_suprimentos">Operador de Suprimentos</SelectItem>
+                {Object.entries(BASE_ROLE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              A função base define as permissões padrão. Você pode personalizar abaixo.
+            </p>
+          </div>
+
+          {/* Permission Matrix */}
+          <div className="space-y-2">
+            <Label>Permissões por Módulo</Label>
+            <PermissionMatrix 
+              permissions={permissions} 
+              onChange={setPermissions}
+              disabled={baseRole === 'admin'}
+            />
+            {baseRole === 'admin' && (
+              <p className="text-xs text-muted-foreground">
+                Administradores têm acesso total a todos os módulos.
+              </p>
+            )}
           </div>
 
           <DialogFooter>

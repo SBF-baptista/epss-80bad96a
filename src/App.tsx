@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import { Layout } from "@/components/Layout";
@@ -29,6 +28,7 @@ import SegsaleTest from "./pages/SegsaleTest";
 import History from "./pages/History";
 import EditRequests from "./pages/EditRequests";
 import ModuleSelection from "./pages/ModuleSelection";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -36,8 +36,8 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,
-      staleTime: 1000 * 60 * 10, // 10 minutes - reduce unnecessary refetches
-      gcTime: 1000 * 60 * 60, // 1 hour - keep cache to avoid remount refetch
+      staleTime: 1000 * 60 * 10,
+      gcTime: 1000 * 60 * 60,
     },
   },
 });
@@ -65,57 +65,70 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Auth />} />
+              
               {/* Smart redirect based on user role */}
               <Route path="/" element={
                 <ProtectedRoute>
                   <SmartRedirect />
                 </ProtectedRoute>
               } />
+              
+              {/* Dashboard - requires dashboard module access */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="dashboard">
                     <Layout>
                       <Dashboard />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Kanban - requires kanban module access */}
               <Route path="/kanban" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_suprimentos']}>
+                  <RoleProtectedRoute requiredModule="kanban">
                     <Layout>
                       <Kanban />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Homologation - requires homologation module access */}
               <Route path="/homologation" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
+                  <RoleProtectedRoute requiredModule="homologation">
                     <Layout>
                       <Homologation />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Kits - requires kits module access */}
               <Route path="/kits" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
+                  <RoleProtectedRoute requiredModule="kits">
                     <Layout>
                       <KitManagement />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Accessories & Supplies - requires accessories_supplies module access */}
               <Route path="/accessories-supplies" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_homologacao']}>
+                  <RoleProtectedRoute requiredModule="accessories_supplies">
                     <Layout>
                       <AccessorySupplyHomologation />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Edit Requests - requires admin or gestor */}
               <Route path="/edit-requests" element={
                 <ProtectedRoute>
                   <RoleProtectedRoute allowedRoles={['gestor', 'admin']}>
@@ -125,85 +138,105 @@ function App() {
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Technicians - requires technicians module access */}
               <Route path="/technicians" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="technicians">
                     <Layout>
                       <TechnicianManagement />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Customer Tracking - requires customer_tracking module access */}
               <Route path="/customer-tracking" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
+                  <RoleProtectedRoute requiredModule="customer_tracking">
                     <Layout>
                       <CustomerTracking />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Planning - requires planning module access */}
               <Route path="/planning" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
+                  <RoleProtectedRoute requiredModule="planning">
                     <Layout>
                       <Planning />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Scheduling - requires scheduling module access */}
               <Route path="/scheduling" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_agendamento']}>
+                  <RoleProtectedRoute requiredModule="scheduling">
                     <Layout>
                       <Scheduling />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Orders - requires orders module access */}
               <Route path="/orders" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="orders">
                     <Layout>
                       <Orders />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Configuration - requires scheduling module access */}
               <Route path="/config" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="scheduling">
                     <Layout>
                       <ConfigurationManagement />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Users - requires users module access */}
               <Route path="/users" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="users">
                     <UserManagement />
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Kickoff - requires kickoff module access */}
               <Route path="/kickoff" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['operador_kickoff']}>
+                  <RoleProtectedRoute requiredModule="kickoff">
                     <Layout>
                       <Kickoff />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* History - requires admin */}
               <Route path="/history" element={
                 <ProtectedRoute>
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <History />
                     </Layout>
-              </RoleProtectedRoute>
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Module Selection - no special permissions needed */}
               <Route path="/modules" element={
                 <ProtectedRoute>
                   <Layout>
@@ -211,6 +244,7 @@ function App() {
                   </Layout>
                 </ProtectedRoute>
               } />
+              
               <Route path="/segsale-test" element={<SegsaleTest />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

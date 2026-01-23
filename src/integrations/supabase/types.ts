@@ -1472,6 +1472,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_module_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          module: Database["public"]["Enums"]["app_module"]
+          permission: Database["public"]["Enums"]["permission_level"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module: Database["public"]["Enums"]["app_module"]
+          permission?: Database["public"]["Enums"]["permission_level"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module?: Database["public"]["Enums"]["app_module"]
+          permission?: Database["public"]["Enums"]["permission_level"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1601,6 +1628,27 @@ export type Database = {
           created_schedule: boolean
         }[]
       }
+      can_approve_module: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      can_edit_module: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      can_view_module: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       create_automatic_order_atomic: {
         Args: {
           p_company_name?: string
@@ -1636,6 +1684,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_module_permission: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1659,6 +1714,19 @@ export type Database = {
       relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
     }
     Enums: {
+      app_module:
+        | "kickoff"
+        | "customer_tracking"
+        | "homologation"
+        | "kits"
+        | "accessories_supplies"
+        | "planning"
+        | "scheduling"
+        | "kanban"
+        | "orders"
+        | "dashboard"
+        | "technicians"
+        | "users"
       app_role:
         | "admin"
         | "gestor"
@@ -1666,6 +1734,8 @@ export type Database = {
         | "operador_homologacao"
         | "operador_agendamento"
         | "operador_suprimentos"
+        | "visualizador"
+        | "operador"
       homologation_status:
         | "homologar"
         | "em_homologacao"
@@ -1674,6 +1744,7 @@ export type Database = {
         | "agendamento_teste"
         | "execucao_teste"
         | "armazenamento_plataforma"
+      permission_level: "none" | "view" | "edit" | "approve" | "admin"
       status_pedido: "novos" | "producao" | "aguardando" | "enviado" | "standby"
       vehicle_usage_type:
         | "particular"
@@ -1810,6 +1881,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_module: [
+        "kickoff",
+        "customer_tracking",
+        "homologation",
+        "kits",
+        "accessories_supplies",
+        "planning",
+        "scheduling",
+        "kanban",
+        "orders",
+        "dashboard",
+        "technicians",
+        "users",
+      ],
       app_role: [
         "admin",
         "gestor",
@@ -1817,6 +1902,8 @@ export const Constants = {
         "operador_homologacao",
         "operador_agendamento",
         "operador_suprimentos",
+        "visualizador",
+        "operador",
       ],
       homologation_status: [
         "homologar",
@@ -1827,6 +1914,7 @@ export const Constants = {
         "execucao_teste",
         "armazenamento_plataforma",
       ],
+      permission_level: ["none", "view", "edit", "approve", "admin"],
       status_pedido: ["novos", "producao", "aguardando", "enviado", "standby"],
       vehicle_usage_type: [
         "particular",

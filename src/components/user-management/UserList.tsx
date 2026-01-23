@@ -140,7 +140,12 @@ export const UserList = ({ users, onUserUpdated }: UserListProps) => {
 
       {editingUser && (
         <EditUserModal
-          user={editingUser}
+          user={{
+            id: editingUser.id,
+            email: editingUser.email,
+            roles: editingUser.roles,
+            permissions: editingUser.permissions
+          }}
           open={!!editingUser}
           onOpenChange={(open) => !open && setEditingUser(null)}
           onUserUpdated={() => {

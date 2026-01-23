@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppModule } from "@/types/permissions";
 import {
   LayoutDashboard,
   Package,
@@ -8,7 +9,6 @@ import {
   Calendar,
   Users,
   Truck,
-  FileText,
   Settings,
   History,
   UserCog,
@@ -22,7 +22,7 @@ interface ModuleCard {
   description: string;
   icon: React.ReactNode;
   path: string;
-  allowedRoles: string[];
+  module: AppModule;
   gradient: string;
 }
 
@@ -32,7 +32,7 @@ const modules: ModuleCard[] = [
     description: "Visão geral e métricas do sistema",
     icon: <LayoutDashboard className="h-8 w-8" />,
     path: "/dashboard",
-    allowedRoles: ["admin", "gestor"],
+    module: "dashboard",
     gradient: "from-blue-500 to-blue-600",
   },
   {
@@ -40,7 +40,7 @@ const modules: ModuleCard[] = [
     description: "Recepção e processamento de veículos",
     icon: <Rocket className="h-8 w-8" />,
     path: "/kickoff",
-    allowedRoles: ["admin", "gestor", "operador_kickoff"],
+    module: "kickoff",
     gradient: "from-purple-500 to-purple-600",
   },
   {
@@ -48,7 +48,7 @@ const modules: ModuleCard[] = [
     description: "Gerenciamento de homologações de veículos",
     icon: <ClipboardCheck className="h-8 w-8" />,
     path: "/homologation",
-    allowedRoles: ["admin", "gestor", "operador_homologacao"],
+    module: "homologation",
     gradient: "from-emerald-500 to-emerald-600",
   },
   {
@@ -56,15 +56,15 @@ const modules: ModuleCard[] = [
     description: "Planejamento de instalações",
     icon: <Calendar className="h-8 w-8" />,
     path: "/planning",
-    allowedRoles: ["admin", "gestor", "operador_agendamento"],
+    module: "planning",
     gradient: "from-orange-500 to-orange-600",
   },
   {
     title: "Agendamento",
     description: "Agenda de técnicos e instalações",
     icon: <Clock className="h-8 w-8" />,
-    path: "/scheduling",
-    allowedRoles: ["admin", "gestor", "operador_agendamento"],
+    path: "/config",
+    module: "scheduling",
     gradient: "from-teal-500 to-teal-600",
   },
   {
@@ -72,7 +72,7 @@ const modules: ModuleCard[] = [
     description: "Esteira de pedidos e envios",
     icon: <Truck className="h-8 w-8" />,
     path: "/kanban",
-    allowedRoles: ["admin", "gestor", "operador_suprimentos"],
+    module: "kanban",
     gradient: "from-amber-500 to-amber-600",
   },
   {
@@ -80,7 +80,7 @@ const modules: ModuleCard[] = [
     description: "Tracking de clientes e pedidos",
     icon: <UserCheck className="h-8 w-8" />,
     path: "/customer-tracking",
-    allowedRoles: ["admin", "gestor", "operador_kickoff"],
+    module: "customer_tracking",
     gradient: "from-indigo-500 to-indigo-600",
   },
   {
@@ -88,7 +88,7 @@ const modules: ModuleCard[] = [
     description: "Gerenciamento de kits de instalação",
     icon: <Package className="h-8 w-8" />,
     path: "/kits",
-    allowedRoles: ["admin", "gestor", "operador_homologacao"],
+    module: "kits",
     gradient: "from-cyan-500 to-cyan-600",
   },
   {
@@ -96,7 +96,7 @@ const modules: ModuleCard[] = [
     description: "Cadastro e gestão de técnicos",
     icon: <UserCog className="h-8 w-8" />,
     path: "/technicians",
-    allowedRoles: ["admin"],
+    module: "technicians",
     gradient: "from-rose-500 to-rose-600",
   },
   {
@@ -104,7 +104,7 @@ const modules: ModuleCard[] = [
     description: "Gerenciamento de usuários do sistema",
     icon: <Users className="h-8 w-8" />,
     path: "/users",
-    allowedRoles: ["admin"],
+    module: "users",
     gradient: "from-slate-500 to-slate-600",
   },
   {
@@ -112,7 +112,7 @@ const modules: ModuleCard[] = [
     description: "Logs e histórico de ações",
     icon: <History className="h-8 w-8" />,
     path: "/history",
-    allowedRoles: ["admin"],
+    module: "users", // Requires user management access
     gradient: "from-gray-500 to-gray-600",
   },
   {
@@ -120,14 +120,14 @@ const modules: ModuleCard[] = [
     description: "Regras de automação e configurações",
     icon: <Settings className="h-8 w-8" />,
     path: "/config",
-    allowedRoles: ["admin"],
+    module: "scheduling",
     gradient: "from-zinc-500 to-zinc-600",
   },
 ];
 
 const ModuleSelection = () => {
   const navigate = useNavigate();
-  const { role, loading } = useUserRole();
+  const { role, canViewModule, loading } = useUserRole();
 
   if (loading) {
     return (
@@ -140,18 +140,25 @@ const ModuleSelection = () => {
     );
   }
 
-  // Filter modules based on user role
+  // Filter modules based on user permissions
   const availableModules = modules.filter((module) => {
-    if (role === "admin" || role === "gestor") return true;
-    return module.allowedRoles.includes(role || "");
+    // Admin has access to everything
+    if (role === "admin") return true;
+    // Check module-specific permission
+    return canViewModule(module.module);
   });
+
+  // Remove duplicates (config appears twice with different titles)
+  const uniqueModules = availableModules.filter((module, index, self) => 
+    index === self.findIndex(m => m.path === module.path)
+  );
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
-          Bem-vindo ao Sistema EPSS
+          Bem-vindo ao OPM - SEGSAT
         </h1>
         <p className="text-muted-foreground text-lg">
           Selecione o módulo que deseja acessar
@@ -160,9 +167,9 @@ const ModuleSelection = () => {
 
       {/* Modules Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {availableModules.map((module) => (
+        {uniqueModules.map((module) => (
           <Card
-            key={module.path}
+            key={module.path + module.title}
             className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border overflow-hidden"
             onClick={() => navigate(module.path)}
           >
@@ -183,7 +190,7 @@ const ModuleSelection = () => {
       </div>
 
       {/* No modules message */}
-      {availableModules.length === 0 && (
+      {uniqueModules.length === 0 && (
         <div className="text-center py-12 bg-muted/50 rounded-lg">
           <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
           <p className="text-muted-foreground text-lg font-medium">

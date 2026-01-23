@@ -3,10 +3,8 @@ import { supabase } from '@/integrations/supabase/client'
 export type UserRole = 
   | 'admin' 
   | 'gestor' 
-  | 'operador_kickoff' 
-  | 'operador_homologacao' 
-  | 'operador_agendamento' 
-  | 'operador_suprimentos'
+  | 'operador' 
+  | 'visualizador'
 
 export const assignUserRole = async (userId: string, role: UserRole) => {
   const { data, error } = await supabase
