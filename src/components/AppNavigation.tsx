@@ -66,6 +66,7 @@ const navigationGroups: NavGroup[] = [
       { to: "/kits", label: "Kits", icon: Package, module: "kits" },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies" },
       { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling" },
+      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
     ]
   },
   {
@@ -103,7 +104,6 @@ const singleNavigationItems: NavItem[] = [
 
 // Special items that require specific roles
 const adminOnlyItems: NavItem[] = [
-  { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
   { to: "/history", label: "Histórico", icon: Clock, module: "users" },
 ];
 
@@ -272,7 +272,14 @@ export function AppNavigation() {
                               <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
                                 <Icon className="h-4 w-4 flex-shrink-0" />
                                 {!isCollapsed && (
-                                  <span className="font-medium text-sm truncate">{item.label}</span>
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <span className="font-medium text-sm truncate">{item.label}</span>
+                                    {item.showBadge && editRequestsCount > 0 && (
+                                      <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                                        {editRequestsCount}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 )}
                               </NavLink>
                             </SidebarMenuButton>
