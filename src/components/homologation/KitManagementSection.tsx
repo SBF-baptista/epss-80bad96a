@@ -79,6 +79,7 @@ const KitManagementSection: React.FC<KitManagementSectionProps> = ({ homologatio
         description: formData.description,
         equipment: formData.equipment,
         accessories: formData.accessories,
+        modules: [],
         supplies: formData.supplies,
       };
 

@@ -569,8 +569,8 @@ export type Database = {
           homologation_card_id: string | null
           id: string
           name: string
-          segsale_accessory: string | null
-          segsale_module: string | null
+          segsale_accessory: string[] | null
+          segsale_module: string[] | null
           segsale_product: string | null
           updated_at: string
         }
@@ -581,8 +581,8 @@ export type Database = {
           homologation_card_id?: string | null
           id?: string
           name: string
-          segsale_accessory?: string | null
-          segsale_module?: string | null
+          segsale_accessory?: string[] | null
+          segsale_module?: string[] | null
           segsale_product?: string | null
           updated_at?: string
         }
@@ -593,8 +593,8 @@ export type Database = {
           homologation_card_id?: string | null
           id?: string
           name?: string
-          segsale_accessory?: string | null
-          segsale_module?: string | null
+          segsale_accessory?: string[] | null
+          segsale_module?: string[] | null
           segsale_product?: string | null
           updated_at?: string
         }
