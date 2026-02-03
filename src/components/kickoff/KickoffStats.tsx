@@ -54,7 +54,7 @@ export const KickoffStats = ({ kickoffData, kickoffDates }: KickoffStatsProps) =
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 px-3 pb-3">
-          <div className="text-2xl font-bold text-secondary">{totalVehicles}</div>
+          <div className="text-2xl font-bold text-primary">{totalVehicles}</div>
         </CardContent>
       </Card>
 
