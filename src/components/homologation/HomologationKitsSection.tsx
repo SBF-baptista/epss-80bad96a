@@ -748,6 +748,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     <CheckCircle className="h-4 w-4 text-success" />
                                     <span className="text-sm font-medium text-success">Kit Totalmente Homologado</span>
                                   </div>
+                                </div>
                               )}
                               {/* Equipment List */}
                               {kit.equipment.length > 0 && (
