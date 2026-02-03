@@ -11,6 +11,7 @@ import { checkKickoffIntegrity } from "@/services/kickoffIntegrityCheck";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
+import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -146,6 +147,8 @@ const Kickoff = () => {
               />
             </div>
           </div>
+          
+          <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
           {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <Skeleton className="h-32" />
