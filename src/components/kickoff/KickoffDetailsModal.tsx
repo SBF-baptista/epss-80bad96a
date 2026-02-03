@@ -321,17 +321,29 @@ export const KickoffDetailsModal = ({
     setInstallationLocations(updated);
   };
 
+  // Validation checks
+  const hasValidLocations = installationLocations.some(loc => loc.city.trim() !== "" && loc.state.trim() !== "");
+  const allVehiclesValidated = vehicles.length > 0 && vehicles.every(v => validatedPlates.has(v.id));
+  const isFormValid = allVehiclesValidated && hasValidLocations;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Verificar se todos os veículos foram validados
+    if (!allVehiclesValidated) {
+      toast.error("Por favor, valide TODOS os veículos na coluna 'Validação' antes de concluir o kickoff.");
+      return;
+    }
+    
+    // Verificar se há pelo menos um local de instalação preenchido
+    if (!hasValidLocations) {
+      toast.error("Por favor, preencha pelo menos um local de instalação (cidade e estado).");
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      // Verificar se há pelo menos um veículo validado
-      if (validatedPlates.size === 0) {
-        toast.error("Por favor, valide pelo menos um veículo antes de concluir o kickoff.");
-        setLoading(false);
-        return;
-      }
 
       // Filtrar apenas os veículos validados
       const validatedVehicles = vehicles.filter(v => validatedPlates.has(v.id));
@@ -758,7 +770,7 @@ export const KickoffDetailsModal = ({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button type="submit" form="kickoff-form" disabled={loading}>
+          <Button type="submit" form="kickoff-form" disabled={loading || !isFormValid}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Package className="h-4 w-4 mr-2" />
             Realizar Kickoff
