@@ -656,11 +656,13 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 )}
 
                               {/* Espelho Segsale Section */}
-                              {(kit.segsale_product || (kit.segsale_modules && kit.segsale_modules.length > 0) || (kit.segsale_accessories && kit.segsale_accessories.length > 0)) && (
+                              {(kit.segsale_product ||
+                                (kit.segsale_modules && kit.segsale_modules.length > 0) ||
+                                (kit.segsale_accessories && kit.segsale_accessories.length > 0)) && (
                                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Link2 className="h-4 w-4 text-primary" />
-                                    <span className="text-sm font-medium text-primary">Espelho Segsale</span>
+                                    <span className="text-sm font-medium text-primary">Visão Segsale</span>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
                                     {kit.segsale_product && (
@@ -674,7 +676,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                         <span className="text-xs text-muted-foreground">Módulo(s)</span>
                                         <div className="font-medium">
                                           {kit.segsale_modules.map((mod, idx) => (
-                                            <span key={idx} className="block capitalize">{mod}</span>
+                                            <span key={idx} className="block capitalize">
+                                              {mod}
+                                            </span>
                                           ))}
                                         </div>
                                       </div>
@@ -684,7 +688,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                         <span className="text-xs text-muted-foreground">Acessório(s)</span>
                                         <div className="font-medium">
                                           {kit.segsale_accessories.map((acc, idx) => (
-                                            <span key={idx} className="block capitalize">{acc}</span>
+                                            <span key={idx} className="block capitalize">
+                                              {acc}
+                                            </span>
                                           ))}
                                         </div>
                                       </div>
