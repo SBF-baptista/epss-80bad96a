@@ -33,7 +33,7 @@ export const KickoffStats = ({ kickoffData, kickoffDates }: KickoffStatsProps) =
   const withBlockingClients = kickoffData?.clients.filter((client) => client.needs_blocking).length || 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
       <Card className="min-h-[90px]">
         <CardHeader className="pb-1 p-3">
           <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
