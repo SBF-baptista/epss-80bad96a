@@ -74,7 +74,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       equipment: "equipment",
       accessories: "accessory",
       modules: "module",
-      supplies: "supply"
+      supplies: "supply",
     };
     const newItem = {
       item_name: "",
@@ -228,7 +228,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
       <div className="flex items-center gap-2">
         <Link2 className="w-4 h-4 text-primary" />
-        <Label className="text-base font-medium">Espelho Segsale</Label>
+        <Label className="text-base font-medium">Visão Segsale</Label>
         {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
