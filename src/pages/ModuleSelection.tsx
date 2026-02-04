@@ -19,11 +19,12 @@ import {
 interface ModuleCard {
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: React.ComponentType<{ className?: string }>;
   path: string;
   module: AppModule;
   gradient: string;
   iconBg: string;
+  iconColor: string;
 }
 
 // Ordered according to sidebar hierarchy
@@ -31,101 +32,112 @@ const modules: ModuleCard[] = [
   {
     title: "Kickoff",
     description: "Recepção e processamento de veículos novos",
-    icon: <Rocket className="h-6 w-6" />,
+    icon: Rocket,
     path: "/kickoff",
     module: "kickoff",
     gradient: "from-violet-500 to-purple-600",
     iconBg: "bg-violet-500/10",
+    iconColor: "text-violet-600",
   },
   {
     title: "Homologação",
     description: "Gerenciamento de homologações de veículos",
-    icon: <ClipboardCheck className="h-6 w-6" />,
+    icon: ClipboardCheck,
     path: "/homologation",
     module: "homologation",
     gradient: "from-emerald-500 to-teal-600",
     iconBg: "bg-emerald-500/10",
+    iconColor: "text-emerald-600",
   },
   {
     title: "Planejamento",
     description: "Planejamento de instalações e recursos",
-    icon: <Calendar className="h-6 w-6" />,
+    icon: Calendar,
     path: "/planning",
     module: "planning",
     gradient: "from-orange-500 to-amber-600",
     iconBg: "bg-orange-500/10",
+    iconColor: "text-orange-600",
   },
   {
     title: "Logística",
     description: "Esteira de pedidos, produção e envios",
-    icon: <Truck className="h-6 w-6" />,
+    icon: Truck,
     path: "/kanban",
     module: "kanban",
     gradient: "from-blue-500 to-indigo-600",
     iconBg: "bg-blue-500/10",
+    iconColor: "text-blue-600",
   },
   {
     title: "Agendamento",
     description: "Agenda de técnicos e instalações",
-    icon: <Clock className="h-6 w-6" />,
+    icon: Clock,
     path: "/config",
     module: "scheduling",
     gradient: "from-cyan-500 to-sky-600",
     iconBg: "bg-cyan-500/10",
+    iconColor: "text-cyan-600",
   },
   {
     title: "Acompanhamento",
     description: "Tracking de clientes e pedidos",
-    icon: <UserCheck className="h-6 w-6" />,
+    icon: UserCheck,
     path: "/customer-tracking",
     module: "customer_tracking",
     gradient: "from-pink-500 to-rose-600",
     iconBg: "bg-pink-500/10",
+    iconColor: "text-pink-600",
   },
   {
     title: "Kits",
     description: "Gerenciamento de kits de instalação",
-    icon: <Package className="h-6 w-6" />,
+    icon: Package,
     path: "/kits",
     module: "kits",
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
+    iconColor: "text-slate-600",
   },
   {
     title: "Técnicos",
     description: "Cadastro e gestão de técnicos",
-    icon: <UserCog className="h-6 w-6" />,
+    icon: UserCog,
     path: "/technicians",
     module: "technicians",
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
+    iconColor: "text-slate-600",
   },
   {
     title: "Usuários",
     description: "Gerenciamento de usuários do sistema",
-    icon: <Users className="h-6 w-6" />,
+    icon: Users,
     path: "/users",
     module: "users",
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
+    iconColor: "text-slate-600",
   },
   {
     title: "Histórico",
     description: "Logs e histórico de ações",
-    icon: <History className="h-6 w-6" />,
+    icon: History,
     path: "/history",
     module: "users",
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
+    iconColor: "text-slate-600",
   },
   {
     title: "Dashboard",
     description: "Visão geral e métricas do sistema",
-    icon: <LayoutDashboard className="h-6 w-6" />,
+    icon: LayoutDashboard,
     path: "/dashboard",
     module: "dashboard",
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
+    iconColor: "text-slate-600",
   },
 ];
 
@@ -229,11 +241,7 @@ const ModuleSelection = () => {
                 <div className="p-6 flex flex-col h-full min-h-[160px]">
                   {/* Icon with circular background */}
                   <div className={`w-14 h-14 rounded-full ${module.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <div className={`bg-gradient-to-br ${module.gradient} bg-clip-text`}>
-                      <div className="text-transparent bg-gradient-to-br from-current to-current">
-                        {module.icon}
-                      </div>
-                    </div>
+                    <module.icon className={`h-6 w-6 ${module.iconColor}`} />
                   </div>
                   
                   {/* Title */}
@@ -292,9 +300,7 @@ const ModuleSelection = () => {
                 <div className="relative bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-lg hover:border-border transition-all duration-300 p-4">
                   {/* Icon */}
                   <div className={`w-10 h-10 rounded-full ${module.iconBg} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-300`}>
-                    <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-                      {module.icon}
-                    </div>
+                    <module.icon className={`h-5 w-5 ${module.iconColor}`} />
                   </div>
                   
                   {/* Title */}
