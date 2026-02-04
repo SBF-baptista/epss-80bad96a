@@ -154,38 +154,40 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-muted/20">
       {/* Header */}
-      <div className="flex-none px-3 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="flex-none px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-3 sm:pb-4 bg-background border-b border-border/50">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Planejamento</h1>
-            <p className="text-muted-foreground mt-1 text-xs sm:text-sm lg:text-base">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Planejamento
+            </h1>
+            <p className="text-muted-foreground/80 mt-1.5 text-sm">
               Gerencie técnicos, kits e cronogramas de instalação
             </p>
           </div>
           
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-3 items-center">
             {/* Refresh Button */}
             <Button
               variant="outline"
               size="sm"
               onClick={loadData}
               disabled={isLoading}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 h-10 px-4 border-border/60 hover:bg-muted/50 hover:border-border transition-all"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
             
             {/* Search */}
-            <div className="relative w-full sm:w-auto sm:min-w-[300px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <div className="relative w-full sm:w-auto sm:min-w-[280px] lg:min-w-[320px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/60 w-4 h-4" />
               <Input
                 placeholder="Buscar por kit, técnico ou empresa..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10 border-border/60 bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
           </div>
@@ -193,14 +195,24 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
       </div>
 
       {/* Main Content with Tabs */}
-      <div className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-auto">
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-5 overflow-auto scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent">
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="active">Veículos Pendentes</TabsTrigger>
-            <TabsTrigger value="completed">Planejamentos Concluídos</TabsTrigger>
+          <TabsList className="mb-5 bg-muted/60 p-1 h-11 gap-1">
+            <TabsTrigger 
+              value="active" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-5 py-2 text-sm font-medium transition-all hover:text-foreground/80"
+            >
+              Veículos Pendentes
+            </TabsTrigger>
+            <TabsTrigger 
+              value="completed"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-5 py-2 text-sm font-medium transition-all hover:text-foreground/80"
+            >
+              Planejamentos Concluídos
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="active" className="mt-0">
+          <TabsContent value="active" className="mt-0 animate-in fade-in-50 duration-200">
             <SchedulingSection
               kits={kits}
               technicians={technicians}
@@ -211,7 +223,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
             />
           </TabsContent>
           
-          <TabsContent value="completed" className="mt-0">
+          <TabsContent value="completed" className="mt-0 animate-in fade-in-50 duration-200">
             <SchedulingSection
               kits={kits}
               technicians={technicians}
