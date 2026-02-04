@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppModule } from "@/types/permissions";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Package,
@@ -9,7 +9,6 @@ import {
   Calendar,
   Users,
   Truck,
-  Settings,
   History,
   UserCog,
   Rocket,
@@ -24,106 +23,114 @@ interface ModuleCard {
   path: string;
   module: AppModule;
   gradient: string;
+  iconBg: string;
 }
 
+// Ordered according to sidebar hierarchy
 const modules: ModuleCard[] = [
   {
-    title: "Dashboard",
-    description: "Visão geral e métricas do sistema",
-    icon: <LayoutDashboard className="h-8 w-8" />,
-    path: "/dashboard",
-    module: "dashboard",
-    gradient: "from-blue-500 to-blue-600",
-  },
-  {
     title: "Kickoff",
-    description: "Recepção e processamento de veículos",
-    icon: <Rocket className="h-8 w-8" />,
+    description: "Recepção e processamento de veículos novos",
+    icon: <Rocket className="h-6 w-6" />,
     path: "/kickoff",
     module: "kickoff",
-    gradient: "from-purple-500 to-purple-600",
+    gradient: "from-violet-500 to-purple-600",
+    iconBg: "bg-violet-500/10",
   },
   {
     title: "Homologação",
     description: "Gerenciamento de homologações de veículos",
-    icon: <ClipboardCheck className="h-8 w-8" />,
+    icon: <ClipboardCheck className="h-6 w-6" />,
     path: "/homologation",
     module: "homologation",
-    gradient: "from-emerald-500 to-emerald-600",
+    gradient: "from-emerald-500 to-teal-600",
+    iconBg: "bg-emerald-500/10",
   },
   {
     title: "Planejamento",
-    description: "Planejamento de instalações",
-    icon: <Calendar className="h-8 w-8" />,
+    description: "Planejamento de instalações e recursos",
+    icon: <Calendar className="h-6 w-6" />,
     path: "/planning",
     module: "planning",
-    gradient: "from-orange-500 to-orange-600",
+    gradient: "from-orange-500 to-amber-600",
+    iconBg: "bg-orange-500/10",
+  },
+  {
+    title: "Logística",
+    description: "Esteira de pedidos, produção e envios",
+    icon: <Truck className="h-6 w-6" />,
+    path: "/kanban",
+    module: "kanban",
+    gradient: "from-blue-500 to-indigo-600",
+    iconBg: "bg-blue-500/10",
   },
   {
     title: "Agendamento",
     description: "Agenda de técnicos e instalações",
-    icon: <Clock className="h-8 w-8" />,
+    icon: <Clock className="h-6 w-6" />,
     path: "/config",
     module: "scheduling",
-    gradient: "from-teal-500 to-teal-600",
-  },
-  {
-    title: "Logística",
-    description: "Esteira de pedidos e envios",
-    icon: <Truck className="h-8 w-8" />,
-    path: "/kanban",
-    module: "kanban",
-    gradient: "from-amber-500 to-amber-600",
+    gradient: "from-cyan-500 to-sky-600",
+    iconBg: "bg-cyan-500/10",
   },
   {
     title: "Acompanhamento",
     description: "Tracking de clientes e pedidos",
-    icon: <UserCheck className="h-8 w-8" />,
+    icon: <UserCheck className="h-6 w-6" />,
     path: "/customer-tracking",
     module: "customer_tracking",
-    gradient: "from-indigo-500 to-indigo-600",
+    gradient: "from-pink-500 to-rose-600",
+    iconBg: "bg-pink-500/10",
   },
   {
     title: "Kits",
     description: "Gerenciamento de kits de instalação",
-    icon: <Package className="h-8 w-8" />,
+    icon: <Package className="h-6 w-6" />,
     path: "/kits",
     module: "kits",
-    gradient: "from-cyan-500 to-cyan-600",
+    gradient: "from-slate-500 to-zinc-600",
+    iconBg: "bg-slate-500/10",
   },
   {
     title: "Técnicos",
     description: "Cadastro e gestão de técnicos",
-    icon: <UserCog className="h-8 w-8" />,
+    icon: <UserCog className="h-6 w-6" />,
     path: "/technicians",
     module: "technicians",
-    gradient: "from-rose-500 to-rose-600",
+    gradient: "from-slate-500 to-zinc-600",
+    iconBg: "bg-slate-500/10",
   },
   {
     title: "Usuários",
     description: "Gerenciamento de usuários do sistema",
-    icon: <Users className="h-8 w-8" />,
+    icon: <Users className="h-6 w-6" />,
     path: "/users",
     module: "users",
-    gradient: "from-slate-500 to-slate-600",
+    gradient: "from-slate-500 to-zinc-600",
+    iconBg: "bg-slate-500/10",
   },
   {
     title: "Histórico",
     description: "Logs e histórico de ações",
-    icon: <History className="h-8 w-8" />,
+    icon: <History className="h-6 w-6" />,
     path: "/history",
-    module: "users", // Requires user management access
-    gradient: "from-gray-500 to-gray-600",
+    module: "users",
+    gradient: "from-slate-500 to-zinc-600",
+    iconBg: "bg-slate-500/10",
   },
   {
-    title: "Configurações",
-    description: "Regras de automação e configurações",
-    icon: <Settings className="h-8 w-8" />,
-    path: "/config",
-    module: "scheduling",
-    gradient: "from-zinc-500 to-zinc-600",
+    title: "Dashboard",
+    description: "Visão geral e métricas do sistema",
+    icon: <LayoutDashboard className="h-6 w-6" />,
+    path: "/dashboard",
+    module: "dashboard",
+    gradient: "from-slate-500 to-zinc-600",
+    iconBg: "bg-slate-500/10",
   },
 ];
+
+// Main modules that should be highlighted
+const mainModules = ["kickoff", "homologation", "planning", "kanban", "scheduling", "customer_tracking"];
 
 const ModuleSelection = () => {
   const navigate = useNavigate();
@@ -142,64 +149,180 @@ const ModuleSelection = () => {
 
   // Filter modules based on user permissions
   const availableModules = modules.filter((module) => {
-    // Admin has access to everything
     if (role === "admin") return true;
-    // Check module-specific permission
     return canViewModule(module.module);
   });
 
-  // Remove duplicates (config appears twice with different titles)
+  // Remove duplicates
   const uniqueModules = availableModules.filter((module, index, self) => 
     index === self.findIndex(m => m.path === module.path)
   );
 
+  // Separate main modules from secondary
+  const primaryModules = uniqueModules.filter(m => mainModules.includes(m.module));
+  const secondaryModules = uniqueModules.filter(m => !mainModules.includes(m.module));
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        type: "spring" as const,
+        stiffness: 100,
+        damping: 15,
+      }
+    },
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Bem-vindo ao OPM - SEGSAT
+      <motion.div 
+        className="text-center space-y-3"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+          OPM - SEGSAT
         </h1>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-muted-foreground text-lg max-w-md mx-auto">
           Selecione o módulo que deseja acessar
         </p>
-      </div>
+      </motion.div>
 
-      {/* Modules Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {uniqueModules.map((module) => (
-          <Card
-            key={module.path + module.title}
-            className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border overflow-hidden"
-            onClick={() => navigate(module.path)}
-          >
-            <div className={`h-2 bg-gradient-to-r ${module.gradient}`} />
-            <CardHeader className="pb-3">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${module.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                {module.icon}
+      {/* Primary Modules Grid */}
+      {primaryModules.length > 0 && (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+        >
+          {primaryModules.map((module) => (
+            <motion.div
+              key={module.path + module.title}
+              variants={cardVariants}
+              whileHover={{ 
+                y: -6,
+                transition: { type: "spring", stiffness: 400, damping: 17 }
+              }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate(module.path)}
+              className="group cursor-pointer"
+            >
+              <div className="relative h-full bg-card rounded-2xl border border-border/50 shadow-sm hover:shadow-xl hover:border-border transition-all duration-300 overflow-hidden">
+                {/* Gradient accent bar */}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${module.gradient}`} />
+                
+                <div className="p-6 flex flex-col h-full min-h-[160px]">
+                  {/* Icon with circular background */}
+                  <div className={`w-14 h-14 rounded-full ${module.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`bg-gradient-to-br ${module.gradient} bg-clip-text`}>
+                      <div className="text-transparent bg-gradient-to-br from-current to-current">
+                        {module.icon}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Title */}
+                  <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    {module.title}
+                  </h3>
+                  
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+                    {module.description}
+                  </p>
+
+                  {/* Hover indicator */}
+                  <div className="mt-4 flex items-center text-sm font-medium text-muted-foreground/0 group-hover:text-primary transition-all duration-300">
+                    <span className="opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
+                      Acessar →
+                    </span>
+                  </div>
+                </div>
               </div>
-              <CardTitle className="text-lg mt-3">{module.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <CardDescription className="text-sm leading-relaxed">
-                {module.description}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
+
+      {/* Secondary Modules Section */}
+      {secondaryModules.length > 0 && (
+        <div className="space-y-4">
+          <motion.h2 
+            className="text-sm font-medium text-muted-foreground uppercase tracking-wider px-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            Configurações e Ferramentas
+          </motion.h2>
+          
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+          >
+            {secondaryModules.map((module) => (
+              <motion.div
+                key={module.path + module.title}
+                variants={cardVariants}
+                whileHover={{ 
+                  y: -4,
+                  transition: { type: "spring", stiffness: 400, damping: 17 }
+                }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate(module.path)}
+                className="group cursor-pointer"
+              >
+                <div className="relative bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-lg hover:border-border transition-all duration-300 p-4">
+                  {/* Icon */}
+                  <div className={`w-10 h-10 rounded-full ${module.iconBg} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-300`}>
+                    <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+                      {module.icon}
+                    </div>
+                  </div>
+                  
+                  {/* Title */}
+                  <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                    {module.title}
+                  </h3>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      )}
 
       {/* No modules message */}
       {uniqueModules.length === 0 && (
-        <div className="text-center py-12 bg-muted/50 rounded-lg">
-          <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <motion.div 
+          className="text-center py-16 bg-muted/30 rounded-2xl border border-dashed"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <Users className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
           <p className="text-muted-foreground text-lg font-medium">
             Você não possui permissão para acessar nenhum módulo.
           </p>
           <p className="text-muted-foreground text-sm mt-2">
             Entre em contato com o administrador do sistema.
           </p>
-        </div>
+        </motion.div>
       )}
     </div>
   );
