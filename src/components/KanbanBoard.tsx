@@ -19,10 +19,10 @@ interface KanbanBoardProps {
 }
 
 const columns = [
-  { id: "scheduled", title: "Pedidos", color: "border-primary/30 bg-primary/5" },
-  { id: "in_progress", title: "Em Produção", color: "border-warning/30 bg-warning-light/30" },
-  { id: "completed", title: "Aguardando Envio", color: "border-warning/30 bg-warning-light/30" },
-  { id: "shipped", title: "Enviado", color: "border-success/30 bg-success-light/30" },
+  { id: "scheduled", title: "Pedidos", color: "bg-primary/5 hover:bg-primary/8" },
+  { id: "in_progress", title: "Em Produção", color: "bg-warning-light/40 hover:bg-warning-light/50" },
+  { id: "completed", title: "Aguardando Envio", color: "bg-orange-50/60 hover:bg-orange-50/80" },
+  { id: "shipped", title: "Enviado", color: "bg-success-light/40 hover:bg-success-light/50" },
 ];
 
 const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentClick }: KanbanBoardProps) => {
