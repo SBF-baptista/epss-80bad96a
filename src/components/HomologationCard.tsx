@@ -99,10 +99,12 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           {/* Body: Brand, Model, Year */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
             <span className="font-medium text-foreground">{card.brand}</span>
+            <span className="text-foreground/70">•</span>
+            <span className="text-foreground">{card.model}</span>
             {card.year && (
               <>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-foreground/90">{card.year}</span>
+                <span className="text-foreground/70">•</span>
+                <span className="text-foreground">{card.year}</span>
               </>
             )}
           </div>
@@ -110,14 +112,14 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           {/* Configuration - only displayed when homologated */}
           {card.status === 'homologado' && card.configuration && (
             <div className="text-xs bg-muted/50 px-2 py-1.5 rounded-lg">
-              <span className="text-muted-foreground/60">Config: </span>
-              <span className="font-medium text-foreground/80">{card.configuration}</span>
+              <span className="text-muted-foreground">Config: </span>
+              <span className="font-medium text-foreground">{card.configuration}</span>
             </div>
           )}
 
           {/* Footer: Date + Status Badges */}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
-            <div className="flex items-center gap-1 text-[11px] text-foreground/70">
+            <div className="flex items-center gap-1 text-[11px] text-foreground">
               <Calendar className="h-3 w-3" />
               <span>Criado em {formatDate(card.created_at)}</span>
             </div>
@@ -141,7 +143,7 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           {/* Notes */}
           {card.notes && (
             <div className="mt-2 p-2 bg-muted/50 border border-border/30 rounded-lg">
-              <p className="text-[11px] text-foreground/70 line-clamp-2">{card.notes}</p>
+              <p className="text-[11px] text-foreground/80 line-clamp-2">{card.notes}</p>
             </div>
           )}
         </div>
