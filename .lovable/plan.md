@@ -1,108 +1,102 @@
 
-# Plano: Corrigir Acesso RLS para Novos Usuários com Permissões Granulares
+# Plano: Ajustes nos Cards de Homologação
 
-## Problema Identificado
-
-O usuário `matheus.nunes@segsat.com` não consegue visualizar os cards de homologação porque:
-
-1. **Sistema de Permissões Desatualizado**: As políticas RLS (Row Level Security) ainda usam roles antigos como `operador_homologacao`, `operador_kickoff`, etc.
-2. **Novo Sistema de Permissões**: O sistema foi atualizado para usar roles genéricos (`operador`, `gestor`, `admin`, `visualizador`) + permissões granulares por módulo na tabela `user_module_permissions`
-3. **Incompatibilidade**: A função `has_role()` verifica apenas a tabela `user_roles`, mas não verifica a tabela `user_module_permissions` onde as permissões granulares estão armazenadas
-
-**Situação do usuário:**
-- Role na `user_roles`: `operador`
-- Permissão em `user_module_permissions`: `homologation` com nível `approve`
-- Política RLS verifica: `has_role(auth.uid(), 'operador_homologacao')` → **FALSO** (usuário tem `operador`, não `operador_homologacao`)
+## Objetivo
+Restaurar a exibição completa das informações nos cards de homologação e aumentar a visibilidade dos textos.
 
 ---
 
-## Solução Proposta
+## Alterações no arquivo `src/components/HomologationCard.tsx`
 
-Criar uma nova função `has_module_access()` que verifica as permissões granulares por módulo, e atualizar as políticas RLS das tabelas relevantes.
+### 1. Título do Veículo (já está correto)
+- O título já permite quebra de texto (sem `line-clamp`)
+- Mantém `font-bold text-foreground` para destaque
+
+### 2. Restaurar Informações Completas no Corpo do Card
+**Antes (atual):**
+```
+Marca • Ano
+```
+
+**Depois:**
+```
+Marca • Modelo • Ano
+```
+
+Adicionar `card.model` na linha de informações secundárias para que apareça Marca, Modelo e Ano completos.
+
+### 3. Aumentar Visibilidade dos Textos
+Substituir classes com opacidade baixa por cores mais sólidas:
+
+| Elemento | Atual | Novo |
+|----------|-------|------|
+| Marca | `text-foreground` | `text-foreground` (manter) |
+| Modelo | (não aparece) | `text-foreground` |
+| Ano | `text-foreground/90` | `text-foreground` |
+| Separador (•) | `text-muted-foreground` | `text-foreground/70` |
+| Criado em | `text-foreground/70` | `text-foreground` |
+| Config label | `text-muted-foreground/60` | `text-muted-foreground` |
+| Config valor | `text-foreground/80` | `text-foreground` |
+| Notas | `text-foreground/70` | `text-foreground/80` |
 
 ---
 
-## Etapa 1: Criar Função de Verificação de Permissão por Módulo
+## Código Atualizado
 
-Criar a função SQL que verifica:
-1. Se o usuário é admin (acesso total)
-2. Se o usuário tem permissão na tabela `user_module_permissions` para o módulo específico
+```tsx
+{/* Body: Brand, Model, Year */}
+<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+  <span className="font-medium text-foreground">{card.brand}</span>
+  <span className="text-foreground/70">•</span>
+  <span className="text-foreground">{card.model}</span>
+  {card.year && (
+    <>
+      <span className="text-foreground/70">•</span>
+      <span className="text-foreground">{card.year}</span>
+    </>
+  )}
+</div>
+
+{/* Configuration - cores mais escuras */}
+{card.status === 'homologado' && card.configuration && (
+  <div className="text-xs bg-muted/50 px-2 py-1.5 rounded-lg">
+    <span className="text-muted-foreground">Config: </span>
+    <span className="font-medium text-foreground">{card.configuration}</span>
+  </div>
+)}
+
+{/* Footer: Date - texto mais escuro */}
+<div className="flex items-center gap-1 text-[11px] text-foreground">
+  <Calendar className="h-3 w-3" />
+  <span>Criado em {formatDate(card.created_at)}</span>
+</div>
+
+{/* Notes - texto mais visível */}
+{card.notes && (
+  <div className="mt-2 p-2 bg-muted/50 border border-border/30 rounded-lg">
+    <p className="text-[11px] text-foreground/80 line-clamp-2">{card.notes}</p>
+  </div>
+)}
+```
+
+---
+
+## Resumo Visual do Card Final
 
 ```text
-+-----------------------------------+
-|       has_module_access()         |
-+-----------------------------------+
-| Parâmetros:                       |
-|  - _user_id: uuid                 |
-|  - _module: text (ex: 'homologation')|
-|  - _min_permission: text (ex: 'view')|
-+-----------------------------------+
-| Lógica:                           |
-|  1. Verifica se é admin → TRUE    |
-|  2. Busca permissão do módulo     |
-|  3. Compara nível mínimo          |
-+-----------------------------------+
+┌─────────────────────────────────────┐
+│ MODELO DO VEÍCULO COMPLETO      [🗑]│  ← Título bold, quebra se necessário
+│ (pode quebrar em múltiplas linhas)  │
+├─────────────────────────────────────┤
+│ Marca • Modelo • Ano                │  ← Informações completas, texto escuro
+├─────────────────────────────────────┤
+│ Config: Nome da Configuração        │  ← Apenas quando homologado
+├─────────────────────────────────────┤
+│ 📅 Criado em 01/01/2024  [Vinculado]│  ← Data escura, badges discretos
+└─────────────────────────────────────┘
 ```
-
----
-
-## Etapa 2: Atualizar Políticas RLS das Tabelas Afetadas
-
-Tabelas que precisam de atualização:
-- `homologation_cards`
-- `incoming_vehicles`
-- `accessories`
-- `automation_rules_extended`
-- `customers`
-- `kit_schedules`
-
-**Exemplo de mudança:**
-
-Antes:
-```
-USING (
-  has_role(auth.uid(), 'admin') OR 
-  has_role(auth.uid(), 'gestor') OR
-  has_role(auth.uid(), 'operador_homologacao')
-)
-```
-
-Depois:
-```
-USING (
-  has_role(auth.uid(), 'admin') OR 
-  has_role(auth.uid(), 'gestor') OR
-  has_module_access(auth.uid(), 'homologation', 'view')
-)
-```
-
----
-
-## Etapa 3: Mapeamento de Módulos para Tabelas
-
-| Tabela | Módulo de Permissão |
-|--------|---------------------|
-| `homologation_cards` | homologation |
-| `incoming_vehicles` | kickoff |
-| `accessories` | accessories_supplies |
-| `automation_rules_extended` | homologation |
-| `customers` | kickoff, scheduling |
-| `kit_schedules` | scheduling |
-| `homologation_kits` | kits |
 
 ---
 
 ## Arquivos a Modificar
-
-1. **Migração SQL**: Criar nova migração com:
-   - Função `has_module_access()`
-   - Políticas RLS atualizadas para todas as tabelas afetadas
-
----
-
-## Resultado Esperado
-
-Após a implementação:
-- Usuários com permissão `homologation: approve` poderão visualizar e gerenciar cards de homologação
-- Não será mais necessário atribuir roles antigos como `operador_homologacao`
-- O sistema de permissões granulares funcionará corretamente no nível do banco de dados
+- `src/components/HomologationCard.tsx`
