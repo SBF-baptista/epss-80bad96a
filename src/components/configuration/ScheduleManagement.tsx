@@ -413,33 +413,43 @@ export const ScheduleManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4">
+      {/* Enhanced Page Header */}
+      <div className="flex flex-col gap-5 bg-muted/20 rounded-xl p-4 sm:p-6 border border-border/50">
         <div className="flex items-center justify-between flex-wrap gap-4">
+          {/* Title with improved hierarchy */}
           <div>
-            <h2 className="text-2xl font-bold">Agendamento</h2>
-            <p className="text-muted-foreground"></p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Agendamento</h1>
+            <p className="text-sm text-muted-foreground/70 mt-0.5">Gerencie instalações e técnicos</p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Botão Disparar Agenda - Apenas para Admin e Gestor */}
+          {/* Action buttons with better visual distinction */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Botão Disparar Agenda - Secondary action */}
             {canDispatchAgenda && (
-              <Button variant="outline" onClick={() => setIsAgendaModalOpen(true)} className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsAgendaModalOpen(true)} 
+                className="gap-2 h-10 border-border/60 hover:bg-muted/60 hover:border-border transition-all"
+              >
                 <Send className="h-4 w-4" />
-                Disparar Agenda
+                <span className="hidden sm:inline">Disparar Agenda</span>
               </Button>
             )}
 
-            {/* Botão Criar Agendamento */}
-            <Button onClick={() => handleDateSelect(new Date())} className="gap-2">
+            {/* Botão Criar Agendamento - Primary action with enhanced styling */}
+            <Button 
+              onClick={() => handleDateSelect(new Date())} 
+              className="gap-2 h-10 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all"
+            >
               <Plus className="h-4 w-4" />
               Criar Agendamento
             </Button>
 
-            {/* Filtro de técnico */}
+            {/* Filtro de técnico - improved styling */}
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Filter className="h-4 w-4 text-muted-foreground/70" />
               <Select value={selectedTechnicianFilter} onValueChange={setSelectedTechnicianFilter}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[180px] sm:w-[200px] h-10 border-border/60 focus:ring-2 focus:ring-primary/20">
                   <SelectValue placeholder="Filtrar por técnico" />
                 </SelectTrigger>
                 <SelectContent>
@@ -455,16 +465,26 @@ export const ScheduleManagement = () => {
           </div>
         </div>
 
-        {/* Technicians with activities today */}
+        {/* Technicians with activities today - improved styling */}
         {techniciansWithActivitiesToday.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap p-3 bg-primary/10 rounded-lg border border-primary/20">
-            <User className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Técnicos com atividades hoje:</span>
-            {techniciansWithActivitiesToday.map((name) => (
-              <Badge key={name} variant="secondary" className="bg-primary/20 text-primary border-0">
-                {name}
-              </Badge>
-            ))}
+          <div className="flex items-center gap-3 flex-wrap py-3 px-4 bg-primary/8 rounded-lg border border-primary/15">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/15 rounded-md">
+                <User className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-sm font-semibold text-primary">Técnicos com atividades hoje:</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {techniciansWithActivitiesToday.map((name) => (
+                <Badge 
+                  key={name} 
+                  variant="secondary" 
+                  className="bg-primary/15 text-primary border-0 font-medium px-2.5 py-0.5 hover:bg-primary/20 transition-colors"
+                >
+                  {name}
+                </Badge>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -472,32 +492,33 @@ export const ScheduleManagement = () => {
       {/* Customer Schedule Section - Grouped by Customer */}
       <CustomerScheduleSection onScheduleSuccess={fetchSchedules} />
 
-      <Card className="overflow-hidden">
+      {/* Calendar Card with enhanced styling */}
+      <Card className="overflow-hidden border-border/60 shadow-sm rounded-xl">
         <CardContent className="p-0">
-          {/* Header com navegação */}
-          <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-b bg-muted/30 gap-4">
+          {/* Header com navegação - improved styling */}
+          <div className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-5 border-b border-border/50 bg-muted/20 gap-4">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={goToPreviousWeek}>
+              <Button variant="outline" size="icon" onClick={goToPreviousWeek} className="h-9 w-9 border-border/60 hover:bg-muted/60">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={goToNextWeek}>
+              <Button variant="outline" size="icon" onClick={goToNextWeek} className="h-9 w-9 border-border/60 hover:bg-muted/60">
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={goToToday}>
+              <Button variant="outline" size="sm" onClick={goToToday} className="h-9 border-border/60 hover:bg-muted/60">
                 Hoje
               </Button>
             </div>
 
             <div className="text-center">
-              <h3 className="text-xl font-semibold">{format(currentWeekStart, "MMMM yyyy", { locale: ptBR })}</h3>
-              <p className="text-sm text-muted-foreground">Semana {getWeek(currentWeekStart, { weekStartsOn: 1 })}</p>
+              <h3 className="text-xl font-semibold capitalize text-foreground">{format(currentWeekStart, "MMMM yyyy", { locale: ptBR })}</h3>
+              <p className="text-sm text-muted-foreground/70">Semana {getWeek(currentWeekStart, { weekStartsOn: 1 })}</p>
             </div>
 
             <div className="w-[140px] hidden sm:block" />
           </div>
 
-          {/* Grade semanal - tabela única com thead sticky */}
-          <div className="max-h-[700px] overflow-y-auto">
+          {/* Grade semanal - tabela única com thead sticky e scroll discreto */}
+          <div className="max-h-[700px] overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
             <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: "80px" }} />
@@ -509,27 +530,27 @@ export const ScheduleManagement = () => {
                 <col />
                 <col />
               </colgroup>
-              <thead className="sticky top-0 z-10 bg-background">
-                <tr className="border-b">
-                  <th className="p-2 border-r bg-muted/20" />
+              <thead className="sticky top-0 z-10 bg-background shadow-sm">
+                <tr className="border-b border-border/40">
+                  <th className="p-2 border-r border-border/30 bg-muted/30" />
                   {weekDays.map((day, index) => {
                     const isTodayDate = isToday(day);
                     return (
                       <th
                         key={index}
                         className={cn(
-                          "p-2 sm:p-3 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent/50 transition-colors font-normal",
-                          isTodayDate ? "bg-primary/10" : "bg-background",
+                          "p-2 sm:p-3 text-center border-r border-border/30 last:border-r-0 cursor-pointer hover:bg-accent/40 transition-all font-normal",
+                          isTodayDate ? "bg-primary/8" : "bg-background",
                         )}
                         onClick={() => handleDateSelect(day)}
                       >
-                        <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <p className="text-[10px] sm:text-xs font-medium text-muted-foreground/80 uppercase tracking-wider">
                           {format(day, "EEE", { locale: ptBR })}
                         </p>
-                        <p className={cn("text-lg sm:text-2xl font-bold mt-1", isTodayDate && "text-primary")}>
+                        <p className={cn("text-lg sm:text-2xl font-bold mt-1", isTodayDate ? "text-primary" : "text-foreground")}>
                           {format(day, "d")}
                         </p>
-                        {isTodayDate && <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />}
+                        {isTodayDate && <div className="w-1.5 h-1.5 rounded-full bg-primary mx-auto mt-1.5" />}
                       </th>
                     );
                   })}
@@ -537,9 +558,9 @@ export const ScheduleManagement = () => {
               </thead>
               <tbody>
                 {timeSlots.map((time, timeIndex) => (
-                  <tr key={time} className="border-b last:border-b-0">
+                  <tr key={time} className="border-b border-border/30 last:border-b-0">
                     <td
-                      className="p-2 text-xs text-muted-foreground text-right pr-2 sm:pr-3 border-r bg-muted/20 align-top"
+                      className="p-2 text-xs text-muted-foreground/80 text-right pr-2 sm:pr-3 border-r border-border/30 bg-muted/25 align-top font-medium"
                       style={{ height: "110px" }}
                     >
                       {time}
@@ -551,16 +572,16 @@ export const ScheduleManagement = () => {
                         <td
                           key={`${timeIndex}-${dayIndex}`}
                           className={cn(
-                            "border-r last:border-r-0 cursor-pointer hover:bg-accent/30 transition-colors p-1 align-top",
+                            "border-r border-border/30 last:border-r-0 cursor-pointer hover:bg-accent/25 transition-all p-1 align-top",
                             isTodayDate && "bg-primary/5",
-                            draggedSchedule && "bg-accent/20",
+                            draggedSchedule && "bg-accent/15",
                           )}
                           style={{ height: "110px" }}
                           onClick={() => handleDateSelect(day, time)}
                           onDragOver={handleDragOver}
                           onDrop={(e) => handleDrop(e, day, time)}
                         >
-                          <div className="h-full overflow-y-auto">
+                          <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted/50">
                             {daySchedules.map((schedule) => (
                               <div
                                 key={schedule.id}
@@ -568,40 +589,36 @@ export const ScheduleManagement = () => {
                                 onDragStart={(e) => handleDragStart(e, schedule)}
                                 onDragEnd={handleDragEnd}
                                 className={cn(
-                                  "bg-primary/90 text-primary-foreground rounded-lg p-2 text-[10px] sm:text-xs mb-1 cursor-grab active:cursor-grabbing hover:bg-primary transition-all shadow-sm hover:shadow-md",
-                                  draggedSchedule?.id === schedule.id && "opacity-50",
+                                  "bg-primary/85 text-primary-foreground rounded-lg p-2 text-[10px] sm:text-xs mb-1.5 cursor-grab active:cursor-grabbing hover:bg-primary/95 transition-all shadow-sm hover:shadow-md border border-primary/20",
+                                  draggedSchedule?.id === schedule.id && "opacity-50 scale-95",
                                 )}
                                 onClick={(e) => handleScheduleClick(schedule, e)}
                               >
                                 {/* Drag handle and technician name as title */}
-                                <div className="flex items-center gap-1 mb-1.5">
-                                  <GripVertical className="h-3 w-3 opacity-50 flex-shrink-0" />
-                                  <span className="font-bold text-sm sm:text-base truncate">
-                                    Técnico: {schedule.technician_name}
+                                <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-primary-foreground/20">
+                                  <GripVertical className="h-3 w-3 opacity-60 flex-shrink-0" />
+                                  <span className="font-bold text-xs sm:text-sm truncate">
+                                    {schedule.technician_name}
                                   </span>
                                 </div>
 
-                                {/* Schedule details with labels */}
-                                <div className="space-y-0.5 pl-4">
-                                  <div className="flex items-center gap-1 truncate">
-                                    <Clock className="h-3 w-3 flex-shrink-0 opacity-70" />
-                                    <span className="opacity-70">Horário:</span>
-                                    <span>{schedule.scheduled_time}</span>
+                                {/* Schedule details with labels - improved hierarchy */}
+                                <div className="space-y-0.5 pl-1">
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <Clock className="h-3 w-3 flex-shrink-0 opacity-60" />
+                                    <span className="font-semibold">{schedule.scheduled_time}</span>
                                   </div>
-                                  <div className="flex items-center gap-1 truncate">
-                                    <User className="h-3 w-3 flex-shrink-0 opacity-70" />
-                                    <span className="opacity-70">Cliente:</span>{" "}
-                                    <span className="font-medium">{schedule.customer}</span>
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <User className="h-3 w-3 flex-shrink-0 opacity-60" />
+                                    <span className="font-medium truncate">{schedule.customer}</span>
                                   </div>
-                                  <div className="flex items-center gap-1 truncate">
-                                    <Wrench className="h-3 w-3 flex-shrink-0 opacity-70" />
-                                    <span className="opacity-70">Serviço:</span>{" "}
-                                    <span className="font-medium">{schedule.service}</span>
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <Wrench className="h-3 w-3 flex-shrink-0 opacity-60" />
+                                    <span className="opacity-80">{schedule.service}</span>
                                   </div>
-                                  <div className="flex items-center gap-1 truncate">
-                                    <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />
-                                    <span className="opacity-70">Endereço:</span>
-                                    <span className="truncate">{schedule.address}</span>
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <MapPin className="h-3 w-3 flex-shrink-0 opacity-60" />
+                                    <span className="opacity-75 text-[9px] sm:text-[10px] truncate">{schedule.address}</span>
                                   </div>
                                 </div>
                               </div>

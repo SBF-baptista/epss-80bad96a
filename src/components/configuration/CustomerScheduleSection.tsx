@@ -290,41 +290,45 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
   return (
     <>
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
-        <Card className="border-orange-200 bg-orange-50/30 dark:bg-orange-950/10 dark:border-orange-900/30">
+        <Card className="border-orange-200/70 bg-orange-50/20 dark:bg-orange-950/10 dark:border-orange-900/30 rounded-xl shadow-sm">
           <CollapsibleTrigger asChild>
-            <CardHeader className="pb-3 cursor-pointer hover:bg-orange-100/50 dark:hover:bg-orange-900/20 transition-colors rounded-t-lg">
-              <CardTitle className="text-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-orange-500" />
-                  <span>Veículos Pendentes de Agendamento</span>
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
+            <CardHeader className="pb-3 cursor-pointer hover:bg-orange-100/40 dark:hover:bg-orange-900/15 transition-all rounded-t-xl">
+              <CardTitle className="text-base sm:text-lg flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-orange-100 dark:bg-orange-900/40 rounded-lg">
+                    <Package className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span className="font-semibold text-foreground">Veículos Pendentes de Agendamento</span>
+                  <Badge variant="secondary" className="bg-orange-100/80 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 font-medium text-xs px-2.5 py-0.5">
                     {customerGroups.length} cliente{customerGroups.length !== 1 ? 's' : ''} • {totalVehicles} veículo{totalVehicles !== 1 ? 's' : ''}
                   </Badge>
                 </div>
-                {isOpen ? (
-                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                )}
+                <div className="p-1 hover:bg-orange-200/50 dark:hover:bg-orange-800/30 rounded-md transition-colors">
+                  {isOpen ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="pt-0">
-              {/* Search */}
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <CardContent className="pt-0 px-4 sm:px-6 pb-5">
+              {/* Search - improved styling */}
+              <div className="relative mb-5">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                 <Input
                   placeholder="Buscar por cliente, placa ou veículo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
+                  className="pl-10 h-10 border-border/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/40 rounded-lg transition-all"
                 />
               </div>
 
-              {/* Customer Cards */}
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-3 pr-4">
+              {/* Customer Cards - improved spacing */}
+              <ScrollArea className="h-[500px] pr-1">
+                <div className="space-y-3 pr-3">
                   {filteredGroups.map((group) => (
                     <CustomerScheduleCard
                       key={group.customerName}
