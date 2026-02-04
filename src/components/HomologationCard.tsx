@@ -57,10 +57,10 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
       onDragStart={isAdminUser ? handleDragStart : undefined}
     >
       <CardContent className="p-3 md:p-4">
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {/* Header: Vehicle Name + Delete */}
           <div className="flex justify-between items-start gap-2">
-            <h4 className="font-bold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0 line-clamp-2">
+            <h4 className="font-bold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0">
               {card.model}
             </h4>
             {isAdminUser && (
@@ -69,7 +69,7 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -96,13 +96,13 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
             )}
           </div>
           
-          {/* Body: Brand | Year */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground/80">{card.brand}</span>
+          {/* Body: Brand, Model, Year */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            <span className="font-medium text-foreground">{card.brand}</span>
             {card.year && (
               <>
-                <span className="text-border">•</span>
-                <span>{card.year}</span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-foreground/90">{card.year}</span>
               </>
             )}
           </div>
@@ -116,21 +116,21 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
           )}
 
           {/* Footer: Date + Status Badges */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/30">
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
+          <div className="flex items-center justify-between pt-2 border-t border-border/40">
+            <div className="flex items-center gap-1 text-[11px] text-foreground/70">
               <Calendar className="h-3 w-3" />
-              <span>{formatDate(card.created_at)}</span>
+              <span>Criado em {formatDate(card.created_at)}</span>
             </div>
             
             <div className="flex items-center gap-1.5">
               {card.incoming_vehicle_id && (
-                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
                   <Link className="h-2.5 w-2.5 mr-0.5" />
                   Vinculado
                 </Badge>
               )}
               {card.created_order_id && (
-                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium bg-green-50 text-green-600 border-green-100 hover:bg-green-100">
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-700 border-emerald-500/20 hover:bg-emerald-500/15">
                   <Package className="h-2.5 w-2.5 mr-0.5" />
                   Pedido
                 </Badge>
@@ -140,8 +140,8 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
 
           {/* Notes */}
           {card.notes && (
-            <div className="mt-2 p-2 bg-muted/30 border border-border/20 rounded-lg">
-              <p className="text-[10px] text-muted-foreground/70 line-clamp-2">{card.notes}</p>
+            <div className="mt-2 p-2 bg-muted/50 border border-border/30 rounded-lg">
+              <p className="text-[11px] text-foreground/70 line-clamp-2">{card.notes}</p>
             </div>
           )}
         </div>
