@@ -79,16 +79,16 @@ const Homologation = () => {
 
   return (
     <HomologationErrorBoundary>
-      <div className="container-mobile min-h-screen bg-gray-50 px-3 sm:px-6">
-        <div className="w-full max-w-[1920px] mx-auto space-y-3 sm:space-y-4 lg:space-y-6 py-4 sm:py-6">
+      <div className="min-h-screen bg-muted/30 px-3 sm:px-6">
+        <div className="w-full max-w-[1920px] mx-auto space-y-4 sm:space-y-5 lg:space-y-6 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <HomologationHeader />
             
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
+                <Button className="flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
                   <Plus className="h-4 w-4" />
-                  Criar nova homologação
+                  <span className="font-medium">Criar nova homologação</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">

@@ -1,13 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Image, Link, Package, Trash2 } from "lucide-react";
+import { Link, Package, Trash2, Calendar } from "lucide-react";
 import { HomologationCard, softDeleteHomologationCard } from "@/services/homologationService";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface HomologationCardProps {
   card: HomologationCard;
@@ -38,48 +36,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "homologar":
-        return "bg-error-light text-error border-error-border";
-      case "em_homologacao":
-        return "bg-warning-light text-warning border-warning-border";
-      case "agendamento_teste":
-        return "bg-warning-light text-warning border-warning-border";
-      case "execucao_teste":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "em_testes_finais":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "armazenamento_plataforma":
-        return "bg-teal-100 text-teal-800 border-teal-200";
-      case "homologado":
-        return "bg-success-light text-success border-success-border";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "homologar":
-        return "A Homologar";
-      case "em_homologacao":
-        return "Em Homologação";
-      case "agendamento_teste":
-        return "Agendamento";
-      case "execucao_teste":
-        return "Em Teste";
-      case "em_testes_finais":
-        return "Testes Finais";
-      case "armazenamento_plataforma":
-        return "Armazenamento";
-      case "homologado":
-        return "Homologado";
-      default:
-        return status;
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
@@ -95,106 +51,97 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] touch-manipulation"
+      className="cursor-pointer bg-white border-border/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl touch-manipulation active:scale-[0.98]"
       onClick={onClick}
       draggable={isAdminUser}
       onDragStart={isAdminUser ? handleDragStart : undefined}
     >
       <CardContent className="p-3 md:p-4">
-        <div className="space-y-2 md:space-y-3">
+        <div className="space-y-2.5">
+          {/* Header: Vehicle Name + Delete */}
           <div className="flex justify-between items-start gap-2">
-            <h4 className="font-semibold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0">
-              <span className="block truncate">{card.brand} {card.model}</span>
+            <h4 className="font-bold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0 line-clamp-2">
+              {card.model}
             </h4>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {isAdminUser && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-error hover:text-error hover:bg-error-light"
-                      onClick={(e) => e.stopPropagation()}
+            {isAdminUser && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja deletar este card de homologação? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDelete}
+                      className="bg-destructive hover:bg-destructive/90"
                     >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Tem certeza que deseja deletar este card de homologação? Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={handleDelete}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        Deletar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
+                      Deletar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
           
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between gap-1 items-center">
-              <span className="text-muted-foreground flex-shrink-0 text-xs">Marca:</span>
-              <span className="font-medium text-foreground truncate text-xs">{card.brand}</span>
-            </div>
-            
-            <div className="flex justify-between gap-1 items-center">
-              <span className="text-muted-foreground flex-shrink-0 text-xs">Modelo:</span>
-              <span className="font-medium text-foreground truncate text-xs">{card.model}</span>
-            </div>
-
+          {/* Body: Brand | Year */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground/80">{card.brand}</span>
             {card.year && (
-              <div className="flex justify-between gap-1 items-center">
-                <span className="text-muted-foreground flex-shrink-0 text-xs">Ano:</span>
-                <span className="font-medium text-foreground text-xs">{card.year}</span>
-              </div>
+              <>
+                <span className="text-border">•</span>
+                <span>{card.year}</span>
+              </>
             )}
-            
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground flex-shrink-0">Criado:</span>
-              <span className="font-medium text-foreground text-right">{formatDate(card.created_at)}</span>
-            </div>
           </div>
-
-          <Separator />
 
           {/* Configuration - only displayed when homologated */}
           {card.status === 'homologado' && card.configuration && (
-            <div className="flex justify-between gap-1 items-center text-xs">
-              <span className="text-muted-foreground flex-shrink-0">Configuração:</span>
-              <span className="font-medium text-foreground truncate">{card.configuration}</span>
+            <div className="text-xs bg-muted/50 px-2 py-1.5 rounded-lg">
+              <span className="text-muted-foreground/60">Config: </span>
+              <span className="font-medium text-foreground/80">{card.configuration}</span>
             </div>
           )}
 
-          {/* Workflow status indicators */}
-          <div className="flex items-center gap-2 pt-2 border-t border-border">
-            {card.incoming_vehicle_id && (
-              <div className="flex items-center gap-1 text-xs text-primary">
-                <Link className="h-3 w-3" />
-                <span>Vinculado</span>
-              </div>
-            )}
-            {card.created_order_id && (
-              <div className="flex items-center gap-1 text-xs text-success">
-                <Package className="h-3 w-3" />
-                <span>Pedido criado</span>
-              </div>
-            )}
+          {/* Footer: Date + Status Badges */}
+          <div className="flex items-center justify-between pt-2 border-t border-border/30">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
+              <Calendar className="h-3 w-3" />
+              <span>{formatDate(card.created_at)}</span>
+            </div>
+            
+            <div className="flex items-center gap-1.5">
+              {card.incoming_vehicle_id && (
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">
+                  <Link className="h-2.5 w-2.5 mr-0.5" />
+                  Vinculado
+                </Badge>
+              )}
+              {card.created_order_id && (
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium bg-green-50 text-green-600 border-green-100 hover:bg-green-100">
+                  <Package className="h-2.5 w-2.5 mr-0.5" />
+                  Pedido
+                </Badge>
+              )}
+            </div>
           </div>
 
-
+          {/* Notes */}
           {card.notes && (
-            <div className="mt-2 md:mt-3 p-2 bg-muted border border-border rounded-md">
-              <p className="text-xs text-muted-foreground line-clamp-2">{card.notes}</p>
+            <div className="mt-2 p-2 bg-muted/30 border border-border/20 rounded-lg">
+              <p className="text-[10px] text-muted-foreground/70 line-clamp-2">{card.notes}</p>
             </div>
           )}
         </div>
