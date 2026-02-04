@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Edit, AlertCircle, History, Clock, AlertTriangle, Search } from "lucide-react";
+import { AlertCircle, History, Search, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -12,11 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
+import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
 
 const Kickoff = () => {
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
@@ -42,16 +41,14 @@ const Kickoff = () => {
     staleTime: 0,
   });
 
-  // Check for orphan kickoffs (approved but missing cards)
   const { data: integrityCheck, isLoading: integrityLoading } = useQuery({
     queryKey: ['kickoff-integrity'],
     queryFn: checkKickoffIntegrity,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
   });
 
-  // Real-time subscriptions for automatic updates with toast notification
   const handleRealtimeUpdate = () => {
     toast({
       title: "Dados atualizados",
@@ -74,7 +71,6 @@ const Kickoff = () => {
     setModalOpen(true);
   };
 
-  // Buscar datas de received_at para cada cliente
   const { data: kickoffDates } = useQuery({
     queryKey: ['kickoff-dates'],
     queryFn: async () => {
@@ -85,7 +81,6 @@ const Kickoff = () => {
       
       if (error) throw error;
       
-      // Agrupar por sale_summary_id e pegar a primeira data (mais antiga)
       const dateMap = new Map<number, Date>();
       data?.forEach((vehicle: any) => {
         if (!dateMap.has(vehicle.sale_summary_id)) {
@@ -100,141 +95,116 @@ const Kickoff = () => {
 
   const getDaysInKickoff = (saleSummaryId: number): number => {
     if (!kickoffDates) return 0;
-    
     const startDate = kickoffDates.get(saleSummaryId);
     if (!startDate) return 0;
-    
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const filteredClients = kickoffData?.clients.filter(client => 
+    client.company_name.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Kickoff</h1>
-        <p className="text-muted-foreground">
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-1"
+      >
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
+        <p className="text-sm text-muted-foreground">
           Unidades por tipo de uso vindas do Segsale
         </p>
-      </div>
+      </motion.div>
 
-
-      <Tabs defaultValue="pending" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pending">
+      {/* Tabs */}
+      <Tabs defaultValue="pending" className="space-y-6">
+        <TabsList className="bg-muted/50 p-1 h-auto">
+          <TabsTrigger 
+            value="pending" 
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
+          >
             <AlertCircle className="h-4 w-4 mr-2" />
             Pendentes
           </TabsTrigger>
-          <TabsTrigger value="history">
+          <TabsTrigger 
+            value="history"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
+          >
             <History className="h-4 w-4 mr-2" />
             Histórico de Aprovações
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-2xl font-semibold">Kickoff Cliente</h2>
+        <TabsContent value="pending" className="space-y-6 mt-0">
+          {/* Search bar */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          >
+            <h2 className="text-xl font-semibold text-foreground">Clientes Pendentes</h2>
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar por nome do cliente..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10 bg-background border-border/60"
               />
             </div>
-          </div>
+          </motion.div>
           
+          {/* Stats */}
           <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
-          {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-          </div>
-        ) : kickoffData && kickoffData.clients.filter(client => 
-            client.company_name.toLowerCase().includes(searchTerm.toLowerCase())
-          ).length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {kickoffData.clients
-              .filter(client => client.company_name.toLowerCase().includes(searchTerm.toLowerCase()))
-              .map((client) => {
-              const daysInKickoff = getDaysInKickoff(client.sale_summary_id);
-              
-              // Colorimetria dinâmica: amarelo 0-5, laranja 6-10, vermelho >10
-              const getPendencyBadgeStyles = () => {
-                if (daysInKickoff <= 5) {
-                  return "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700";
-                } else if (daysInKickoff <= 10) {
-                  return "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-700";
-                } else {
-                  return "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700";
-                }
-              };
-              
-              return (
-              <Card key={client.sale_summary_id} className="relative flex flex-col">
-                <CardHeader className="pb-2">
-                  {/* Nome do cliente no topo */}
-                  <CardTitle className="text-lg leading-tight">{client.company_name}</CardTitle>
-                  
-                  {/* Tag de pendência logo abaixo do nome */}
-                  {daysInKickoff > 0 && (
-                    <Badge variant="outline" className={`text-xs flex items-center gap-1 w-fit mt-2 ${getPendencyBadgeStyles()}`}>
-                      <Clock className="h-3 w-3" />
-                      Pendente há {daysInKickoff} {daysInKickoff === 1 ? 'dia' : 'dias'}
-                    </Badge>
-                  )}
-                </CardHeader>
-                
-                <CardContent className="space-y-3 flex-1 flex flex-col">
-                  {/* Quantidade de veículos abaixo da tag */}
-                  <div className="flex items-center text-sm">
-                    <span className="text-muted-foreground">Veículos:</span>
-                    <span className="font-semibold ml-2">{client.total_vehicles} {client.total_vehicles === 1 ? 'veículo' : 'veículos'}</span>
-                  </div>
-                  
-                  {client.needs_blocking && (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">
-                        Bloqueio
-                      </Badge>
-                    </div>
-                  )}
 
-                  <div className="flex justify-end pt-2 mt-auto">
-                    <Button
-                      size="sm"
-                      onClick={() => handleEditKickoff(client.sale_summary_id, client.company_name)}
-                      className="bg-[#1d7eb5] hover:bg-[#1a6fa0] text-white"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Realizar Kickoff
-                    </Button>
+          {/* Client grid */}
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[...Array(8)].map((_, i) => (
+                <Skeleton key={i} className="h-48 rounded-xl" />
+              ))}
+            </div>
+          ) : filteredClients.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredClients.map((client, index) => (
+                <KickoffClientCard
+                  key={client.sale_summary_id}
+                  client={client}
+                  daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
+                  onEditKickoff={handleEditKickoff}
+                />
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
                   </div>
+                  <h3 className="font-medium text-foreground mb-1">Nenhum cliente pendente</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Não há dados do Segsale disponíveis no momento
+                  </p>
                 </CardContent>
               </Card>
-            );
-            })}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="text-center py-8 text-muted-foreground">
-              Nenhum dado do Segsale disponível
-            </CardContent>
-          </Card>
-        )}
+            </motion.div>
+          )}
         </TabsContent>
 
-        <TabsContent value="history" className="space-y-4">
-          <h2 className="text-2xl font-semibold">Histórico de Aprovações</h2>
+        <TabsContent value="history" className="space-y-6 mt-0">
+          <h2 className="text-xl font-semibold text-foreground">Histórico de Aprovações</h2>
 
           {historyLoading ? (
-            <Skeleton className="h-32" />
+            <Skeleton className="h-64 rounded-xl" />
           ) : (
             <KickoffHistoryTable history={kickoffHistory || []} />
           )}
