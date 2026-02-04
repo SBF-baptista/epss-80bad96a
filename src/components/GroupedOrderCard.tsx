@@ -49,67 +49,65 @@ const GroupedOrderCard = ({
 
   return (
     <Card
-      className={`cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 border-l-4 ${
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border-l-4 rounded-lg bg-card ${
         isStandby 
-          ? "border-l-error border-error-border bg-error-light/50" 
+          ? "border-l-error border-error-border/50 bg-error-light/30" 
           : isInProduction
-          ? "border-l-primary border-primary/20 bg-primary/5"
+          ? "border-l-primary border-border/40 bg-card"
           : isAwaitingShipment
-          ? "border-l-warning border-warning-border bg-warning-light/50"
+          ? "border-l-warning border-border/40 bg-card"
           : isShipped
-          ? "border-l-success border-success-border bg-success-light/50"
-          : "border-l-muted hover:border-l-primary"
+          ? "border-l-success border-border/40 bg-card"
+          : "border-l-muted border-border/40 hover:border-l-primary"
       }`}
       draggable
       onDragStart={onDragStart}
       onClick={onClick}
     >
       <CardContent className="p-3 md:p-4">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* Header with company name */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-foreground text-sm md:text-base truncate">
+              <h4 className="font-semibold text-foreground text-sm md:text-base leading-tight">
                 {groupedOrder.company_name || 'Cliente'}
               </h4>
-              {/* Show vehicle count for grouped shipped cards */}
-              {isGroupedShipped && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {groupedOrder.orders.length} veículos
-                </p>
-              )}
+              {/* Show vehicle count */}
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                {groupedOrder.orders.length} veículo{groupedOrder.orders.length !== 1 ? 's' : ''}
+              </p>
             </div>
             
             {/* Action buttons */}
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {/* "Em produção" - Eye icon to view details (consolidated info) */}
               {isInProduction && onViewDetailsClick && (
                 <button
                   onClick={handleViewDetailsClick}
-                  className="p-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  className="p-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors shadow-sm"
                   title="Visualizar detalhes"
                 >
-                  <Eye className="h-3.5 w-3.5" />
+                  <Eye className="h-4 w-4" />
                 </button>
               )}
               {/* "Aguardando envio" - Eye icon to view details (replaces truck) */}
               {isAwaitingShipment && onViewDetailsClick && (
                 <button
                   onClick={handleViewDetailsClick}
-                  className="p-1.5 rounded-md bg-warning/10 text-warning hover:bg-warning/20 transition-colors"
+                  className="p-1.5 rounded-md bg-warning/10 text-warning hover:bg-warning/20 transition-colors shadow-sm"
                   title="Visualizar detalhes"
                 >
-                  <Eye className="h-3.5 w-3.5" />
+                  <Eye className="h-4 w-4" />
                 </button>
               )}
               {/* "Enviado" - Eye icon to view details (same as others) */}
               {isShipped && onViewDetailsClick && (
                 <button
                   onClick={handleViewDetailsClick}
-                  className="p-1.5 rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"
+                  className="p-1.5 rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors shadow-sm"
                   title="Visualizar detalhes"
                 >
-                  <Eye className="h-3.5 w-3.5" />
+                  <Eye className="h-4 w-4" />
                 </button>
               )}
             </div>

@@ -59,14 +59,16 @@ const FilterBar = ({ filters, onFiltersChange, orders }: FilterBarProps) => {
   };
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-          <div className="flex gap-4 flex-wrap">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Marca</label>
+    <Card className="border-border/50 shadow-sm bg-card/80 backdrop-blur-sm">
+      <CardContent className="p-4 md:p-5">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
+          <div className="flex gap-3 md:gap-4 flex-wrap flex-1">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Marca
+              </label>
               <Select value={filters.brand || "all"} onValueChange={handleBrandChange}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-36 md:w-40 h-10 border-border/60 bg-background focus:ring-2 focus:ring-primary/20 transition-all">
                   <SelectValue placeholder="Todas as marcas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -80,10 +82,12 @@ const FilterBar = ({ filters, onFiltersChange, orders }: FilterBarProps) => {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Modelo</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Modelo
+              </label>
               <Select value={filters.model || "all"} onValueChange={handleModelChange}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-36 md:w-40 h-10 border-border/60 bg-background focus:ring-2 focus:ring-primary/20 transition-all">
                   <SelectValue placeholder="Todos os modelos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -97,10 +101,12 @@ const FilterBar = ({ filters, onFiltersChange, orders }: FilterBarProps) => {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Configuração</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Configuração
+              </label>
               <Select value={filters.configurationType || "all"} onValueChange={handleConfigTypeChange}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-40 md:w-48 h-10 border-border/60 bg-background focus:ring-2 focus:ring-primary/20 transition-all">
                   <SelectValue placeholder="Todas as configurações" />
                 </SelectTrigger>
                 <SelectContent>
@@ -116,13 +122,13 @@ const FilterBar = ({ filters, onFiltersChange, orders }: FilterBarProps) => {
           </div>
 
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
             onClick={clearFilters}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 h-10 px-3"
           >
-            <X className="h-4 w-4" />
-            Limpar
+            <X className="h-3.5 w-3.5" />
+            <span className="text-sm">Limpar</span>
           </Button>
         </div>
       </CardContent>

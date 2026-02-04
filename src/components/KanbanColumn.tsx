@@ -1,9 +1,11 @@
 
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import OrderCard from "./OrderCard";
 import GroupedOrderCard from "./GroupedOrderCard";
 import { Order } from "@/services/orderService";
 import { GroupedOrder, groupOrdersByCompany } from "@/types/groupedOrder";
+import { ClipboardList, Cog, Clock, Truck, Package } from "lucide-react";
 
 interface KanbanColumnProps {
   title: string;
@@ -18,6 +20,20 @@ interface KanbanColumnProps {
   onScanClick?: (order: Order) => void;
   onShipmentClick?: (order: Order) => void;
 }
+
+const statusIcons: Record<string, React.ElementType> = {
+  "scheduled": ClipboardList,
+  "in_progress": Cog,
+  "completed": Clock,
+  "shipped": Truck,
+};
+
+const statusColors: Record<string, { badge: string; icon: string }> = {
+  "scheduled": { badge: "bg-primary/10 text-primary border-primary/20", icon: "text-primary" },
+  "in_progress": { badge: "bg-warning/10 text-warning border-warning/20", icon: "text-warning" },
+  "completed": { badge: "bg-orange-100 text-orange-600 border-orange-200", icon: "text-orange-500" },
+  "shipped": { badge: "bg-success/10 text-success border-success/20", icon: "text-success" },
+};
 
 const KanbanColumn = ({
   title,
@@ -67,23 +83,35 @@ const KanbanColumn = ({
     }
   };
 
+  const Icon = statusIcons[status] || ClipboardList;
+  const colors = statusColors[status] || statusColors.scheduled;
+
   return (
     <div className="w-full">
-      <div className="mb-3 md:mb-4">
-        <h3 className="font-semibold text-gray-900 text-base md:text-lg truncate">{title}</h3>
-        <p className="text-xs md:text-sm text-gray-600">
-          {groupedOrders.length} empresa{groupedOrders.length !== 1 ? 's' : ''} 
-          ({orders.length} pedido{orders.length !== 1 ? 's' : ''})
+      {/* Enhanced column header */}
+      <div className="mb-4 md:mb-5">
+        <div className="flex items-center gap-2 mb-1.5">
+          <Icon className={`h-4 w-4 md:h-5 md:w-5 ${colors.icon}`} />
+          <h3 className="font-semibold text-foreground text-base md:text-lg">{title}</h3>
+          <Badge 
+            variant="outline" 
+            className={`ml-auto ${colors.badge} text-xs font-medium px-2 py-0.5`}
+          >
+            {orders.length}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground/70 pl-6 md:pl-7">
+          {groupedOrders.length} empresa{groupedOrders.length !== 1 ? 's' : ''}
         </p>
       </div>
       
       <Card 
-        className={`min-h-80 md:min-h-96 p-2 md:p-3 lg:p-4 border-2 border-dashed ${color} transition-colors overflow-hidden`}
+        className={`min-h-80 md:min-h-96 p-3 md:p-4 lg:p-5 border border-border/40 ${color} transition-all duration-200 overflow-hidden rounded-xl shadow-sm`}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <div className="space-y-2 md:space-y-3 h-full">
-          <div className="space-y-2 md:space-y-3 max-h-full overflow-y-auto">
+        <div className="space-y-2.5 md:space-y-3 h-full">
+          <div className="space-y-2.5 md:space-y-3 max-h-full overflow-y-auto kanban-scroll pr-1">
             {groupedOrders.map((groupedOrder, index) => (
               <GroupedOrderCard
                 key={`${groupedOrder.company_name}-${index}`}
@@ -97,11 +125,11 @@ const KanbanColumn = ({
             ))}
           </div>
           {orders.length === 0 && (
-            <div className="flex items-center justify-center h-full py-8 md:py-12 text-gray-400">
-              <div className="text-center">
-                <div className="text-4xl mb-2">📋</div>
-                <p className="text-sm md:text-base font-medium">Nenhum pedido</p>
-                <p className="text-xs md:text-sm">nesta etapa</p>
+            <div className="flex items-center justify-center h-full py-10 md:py-14">
+              <div className="text-center opacity-50">
+                <Package className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground/60">Nenhum pedido</p>
+                <p className="text-xs text-muted-foreground/40">nesta etapa</p>
               </div>
             </div>
           )}

@@ -83,10 +83,16 @@ const Kanban = () => {
   }
 
   return (
-    <div className="p-3 md:p-6 bg-gray-50 min-h-full">
-      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Setup Flow Kanban - Gestão de Pedidos</h2>
+    <div className="p-4 md:p-6 lg:p-8 bg-muted/30 min-h-full">
+      <div className="max-w-7xl mx-auto space-y-5 md:space-y-6">
+        {/* Enhanced page header */}
+        <div className="flex flex-col gap-1">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+            Setup Flow Kanban
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Gestão de Pedidos
+          </p>
         </div>
 
         <FilterBar 
