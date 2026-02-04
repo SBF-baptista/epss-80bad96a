@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link, TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Link, TrendingUp, CheckCircle2, Clock } from "lucide-react";
 import { HomologationCard } from "@/services/homologationService";
 
 interface WorkflowChainItem {
@@ -17,59 +17,65 @@ const HomologationMetrics = ({ cards, workflowData }: HomologationMetricsProps) 
   const homologatedCards = cards.filter(card => card.status === 'homologado').length;
   const totalPendingVehicles = workflowData.filter(item => item.incoming_processed === false).length;
 
+  const metrics = [
+    {
+      label: "Cards Vinculados",
+      value: linkedCards,
+      sublabel: `de ${cards.length} totais`,
+      icon: Link,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      label: "Pedidos Criados",
+      value: cardsWithOrders,
+      sublabel: "auto. criados",
+      icon: TrendingUp,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+    },
+    {
+      label: "Homologados",
+      value: homologatedCards,
+      sublabel: "aprovados",
+      icon: CheckCircle2,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      label: "Pendentes",
+      value: totalPendingVehicles,
+      sublabel: "aguardando",
+      icon: Clock,
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs md:text-sm font-medium">Cards Vinculados</CardTitle>
-          <Link className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-lg md:text-2xl font-bold text-blue-600">{linkedCards}</div>
-          <p className="text-xs text-muted-foreground">
-            de {cards.length} totais
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs md:text-sm font-medium">Pedidos Criados</CardTitle>
-          <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-lg md:text-2xl font-bold text-green-600">{cardsWithOrders}</div>
-          <p className="text-xs text-muted-foreground">
-            auto. criados
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs md:text-sm font-medium">Homologados</CardTitle>
-          <div className="h-3 w-3 md:h-4 md:w-4 bg-green-500 rounded-full" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-lg md:text-2xl font-bold text-green-600">{homologatedCards}</div>
-          <p className="text-xs text-muted-foreground">
-            aprovados
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs md:text-sm font-medium">Pendentes</CardTitle>
-          <div className="h-3 w-3 md:h-4 md:w-4 bg-yellow-500 rounded-full" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-lg md:text-2xl font-bold text-yellow-600">{totalPendingVehicles}</div>
-          <p className="text-xs text-muted-foreground">
-            aguardando
-          </p>
-        </CardContent>
-      </Card>
+      {metrics.map((metric) => (
+        <Card key={metric.label} className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-4 md:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-xs md:text-sm font-medium text-muted-foreground/70">
+                  {metric.label}
+                </p>
+                <p className={`text-2xl md:text-3xl font-bold ${metric.color}`}>
+                  {metric.value}
+                </p>
+                <p className="text-[10px] md:text-xs text-muted-foreground/50">
+                  {metric.sublabel}
+                </p>
+              </div>
+              <div className={`p-2 rounded-lg ${metric.bgColor}`}>
+                <metric.icon className={`h-4 w-4 md:h-5 md:w-5 ${metric.color} opacity-80`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

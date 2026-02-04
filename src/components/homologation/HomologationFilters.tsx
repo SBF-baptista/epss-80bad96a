@@ -94,38 +94,38 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
   const hasActiveFilters = filters.brand || filters.year || filters.searchText || filters.category;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-500" />
-            <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-foreground">Filtrar por</h3>
           </div>
           {hasActiveFilters && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={clearFilters}
-              className="text-gray-500 hover:text-gray-700"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground"
             >
-              <X className="h-4 w-4 mr-1" />
-              Limpar
+              <X className="h-3 w-3 mr-1" />
+              Limpar filtros
             </Button>
           )}
         </div>
 
         {/* Filters Row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Category Filter */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Categoria</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Categoria</label>
             <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={categoryOpen}
-                  className="w-full justify-between text-left font-normal"
+                  className="w-full justify-between text-left font-normal h-9 border-border/50 hover:border-border"
                 >
                   <div className="flex items-center gap-2">
                     {filters.category === "HCV" && (
@@ -196,17 +196,19 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
             </Popover>
           </div>
           {/* Brand Filter */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Marca</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Marca</label>
             <Popover open={brandOpen} onOpenChange={setBrandOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={brandOpen}
-                  className="w-full justify-between text-left font-normal"
+                  className="w-full justify-between text-left font-normal h-9 border-border/50 hover:border-border"
                 >
-                  {filters.brand || "Selecione uma marca..."}
+                  <span className={filters.brand ? "text-foreground" : "text-muted-foreground"}>
+                    {filters.brand || "Selecione..."}
+                  </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0 bg-background border shadow-md z-50" align="start">
@@ -256,18 +258,20 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
           </div>
 
           {/* Year Filter */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Ano</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Ano</label>
             <Popover open={yearOpen} onOpenChange={setYearOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={yearOpen}
-                  className="w-full justify-between text-left font-normal"
+                  className="w-full justify-between text-left font-normal h-9 border-border/50 hover:border-border"
                   disabled={!filters.brand || availableYears.length === 0}
                 >
-                  {filters.year || "Selecione um ano..."}
+                  <span className={filters.year ? "text-foreground" : "text-muted-foreground"}>
+                    {filters.year || "Selecione..."}
+                  </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0 bg-background border shadow-md z-50" align="start">
@@ -296,15 +300,15 @@ const HomologationFilters = ({ cards, onFiltersChange }: HomologationFiltersProp
           </div>
 
           {/* Search Filter */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Busca Geral</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Busca geral</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-3.5 w-3.5" />
               <Input
-                placeholder="Buscar por modelo, configuração..."
+                placeholder="Modelo, configuração..."
                 value={filters.searchText}
                 onChange={(e) => updateFilter("searchText", e.target.value)}
-                className="pl-9"
+                className="pl-8 h-9 border-border/50 focus:border-border text-sm"
               />
             </div>
           </div>
