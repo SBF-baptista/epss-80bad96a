@@ -22,29 +22,37 @@ const Kickoff = () => {
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const { toast } = useToast();
 
-  const { data: kickoffData, isLoading, refetch } = useQuery({
-    queryKey: ['kickoff-data'],
+  const {
+    data: kickoffData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["kickoff-data"],
     queryFn: getKickoffData,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     staleTime: 0,
   });
 
-  const { data: kickoffHistory, isLoading: historyLoading, refetch: refetchHistory } = useQuery({
-    queryKey: ['kickoff-history'],
+  const {
+    data: kickoffHistory,
+    isLoading: historyLoading,
+    refetch: refetchHistory,
+  } = useQuery({
+    queryKey: ["kickoff-history"],
     queryFn: getKickoffHistory,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     staleTime: 0,
   });
 
   const { data: integrityCheck, isLoading: integrityLoading } = useQuery({
-    queryKey: ['kickoff-integrity'],
+    queryKey: ["kickoff-integrity"],
     queryFn: checkKickoffIntegrity,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     staleTime: 30000,
   });
@@ -56,9 +64,9 @@ const Kickoff = () => {
     });
   };
 
-  useRealtimeSubscription('accessories', ['kickoff-data'], undefined, handleRealtimeUpdate);
-  useRealtimeSubscription('incoming_vehicles', ['kickoff-data'], undefined, handleRealtimeUpdate);
-  useRealtimeSubscription('kickoff_history', ['kickoff-history'], undefined, () => {
+  useRealtimeSubscription("accessories", ["kickoff-data"], undefined, handleRealtimeUpdate);
+  useRealtimeSubscription("incoming_vehicles", ["kickoff-data"], undefined, handleRealtimeUpdate);
+  useRealtimeSubscription("kickoff_history", ["kickoff-history"], undefined, () => {
     toast({
       title: "Histórico atualizado",
       description: "Novo kickoff foi aprovado.",
@@ -72,22 +80,22 @@ const Kickoff = () => {
   };
 
   const { data: kickoffDates } = useQuery({
-    queryKey: ['kickoff-dates'],
+    queryKey: ["kickoff-dates"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('incoming_vehicles')
-        .select('sale_summary_id, received_at')
-        .order('received_at', { ascending: true });
-      
+        .from("incoming_vehicles")
+        .select("sale_summary_id, received_at")
+        .order("received_at", { ascending: true });
+
       if (error) throw error;
-      
+
       const dateMap = new Map<number, Date>();
       data?.forEach((vehicle: any) => {
         if (!dateMap.has(vehicle.sale_summary_id)) {
           dateMap.set(vehicle.sale_summary_id, new Date(vehicle.received_at));
         }
       });
-      
+
       return dateMap;
     },
     enabled: !!kickoffData?.clients,
@@ -102,35 +110,28 @@ const Kickoff = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  const filteredClients = kickoffData?.clients.filter(client => 
-    client.company_name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredClients =
+    kickoffData?.clients.filter((client) => client.company_name.toLowerCase().includes(searchTerm.toLowerCase())) || [];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-1"
-      >
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
-        <p className="text-sm text-muted-foreground">
-          Unidades por tipo de uso vindas do Segsale
-        </p>
+        <p className="text-sm text-muted-foreground"></p>
       </motion.div>
 
       {/* Tabs */}
       <Tabs defaultValue="pending" className="space-y-6">
         <TabsList className="bg-muted/50 p-1 h-auto">
-          <TabsTrigger 
-            value="pending" 
+          <TabsTrigger
+            value="pending"
             className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
           >
             <AlertCircle className="h-4 w-4 mr-2" />
             Pendentes
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="history"
             className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
           >
@@ -141,7 +142,7 @@ const Kickoff = () => {
 
         <TabsContent value="pending" className="space-y-6 mt-0">
           {/* Search bar */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
@@ -158,7 +159,7 @@ const Kickoff = () => {
               />
             </div>
           </motion.div>
-          
+
           {/* Stats */}
           <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
 
@@ -181,19 +182,14 @@ const Kickoff = () => {
               ))}
             </div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                     <FileText className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <h3 className="font-medium text-foreground mb-1">Nenhum cliente pendente</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Não há dados do Segsale disponíveis no momento
-                  </p>
+                  <p className="text-sm text-muted-foreground">Não há dados do Segsale disponíveis no momento</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -217,9 +213,7 @@ const Kickoff = () => {
           onOpenChange={setModalOpen}
           saleSummaryId={selectedSaleSummaryId}
           companyName={selectedCompanyName}
-          vehicles={
-            kickoffData?.clients.find(c => c.sale_summary_id === selectedSaleSummaryId)?.vehicles || []
-          }
+          vehicles={kickoffData?.clients.find((c) => c.sale_summary_id === selectedSaleSummaryId)?.vehicles || []}
           onSuccess={() => {
             refetch();
             refetchHistory();
