@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package } from "lucide-react";
+import { Car } from "lucide-react";
 import { KitStatusTimeline } from "./KitStatusTimeline";
 import { RescheduleModal } from "./RescheduleModal";
 import { ProcessHistoryModal } from "./ProcessHistoryModal";
@@ -111,36 +111,42 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
     // If there's an installation schedule, the vehicle has already been shipped
     if (installationSchedule) {
       return {
-        label: "📅 Instalação Agendada",
-        color: "bg-green-500",
+        label: "Instalação Agendada",
+        color: "bg-green-100 text-green-700 border-green-200",
+        dotColor: "bg-green-500",
       };
     }
 
     switch (kitData.status) {
       case "scheduled":
         return {
-          label: "📋 Pedidos",
-          color: "bg-blue-500",
+          label: "Pedidos",
+          color: "bg-blue-50 text-blue-700 border-blue-200",
+          dotColor: "bg-blue-500",
         };
       case "in_progress":
         return {
-          label: "🔧 Em Produção",
-          color: "bg-yellow-500",
+          label: "Em Produção",
+          color: "bg-amber-50 text-amber-700 border-amber-200",
+          dotColor: "bg-amber-500",
         };
       case "completed":
         return {
-          label: "📦 Aguardando Envio",
-          color: "bg-orange-500",
+          label: "Aguardando Envio",
+          color: "bg-orange-50 text-orange-700 border-orange-200",
+          dotColor: "bg-orange-500",
         };
       case "shipped":
         return {
-          label: "✅ Enviado",
-          color: "bg-green-500",
+          label: "Enviado",
+          color: "bg-green-50 text-green-700 border-green-200",
+          dotColor: "bg-green-500",
         };
       default:
         return {
-          label: "🔴 Pendente",
-          color: "bg-red-500",
+          label: "Pendente",
+          color: "bg-red-50 text-red-700 border-red-200",
+          dotColor: "bg-red-500",
         };
     }
   };
@@ -159,45 +165,51 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
 
   return (
     <>
-      <Card className="border-l-4" style={{ borderLeftColor: statusInfo.color.replace('bg-', '') === 'red-500' ? '#ef4444' : 
-        statusInfo.color.replace('bg-', '') === 'yellow-500' ? '#eab308' :
-        statusInfo.color.replace('bg-', '') === 'blue-500' ? '#3b82f6' : '#22c55e' }}>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                <span>
+      <Card className="border border-border/40 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 bg-card">
+        <CardHeader className="pb-3 p-4">
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Car className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <CardTitle className="text-sm sm:text-base font-semibold text-foreground truncate">
                   {kitData.vehicle_brand && kitData.vehicle_model 
                     ? `${kitData.vehicle_brand} ${kitData.vehicle_model}`
                     : kitData.kit?.name || 'Veículo'}
-                </span>
+                </CardTitle>
                 {(tomticketProtocol || kitData.tomticket_protocol) && (
-                  <span className="text-xs font-normal text-muted-foreground ml-2">
-                    Protocolo TomTicket: {tomticketProtocol || kitData.tomticket_protocol}
+                  <span className="text-xs font-normal text-muted-foreground/70 hidden sm:inline">
+                    TT: {tomticketProtocol || kitData.tomticket_protocol}
                   </span>
                 )}
-              </CardTitle>
+              </div>
+              
               {(kitData as any).configuration && (
-                <p className="text-xs text-muted-foreground">
-                  Configuração: <span className="font-medium">{(kitData as any).configuration}</span>
+                <p className="text-xs text-muted-foreground pl-9">
+                  Configuração: <span className="font-medium text-foreground/70">{(kitData as any).configuration}</span>
                 </p>
               )}
-              <div className="space-y-1">
-                <Badge variant="outline" className={statusInfo.color.replace('bg-', 'text-') + ' border-current'}>
+              
+              <div className="flex items-center gap-2 pl-9 flex-wrap">
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs font-medium px-2 py-0.5 ${statusInfo.color}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotColor} mr-1.5`} />
                   {statusInfo.label}
                 </Badge>
                 {entryDate && (
-                  <div className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground/60">
                     Entrou em {entryDate}
-                  </div>
+                  </span>
                 )}
               </div>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-4 pb-4 pt-0">
           {/* Timeline de progresso */}
           <KitStatusTimeline 
             kickoffCompleted={incomingVehicleData?.kickoff_completed ?? false}

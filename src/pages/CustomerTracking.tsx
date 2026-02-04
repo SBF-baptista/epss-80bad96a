@@ -8,7 +8,7 @@ import { fetchHomologationKits, HomologationKit } from "@/services/homologationK
 import { checkMultipleKitsHomologation } from "@/services/kitHomologationService";
 import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModulesToObjects, VehicleAccessory } from "@/services/vehicleAccessoryService";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 
 export interface CustomerKitData {
   id: string;
@@ -176,44 +176,75 @@ const CustomerTracking = () => {
     });
   };
 
+  const customersWithKits = filteredCustomers.filter(customer => getCustomerKits(customer.id!).length > 0);
+
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Acompanhamento de Clientes</h1>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="container mx-auto px-4 py-6 max-w-[1600px]">
+        <div className="flex flex-col gap-4 bg-muted/20 rounded-xl p-4 sm:p-6 border border-border/50 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Acompanhamento de Clientes
+          </h1>
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Carregando dados...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Acompanhamento de Clientes</h1>
+    <div className="container mx-auto px-4 py-6 max-w-[1600px]">
+      {/* Header */}
+      <div className="flex flex-col gap-4 bg-muted/20 rounded-xl p-4 sm:p-6 border border-border/50 mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Acompanhamento de Clientes
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {customersWithKits.length} cliente{customersWithKits.length !== 1 ? 's' : ''} com veículos
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <CustomerTrackingFilters
-        onSearch={handleSearch}
-        searchTerm={searchTerm}
-      />
+      {/* Filters */}
+      <div className="mb-6">
+        <CustomerTrackingFilters
+          onSearch={handleSearch}
+          searchTerm={searchTerm}
+        />
+      </div>
 
-      <div className="space-y-6">
-        {filteredCustomers.filter(customer => getCustomerKits(customer.id!).length > 0).length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
+      {/* Customer List */}
+      <div className="space-y-4">
+        {customersWithKits.length === 0 ? (
+          <div className="text-center py-16 bg-muted/10 rounded-xl border border-border/30">
+            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+              <Users className="h-6 w-6 text-muted-foreground/50" />
+            </div>
+            <p className="text-muted-foreground">
               {searchTerm ? "Nenhum cliente encontrado com os critérios de busca." : "Nenhum cliente com informações cadastradas."}
             </p>
           </div>
         ) : (
-          filteredCustomers
-            .filter(customer => getCustomerKits(customer.id!).length > 0)
-            .map((customer) => (
-              <CustomerCard
-                key={customer.id}
-                customer={customer}
-                customerKits={getCustomerKits(customer.id!)}
-                onUpdate={loadData}
-              />
-            ))
+          customersWithKits.map((customer) => (
+            <CustomerCard
+              key={customer.id}
+              customer={customer}
+              customerKits={getCustomerKits(customer.id!)}
+              onUpdate={loadData}
+            />
+          ))
         )}
       </div>
     </div>

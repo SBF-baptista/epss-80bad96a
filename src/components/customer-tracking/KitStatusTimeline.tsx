@@ -9,7 +9,7 @@ interface KitStatusTimelineProps {
   planningDate?: string | null;
   logisticsStatus?: string;
   logisticsDate?: string | null;
-  trackingCode?: string | null; // Added to detect shipped status as fallback
+  trackingCode?: string | null;
   hasInstallationSchedule?: boolean;
   scheduleDate?: string | null;
   installationCompleted?: boolean;
@@ -87,9 +87,7 @@ export const KitStatusTimeline = ({
   };
 
   // Step 4: Logística
-  // If trackingCode is present, consider as 'shipped' regardless of status (fallback for data inconsistency)
   const getLogisticsStepStatus = () => {
-    // Fallback: if tracking_code exists, treat as shipped
     if (trackingCode && trackingCode.trim() !== '') {
       return { status: "step4", statusLabel: "Enviado", date: formatDate(logisticsDate) };
     }
@@ -186,65 +184,93 @@ export const KitStatusTimeline = ({
     }
   ];
 
-  const getStepColor = (step: typeof steps[0]) => {
-    if (step.statusType === "completed" || step.statusType === "step4") {
-      return "bg-green-500 border-green-500 text-white";
-    }
-    if (step.statusType === "in_progress" || step.statusType === "step1" || step.statusType === "step2" || step.statusType === "step3") {
-      return "bg-blue-500 border-blue-500 text-white";
-    }
-    return "bg-gray-200 border-gray-300 text-gray-500";
+  const isCompleted = (step: typeof steps[0]) => {
+    return step.statusType === "completed" || step.statusType === "step4";
   };
 
-  const getTextColor = (step: typeof steps[0]) => {
-    if (step.statusType === "completed" || step.statusType === "step4" || 
-        step.statusType === "in_progress" || step.statusType === "step1" || 
-        step.statusType === "step2" || step.statusType === "step3") {
-      return "text-gray-900";
-    }
-    return "text-gray-500";
+  const isInProgress = (step: typeof steps[0]) => {
+    return step.statusType === "in_progress" || 
+           step.statusType === "step1" || 
+           step.statusType === "step2" || 
+           step.statusType === "step3";
   };
 
-  const getStatusTextColor = (step: typeof steps[0]) => {
-    if (step.statusType === "completed" || step.statusType === "step4") {
-      return "text-green-600";
+  const getStepStyles = (step: typeof steps[0]) => {
+    if (isCompleted(step)) {
+      return {
+        circle: "bg-green-500/15 border-green-500/40 text-green-600",
+        icon: "text-green-600",
+        name: "text-foreground font-medium",
+        status: "text-green-600",
+      };
     }
-    if (step.statusType === "in_progress" || step.statusType === "step1" || step.statusType === "step2" || step.statusType === "step3") {
-      return "text-blue-600";
+    if (isInProgress(step)) {
+      return {
+        circle: "bg-primary/10 border-primary/40 text-primary",
+        icon: "text-primary",
+        name: "text-foreground font-medium",
+        status: "text-primary",
+      };
     }
-    return "text-gray-400";
+    return {
+      circle: "bg-muted/50 border-border text-muted-foreground/50",
+      icon: "text-muted-foreground/50",
+      name: "text-muted-foreground/70",
+      status: "text-muted-foreground/50",
+    };
+  };
+
+  const getLineColor = (currentIndex: number) => {
+    const currentStep = steps[currentIndex];
+    const nextStep = steps[currentIndex + 1];
+    
+    if (isCompleted(currentStep) && (isCompleted(nextStep) || isInProgress(nextStep))) {
+      return "bg-green-400/60";
+    }
+    if (isCompleted(currentStep) || isInProgress(currentStep)) {
+      return "bg-border/60";
+    }
+    return "bg-border/30";
   };
 
   return (
-    <div className="py-4">
-      <div className="flex justify-between items-center relative">
-        {/* Timeline line */}
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 z-0" />
+    <div className="py-3 px-1">
+      <div className="flex justify-between items-start relative">
+        {/* Timeline lines */}
+        <div className="absolute top-4 left-0 right-0 flex z-0">
+          {steps.slice(0, -1).map((_, index) => (
+            <div 
+              key={index} 
+              className={`flex-1 h-[2px] ${getLineColor(index)} mx-1 first:ml-5 last:mr-5`}
+            />
+          ))}
+        </div>
         
         {steps.map((step) => {
+          const styles = getStepStyles(step);
           const Icon = step.icon;
           
           return (
-            <div key={step.id} className="flex flex-col items-center z-10 bg-white px-1">
+            <div key={step.id} className="flex flex-col items-center z-10 bg-card px-0.5 flex-1">
               <div className={`
-                w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors
-                ${getStepColor(step)}
+                w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200
+                ${styles.circle}
               `}>
-                <Icon className="h-5 w-5" />
+                <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
               </div>
               
-              <div className="text-center mt-2 min-w-0">
+              <div className="text-center mt-1.5 min-w-0">
                 {/* Module name */}
-                <div className={`text-xs font-medium ${getTextColor(step)}`}>
+                <div className={`text-[10px] leading-tight ${styles.name}`}>
                   {step.name}
                 </div>
                 {/* Status label */}
-                <div className={`text-[10px] mt-0.5 font-medium ${getStatusTextColor(step)}`}>
+                <div className={`text-[9px] mt-0.5 font-medium ${styles.status}`}>
                   {step.statusLabel}
                 </div>
                 {/* Date and time (if available) */}
                 {step.date && (
-                  <div className="text-[10px] text-gray-500 flex flex-col items-center">
+                  <div className="text-[9px] text-muted-foreground/50 flex flex-col items-center mt-0.5">
                     <span>{step.date}</span>
                     {(() => {
                       const dateStr = step.id === 'kickoff' ? kickoffDate :
