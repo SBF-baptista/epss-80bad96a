@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HomologationCard } from "@/services/homologationService";
 import HomologationCardComponent from "./HomologationCard";
-import { Loader2, ChevronDown, ChevronRight, Clock, Settings, Calendar, FlaskConical, CheckCircle2 } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Clock, Settings, Calendar, Car, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ const columnIcons: Record<string, React.ElementType> = {
   "A Homologar": Clock,
   "Em Homologação": Settings,
   "Agendamento de Teste": Calendar,
-  "Execução de Teste": FlaskConical,
+  "Execução de Teste": Car,
   "Homologado": CheckCircle2,
 };
 

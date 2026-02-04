@@ -213,76 +213,69 @@ export const SchedulingSection = ({
   });
 
   return (
-    <div className="h-full space-y-4">
-      {/* Header - Only show search */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="relative w-full sm:w-auto sm:min-w-[300px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Buscar por nome, documento ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
-      {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total de Veículos</p>
-                <p className="text-2xl font-bold">{customers.reduce((acc, c) => acc + (c.vehicles?.length || 0), 0)}</p>
-                <button 
-                  onClick={loadCustomers}
-                  className="text-xs text-blue-600 hover:underline mt-1"
-                >
-                  Atualizar
-                </button>
+    <div className="h-full space-y-5">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-card">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm text-muted-foreground/70 font-medium">Total de Veículos</p>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
+                  {customers.reduce((acc, c) => acc + (c.vehicles?.length || 0), 0)}
+                </p>
               </div>
-              <Truck className="w-8 h-8 text-primary" />
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Kits Homologados</p>
-                <p className="text-2xl font-bold">{getHomologatedKits().length}</p>
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-card">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm text-muted-foreground/70 font-medium">Kits Homologados</p>
+                <p className="text-2xl sm:text-3xl font-bold text-green-600">
+                  {getHomologatedKits().length}
+                </p>
               </div>
-              <Package className="w-8 h-8 text-green-600" />
+              <div className="p-2.5 rounded-xl bg-green-100">
+                <Package className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Aguardando Envio</p>
-                <p className="text-2xl font-bold">
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-card">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm text-muted-foreground/70 font-medium">Aguardando Envio</p>
+                <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                   {schedules.filter(s => ['scheduled', 'in_progress'].includes(s.status)).length}
                 </p>
               </div>
-              <Calendar className="w-8 h-8 text-blue-600" />
+              <div className="p-2.5 rounded-xl bg-blue-100">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Enviados para Esteira</p>
-                <p className="text-2xl font-bold">
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-card">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm text-muted-foreground/70 font-medium">Enviados para Esteira</p>
+                <p className="text-2xl sm:text-3xl font-bold text-purple-600">
                   {schedules.filter(s => s.status === 'completed').length}
                 </p>
               </div>
-              <Clock className="w-8 h-8 text-purple-600" />
+              <div className="p-2.5 rounded-xl bg-purple-100">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -290,25 +283,29 @@ export const SchedulingSection = ({
 
       {/* Customer List */}
       <div className="flex-1 overflow-hidden">
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle>{isCompletedView ? 'Veículos Enviados para Esteira' : 'Veículos'}</CardTitle>
+        <Card className="h-full border-border/50 shadow-sm">
+          <CardHeader className="pb-4 border-b border-border/30">
+            <CardTitle className="text-lg font-semibold text-foreground">
+              {isCompletedView ? 'Veículos Enviados para Esteira' : 'Veículos'}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 h-full overflow-auto max-h-[calc(100vh-400px)]">
+          <CardContent className="p-4 sm:p-5 h-full overflow-auto max-h-[calc(100vh-420px)] scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent">
             {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
               </div>
             ) : filteredCustomers.length === 0 ? (
-              <div className="text-center py-8">
-                <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-muted-foreground/60" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-2">
                   {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum veículo cadastrado'}
                 </h3>
-                <p className="text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground/70 mb-5">
                   {searchTerm ? 'Tente ajustar os termos de busca.' : 'Nenhum veículo encontrado.'}
                 </p>
-                <Button onClick={loadCustomers} variant="outline">
+                <Button onClick={loadCustomers} variant="outline" size="sm" className="h-9">
                   Recarregar
                 </Button>
               </div>
@@ -332,14 +329,16 @@ export const SchedulingSection = ({
                     : getCustomerPendingAccessoryCount(customer);
 
                   return (
-                    <Card key={customer.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
+                    <Card key={customer.id} className="hover:shadow-lg transition-all duration-200 border-border/50 rounded-xl overflow-hidden group">
+                      <CardContent className="p-4 sm:p-5">
+                        <div className="space-y-4">
                           {/* Customer Header */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold">{customer.name}</h4>
-                              <p className="text-sm text-muted-foreground">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-foreground text-base leading-tight truncate">
+                                {customer.name}
+                              </h4>
+                              <p className="text-sm text-foreground/70 mt-0.5">
                                 {customer.document_type === 'cpf' ? 'CPF' : 'CNPJ'}: {customer.document_number}
                               </p>
                             </div>
@@ -349,22 +348,22 @@ export const SchedulingSection = ({
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleViewHistory(customer)}
-                                className="h-8 w-8 p-0"
+                                className="h-8 w-8 p-0 hover:bg-muted/80 transition-colors flex-shrink-0"
                                 title="Ver histórico"
                               >
-                                <Eye className="w-4 h-4" />
+                                <Eye className="w-4 h-4 text-muted-foreground" />
                               </Button>
                             )}
                           </div>
 
                           {/* Contact Info */}
-                          <div className="space-y-1 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-3 h-3" />
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2.5 text-sm text-foreground/80">
+                              <Phone className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
                               <span>{customer.phone}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3 h-3" />
+                            <div className="flex items-center gap-2.5 text-sm text-muted-foreground/70">
+                              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                               <span>{customer.address_city} - {customer.address_state}</span>
                             </div>
                           </div>
@@ -414,10 +413,10 @@ export const SchedulingSection = ({
 
                           {/* Action Buttons - Only show in non-completed view */}
                           {!isCompletedView && (
-                            <div className="space-y-2">
+                            <div className="space-y-2 pt-1">
                               {/* Check if vehicle has accessories before showing button */}
                               {!hasAccessories ? (
-                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                                <div className="text-xs text-amber-700 bg-amber-50/80 p-2.5 rounded-lg border border-amber-200/70">
                                   Veículo sem acessórios vinculados. Vincule acessórios para prosseguir.
                                 </div>
                               ) : (() => {
@@ -428,7 +427,7 @@ export const SchedulingSection = ({
                                   <Button
                                     size="sm"
                                     onClick={() => handleScheduleCustomer(customer)}
-                                    className="w-full bg-[#1d7eb5] hover:bg-[#1a6fa0] text-white"
+                                    className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm hover:shadow-md transition-all"
                                   >
                                     <Plus className="w-4 h-4 mr-2" />
                                     Iniciar planejamento
