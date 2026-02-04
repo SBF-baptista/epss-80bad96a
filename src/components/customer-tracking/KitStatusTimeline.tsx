@@ -220,28 +220,29 @@ export const KitStatusTimeline = ({
     };
   };
 
+  // Determines if the line between two steps should be green (completed) or gray (pending)
   const getLineColor = (currentIndex: number) => {
     const currentStep = steps[currentIndex];
-    const nextStep = steps[currentIndex + 1];
     
-    if (isCompleted(currentStep) && (isCompleted(nextStep) || isInProgress(nextStep))) {
-      return "bg-green-400/60";
+    // Line is green if the current step is completed (meaning the process passed through this point)
+    if (isCompleted(currentStep)) {
+      return "bg-green-500";
     }
-    if (isCompleted(currentStep) || isInProgress(currentStep)) {
-      return "bg-border/60";
-    }
-    return "bg-border/30";
+    
+    // Line is gray if the process hasn't reached/completed this step yet
+    return "bg-muted-foreground/30";
   };
 
   return (
     <div className="py-3 px-1">
       <div className="flex justify-between items-start relative">
-        {/* Timeline lines */}
-        <div className="absolute top-4 left-0 right-0 flex z-0">
+        {/* Timeline connecting lines between icons */}
+        <div className="absolute top-4 left-0 right-0 flex z-0 px-4">
           {steps.slice(0, -1).map((_, index) => (
             <div 
               key={index} 
-              className={`flex-1 h-[2px] ${getLineColor(index)} mx-1 first:ml-5 last:mr-5`}
+              className={`flex-1 h-[3px] ${getLineColor(index)} rounded-full mx-0.5 transition-colors duration-300`}
+              style={{ marginLeft: index === 0 ? '1rem' : undefined, marginRight: index === steps.length - 2 ? '1rem' : undefined }}
             />
           ))}
         </div>
