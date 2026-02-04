@@ -96,16 +96,21 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
             )}
           </div>
           
-          {/* Body: Brand, Model, Year */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            <span className="font-medium text-foreground">{card.brand}</span>
-            <span className="text-foreground/70">•</span>
-            <span className="text-foreground">{card.model}</span>
+          {/* Body: Brand, Model, Year - Vertical Layout */}
+          <div className="space-y-1 text-xs">
+            <div className="flex gap-2">
+              <span className="text-muted-foreground w-14">Marca:</span>
+              <span className="font-medium text-foreground">{card.brand}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-muted-foreground w-14">Modelo:</span>
+              <span className="text-foreground">{card.model}</span>
+            </div>
             {card.year && (
-              <>
-                <span className="text-foreground/70">•</span>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground w-14">Ano:</span>
                 <span className="text-foreground">{card.year}</span>
-              </>
+              </div>
             )}
           </div>
 
