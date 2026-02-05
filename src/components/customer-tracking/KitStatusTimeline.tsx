@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { CheckCircle, Clock, FileCheck, Truck, Calendar, Wrench } from "lucide-react";
 
 interface KitStatusTimelineProps {
@@ -235,65 +236,59 @@ export const KitStatusTimeline = ({
 
   return (
     <div className="py-3 px-1">
-      <div className="flex justify-between items-start">
+      <div className="flex items-start w-full">
         {steps.map((step, index) => {
           const styles = getStepStyles(step);
           const Icon = step.icon;
           const isLastStep = index === steps.length - 1;
-          
+
           return (
-            <div key={step.id} className="flex flex-col items-center flex-1 relative">
-              {/* Connection line to next step */}
+            <Fragment key={step.id}>
+              {/* Step */}
+              <div className="flex flex-col items-center min-w-[72px]">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card ${styles.circle}`}
+                >
+                  <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
+                </div>
+
+                <div className="text-center mt-1.5 min-w-0">
+                  <div className={`text-[10px] leading-tight ${styles.name}`}>{step.name}</div>
+                  <div className={`text-[9px] mt-0.5 font-medium ${styles.status}`}>{step.statusLabel}</div>
+
+                  {step.date && (
+                    <div className="text-[9px] text-muted-foreground/50 flex flex-col items-center mt-0.5">
+                      <span>{step.date}</span>
+                      {(() => {
+                        const dateStr =
+                          step.id === "kickoff"
+                            ? kickoffDate
+                            : step.id === "homologation"
+                              ? homologationDate
+                              : step.id === "planning"
+                                ? planningDate
+                                : step.id === "logistics"
+                                  ? logisticsDate
+                                  : step.id === "scheduling"
+                                    ? scheduleDate
+                                    : step.id === "installation"
+                                      ? installationDate
+                                      : null;
+                        const time = formatTime(dateStr);
+                        return time ? <span>{time}</span> : null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Connector */}
               {!isLastStep && (
-                <div 
-                  className={`absolute top-4 h-[2px] ${getLineColor(index)} transition-colors duration-300`}
-                  style={{
-                    left: '50%',
-                    right: '-50%',
-                    transform: 'translateX(16px)',
-                    zIndex: 0
-                  }}
+                <div
+                  className={`mt-4 h-[2px] flex-1 ${getLineColor(index)} rounded-full transition-colors duration-300`}
                 />
               )}
-              
-              {/* Icon circle */}
-              <div 
-                className={`
-                  w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card relative
-                  ${styles.circle}
-                `}
-                style={{ zIndex: 1 }}
-              >
-                <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
-              </div>
-              
-              <div className="text-center mt-1.5 min-w-0">
-                {/* Module name */}
-                <div className={`text-[10px] leading-tight ${styles.name}`}>
-                  {step.name}
-                </div>
-                {/* Status label */}
-                <div className={`text-[9px] mt-0.5 font-medium ${styles.status}`}>
-                  {step.statusLabel}
-                </div>
-                {/* Date and time (if available) */}
-                {step.date && (
-                  <div className="text-[9px] text-muted-foreground/50 flex flex-col items-center mt-0.5">
-                    <span>{step.date}</span>
-                    {(() => {
-                      const dateStr = step.id === 'kickoff' ? kickoffDate :
-                                     step.id === 'homologation' ? homologationDate :
-                                     step.id === 'planning' ? planningDate :
-                                     step.id === 'logistics' ? logisticsDate :
-                                     step.id === 'scheduling' ? scheduleDate :
-                                     step.id === 'installation' ? installationDate : null;
-                      const time = formatTime(dateStr);
-                      return time ? <span>{time}</span> : null;
-                    })()}
-                  </div>
-                )}
-              </div>
-            </div>
+            </Fragment>
           );
         })}
       </div>
