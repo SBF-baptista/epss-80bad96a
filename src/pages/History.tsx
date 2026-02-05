@@ -1,57 +1,51 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Clock, AlertTriangle, Eye } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Clock, RefreshCw, Shield } from "lucide-react";
+
+import HistoryFilters from "@/components/history/HistoryFilters";
+import HistoryStats from "@/components/history/HistoryStats";
+import HistoryTable, { type AppLog } from "@/components/history/HistoryTable";
+import HistoryPagination from "@/components/history/HistoryPagination";
+import HistoryExport from "@/components/history/HistoryExport";
 import LogDetailModal from "@/components/history/LogDetailModal";
 
-interface AppLog {
-  id: string;
-  user_id: string | null;
-  action: string;
-  module: string;
-  details: string | null;
-  ip_address: string | null;
-  created_at: string;
-  user_email?: string;
+interface FilterState {
+  searchTerm: string;
+  moduleFilter: string;
+  actionFilter: string;
+  actionTypeFilter: string;
+  impactFilter: string;
+  originFilter: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  ipFilter: string;
 }
+
+const initialFilters: FilterState = {
+  searchTerm: "",
+  moduleFilter: "all",
+  actionFilter: "all",
+  actionTypeFilter: "all",
+  impactFilter: "all",
+  originFilter: "all",
+  startDate: "",
+  endDate: "",
+  startTime: "",
+  endTime: "",
+  ipFilter: "",
+};
 
 const History = () => {
   const { role, loading: roleLoading } = useUserRole();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [moduleFilter, setModuleFilter] = useState<string>("all");
-  const [actionFilter, setActionFilter] = useState<string>("all");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedLog, setSelectedLog] = useState<AppLog | null>(null);
@@ -61,25 +55,26 @@ const History = () => {
   if (!roleLoading && role !== "admin") {
     return (
       <div className="container mx-auto p-6">
-        <Card className="p-8 text-center">
-          <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
+        <Card className="p-8 text-center border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
+          <Shield className="h-12 w-12 text-amber-600 dark:text-amber-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Acesso Restrito</h2>
-          <p className="text-muted-foreground">
-            Esta seção é exclusiva para administradores.
+          <p className="text-muted-foreground max-w-md mx-auto">
+            O Histórico do Sistema é exclusivo para administradores. 
+            Entre em contato com o suporte se você precisa de acesso.
           </p>
         </Card>
       </div>
     );
   }
 
-  const { data: logs = [], isLoading: logsLoading, isError, error } = useQuery({
-    queryKey: ["app-logs", moduleFilter, actionFilter, startDate, endDate],
+  const { data: logs = [], isLoading: logsLoading, isError, error, refetch } = useQuery({
+    queryKey: ["app-logs", filters.moduleFilter, filters.actionFilter, filters.startDate, filters.endDate],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_app_logs_admin", {
-        p_module: moduleFilter === "all" ? null : moduleFilter,
-        p_action: actionFilter === "all" ? null : actionFilter,
-        p_start_date: startDate ? new Date(startDate).toISOString() : null,
-        p_end_date: endDate ? new Date(endDate).toISOString() : null,
+        p_module: filters.moduleFilter === "all" ? null : filters.moduleFilter,
+        p_action: filters.actionFilter === "all" ? null : filters.actionFilter,
+        p_start_date: filters.startDate ? new Date(filters.startDate).toISOString() : null,
+        p_end_date: filters.endDate ? new Date(filters.endDate).toISOString() : null,
       });
 
       if (error) throw error;
@@ -92,20 +87,108 @@ const History = () => {
   // Real-time subscription for new logs
   useRealtimeSubscription(
     "app_logs",
-    ["app-logs", moduleFilter, actionFilter, startDate, endDate],
+    ["app-logs", filters.moduleFilter, filters.actionFilter, filters.startDate, filters.endDate],
     { event: "*" }
   );
 
-  // Filtrar logs com base no termo de busca
-  const filteredLogs = logs.filter((log) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      log.action.toLowerCase().includes(searchLower) ||
-      log.module.toLowerCase().includes(searchLower) ||
-      log.details?.toLowerCase().includes(searchLower) ||
-      log.user_email?.toLowerCase().includes(searchLower)
-    );
-  });
+  // Filtrar logs com base em todos os filtros
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      // Busca global
+      if (filters.searchTerm) {
+        const searchLower = filters.searchTerm.toLowerCase();
+        const matchesSearch =
+          log.action.toLowerCase().includes(searchLower) ||
+          log.module.toLowerCase().includes(searchLower) ||
+          log.details?.toLowerCase().includes(searchLower) ||
+          log.user_email?.toLowerCase().includes(searchLower) ||
+          log.ip_address?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Filtro por IP
+      if (filters.ipFilter) {
+        if (!log.ip_address?.includes(filters.ipFilter)) return false;
+      }
+
+      // Filtro por tipo de ação
+      if (filters.actionTypeFilter !== "all") {
+        const actionLower = log.action.toLowerCase();
+        const typeMap: Record<string, string[]> = {
+          create: ["cri", "add", "nov"],
+          update: ["edit", "alter", "atualiz", "mov"],
+          delete: ["exclu", "delet", "remov"],
+          login: ["login", "logout", "acesso"],
+          approval: ["aprov", "confirm"],
+          cancel: ["cancel", "rejeit"],
+          error: ["erro", "falha", "error"],
+        };
+        const keywords = typeMap[filters.actionTypeFilter] || [];
+        if (!keywords.some(k => actionLower.includes(k))) return false;
+      }
+
+      // Filtro por nível de impacto
+      if (filters.impactFilter !== "all") {
+        const actionLower = log.action.toLowerCase();
+        const detailsLower = log.details?.toLowerCase() || "";
+        
+        let level = "low";
+        if (actionLower.includes("exclu") || actionLower.includes("delet") ||
+            detailsLower.includes("admin") || detailsLower.includes("permiss")) {
+          level = "critical";
+        } else if (actionLower.includes("alter") || actionLower.includes("edit") || actionLower.includes("atualiz")) {
+          level = "high";
+        } else if (actionLower.includes("cri") || actionLower.includes("nov")) {
+          level = "medium";
+        }
+        
+        if (filters.impactFilter !== level) return false;
+      }
+
+      return true;
+    });
+  }, [logs, filters]);
+
+  // Calcular estatísticas
+  const stats = useMemo(() => {
+    const criticalCount = filteredLogs.filter(log => {
+      const actionLower = log.action.toLowerCase();
+      const detailsLower = log.details?.toLowerCase() || "";
+      return actionLower.includes("exclu") || actionLower.includes("delet") ||
+             detailsLower.includes("admin") || detailsLower.includes("permiss");
+    }).length;
+
+    // Taxa de sucesso (assumindo que erros têm keywords específicas)
+    const errorCount = filteredLogs.filter(log => {
+      const actionLower = log.action.toLowerCase();
+      return actionLower.includes("erro") || actionLower.includes("falha") || actionLower.includes("error");
+    }).length;
+    const successRate = filteredLogs.length > 0 
+      ? ((filteredLogs.length - errorCount) / filteredLogs.length) * 100 
+      : 100;
+
+    // Última ação e tempo médio
+    const lastAction = filteredLogs.length > 0 ? filteredLogs[0].created_at : null;
+    
+    let avgTimeBetween: number | null = null;
+    if (filteredLogs.length > 1) {
+      const timestamps = filteredLogs.map(l => new Date(l.created_at).getTime());
+      const diffs: number[] = [];
+      for (let i = 0; i < timestamps.length - 1; i++) {
+        diffs.push((timestamps[i] - timestamps[i + 1]) / (1000 * 60)); // em minutos
+      }
+      avgTimeBetween = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+    }
+
+    return {
+      totalRecords: logs.length,
+      filteredRecords: filteredLogs.length,
+      criticalActionsCount: criticalCount,
+      successRate,
+      lastActionTime: lastAction,
+      avgTimeBetweenActions: avgTimeBetween,
+    };
+  }, [logs, filteredLogs]);
 
   // Paginação
   const totalPages = Math.ceil(filteredLogs.length / pageSize);
@@ -114,15 +197,23 @@ const History = () => {
     currentPage * pageSize
   );
 
+  // Reset página quando filtros mudam
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
   // Extrair módulos e ações únicos para os filtros
-  const uniqueModules = Array.from(new Set(logs.map((log) => log.module)));
-  const uniqueActions = Array.from(new Set(logs.map((log) => log.action)));
+  const uniqueModules = useMemo(() => Array.from(new Set(logs.map((log) => log.module))), [logs]);
+  const uniqueActions = useMemo(() => Array.from(new Set(logs.map((log) => log.action))), [logs]);
 
   if (roleLoading || logsLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="container mx-auto p-6 space-y-6">
+        <Skeleton className="h-12 w-80" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -130,14 +221,15 @@ const History = () => {
   if (isError) {
     return (
       <div className="container mx-auto p-6">
-        <Card className="p-8 text-center border-destructive">
+        <Card className="p-8 text-center border-destructive/50 bg-destructive/5">
           <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Erro ao Carregar Histórico</h2>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
             {error instanceof Error ? error.message : "Ocorreu um erro ao carregar os registros do sistema."}
           </p>
-          <Button onClick={() => window.location.reload()}>
-            Recarregar Página
+          <Button onClick={() => refetch()} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Tentar Novamente
           </Button>
         </Card>
       </div>
@@ -145,260 +237,70 @@ const History = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 max-w-[1600px]">
       {/* Cabeçalho */}
-      <div className="flex items-center gap-3">
-        <Clock className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Histórico do Sistema</h1>
-          <p className="text-muted-foreground">
-            Acompanhe todas as ações realizadas no sistema
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-primary/10">
+            <Clock className="h-7 w-7 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Histórico do Sistema</h1>
+            <p className="text-muted-foreground text-sm">
+              Auditoria completa de todas as ações realizadas no sistema
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Atualizar
+          </Button>
+          <HistoryExport 
+            logs={filteredLogs} 
+            filteredCount={filteredLogs.length}
+            totalCount={logs.length}
+          />
         </div>
       </div>
-
-      {/* Filtros */}
-      <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Busca global */}
-          <div className="lg:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar em todos os campos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Filtro por módulo */}
-          <Select value={moduleFilter} onValueChange={setModuleFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todos os módulos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os módulos</SelectItem>
-              {uniqueModules.map((module) => (
-                <SelectItem key={module} value={module}>
-                  {module}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Filtro por ação */}
-          <Select value={actionFilter} onValueChange={setActionFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todas as ações" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as ações</SelectItem>
-              {uniqueActions.map((action) => (
-                <SelectItem key={action} value={action}>
-                  {action}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Registros por página */}
-          <Select
-            value={pageSize.toString()}
-            onValueChange={(value) => {
-              setPageSize(Number(value));
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10 por página</SelectItem>
-              <SelectItem value="25">25 por página</SelectItem>
-              <SelectItem value="50">50 por página</SelectItem>
-              <SelectItem value="100">100 por página</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Filtros de data */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Data Inicial</label>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Data Final</label>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Botão de limpar filtros */}
-        <div className="flex justify-end mt-4">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSearchTerm("");
-              setModuleFilter("all");
-              setActionFilter("all");
-              setStartDate("");
-              setEndDate("");
-              setCurrentPage(1);
-            }}
-            className="gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            Limpar Filtros
-          </Button>
-        </div>
-      </Card>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Total de Registros</div>
-          <div className="text-2xl font-bold">{logs.length}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Registros Filtrados</div>
-          <div className="text-2xl font-bold">{filteredLogs.length}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Página Atual</div>
-          <div className="text-2xl font-bold">
-            {currentPage} de {totalPages || 1}
-          </div>
-        </Card>
-      </div>
+      <HistoryStats {...stats} />
+
+      {/* Filtros */}
+      <HistoryFilters
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        uniqueModules={uniqueModules}
+        uniqueActions={uniqueActions}
+        pageSize={pageSize}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+      />
 
       {/* Tabela */}
-      <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Data e Hora</TableHead>
-                <TableHead>Ação</TableHead>
-                <TableHead>Módulo</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead className="w-16 text-center">Detalhes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedLogs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Nenhum registro encontrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-medium">
-                      {log.user_id ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge variant="outline" className="cursor-help">
-                                {log.user_email || `Usuário ${log.user_id.slice(0, 8)}...`}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">ID: {log.user_id}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <Badge variant="secondary">Sistema</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", {
-                        locale: ptBR,
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                        {log.action}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                        {log.module}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">
-                      {log.ip_address || "-"}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => {
-                                setSelectedLog(log);
-                                setShowDetailModal(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Ver detalhes completos</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+      <div>
+        <HistoryTable
+          logs={paginatedLogs}
+          highlightTerm={filters.searchTerm}
+          onViewDetails={(log) => {
+            setSelectedLog(log);
+            setShowDetailModal(true);
+          }}
+        />
 
         {/* Paginação */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t">
-            <div className="text-sm text-muted-foreground">
-              Mostrando {(currentPage - 1) * pageSize + 1} a{" "}
-              {Math.min(currentPage * pageSize, filteredLogs.length)} de{" "}
-              {filteredLogs.length} registros
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Próxima
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+        <HistoryPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalRecords={filteredLogs.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       {/* Modal de Detalhes */}
       <LogDetailModal
