@@ -1803,69 +1803,46 @@ export type Database = {
         }[]
       }
       generate_auto_order_number: { Args: never; Returns: string }
-      get_app_logs_admin:
-        | {
-            Args: {
-              p_action?: string
-              p_end_date?: string
-              p_module?: string
-              p_start_date?: string
-            }
-            Returns: {
-              action: string
-              created_at: string
-              details: string
-              id: string
-              ip_address: string
-              module: string
-              user_email: string
-              user_id: string
-            }[]
-          }
-        | {
-            Args: {
-              p_action?: string
-              p_action_type?: string
-              p_end_date?: string
-              p_entity_type?: string
-              p_impact_level?: string
-              p_is_critical?: boolean
-              p_module?: string
-              p_origin?: string
-              p_start_date?: string
-              p_status?: string
-            }
-            Returns: {
-              action: string
-              action_type: string
-              browser_info: string
-              changed_fields: string[]
-              created_at: string
-              details: string
-              device_info: string
-              duration_ms: number
-              entity_id: string
-              entity_name: string
-              entity_type: string
-              error_code: string
-              error_message: string
-              id: string
-              impact_level: string
-              ip_address: string
-              is_critical: boolean
-              is_lgpd_sensitive: boolean
-              is_reversible: boolean
-              module: string
-              new_state: Json
-              origin: string
-              previous_state: Json
-              status: string
-              user_email: string
-              user_id: string
-              user_profile: string
-              user_role: string
-            }[]
-          }
+      get_app_logs_admin: {
+        Args: {
+          p_action?: string
+          p_end_date?: string
+          p_module?: string
+          p_start_date?: string
+        }
+        Returns: {
+          action: string
+          action_type: Database["public"]["Enums"]["log_action_type"]
+          browser_info: string
+          changed_fields: string[]
+          created_at: string
+          details: string
+          device_info: string
+          duration_ms: number
+          entity_id: string
+          entity_name: string
+          entity_type: string
+          environment: string
+          error_code: string
+          error_message: string
+          id: string
+          impact_level: Database["public"]["Enums"]["log_impact_level"]
+          ip_address: string
+          is_critical: boolean
+          is_lgpd_sensitive: boolean
+          is_reversible: boolean
+          module: string
+          new_state: Json
+          origin: Database["public"]["Enums"]["log_origin"]
+          previous_state: Json
+          session_id: string
+          status: Database["public"]["Enums"]["log_status"]
+          user_email: string
+          user_id: string
+          user_profile: string
+          user_role: string
+        }[]
+      }
       get_module_permission: {
         Args: {
           _module: Database["public"]["Enums"]["app_module"]
