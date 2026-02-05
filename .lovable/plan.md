@@ -1,102 +1,47 @@
 
-# Plano: Ajustes nos Cards de Homologação
+# Plano de Correção: Linhas de Conexão no Timeline de Acompanhamento de Clientes
 
-## Objetivo
-Restaurar a exibição completa das informações nos cards de homologação e aumentar a visibilidade dos textos.
+## Problema Identificado
 
----
+As linhas de conexão entre os ícones de status do timeline não estão aparecendo. Analisando o código atual, encontrei a causa:
 
-## Alterações no arquivo `src/components/HomologationCard.tsx`
+- As linhas são renderizadas em um container com posição absoluta (`z-0`)
+- Cada etapa (step) tem `bg-card` aplicado em todo o container, que está cobrindo completamente as linhas
+- O `bg-card` deveria estar apenas no círculo do ícone, não em toda a coluna
 
-### 1. Título do Veículo (já está correto)
-- O título já permite quebra de texto (sem `line-clamp`)
-- Mantém `font-bold text-foreground` para destaque
+## Solução Proposta
 
-### 2. Restaurar Informações Completas no Corpo do Card
-**Antes (atual):**
-```
-Marca • Ano
-```
+### Arquivo: `src/components/customer-tracking/KitStatusTimeline.tsx`
 
-**Depois:**
-```
-Marca • Modelo • Ano
-```
+**Alterações:**
 
-Adicionar `card.model` na linha de informações secundárias para que apareça Marca, Modelo e Ano completos.
+1. **Remover `bg-card` do container da etapa** - O background não deve cobrir a área das linhas
+2. **Adicionar `bg-card` apenas ao círculo do ícone** - Para que as linhas passem por trás do círculo de forma limpa
+3. **Ajustar o posicionamento das linhas** - Garantir que fiquem visíveis entre os ícones
 
-### 3. Aumentar Visibilidade dos Textos
-Substituir classes com opacidade baixa por cores mais sólidas:
-
-| Elemento | Atual | Novo |
-|----------|-------|------|
-| Marca | `text-foreground` | `text-foreground` (manter) |
-| Modelo | (não aparece) | `text-foreground` |
-| Ano | `text-foreground/90` | `text-foreground` |
-| Separador (•) | `text-muted-foreground` | `text-foreground/70` |
-| Criado em | `text-foreground/70` | `text-foreground` |
-| Config label | `text-muted-foreground/60` | `text-muted-foreground` |
-| Config valor | `text-foreground/80` | `text-foreground` |
-| Notas | `text-foreground/70` | `text-foreground/80` |
-
----
-
-## Código Atualizado
-
-```tsx
-{/* Body: Brand, Model, Year */}
-<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-  <span className="font-medium text-foreground">{card.brand}</span>
-  <span className="text-foreground/70">•</span>
-  <span className="text-foreground">{card.model}</span>
-  {card.year && (
-    <>
-      <span className="text-foreground/70">•</span>
-      <span className="text-foreground">{card.year}</span>
-    </>
-  )}
-</div>
-
-{/* Configuration - cores mais escuras */}
-{card.status === 'homologado' && card.configuration && (
-  <div className="text-xs bg-muted/50 px-2 py-1.5 rounded-lg">
-    <span className="text-muted-foreground">Config: </span>
-    <span className="font-medium text-foreground">{card.configuration}</span>
-  </div>
-)}
-
-{/* Footer: Date - texto mais escuro */}
-<div className="flex items-center gap-1 text-[11px] text-foreground">
-  <Calendar className="h-3 w-3" />
-  <span>Criado em {formatDate(card.created_at)}</span>
-</div>
-
-{/* Notes - texto mais visível */}
-{card.notes && (
-  <div className="mt-2 p-2 bg-muted/50 border border-border/30 rounded-lg">
-    <p className="text-[11px] text-foreground/80 line-clamp-2">{card.notes}</p>
-  </div>
-)}
-```
-
----
-
-## Resumo Visual do Card Final
+**Mudança específica no código:**
 
 ```text
-┌─────────────────────────────────────┐
-│ MODELO DO VEÍCULO COMPLETO      [🗑]│  ← Título bold, quebra se necessário
-│ (pode quebrar em múltiplas linhas)  │
-├─────────────────────────────────────┤
-│ Marca • Modelo • Ano                │  ← Informações completas, texto escuro
-├─────────────────────────────────────┤
-│ Config: Nome da Configuração        │  ← Apenas quando homologado
-├─────────────────────────────────────┤
-│ 📅 Criado em 01/01/2024  [Vinculado]│  ← Data escura, badges discretos
-└─────────────────────────────────────┘
+Antes:
+<div key={step.id} className="flex flex-col items-center z-10 bg-card px-0.5 flex-1">
+
+Depois:
+<div key={step.id} className="flex flex-col items-center z-10 px-0.5 flex-1">
 ```
 
----
+E garantir que o círculo do ícone tenha o background:
 
-## Arquivos a Modificar
-- `src/components/HomologationCard.tsx`
+```text
+<div className={`
+  w-8 h-8 rounded-full flex items-center justify-center border-2 
+  transition-all duration-200 bg-card
+  ${styles.circle}
+`}>
+```
+
+## Resultado Esperado
+
+Após a correção, o timeline exibirá:
+- **Linha verde** entre etapas concluídas (indicando que o processo passou)
+- **Linha cinza** entre etapas pendentes (indicando que ainda não foi alcançado)
+- Os círculos dos ícones continuarão limpos, com o fundo sólido cobrindo a linha exatamente no ponto do ícone
