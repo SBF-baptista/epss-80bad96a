@@ -252,9 +252,9 @@ export const KitStatusTimeline = ({
           const Icon = step.icon;
           
           return (
-            <div key={step.id} className="flex flex-col items-center z-10 bg-card px-0.5 flex-1">
+            <div key={step.id} className="flex flex-col items-center z-10 px-0.5 flex-1">
               <div className={`
-                w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200
+                w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card
                 ${styles.circle}
               `}>
                 <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
