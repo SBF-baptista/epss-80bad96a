@@ -178,6 +178,11 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
                     ? `${kitData.vehicle_brand} ${kitData.vehicle_model}`
                     : kitData.kit?.name || 'Veículo'}
                 </CardTitle>
+                {kitData.vehicle_plate && (
+                  <Badge variant="outline" className="text-xs font-medium bg-muted/50">
+                    {kitData.vehicle_plate}
+                  </Badge>
+                )}
                 {(tomticketProtocol || kitData.tomticket_protocol) && (
                   <span className="text-xs font-normal text-muted-foreground/70 hidden sm:inline">
                     TT: {tomticketProtocol || kitData.tomticket_protocol}

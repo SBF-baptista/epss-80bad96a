@@ -92,20 +92,24 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
     }
 
     setIsLoading(true);
+    const createdConfigName = newConfiguration.trim();
+    
     try {
       await createAutomationRule(
         card.brand,
         card.model,
-        newConfiguration.trim(),
+        createdConfigName,
         newTrackerModel.trim()
       );
 
-      await updateHomologationConfiguration(card.id, newConfiguration.trim());
-      await loadConfigurations();
+      await updateHomologationConfiguration(card.id, createdConfigName);
       
-      // Selecionar a nova configuração no dropdown automaticamente
-      const createdConfigName = newConfiguration.trim();
-      setFormData({ ...formData, testConfiguration: createdConfigName });
+      // Load configurations and wait for it to complete
+      const configs = await fetchAutomationConfigurations();
+      setConfigurations(configs || []);
+      
+      // Auto-select the newly created configuration in the dropdown
+      setFormData(prev => ({ ...prev, testConfiguration: createdConfigName }));
       setNewConfiguration("");
       setNewTrackerModel("");
       setIsNewConfigOpen(false);

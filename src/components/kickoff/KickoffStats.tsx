@@ -53,12 +53,12 @@ export const KickoffStats = ({ kickoffData, kickoffDates }: KickoffStatsProps) =
   const totalVehicles = kickoffData?.total_vehicles || 0;
 
   const criticalClients =
-    kickoffData?.clients.filter((client) => getDaysInKickoff(client.sale_summary_id) > 10).length || 0;
+    kickoffData?.clients.filter((client) => getDaysInKickoff(client.sale_summary_id) > 7).length || 0;
 
   const warningClients =
     kickoffData?.clients.filter((client) => {
       const days = getDaysInKickoff(client.sale_summary_id);
-      return days > 5 && days <= 10;
+      return days >= 5 && days <= 7;
     }).length || 0;
 
   return (
@@ -81,7 +81,7 @@ export const KickoffStats = ({ kickoffData, kickoffDates }: KickoffStatsProps) =
       />
       <StatCard
         icon={<Clock className="w-5 h-5" />}
-        label="Atenção (5-10 dias)"
+        label="Atenção (5-7 dias)"
         value={warningClients}
         accentColor="text-amber-600 dark:text-amber-500"
         iconBgColor="bg-amber-100 dark:bg-amber-900/30"
@@ -89,7 +89,7 @@ export const KickoffStats = ({ kickoffData, kickoffDates }: KickoffStatsProps) =
       />
       <StatCard
         icon={<AlertTriangle className="w-5 h-5" />}
-        label="Críticos (+10 dias)"
+        label="Críticos (+7 dias)"
         value={criticalClients}
         accentColor="text-red-600 dark:text-red-500"
         iconBgColor="bg-red-100 dark:bg-red-900/30"

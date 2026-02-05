@@ -82,6 +82,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isKitModalOpen, setIsKitModalOpen] = useState(false);
   const [editRequestKit, setEditRequestKit] = useState<HomologationKit | null>(null);
+  const [editRequestMode, setEditRequestMode] = useState<'edit' | 'delete'>('edit');
 
   // Load kits on component mount
   useEffect(() => {
@@ -259,28 +260,16 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
     }
   };
 
-  const deleteKit = async (kitId: string) => {
-    try {
-      await deleteHomologationKit(kitId);
-      setKits((prev) => prev.filter((kit) => kit.id !== kitId));
-      // Remove from expanded set if it was expanded
-      setExpandedKits((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(kitId);
-        return newSet;
-      });
-      toast({
-        title: "Kit removido",
-        description: "O kit foi removido da homologação.",
-      });
-    } catch (error) {
-      console.error("Error deleting kit:", error);
-      toast({
-        title: "Erro ao remover kit",
-        description: "Não foi possível remover o kit. Tente novamente.",
-        variant: "destructive",
-      });
-    }
+  // Kit deletion now requires an edit request - open the edit request modal with delete action
+  const handleDeleteRequest = (kit: HomologationKit) => {
+    setEditRequestMode('delete');
+    setEditRequestKit(kit);
+  };
+
+  // Form operations - now uses edit request modal
+  const startEdit = (kit: HomologationKit) => {
+    setEditRequestMode('edit');
+    setEditRequestKit(kit);
   };
 
   // Item operations for each type
@@ -321,10 +310,6 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
     });
   };
 
-  // Form operations - now uses edit request modal
-  const startEdit = (kit: HomologationKit) => {
-    setEditRequestKit(kit);
-  };
 
   const cancelEdit = () => {
     setFormData(initialFormData);
@@ -637,8 +622,9 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => deleteKit(kit.id!)}
+                                  onClick={() => handleDeleteRequest(kit)}
                                   className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  title="Solicitar exclusão do kit"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -1065,7 +1051,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       />
 
       {/* Kit Edit Request Modal */}
-      <KitEditRequestModal open={!!editRequestKit} onClose={() => setEditRequestKit(null)} kit={editRequestKit} />
+      <KitEditRequestModal open={!!editRequestKit} onClose={() => setEditRequestKit(null)} kit={editRequestKit} initialMode={editRequestMode} />
     </Card>
   );
 };
