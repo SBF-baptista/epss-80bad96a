@@ -49,6 +49,13 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
   const [vehiclePhoto, setVehiclePhoto] = useState<string | null>(null);
   const [canConnectionLocationPhoto, setCanConnectionLocationPhoto] = useState<string | null>(null);
   const [canConnectionWiresPhoto, setCanConnectionWiresPhoto] = useState<string | null>(null);
+  
+  // New photo states for tracker and electrical connections
+  const [trackerPhoto, setTrackerPhoto] = useState<string | null>(null);
+  const [positiveConnectionPhoto, setPositiveConnectionPhoto] = useState<string | null>(null);
+  const [negativeConnectionPhoto, setNegativeConnectionPhoto] = useState<string | null>(null);
+  const [postKeyPhoto, setPostKeyPhoto] = useState<string | null>(null);
+  const [blockingPhoto, setBlockingPhoto] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     chassisInfo: card.chassis_info || '',
     manufactureYear: card.manufacture_year || new Date().getFullYear(),
@@ -148,7 +155,7 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
 
   const handlePhotoUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
-    photoType: 'chassis' | 'vehicle' | 'canLocation' | 'canWires'
+    photoType: 'chassis' | 'vehicle' | 'canLocation' | 'canWires' | 'tracker' | 'positive' | 'negative' | 'postKey' | 'blocking'
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -201,6 +208,21 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
       case 'canWires':
         newFileName = `can_wires_${card.brand}_${card.model}${extension}`;
         break;
+      case 'tracker':
+        newFileName = `rastreador_${card.brand}_${card.model}${extension}`;
+        break;
+      case 'positive':
+        newFileName = `positivo_${card.brand}_${card.model}${extension}`;
+        break;
+      case 'negative':
+        newFileName = `negativo_${card.brand}_${card.model}${extension}`;
+        break;
+      case 'postKey':
+        newFileName = `pos_chave_${card.brand}_${card.model}${extension}`;
+        break;
+      case 'blocking':
+        newFileName = `bloqueio_${card.brand}_${card.model}${extension}`;
+        break;
       default:
         newFileName = originalName;
     }
@@ -225,6 +247,21 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
         case 'canWires':
           dbPhotoType = 'can_wires';
           break;
+        case 'tracker':
+          dbPhotoType = 'rastreador';
+          break;
+        case 'positive':
+          dbPhotoType = 'positivo';
+          break;
+        case 'negative':
+          dbPhotoType = 'negativo';
+          break;
+        case 'postKey':
+          dbPhotoType = 'pos_chave';
+          break;
+        case 'blocking':
+          dbPhotoType = 'bloqueio';
+          break;
         default:
           dbPhotoType = 'outros';
       }
@@ -246,13 +283,33 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
         case 'canWires':
           setCanConnectionWiresPhoto(url);
           break;
+        case 'tracker':
+          setTrackerPhoto(url);
+          break;
+        case 'positive':
+          setPositiveConnectionPhoto(url);
+          break;
+        case 'negative':
+          setNegativeConnectionPhoto(url);
+          break;
+        case 'postKey':
+          setPostKeyPhoto(url);
+          break;
+        case 'blocking':
+          setBlockingPhoto(url);
+          break;
       }
       
       const photoLabels = {
         chassis: 'chassi',
-        vehicle: 'veículo',
+        vehicle: 'veículo', 
         canLocation: 'local de conexão CAN',
-        canWires: 'fios de conexão CAN'
+        canWires: 'fios de conexão CAN',
+        tracker: 'rastreador',
+        positive: 'conexão positivo',
+        negative: 'conexão negativo',
+        postKey: 'pós-chave',
+        blocking: 'bloqueio'
       };
       
       showSuccess(
@@ -264,9 +321,14 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
       
       const photoLabels = {
         chassis: 'chassi',
-        vehicle: 'veículo', 
+        vehicle: 'veículo',
         canLocation: 'local de conexão CAN',
-        canWires: 'fios de conexão CAN'
+        canWires: 'fios de conexão CAN',
+        tracker: 'rastreador',
+        positive: 'conexão positivo',
+        negative: 'conexão negativo',
+        postKey: 'pós-chave',
+        blocking: 'bloqueio'
       };
       
       showError(error as Error, {
@@ -282,7 +344,7 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
     }
   };
 
-  const removePhoto = (photoType: 'chassis' | 'vehicle' | 'canLocation' | 'canWires') => {
+  const removePhoto = (photoType: 'chassis' | 'vehicle' | 'canLocation' | 'canWires' | 'tracker' | 'positive' | 'negative' | 'postKey' | 'blocking') => {
     try {
       switch (photoType) {
         case 'chassis':
@@ -296,6 +358,21 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
           break;
         case 'canWires':
           setCanConnectionWiresPhoto(null);
+          break;
+        case 'tracker':
+          setTrackerPhoto(null);
+          break;
+        case 'positive':
+          setPositiveConnectionPhoto(null);
+          break;
+        case 'negative':
+          setNegativeConnectionPhoto(null);
+          break;
+        case 'postKey':
+          setPostKeyPhoto(null);
+          break;
+        case 'blocking':
+          setBlockingPhoto(null);
           break;
       }
       setUploadError(null);
@@ -753,6 +830,226 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
                         >
                           <Upload className="h-4 w-4" />
                           {isUploadingPhoto ? "Enviando..." : "Adicionar Foto dos Fios CAN"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tracker Photo */}
+                  <div className="space-y-2">
+                    <Label>Foto do Rastreador</Label>
+                    {trackerPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={trackerPhoto} 
+                          alt="Foto do rastreador" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('tracker')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'tracker')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="tracker-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('tracker-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Rastreador"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Positive Connection Photo */}
+                  <div className="space-y-2">
+                    <Label>Conexão Positivo</Label>
+                    {positiveConnectionPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={positiveConnectionPhoto} 
+                          alt="Conexão positivo" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('positive')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'positive')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="positive-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('positive-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Positivo"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Negative Connection Photo */}
+                  <div className="space-y-2">
+                    <Label>Conexão Negativo</Label>
+                    {negativeConnectionPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={negativeConnectionPhoto} 
+                          alt="Conexão negativo" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('negative')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'negative')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="negative-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('negative-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Negativo"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Post-Key Photo */}
+                  <div className="space-y-2">
+                    <Label>Pós-Chave</Label>
+                    {postKeyPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={postKeyPhoto} 
+                          alt="Pós-chave" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('postKey')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'postKey')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="postkey-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('postkey-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Pós-Chave"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Blocking Photo */}
+                  <div className="space-y-2">
+                    <Label>Bloqueio</Label>
+                    {blockingPhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={blockingPhoto} 
+                          alt="Bloqueio" 
+                          className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePhoto('blocking')}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'blocking')}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                          id="blocking-photo-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('blocking-photo-upload')?.click()}
+                          disabled={isUploadingPhoto}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {isUploadingPhoto ? "Enviando..." : "Adicionar Foto do Bloqueio"}
                         </Button>
                       </div>
                     )}

@@ -38,8 +38,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getTechnicians, Technician } from '@/services/technicianService';
-import { MapPin, CalendarIcon, Car, Cpu } from 'lucide-react';
+import { getSchedulingServiceOptions, createSchedulingServiceOption } from '@/services/schedulingServiceOptionsService';
+import { MapPin, CalendarIcon, Car, Cpu, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const scheduleFormSchema = z.object({
   date: z.date({ required_error: 'Data é obrigatória' }),
@@ -102,6 +104,9 @@ export const ScheduleFormModal = ({
 }: ScheduleFormModalProps) => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isFromSegsale, setIsFromSegsale] = useState(false);
+  const [serviceOptions, setServiceOptions] = useState<string[]>(['Instalação', 'Manutenção', 'Retirada']);
+  const [customService, setCustomService] = useState('');
+  const [isAddingService, setIsAddingService] = useState(false);
 
   // Determine if fields should be locked (has initial data from pipeline)
   const hasInitialData = Boolean(initialVehicleData?.plate || initialVehicleData?.model);
@@ -129,26 +134,33 @@ export const ScheduleFormModal = ({
   });
 
   useEffect(() => {
-    const loadTechnicians = async () => {
+    const loadData = async () => {
       try {
-        const data = await getTechnicians();
-        setTechnicians(data);
+        // Load technicians
+        const techData = await getTechnicians();
+        setTechnicians(techData);
         
         // After technicians are loaded, pre-fill from planning data
-        if (initialVehicleData?.technicianId && data.length > 0) {
-          const planningTechnician = data.find(t => t.id === initialVehicleData.technicianId);
+        if (initialVehicleData?.technicianId && techData.length > 0) {
+          const planningTechnician = techData.find(t => t.id === initialVehicleData.technicianId);
           if (planningTechnician) {
             form.setValue('technician_id', planningTechnician.id!);
             form.setValue('technician_name', planningTechnician.name);
             form.setValue('technician_whatsapp', planningTechnician.phone || '');
           }
         }
+        
+        // Load service options from database
+        const services = await getSchedulingServiceOptions();
+        if (services.length > 0) {
+          setServiceOptions(services.map(s => s.service_name));
+        }
       } catch (error) {
-        console.error('Error loading technicians:', error);
+        console.error('Error loading data:', error);
       }
     };
     if (open) {
-      loadTechnicians();
+      loadData();
       
       // Para novo agendamento, usar data selecionada ou data atual
       // A data do kit_schedules (scheduledDate) é apenas uma previsão antiga e não deve ser usada
@@ -391,18 +403,74 @@ export const ScheduleFormModal = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm">Serviço *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isFromSegsale}>
-                      <FormControl>
-                        <SelectTrigger className={`h-9 ${isFromSegsale ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}>
-                          <SelectValue placeholder="Selecione o serviço" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-background">
-                        <SelectItem value="Instalação">Instalação</SelectItem>
-                        <SelectItem value="Manutenção">Manutenção</SelectItem>
-                        <SelectItem value="Retirada">Retirada</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isFromSegsale}>
+                        <FormControl>
+                          <SelectTrigger className={`h-9 flex-1 ${isFromSegsale ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}>
+                            <SelectValue placeholder="Selecione o serviço" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-background">
+                          {serviceOptions.map((service) => (
+                            <SelectItem key={service} value={service}>{service}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {!isFromSegsale && (
+                        <Popover open={isAddingService} onOpenChange={setIsAddingService}>
+                          <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" size="icon" className="h-9 w-9">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 p-3" align="end">
+                            <div className="space-y-3">
+                              <div className="text-sm font-medium">Adicionar novo serviço</div>
+                              <Input
+                                placeholder="Nome do serviço"
+                                value={customService}
+                                onChange={(e) => setCustomService(e.target.value)}
+                                className="h-9"
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setIsAddingService(false);
+                                    setCustomService('');
+                                  }}
+                                  className="flex-1"
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={!customService.trim()}
+                                  onClick={async () => {
+                                    try {
+                                      await createSchedulingServiceOption(customService.trim());
+                                      setServiceOptions(prev => [...prev, customService.trim()]);
+                                      field.onChange(customService.trim());
+                                      setCustomService('');
+                                      setIsAddingService(false);
+                                      toast.success('Serviço adicionado com sucesso!');
+                                    } catch (error: any) {
+                                      toast.error(error.message || 'Erro ao adicionar serviço');
+                                    }
+                                  }}
+                                  className="flex-1"
+                                >
+                                  Adicionar
+                                </Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

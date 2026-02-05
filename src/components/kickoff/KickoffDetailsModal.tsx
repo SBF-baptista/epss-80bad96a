@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera } from "lucide-react";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
@@ -89,7 +89,30 @@ export const KickoffDetailsModal = ({
     new Map(vehicles.map(v => [v.id, 1]))
   );
 
+  // Camera extra locations state - stores location text for each vehicle with camera extra
+  const [cameraExtraLocations, setCameraExtraLocations] = useState<Map<string, string>>(new Map());
+
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
+
+  // Helper to normalize text for accessory detection
+  const normalizeForSearch = (text: string): string => {
+    return (text || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  // Identify vehicles with "camera extra" accessory
+  const vehiclesWithCameraExtra = useMemo(() => {
+    return vehicles.filter(vehicle => {
+      return vehicle.modules.some(m => {
+        const normalizedName = normalizeForSearch(m.name);
+        return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
+      });
+    });
+  }, [vehicles]);
 
   // Load existing customer data when modal opens
   useEffect(() => {
@@ -484,6 +507,31 @@ export const KickoffDetailsModal = ({
             }
           }
         }
+
+        // Save camera extra info to incoming_vehicles
+        const hasCameraExtra = vehicle.modules.some(m => {
+          const normalizedName = normalizeForSearch(m.name);
+          return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
+        });
+        
+        if (hasCameraExtra) {
+          const cameraQuantity = vehicleCameraExtra.get(vehicle.id) || 1;
+          const cameraLocation = cameraExtraLocations.get(vehicle.id) || null;
+          
+          const { error: cameraExtraError } = await supabase
+            .from("incoming_vehicles")
+            .update({
+              camera_extra_quantity: cameraQuantity,
+              camera_extra_locations: cameraLocation
+            })
+            .eq("id", vehicle.id);
+
+          if (cameraExtraError) {
+            console.error(`Error saving camera extra info for vehicle ${vehicle.id}:`, cameraExtraError);
+          } else {
+            console.log(`Successfully saved camera extra info for vehicle ${vehicle.id}: ${cameraQuantity}x at ${cameraLocation}`);
+          }
+        }
       }
 
       // Get current user ID
@@ -745,6 +793,72 @@ export const KickoffDetailsModal = ({
               </div>
             ))}
           </div>
+
+          {/* Câmeras Extras Section - Only show if any vehicle has camera extra */}
+          {vehiclesWithCameraExtra.length > 0 && (
+            <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+              <div className="flex items-center gap-2 mb-3">
+                <Camera className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Câmeras Extras</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Configure a quantidade e localização das câmeras extras para cada veículo.
+              </p>
+              {vehiclesWithCameraExtra.map((vehicle) => {
+                const cameraAccessory = vehicle.modules.find(m => {
+                  const normalizedName = normalizeForSearch(m.name);
+                  return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
+                });
+                return (
+                  <div key={vehicle.id} className="border rounded-lg p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-semibold">{vehicle.brand} {vehicle.model}</span>
+                        {vehicle.plate && (
+                          <Badge variant="secondary" className="ml-2">{vehicle.plate}</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-sm">Quantidade de câmeras extras</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={vehicleCameraExtra.get(vehicle.id) || 1}
+                          onChange={(e) => {
+                            const quantity = Math.max(1, Math.min(10, parseInt(e.target.value) || 1));
+                            setVehicleCameraExtra(prev => {
+                              const newMap = new Map(prev);
+                              newMap.set(vehicle.id, quantity);
+                              return newMap;
+                            });
+                          }}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Local onde ficarão as câmeras extras</Label>
+                        <Input
+                          value={cameraExtraLocations.get(vehicle.id) || ""}
+                          onChange={(e) => {
+                            setCameraExtraLocations(prev => {
+                              const newMap = new Map(prev);
+                              newMap.set(vehicle.id, e.target.value);
+                              return newMap;
+                            });
+                          }}
+                          placeholder="Ex: Cabine, Baú, Lateral direita..."
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Particularidade de Instalação */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
