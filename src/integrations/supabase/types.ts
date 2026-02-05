@@ -675,6 +675,8 @@ export type Database = {
           address_street: string | null
           address_zip_code: string | null
           brand: string
+          camera_extra_locations: string | null
+          camera_extra_quantity: number | null
           company_name: string | null
           cpf: string | null
           created_at: string
@@ -706,6 +708,8 @@ export type Database = {
           address_street?: string | null
           address_zip_code?: string | null
           brand: string
+          camera_extra_locations?: string | null
+          camera_extra_quantity?: number | null
           company_name?: string | null
           cpf?: string | null
           created_at?: string
@@ -737,6 +741,8 @@ export type Database = {
           address_street?: string | null
           address_zip_code?: string | null
           brand?: string
+          camera_extra_locations?: string | null
+          camera_extra_quantity?: number | null
           company_name?: string | null
           cpf?: string | null
           created_at?: string
@@ -1417,6 +1423,27 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
         ]
+      }
+      scheduling_service_options: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          service_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          service_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          service_name?: string
+        }
+        Relationships: []
       }
       shipment_recipients: {
         Row: {
