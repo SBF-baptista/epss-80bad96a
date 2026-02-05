@@ -58,6 +58,16 @@ const capitalizeWords = (text: string): string => {
     .join(" ");
 };
 
+const normalizeForSearch = (text: string): string => {
+  // Remove acentos/diacríticos e normaliza espaços para comparações consistentes
+  return (text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 export const KickoffVehiclesTable = ({
   vehicles,
   selectedModules,
@@ -403,7 +413,7 @@ export const KickoffVehiclesTable = ({
                     <Label className="text-sm font-semibold">Acessórios</Label>
                     <div className="flex gap-1 flex-wrap">
                       {accessoriesList.map((item, idx) => {
-                        const isCameraExtra = item.name.toLowerCase().includes("camera extra");
+                        const isCameraExtra = normalizeForSearch(item.name).includes("camera extra");
                         return (
                           <div key={`acc-${idx}`} className="flex items-center gap-1">
                             <Badge variant="outline" className="text-xs">
@@ -656,7 +666,7 @@ export const KickoffVehiclesTable = ({
                     {accessoriesList.length > 0 ? (
                       <div className="flex gap-1 flex-wrap">
                         {accessoriesList.map((item, idx) => {
-                          const isCameraExtra = item.name.toLowerCase().includes("camera extra");
+                          const isCameraExtra = normalizeForSearch(item.name).includes("camera extra");
                           return (
                             <div key={`acc-${idx}`} className="flex items-center gap-1">
                               <Badge variant="outline" className="text-xs">
