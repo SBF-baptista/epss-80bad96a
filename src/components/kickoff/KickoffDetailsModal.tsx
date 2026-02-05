@@ -85,6 +85,10 @@ export const KickoffDetailsModal = ({
     new Map()
   );
 
+  const [vehicleCameraExtra, setVehicleCameraExtra] = useState<Map<string, number>>(
+    new Map(vehicles.map(v => [v.id, 1]))
+  );
+
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
 
   // Load existing customer data when modal opens
@@ -323,15 +327,15 @@ export const KickoffDetailsModal = ({
 
   // Validation checks
   const hasValidLocations = installationLocations.some(loc => loc.city.trim() !== "" && loc.state.trim() !== "");
-  const allVehiclesValidated = vehicles.length > 0 && vehicles.every(v => validatedPlates.has(v.id));
-  const isFormValid = allVehiclesValidated && hasValidLocations;
+  const hasAtLeastOneValidatedPlate = validatedPlates.size > 0;
+  const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Verificar se todos os veículos foram validados
-    if (!allVehiclesValidated) {
-      toast.error("Por favor, valide TODOS os veículos na coluna 'Validação' antes de concluir o kickoff.");
+    // Verificar se pelo menos um veículo foi validado
+    if (!hasAtLeastOneValidatedPlate) {
+      toast.error("Por favor, valide pelo menos um veículo na coluna 'Validação' antes de concluir o kickoff.");
       return;
     }
     
@@ -619,6 +623,14 @@ export const KickoffDetailsModal = ({
                     newSet.delete(vehicleId);
                   }
                   return newSet;
+                });
+              }}
+              vehicleCameraExtra={vehicleCameraExtra}
+              onCameraExtraQuantityChange={(vehicleId, quantity) => {
+                setVehicleCameraExtra(prev => {
+                  const newMap = new Map(prev);
+                  newMap.set(vehicleId, quantity);
+                  return newMap;
                 });
               }}
             />

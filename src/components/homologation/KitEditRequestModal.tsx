@@ -42,6 +42,7 @@ interface KitEditRequestModalProps {
   open: boolean;
   onClose: () => void;
   kit: HomologationKit | null;
+  initialMode?: 'edit' | 'delete';
 }
 
 const KIT_CATEGORIES = [
@@ -50,10 +51,11 @@ const KIT_CATEGORIES = [
   { value: 'rastreamento', label: 'Rastreamento' },
 ];
 
-export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalProps) => {
+export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }: KitEditRequestModalProps) => {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [observation, setObservation] = useState("");
+  const [mode, setMode] = useState<'edit' | 'delete'>(initialMode);
   const { accessories: segsaleAccessories, modules: segsaleModules, loading: segsaleLoading } = useSegsaleExtras();
   
   // Form state for edited values
@@ -75,8 +77,9 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
       setNewModules([]);
       setNewSupplies(kit.supplies.map(s => ({ ...s })));
       setObservation("");
+      setMode(initialMode);
     }
-  }, [kit]);
+  }, [kit, initialMode]);
 
   const handleClose = () => {
     setObservation("");
@@ -203,6 +206,57 @@ export const KitEditRequestModal = ({ open, onClose, kit }: KitEditRequestModalP
   const handleSubmit = async () => {
     if (!kit) return;
     
+    // Handle delete request
+    if (mode === 'delete') {
+      if (!observation.trim()) {
+        toast.error("Por favor, informe o motivo da exclusão");
+        return;
+      }
+      
+      setSubmitting(true);
+      try {
+        const insertData = {
+          item_type: 'kit',
+          item_name: kit.name,
+          kit_id: kit.id,
+          original_data: {
+            id: kit.id,
+            name: kit.name,
+            category: kit.category,
+            equipment: kit.equipment,
+            accessories: kit.accessories,
+            supplies: kit.supplies
+          },
+          requested_changes: {
+            action: 'delete'
+          },
+          reason: observation.trim(),
+          requested_by: user?.id,
+          status: 'pending'
+        };
+
+        const { error } = await supabase
+          .from('item_edit_requests')
+          .insert(insertData as any);
+
+        if (error) throw error;
+
+        toast.success("Solicitação de exclusão enviada", {
+          description: "O gestor irá analisar sua solicitação."
+        });
+        handleClose();
+      } catch (error) {
+        console.error('Error submitting kit delete request:', error);
+        toast.error("Erro ao enviar solicitação", {
+          description: "Tente novamente mais tarde."
+        });
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+    
+    // Handle edit request
     if (!hasChanges()) {
       toast.error("Nenhuma alteração foi feita");
       return;

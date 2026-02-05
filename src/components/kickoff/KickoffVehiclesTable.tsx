@@ -42,6 +42,8 @@ interface KickoffVehiclesTableProps {
   onSirenQuantityChange: (vehicleId: string, quantity: number) => void;
   validatedPlates: Set<string>;
   onPlateValidationChange: (vehicleId: string, validated: boolean) => void;
+  vehicleCameraExtra?: Map<string, number>;
+  onCameraExtraQuantityChange?: (vehicleId: string, quantity: number) => void;
 }
 
 // Helper function to capitalize first letter of each word (PT-BR style)
@@ -70,7 +72,9 @@ export const KickoffVehiclesTable = ({
   onBlockingQuantityChange,
   onSirenQuantityChange,
   validatedPlates,
-  onPlateValidationChange
+  onPlateValidationChange,
+  vehicleCameraExtra,
+  onCameraExtraQuantityChange
 }: KickoffVehiclesTableProps) => {
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -389,11 +393,27 @@ export const KickoffVehiclesTable = ({
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Acessórios</Label>
                   <div className="flex gap-1 flex-wrap">
-                    {accessoriesList.map((item, idx) => (
-                      <Badge key={`acc-${idx}`} variant="outline" className="text-xs">
-                        {cleanItemName(item.name)}
-                      </Badge>
-                    ))}
+                    {accessoriesList.map((item, idx) => {
+                      const isCameraExtra = item.name.toLowerCase().includes('camera extra') || 
+                                            item.name.toLowerCase().includes('câmera extra');
+                      return (
+                        <div key={`acc-${idx}`} className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs">
+                            {cleanItemName(item.name)}
+                          </Badge>
+                          {isCameraExtra && onCameraExtraQuantityChange && (
+                            <Input
+                              type="number"
+                              min="1"
+                              value={vehicleCameraExtra?.get(vehicle.id) || item.quantity || 1}
+                              onChange={(e) => onCameraExtraQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
+                              className="w-14 h-7 text-xs"
+                              disabled={isPlateValidated}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -611,11 +631,27 @@ export const KickoffVehiclesTable = ({
                   <div className="max-w-[200px]">
                     {accessoriesList.length > 0 ? (
                       <div className="flex gap-1 flex-wrap">
-                        {accessoriesList.map((item, idx) => (
-                          <Badge key={`acc-${idx}`} variant="outline" className="text-xs">
-                            {item.name} ({item.quantity}x)
-                          </Badge>
-                        ))}
+                        {accessoriesList.map((item, idx) => {
+                          const isCameraExtra = item.name.toLowerCase().includes('camera extra') || 
+                                                item.name.toLowerCase().includes('câmera extra');
+                          return (
+                            <div key={`acc-${idx}`} className="flex items-center gap-1">
+                              <Badge variant="outline" className="text-xs">
+                                {item.name} ({isCameraExtra && vehicleCameraExtra ? (vehicleCameraExtra.get(vehicle.id) || item.quantity) : item.quantity}x)
+                              </Badge>
+                              {isCameraExtra && onCameraExtraQuantityChange && (
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={vehicleCameraExtra?.get(vehicle.id) || item.quantity || 1}
+                                  onChange={(e) => onCameraExtraQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
+                                  className="w-14 h-7 text-xs"
+                                  disabled={isPlateValidated}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">Nenhum</span>

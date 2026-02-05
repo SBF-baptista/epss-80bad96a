@@ -53,6 +53,7 @@ const CustomerTracking = () => {
   const [accessoriesByVehicle, setAccessoriesByVehicle] = useState<Map<string, VehicleAccessory[]>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [plateSearchTerm, setPlateSearchTerm] = useState("");
 
   const loadData = async () => {
     try {
@@ -105,15 +106,38 @@ const CustomerTracking = () => {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    if (!term.trim()) {
-      setFilteredCustomers(customers);
-      return;
+    applyFilters(term, plateSearchTerm);
+  };
+
+  const handlePlateSearch = (term: string) => {
+    setPlateSearchTerm(term);
+    applyFilters(searchTerm, term);
+  };
+
+  const applyFilters = (nameTerm: string, plateTerm: string) => {
+    let filtered = customers;
+
+    // Filter by name/CPF/CNPJ
+    if (nameTerm.trim()) {
+      filtered = filtered.filter(customer => 
+        customer.name.toLowerCase().includes(nameTerm.toLowerCase()) ||
+        customer.document_number.includes(nameTerm)
+      );
     }
 
-    const filtered = customers.filter(customer => 
-      customer.name.toLowerCase().includes(term.toLowerCase()) ||
-      customer.document_number.includes(term)
-    );
+    // Filter by plate - need to check customer's vehicles in kit schedules
+    if (plateTerm.trim()) {
+      const plateUpper = plateTerm.toUpperCase();
+      const customerIdsWithMatchingPlate = kitSchedules
+        .filter(schedule => schedule.vehicle_plate?.toUpperCase().includes(plateUpper))
+        .map(schedule => schedule.customer_id)
+        .filter((id): id is string => !!id);
+      
+      filtered = filtered.filter(customer => 
+        customerIdsWithMatchingPlate.includes(customer.id!)
+      );
+    }
+
     setFilteredCustomers(filtered);
   };
 
@@ -222,6 +246,8 @@ const CustomerTracking = () => {
         <CustomerTrackingFilters
           onSearch={handleSearch}
           searchTerm={searchTerm}
+          onPlateSearch={handlePlateSearch}
+          plateSearchTerm={plateSearchTerm}
         />
       </div>
 
