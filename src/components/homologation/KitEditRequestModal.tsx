@@ -480,7 +480,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
-            Solicitar Edição de Kit
+            {mode === 'delete' ? 'Solicitar Exclusão de Kit' : 'Solicitar Edição de Kit'}
           </DialogTitle>
         </DialogHeader>
 
@@ -499,102 +499,129 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
 
             <Separator />
 
-            {/* Edit Form */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="kit-name" className="text-sm font-medium">
-                  Nome do Kit
-                </Label>
-                <Input
-                  id="kit-name"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nome do kit..."
-                />
+            {/* Delete Mode - Only show observation field */}
+            {mode === 'delete' ? (
+              <div className="space-y-4">
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+                  <p className="text-sm text-destructive font-medium">
+                    ⚠️ Você está solicitando a exclusão deste kit. Esta ação será analisada pelo gestor.
+                  </p>
+                </div>
+                
+                {/* Observation/Reason - Required for delete */}
+                <div className="space-y-2">
+                  <Label htmlFor="observation" className="text-sm font-medium">
+                    Motivo da Exclusão *
+                  </Label>
+                  <Textarea
+                    id="observation"
+                    value={observation}
+                    onChange={(e) => setObservation(e.target.value)}
+                    placeholder="Descreva o motivo da solicitação de exclusão..."
+                    rows={3}
+                  />
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Edit Form */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="kit-name" className="text-sm font-medium">
+                      Nome do Kit
+                    </Label>
+                    <Input
+                      id="kit-name"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Nome do kit..."
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Tipo do Kit</Label>
-                <Select value={newCategory} onValueChange={setNewCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {KIT_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Tipo do Kit</Label>
+                    <Select value={newCategory} onValueChange={setNewCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {KIT_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <Separator />
+                <Separator />
 
-            {/* Equipment */}
-            {renderItemList(
-              newEquipment,
-              'equipment',
-              <Wrench className="h-4 w-4 text-muted-foreground" />,
-              'Equipamentos'
+                {/* Equipment */}
+                {renderItemList(
+                  newEquipment,
+                  'equipment',
+                  <Wrench className="h-4 w-4 text-muted-foreground" />,
+                  'Equipamentos'
+                )}
+
+                <Separator />
+
+                {/* Accessories */}
+                {renderItemList(
+                  newAccessories,
+                  'accessory',
+                  <Box className="h-4 w-4 text-muted-foreground" />,
+                  'Acessórios'
+                )}
+
+                <Separator />
+
+                {/* Modules */}
+                {renderModulesSection()}
+
+                <Separator />
+
+                {/* Supplies */}
+                {renderItemList(
+                  newSupplies,
+                  'supply',
+                  <Package className="h-4 w-4 text-muted-foreground" />,
+                  'Insumos'
+                )}
+
+                <Separator />
+
+                {/* Changes Preview */}
+                {changesDescription.length > 0 && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                    <p className="text-sm font-medium text-primary mb-2 flex items-center gap-2">
+                      <ArrowRight className="h-4 w-4" />
+                      Alterações Solicitadas
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      {changesDescription.map((change, index) => (
+                        <li key={index}>• {change}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Observation */}
+                <div className="space-y-2">
+                  <Label htmlFor="observation" className="text-sm font-medium">
+                    Observação / Motivo
+                  </Label>
+                  <Textarea
+                    id="observation"
+                    value={observation}
+                    onChange={(e) => setObservation(e.target.value)}
+                    placeholder="Descreva o motivo da solicitação..."
+                    rows={3}
+                  />
+                </div>
+              </>
             )}
-
-            <Separator />
-
-            {/* Accessories */}
-            {renderItemList(
-              newAccessories,
-              'accessory',
-              <Box className="h-4 w-4 text-muted-foreground" />,
-              'Acessórios'
-            )}
-
-            <Separator />
-
-            {/* Modules */}
-            {renderModulesSection()}
-
-            <Separator />
-
-            {/* Supplies */}
-            {renderItemList(
-              newSupplies,
-              'supply',
-              <Package className="h-4 w-4 text-muted-foreground" />,
-              'Insumos'
-            )}
-
-            <Separator />
-
-            {/* Changes Preview */}
-            {changesDescription.length > 0 && (
-              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                <p className="text-sm font-medium text-primary mb-2 flex items-center gap-2">
-                  <ArrowRight className="h-4 w-4" />
-                  Alterações Solicitadas
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  {changesDescription.map((change, index) => (
-                    <li key={index}>• {change}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Observation */}
-            <div className="space-y-2">
-              <Label htmlFor="observation" className="text-sm font-medium">
-                Observação / Motivo
-              </Label>
-              <Textarea
-                id="observation"
-                value={observation}
-                onChange={(e) => setObservation(e.target.value)}
-                placeholder="Descreva o motivo da solicitação..."
-                rows={3}
-              />
-            </div>
           </div>
         </ScrollArea>
 
@@ -604,14 +631,15 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={submitting || !hasChanges()}
+            disabled={submitting || (mode === 'edit' && !hasChanges()) || (mode === 'delete' && !observation.trim())}
+            variant={mode === 'delete' ? 'destructive' : 'default'}
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Send className="h-4 w-4 mr-2" />
             )}
-            Enviar Solicitação
+            {mode === 'delete' ? 'Solicitar Exclusão' : 'Enviar Solicitação'}
           </Button>
         </DialogFooter>
       </DialogContent>
