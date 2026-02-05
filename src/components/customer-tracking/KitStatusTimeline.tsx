@@ -235,28 +235,35 @@ export const KitStatusTimeline = ({
 
   return (
     <div className="py-3 px-1">
-      <div className="flex justify-between items-start relative">
-        {/* Timeline connecting lines between icons */}
-        <div className="absolute top-4 left-0 right-0 flex z-0 px-4">
-          {steps.slice(0, -1).map((_, index) => (
-            <div 
-              key={index} 
-              className={`flex-1 h-[3px] ${getLineColor(index)} rounded-full mx-0.5 transition-colors duration-300`}
-              style={{ marginLeft: index === 0 ? '1rem' : undefined, marginRight: index === steps.length - 2 ? '1rem' : undefined }}
-            />
-          ))}
-        </div>
-        
-        {steps.map((step) => {
+      <div className="flex justify-between items-start">
+        {steps.map((step, index) => {
           const styles = getStepStyles(step);
           const Icon = step.icon;
+          const isLastStep = index === steps.length - 1;
           
           return (
-            <div key={step.id} className="flex flex-col items-center z-10 px-0.5 flex-1">
-              <div className={`
-                w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card
-                ${styles.circle}
-              `}>
+            <div key={step.id} className="flex flex-col items-center flex-1 relative">
+              {/* Connection line to next step */}
+              {!isLastStep && (
+                <div 
+                  className={`absolute top-4 h-[2px] ${getLineColor(index)} transition-colors duration-300`}
+                  style={{
+                    left: '50%',
+                    right: '-50%',
+                    transform: 'translateX(16px)',
+                    zIndex: 0
+                  }}
+                />
+              )}
+              
+              {/* Icon circle */}
+              <div 
+                className={`
+                  w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card relative
+                  ${styles.circle}
+                `}
+                style={{ zIndex: 1 }}
+              >
                 <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
               </div>
               
