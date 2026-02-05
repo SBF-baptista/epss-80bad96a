@@ -58,7 +58,8 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
   const [blockingPhoto, setBlockingPhoto] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     chassisInfo: card.chassis_info || '',
-    manufactureYear: card.manufacture_year || new Date().getFullYear(),
+    // Auto-populate manufacture year from card.year if manufacture_year is not set
+    manufactureYear: card.manufacture_year || card.year || new Date().getFullYear(),
     electricalConnectionType: card.electrical_connection_type || '',
     technicalObservations: card.technical_observations || '',
     testConfiguration: card.configuration || ''
