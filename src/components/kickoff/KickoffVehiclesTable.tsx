@@ -403,9 +403,7 @@ export const KickoffVehiclesTable = ({
                     <Label className="text-sm font-semibold">Acessórios</Label>
                     <div className="flex gap-1 flex-wrap">
                       {accessoriesList.map((item, idx) => {
-                        const isCameraExtra =
-                          item.name.toLowerCase().includes("CAMERA EXTRA") ||
-                          item.name.toLowerCase().includes("CAMERA EXTRA");
+                        const isCameraExtra = item.name.toLowerCase().includes("camera extra");
                         return (
                           <div key={`acc-${idx}`} className="flex items-center gap-1">
                             <Badge variant="outline" className="text-xs">
@@ -658,9 +656,7 @@ export const KickoffVehiclesTable = ({
                     {accessoriesList.length > 0 ? (
                       <div className="flex gap-1 flex-wrap">
                         {accessoriesList.map((item, idx) => {
-                          const isCameraExtra =
-                            item.name.toLowerCase().includes("CAMERA EXTRA") ||
-                            item.name.toLowerCase().includes("CAMERA EXTRA");
+                          const isCameraExtra = item.name.toLowerCase().includes("camera extra");
                           return (
                             <div key={`acc-${idx}`} className="flex items-center gap-1">
                               <Badge variant="outline" className="text-xs">
