@@ -135,30 +135,96 @@ export type Database = {
       app_logs: {
         Row: {
           action: string
+          action_type: Database["public"]["Enums"]["log_action_type"] | null
+          browser_info: string | null
+          changed_fields: string[] | null
           created_at: string
           details: string | null
+          device_info: string | null
+          duration_ms: number | null
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string | null
+          environment: string | null
+          error_code: string | null
+          error_message: string | null
           id: string
+          impact_level: Database["public"]["Enums"]["log_impact_level"] | null
           ip_address: string | null
+          is_critical: boolean | null
+          is_lgpd_sensitive: boolean | null
+          is_reversible: boolean | null
           module: string
+          new_state: Json | null
+          origin: Database["public"]["Enums"]["log_origin"] | null
+          previous_state: Json | null
+          session_id: string | null
+          status: Database["public"]["Enums"]["log_status"] | null
           user_id: string | null
+          user_profile: string | null
+          user_role: string | null
         }
         Insert: {
           action: string
+          action_type?: Database["public"]["Enums"]["log_action_type"] | null
+          browser_info?: string | null
+          changed_fields?: string[] | null
           created_at?: string
           details?: string | null
+          device_info?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          environment?: string | null
+          error_code?: string | null
+          error_message?: string | null
           id?: string
+          impact_level?: Database["public"]["Enums"]["log_impact_level"] | null
           ip_address?: string | null
+          is_critical?: boolean | null
+          is_lgpd_sensitive?: boolean | null
+          is_reversible?: boolean | null
           module: string
+          new_state?: Json | null
+          origin?: Database["public"]["Enums"]["log_origin"] | null
+          previous_state?: Json | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["log_status"] | null
           user_id?: string | null
+          user_profile?: string | null
+          user_role?: string | null
         }
         Update: {
           action?: string
+          action_type?: Database["public"]["Enums"]["log_action_type"] | null
+          browser_info?: string | null
+          changed_fields?: string[] | null
           created_at?: string
           details?: string | null
+          device_info?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          environment?: string | null
+          error_code?: string | null
+          error_message?: string | null
           id?: string
+          impact_level?: Database["public"]["Enums"]["log_impact_level"] | null
           ip_address?: string | null
+          is_critical?: boolean | null
+          is_lgpd_sensitive?: boolean | null
+          is_reversible?: boolean | null
           module?: string
+          new_state?: Json | null
+          origin?: Database["public"]["Enums"]["log_origin"] | null
+          previous_state?: Json | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["log_status"] | null
           user_id?: string | null
+          user_profile?: string | null
+          user_role?: string | null
         }
         Relationships: []
       }
@@ -1737,24 +1803,69 @@ export type Database = {
         }[]
       }
       generate_auto_order_number: { Args: never; Returns: string }
-      get_app_logs_admin: {
-        Args: {
-          p_action?: string
-          p_end_date?: string
-          p_module?: string
-          p_start_date?: string
-        }
-        Returns: {
-          action: string
-          created_at: string
-          details: string
-          id: string
-          ip_address: string
-          module: string
-          user_email: string
-          user_id: string
-        }[]
-      }
+      get_app_logs_admin:
+        | {
+            Args: {
+              p_action?: string
+              p_end_date?: string
+              p_module?: string
+              p_start_date?: string
+            }
+            Returns: {
+              action: string
+              created_at: string
+              details: string
+              id: string
+              ip_address: string
+              module: string
+              user_email: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_action?: string
+              p_action_type?: string
+              p_end_date?: string
+              p_entity_type?: string
+              p_impact_level?: string
+              p_is_critical?: boolean
+              p_module?: string
+              p_origin?: string
+              p_start_date?: string
+              p_status?: string
+            }
+            Returns: {
+              action: string
+              action_type: string
+              browser_info: string
+              changed_fields: string[]
+              created_at: string
+              details: string
+              device_info: string
+              duration_ms: number
+              entity_id: string
+              entity_name: string
+              entity_type: string
+              error_code: string
+              error_message: string
+              id: string
+              impact_level: string
+              ip_address: string
+              is_critical: boolean
+              is_lgpd_sensitive: boolean
+              is_reversible: boolean
+              module: string
+              new_state: Json
+              origin: string
+              previous_state: Json
+              status: string
+              user_email: string
+              user_id: string
+              user_profile: string
+              user_role: string
+            }[]
+          }
       get_module_permission: {
         Args: {
           _module: Database["public"]["Enums"]["app_module"]
@@ -1790,6 +1901,33 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_action_extended: {
+        Args: {
+          p_action: string
+          p_action_type?: Database["public"]["Enums"]["log_action_type"]
+          p_browser_info?: string
+          p_changed_fields?: string[]
+          p_details?: string
+          p_device_info?: string
+          p_duration_ms?: number
+          p_entity_id?: string
+          p_entity_name?: string
+          p_entity_type?: string
+          p_error_code?: string
+          p_error_message?: string
+          p_impact_level?: Database["public"]["Enums"]["log_impact_level"]
+          p_ip_address?: string
+          p_is_critical?: boolean
+          p_is_lgpd_sensitive?: boolean
+          p_is_reversible?: boolean
+          p_module: string
+          p_new_state?: Json
+          p_origin?: Database["public"]["Enums"]["log_origin"]
+          p_previous_state?: Json
+          p_status?: Database["public"]["Enums"]["log_status"]
+        }
+        Returns: string
+      }
       relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
     }
     Enums: {
@@ -1823,6 +1961,29 @@ export type Database = {
         | "agendamento_teste"
         | "execucao_teste"
         | "armazenamento_plataforma"
+      log_action_type:
+        | "create"
+        | "update"
+        | "delete"
+        | "login"
+        | "logout"
+        | "approval"
+        | "rejection"
+        | "cancellation"
+        | "integration"
+        | "system"
+        | "error"
+        | "access"
+      log_impact_level: "info" | "low" | "medium" | "high" | "critical"
+      log_origin:
+        | "web"
+        | "api"
+        | "integration"
+        | "system"
+        | "mobile"
+        | "job"
+        | "webhook"
+      log_status: "success" | "error" | "partial" | "pending"
       permission_level: "none" | "view" | "edit" | "approve" | "admin"
       status_pedido: "novos" | "producao" | "aguardando" | "enviado" | "standby"
       vehicle_usage_type:
@@ -1993,6 +2154,31 @@ export const Constants = {
         "execucao_teste",
         "armazenamento_plataforma",
       ],
+      log_action_type: [
+        "create",
+        "update",
+        "delete",
+        "login",
+        "logout",
+        "approval",
+        "rejection",
+        "cancellation",
+        "integration",
+        "system",
+        "error",
+        "access",
+      ],
+      log_impact_level: ["info", "low", "medium", "high", "critical"],
+      log_origin: [
+        "web",
+        "api",
+        "integration",
+        "system",
+        "mobile",
+        "job",
+        "webhook",
+      ],
+      log_status: ["success", "error", "partial", "pending"],
       permission_level: ["none", "view", "edit", "approve", "admin"],
       status_pedido: ["novos", "producao", "aguardando", "enviado", "standby"],
       vehicle_usage_type: [
