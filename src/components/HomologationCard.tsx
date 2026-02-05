@@ -58,10 +58,10 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
     >
       <CardContent className="p-3 md:p-4">
         <div className="space-y-2">
-          {/* Header: Vehicle Name + Delete */}
+          {/* Header: Brand + Vehicle Name + Delete */}
           <div className="flex justify-between items-start gap-2">
             <h4 className="font-bold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0">
-              {card.model}
+              {card.brand} {card.model}
             </h4>
             {isAdminUser && (
               <AlertDialog>

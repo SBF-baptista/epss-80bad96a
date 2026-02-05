@@ -30,6 +30,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
   const [selectedUF, setSelectedUF] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [trackingCode, setTrackingCode] = useState<string>("");
+  const [azulCargoTrackingCode, setAzulCargoTrackingCode] = useState<string>("");
   const [address, setAddress] = useState<ShipmentAddress>({
     street: "",
     number: "",
@@ -250,17 +251,32 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <Label htmlFor="tracking_code" className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
-              Código de Rastreio dos Correios
-            </Label>
-            <Input
-              id="tracking_code"
-              value={trackingCode}
-              onChange={(e) => setTrackingCode(e.target.value)}
-              placeholder="Ex: AA123456789BR"
-              className="bg-white dark:bg-background border-2 border-emerald-400 dark:border-emerald-600 font-mono text-lg font-semibold tracking-wider"
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tracking_code" className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+                Código de Rastreio dos Correios
+              </Label>
+              <Input
+                id="tracking_code"
+                value={trackingCode}
+                onChange={(e) => setTrackingCode(e.target.value)}
+                placeholder="Ex: AA123456789BR"
+                className="bg-white dark:bg-background border-2 border-emerald-400 dark:border-emerald-600 font-mono text-lg font-semibold tracking-wider"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="azul_cargo_tracking_code" className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                Código Rastreio Azul Cargo
+              </Label>
+              <Input
+                id="azul_cargo_tracking_code"
+                value={azulCargoTrackingCode}
+                onChange={(e) => setAzulCargoTrackingCode(e.target.value)}
+                placeholder="Ex: AZL123456789"
+                className="bg-white dark:bg-background border-2 border-blue-400 dark:border-blue-600 font-mono text-lg font-semibold tracking-wider"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

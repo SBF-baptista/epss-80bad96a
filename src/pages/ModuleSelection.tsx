@@ -170,9 +170,8 @@ const ModuleSelection = () => {
     index === self.findIndex(m => m.path === module.path)
   );
 
-  // Separate main modules from secondary
+  // Only show primary modules (remove secondary section)
   const primaryModules = uniqueModules.filter(m => mainModules.includes(m.module));
-  const secondaryModules = uniqueModules.filter(m => !mainModules.includes(m.module));
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -267,52 +266,7 @@ const ModuleSelection = () => {
         </motion.div>
       )}
 
-      {/* Secondary Modules Section */}
-      {secondaryModules.length > 0 && (
-        <div className="space-y-4">
-          <motion.h2 
-            className="text-sm font-medium text-muted-foreground uppercase tracking-wider px-1"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            Configurações e Ferramentas
-          </motion.h2>
-          
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
-          >
-            {secondaryModules.map((module) => (
-              <motion.div
-                key={module.path + module.title}
-                variants={cardVariants}
-                whileHover={{ 
-                  y: -4,
-                  transition: { type: "spring", stiffness: 400, damping: 17 }
-                }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => navigate(module.path)}
-                className="group cursor-pointer"
-              >
-                <div className="relative bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-lg hover:border-border transition-all duration-300 p-4">
-                  {/* Icon */}
-                  <div className={`w-10 h-10 rounded-full ${module.iconBg} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-300`}>
-                    <module.icon className={`h-5 w-5 ${module.iconColor}`} />
-                  </div>
-                  
-                  {/* Title */}
-                  <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                    {module.title}
-                  </h3>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      )}
+      {/* All modules in single grid */}
 
       {/* No modules message */}
       {uniqueModules.length === 0 && (

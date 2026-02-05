@@ -108,14 +108,18 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
       const configs = await fetchAutomationConfigurations();
       setConfigurations(configs || []);
       
-      // Auto-select the newly created configuration in the dropdown
+      // Auto-select the newly created configuration in the dropdown BEFORE closing modal
       setFormData(prev => ({ ...prev, testConfiguration: createdConfigName }));
+      
+      // Clear form and close creation modal
       setNewConfiguration("");
       setNewTrackerModel("");
       setIsNewConfigOpen(false);
-      onUpdate();
       
       showSuccess("Nova configuração criada e selecionada automaticamente");
+      
+      // Call onUpdate AFTER setting the new configuration
+      onUpdate();
     } catch (error) {
       showError(error as Error, {
         action: 'create_configuration',
