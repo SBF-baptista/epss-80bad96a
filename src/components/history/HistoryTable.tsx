@@ -25,15 +25,9 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
-  Globe,
-  Server,
-  Smartphone,
-  Workflow,
-  Shield,
-  Lock,
-  Zap,
-  Clock,
-  Bot
+  Bot,
+  ArrowRight,
+  Workflow
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -360,26 +354,6 @@ const getImpactBadge = (log: AppLog) => {
   );
 };
 
-// Ícone e tooltip de origem
-const getOriginInfo = (log: AppLog) => {
-  const origin = log.origin || 'web';
-  
-  const configs: Record<string, { icon: typeof Globe; label: string; color: string }> = {
-    'web': { icon: Globe, label: "Via Web", color: "text-muted-foreground" },
-    'api': { icon: Server, label: "Via API", color: "text-blue-500" },
-    'mobile': { icon: Smartphone, label: "Via Mobile", color: "text-green-500" },
-    'integration': { icon: Workflow, label: "Via Integração", color: "text-cyan-500" },
-    'system': { icon: Bot, label: "Sistema (Automático)", color: "text-slate-500" },
-    'job': { icon: Clock, label: "Job Agendado", color: "text-amber-500" },
-    'webhook': { icon: Zap, label: "Webhook", color: "text-purple-500" },
-  };
-  
-  const config = configs[origin] || configs['web'];
-  const Icon = config.icon;
-  
-  return { Icon, label: config.label, color: config.color };
-};
-
 // Status badge
 const getStatusBadge = (status?: string) => {
   if (!status || status === 'success') return null;
@@ -427,6 +401,67 @@ const highlightText = (text: string, term: string) => {
   );
 };
 
+// Render resumo de alterações antes/depois
+const renderStateChangeSummary = (log: AppLog) => {
+  const changes: React.ReactNode[] = [];
+  
+  if (log.previous_state && log.new_state && typeof log.previous_state === 'object' && typeof log.new_state === 'object') {
+    const prevState = log.previous_state as Record<string, unknown>;
+    const newState = log.new_state as Record<string, unknown>;
+    
+    // Mostrar até 2 mudanças importantes
+    const importantFields = ['status', 'name', 'titulo', 'valor', 'quantidade', 'email', 'nome'];
+    const changedKeys = log.changed_fields || Object.keys(newState).filter(key => 
+      JSON.stringify(prevState[key]) !== JSON.stringify(newState[key])
+    );
+    
+    const prioritizedKeys = changedKeys
+      .sort((a, b) => {
+        const aIdx = importantFields.indexOf(a.toLowerCase());
+        const bIdx = importantFields.indexOf(b.toLowerCase());
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return 0;
+      })
+      .slice(0, 2);
+    
+    prioritizedKeys.forEach((key, idx) => {
+      const prevValue = prevState[key];
+      const newValue = newState[key];
+      
+      if (prevValue !== undefined && newValue !== undefined) {
+        const formatValue = (val: unknown) => {
+          if (val === null) return 'null';
+          if (typeof val === 'boolean') return val ? 'Sim' : 'Não';
+          if (typeof val === 'object') return '(objeto)';
+          const strVal = String(val);
+          return strVal.length > 15 ? strVal.slice(0, 15) + '...' : strVal;
+        };
+        
+        changes.push(
+          <div key={idx} className="flex items-center gap-1 text-[11px]">
+            <span className="font-medium text-slate-600 dark:text-slate-400">{key}:</span>
+            <span className="text-red-600 dark:text-red-400 line-through">{formatValue(prevValue)}</span>
+            <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+            <span className="text-emerald-600 dark:text-emerald-400">{formatValue(newValue)}</span>
+          </div>
+        );
+      }
+    });
+  }
+  
+  if (changes.length === 0 && (log.previous_state || log.new_state)) {
+    return (
+      <span className="text-[10px] text-muted-foreground/70">
+        Estado alterado (ver detalhes)
+      </span>
+    );
+  }
+  
+  return <>{changes}</>;
+};
+
 const HistoryTable = ({ logs, highlightTerm, onViewDetails }: HistoryTableProps) => {
   return (
     <Card className="border-border/60 shadow-sm overflow-hidden">
@@ -434,22 +469,20 @@ const HistoryTable = ({ logs, highlightTerm, onViewDetails }: HistoryTableProps)
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[180px]">Usuário</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[150px]">Data/Hora</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide">Ação</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[130px]">Módulo</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[70px] text-center">Impacto</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[70px] text-center">Status</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[100px]">IP</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[60px] text-center">Origem</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[50px] text-center">Flags</TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[60px] text-center">Ver</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[160px]">Usuário</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[130px]">Data/Hora</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[180px]">Ação</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[110px]">Módulo</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide min-w-[200px]">Detalhes da Alteração</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[60px] text-center">Impacto</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[50px] text-center">Status</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide w-[50px] text-center">Ver</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <AlertTriangle className="h-8 w-8 text-muted-foreground/50" />
                     <span>Nenhum registro encontrado</span>
@@ -461,8 +494,6 @@ const HistoryTable = ({ logs, highlightTerm, onViewDetails }: HistoryTableProps)
               logs.map((log) => {
                 const actionConfig = getActionTypeConfig(log.action_type, log.action);
                 const ActionIcon = actionConfig.icon;
-                const originInfo = getOriginInfo(log);
-                const OriginIcon = originInfo.Icon;
                 const statusBadge = getStatusBadge(log.status);
                 
                 return (
@@ -568,6 +599,71 @@ const HistoryTable = ({ logs, highlightTerm, onViewDetails }: HistoryTableProps)
                       </Badge>
                     </TableCell>
 
+                    {/* Detalhes da Alteração - NOVA COLUNA */}
+                    <TableCell className="py-3">
+                      <div className="flex flex-col gap-1 max-w-[280px]">
+                        {/* Campos alterados */}
+                        {log.changed_fields && log.changed_fields.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {log.changed_fields.slice(0, 3).map((field, idx) => (
+                              <Badge 
+                                key={idx} 
+                                variant="outline" 
+                                className="text-[10px] px-1.5 py-0 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/50"
+                              >
+                                {field}
+                              </Badge>
+                            ))}
+                            {log.changed_fields.length > 3 && (
+                              <Badge 
+                                variant="outline" 
+                                className="text-[10px] px-1.5 py-0 bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                              >
+                                +{log.changed_fields.length - 3} mais
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Resumo Antes → Depois */}
+                        {(log.previous_state || log.new_state) && (
+                          <div className="text-xs text-muted-foreground space-y-0.5">
+                            {renderStateChangeSummary(log)}
+                          </div>
+                        )}
+                        
+                        {/* Detalhes textuais */}
+                        {log.details && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-xs text-muted-foreground truncate cursor-help">
+                                  {highlightText(log.details.slice(0, 60) + (log.details.length > 60 ? "..." : ""), highlightTerm)}
+                                </p>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-sm">
+                                <p className="text-xs">{log.details}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
+                        {/* Entidade afetada */}
+                        {log.entity_name && !log.details && (
+                          <span className="text-xs text-muted-foreground">
+                            {log.entity_type}: <span className="font-medium">{log.entity_name}</span>
+                          </span>
+                        )}
+
+                        {/* Fallback: nenhum detalhe */}
+                        {!log.changed_fields?.length && !log.previous_state && !log.new_state && !log.details && !log.entity_name && (
+                          <span className="text-xs text-muted-foreground/50 italic">
+                            Sem detalhes adicionais
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+
                     {/* Impacto */}
                     <TableCell className="py-3 text-center">
                       {getImpactBadge(log)}
@@ -580,69 +676,6 @@ const HistoryTable = ({ logs, highlightTerm, onViewDetails }: HistoryTableProps)
                           OK
                         </Badge>
                       )}
-                    </TableCell>
-
-                    {/* IP */}
-                    <TableCell className="py-3">
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {log.ip_address || "-"}
-                      </span>
-                    </TableCell>
-
-                    {/* Origem */}
-                    <TableCell className="py-3 text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <OriginIcon className={`h-3.5 w-3.5 ${originInfo.color}`} />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">{originInfo.label}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-
-                    {/* Flags (LGPD, Crítico, etc) */}
-                    <TableCell className="py-3 text-center">
-                      <div className="flex items-center justify-center gap-0.5">
-                        {log.is_lgpd_sensitive && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Shield className="h-3 w-3 text-amber-500" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">Dados sensíveis (LGPD)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        {log.is_critical && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <AlertTriangle className="h-3 w-3 text-red-500" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">Ação crítica</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        {log.is_reversible === false && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Lock className="h-3 w-3 text-slate-400" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">Ação irreversível</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
                     </TableCell>
 
                     {/* Ação Ver */}
