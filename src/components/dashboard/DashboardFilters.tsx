@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon, X, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Order } from "@/services/orderService";
@@ -22,142 +23,130 @@ interface DashboardFiltersProps {
   orders: Order[];
 }
 
-const DashboardFilters = ({ 
-  dateRange, 
-  onDateRangeChange, 
-  filters, 
+const DashboardFilters = ({
+  dateRange,
+  onDateRangeChange,
+  filters,
   onFiltersChange,
-  orders 
+  orders
 }: DashboardFiltersProps) => {
   const [showCalendar, setShowCalendar] = useState(false);
 
-  // Extract unique values for filters
   const statuses = [...new Set(orders.map(order => order.status))].filter(Boolean);
-  const brands = [...new Set(orders.flatMap(order => 
-    order.vehicles.map(v => v.brand)
-  ))].filter(Boolean);
+  const brands = [...new Set(orders.flatMap(order => order.vehicles.map(v => v.brand)))].filter(Boolean);
   const configTypes = [...new Set(orders.map(order => order.configurationType))].filter(Boolean);
 
+  const statusLabels: Record<string, string> = {
+    novos: "Novos",
+    producao: "Em Produção",
+    aguardando: "Aguardando",
+    enviado: "Enviado",
+    standby: "Stand-by"
+  };
+
+  const activeFilters = [
+    filters.status && { key: "status", label: statusLabels[filters.status] || filters.status },
+    filters.brand && { key: "brand", label: filters.brand },
+    filters.configurationType && { key: "configurationType", label: filters.configurationType },
+  ].filter(Boolean) as { key: string; label: string }[];
+
   const clearFilters = () => {
-    onFiltersChange({
-      status: "",
-      brand: "",
-      configurationType: ""
-    });
+    onFiltersChange({ status: "", brand: "", configurationType: "" });
   };
 
-  const handleStatusChange = (value: string) => {
-    onFiltersChange({
-      ...filters,
-      status: value === "all" ? "" : value
-    });
-  };
-
-  const handleBrandChange = (value: string) => {
-    onFiltersChange({
-      ...filters,
-      brand: value === "all" ? "" : value
-    });
-  };
-
-  const handleConfigTypeChange = (value: string) => {
-    onFiltersChange({
-      ...filters,
-      configurationType: value === "all" ? "" : value
-    });
+  const removeFilter = (key: string) => {
+    onFiltersChange({ ...filters, [key]: "" });
   };
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-          <div className="flex gap-4 flex-wrap">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Período</label>
-              <Popover open={showCalendar} onOpenChange={setShowCalendar}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-60 justify-start text-left">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} - {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={{ from: dateRange.from, to: dateRange.to }}
-                    onSelect={(range) => {
-                      if (range?.from && range?.to) {
-                        onDateRangeChange({ from: range.from, to: range.to });
-                        setShowCalendar(false);
-                      }
-                    }}
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+    <Card className="border-border/60">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-col gap-3">
+          {/* Filters row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select value={filters.status || "all"} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {statuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Popover open={showCalendar} onOpenChange={setShowCalendar}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 font-normal">
+                  <CalendarIcon className="h-3 w-3" />
+                  {format(dateRange.from, "dd/MM/yy", { locale: ptBR })} — {format(dateRange.to, "dd/MM/yy", { locale: ptBR })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{ from: dateRange.from, to: dateRange.to }}
+                  onSelect={(range) => {
+                    if (range?.from && range?.to) {
+                      onDateRangeChange({ from: range.from, to: range.to });
+                      setShowCalendar(false);
+                    }
+                  }}
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Marca</label>
-              <Select value={filters.brand || "all"} onValueChange={handleBrandChange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Todas as marcas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {brands.map((brand) => (
-                    <SelectItem key={brand} value={brand}>
-                      {brand}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={filters.status || "all"} onValueChange={(v) => onFiltersChange({ ...filters, status: v === "all" ? "" : v })}>
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {statuses.map((s) => (
+                  <SelectItem key={s} value={s}>{statusLabels[s] || s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Configuração</label>
-              <Select value={filters.configurationType || "all"} onValueChange={handleConfigTypeChange}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Todas as configurações" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {configTypes.map((config) => (
-                    <SelectItem key={config} value={config}>
-                      {config}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={filters.brand || "all"} onValueChange={(v) => onFiltersChange({ ...filters, brand: v === "all" ? "" : v })}>
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue placeholder="Marca" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as marcas</SelectItem>
+                {brands.map((b) => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filters.configurationType || "all"} onValueChange={(v) => onFiltersChange({ ...filters, configurationType: v === "all" ? "" : v })}>
+              <SelectTrigger className="w-[150px] h-8 text-xs">
+                <SelectValue placeholder="Configuração" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as config.</SelectItem>
+                {configTypes.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {activeFilters.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1">
+                <X className="h-3 w-3" /> Limpar
+              </Button>
+            )}
           </div>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={clearFilters}
-            className="flex items-center gap-2"
-          >
-            <X className="h-4 w-4" />
-            Limpar Filtros
-          </Button>
+          {/* Active filter chips */}
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {activeFilters.map((f) => (
+                <Badge
+                  key={f.key}
+                  variant="secondary"
+                  className="text-[10px] h-5 gap-1 pl-2 pr-1 cursor-pointer hover:bg-destructive/10"
+                  onClick={() => removeFilter(f.key)}
+                >
+                  {f.label}
+                  <X className="h-2.5 w-2.5" />
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

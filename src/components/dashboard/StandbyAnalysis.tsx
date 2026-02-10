@@ -2,7 +2,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Order } from "@/services/orderService";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle, Clock, Package } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -12,118 +12,70 @@ interface StandbyAnalysisProps {
 
 const StandbyAnalysis = ({ orders }: StandbyAnalysisProps) => {
   const standbyOrders = orders.filter(order => order.status === "standby");
-  
+
   const ordersWithDays = standbyOrders.map(order => ({
     ...order,
     daysInStandby: differenceInDays(new Date(), new Date(order.createdAt))
   })).sort((a, b) => b.daysInStandby - a.daysInStandby);
 
-  const getPriorityColor = (days: number) => {
-    if (days >= 7) return "bg-red-100 text-red-800 border-red-200";
-    if (days >= 3) return "bg-orange-100 text-orange-800 border-orange-200";
-    return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  const getPriorityStyle = (days: number) => {
+    if (days >= 7) return "border-l-red-500 bg-red-50/50 dark:bg-red-950/10";
+    if (days >= 3) return "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/10";
+    return "border-l-muted-foreground/30 bg-muted/20";
   };
 
-  const getPriorityIcon = (days: number) => {
-    if (days >= 7) return <AlertTriangle className="h-4 w-4" />;
-    return <Clock className="h-4 w-4" />;
+  const getDaysBadge = (days: number) => {
+    if (days >= 7) return "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800/40";
+    if (days >= 3) return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800/40";
+    return "bg-muted text-muted-foreground border-border";
   };
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-          <div className="h-2 w-2 bg-red-500 rounded-full flex-shrink-0"></div>
-          <span className="truncate">Análise de Stand-by</span>
-          <Badge variant="secondary" className="ml-2 text-xs">
-            {standbyOrders.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto">
-          {ordersWithDays.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">
-              <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">Nenhum pedido em stand-by</p>
-            </div>
-          ) : (
-            ordersWithDays.map(order => (
-              <div 
-                key={order.id} 
-                className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-medium text-gray-900 text-sm truncate">
-                      Pedido {order.number}
-                    </span>
-                    <Badge className={`${getPriorityColor(order.daysInStandby)} text-xs flex-shrink-0`}>
-                      {getPriorityIcon(order.daysInStandby)}
-                      <span className="ml-1">
-                        {order.daysInStandby} {order.daysInStandby === 1 ? 'dia' : 'dias'}
-                      </span>
-                    </Badge>
-                  </div>
-                  
-                  <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-                    <p className="truncate">
-                      <span className="font-medium">Criado:</span>{' '}
-                      {format(new Date(order.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-                    </p>
-                    <p className="truncate">
-                      <span className="font-medium">Config:</span>{' '}
-                      {order.configurationType}
-                    </p>
-                    <div className="flex gap-3 text-xs">
-                      <span className="flex-shrink-0">
-                        <span className="font-medium">Veíc:</span>{' '}
-                        {order.vehicles.reduce((sum, v) => sum + v.quantity, 0)}
-                      </span>
-                      <span className="flex-shrink-0">
-                        <span className="font-medium">Rast:</span>{' '}
-                        {order.trackers.reduce((sum, t) => sum + t.quantity, 0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-right flex-shrink-0 ml-2">
-                  <div className="text-base sm:text-lg font-bold text-red-600">
-                    {order.daysInStandby}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {order.daysInStandby === 1 ? 'dia' : 'dias'}
-                  </div>
-                </div>
-              </div>
-            ))
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold text-foreground">Análise de Stand-by</CardTitle>
+          {standbyOrders.length > 0 && (
+            <Badge variant="secondary" className="text-[10px] h-5">{standbyOrders.length}</Badge>
           )}
         </div>
-        
-        {standbyOrders.length > 0 && (
-          <div className="mt-4 pt-4 border-t">
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
-              <div className="text-center">
-                <div className="font-bold text-red-600 text-sm sm:text-base">
-                  {ordersWithDays.filter(o => o.daysInStandby >= 7).length}
-                </div>
-                <div className="text-gray-500">+7 dias</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-orange-600 text-sm sm:text-base">
-                  {ordersWithDays.filter(o => o.daysInStandby >= 3 && o.daysInStandby < 7).length}
-                </div>
-                <div className="text-gray-500">3-6 dias</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-yellow-600 text-sm sm:text-base">
-                  {ordersWithDays.filter(o => o.daysInStandby < 3).length}
-                </div>
-                <div className="text-gray-500">0-2 dias</div>
-              </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {ordersWithDays.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="p-3 rounded-full bg-emerald-50 dark:bg-emerald-950/20 mb-3">
+              <Package className="h-5 w-5 text-emerald-500" />
             </div>
+            <p className="text-xs text-muted-foreground">Nenhum pedido em stand-by</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Todos os pedidos estão fluindo normalmente.</p>
           </div>
+        ) : (
+          <>
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {ordersWithDays.slice(0, 8).map(order => (
+                <div
+                  key={order.id}
+                  className={`flex items-center justify-between p-2.5 rounded-lg border-l-[3px] border border-border/50 transition-colors hover:bg-muted/20 cursor-default ${getPriorityStyle(order.daysInStandby)}`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-foreground truncate">Pedido {order.number}</p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{order.configurationType}</p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] h-5 ml-2 flex-shrink-0 ${getDaysBadge(order.daysInStandby)}`}>
+                    {order.daysInStandby}d
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            {standbyOrders.length > 0 && (
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-500" /> Crítico (&gt;7d): {ordersWithDays.filter(o => o.daysInStandby >= 7).length}</div>
+                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-amber-500" /> Atenção (3-6d): {ordersWithDays.filter(o => o.daysInStandby >= 3 && o.daysInStandby < 7).length}</div>
+                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-muted-foreground/30" /> Recente: {ordersWithDays.filter(o => o.daysInStandby < 3).length}</div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
