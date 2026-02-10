@@ -34,9 +34,34 @@ const KitManagement = () => {
         },
         (payload) => {
           console.log('Kit accessory changed in Kit Management:', payload);
-          // Trigger refetch of pending items when kit items change
           queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
           queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'homologation_kits'
+        },
+        (payload) => {
+          console.log('Kit changed in Kit Management:', payload);
+          queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'item_edit_requests'
+        },
+        (payload) => {
+          console.log('Edit request changed:', payload);
+          queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
+          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
         }
       )
       .subscribe();

@@ -174,6 +174,32 @@ const EditRequests = () => {
     }
 
     try {
+      // Handle kit deletion
+      if (changes.action === 'delete') {
+        // 1. Unlink kit_schedules referencing this kit
+        const { error: unlinkError } = await supabase
+          .from('kit_schedules')
+          .update({ kit_id: null })
+          .eq('kit_id', kitId);
+        if (unlinkError) console.error('Error unlinking kit_schedules:', unlinkError);
+
+        // 2. Delete kit accessories/items
+        const { error: deleteItemsError } = await supabase
+          .from('homologation_kit_accessories')
+          .delete()
+          .eq('kit_id', kitId);
+        if (deleteItemsError) console.error('Error deleting kit items:', deleteItemsError);
+
+        // 3. Delete the kit itself
+        const { error: deleteKitError } = await supabase
+          .from('homologation_kits')
+          .delete()
+          .eq('id', kitId);
+        if (deleteKitError) throw deleteKitError;
+
+        return true;
+      }
+
       // Update the kit basic info
       const { error: kitError } = await supabase
         .from('homologation_kits')
