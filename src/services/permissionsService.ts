@@ -17,6 +17,7 @@ export const ROUTE_TO_MODULE: Record<string, AppModule> = {
   '/planning': 'planning',
   '/scheduling': 'scheduling',
   '/config': 'scheduling',
+  '/whatsapp-control': 'scheduling',
   '/kanban': 'kanban',
   '/orders': 'orders',
   '/dashboard': 'dashboard',

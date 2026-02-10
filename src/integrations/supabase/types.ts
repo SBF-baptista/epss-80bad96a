@@ -1720,6 +1720,57 @@ export type Database = {
           },
         ]
       }
+      whatsapp_message_logs: {
+        Row: {
+          created_at: string
+          dispatch_type: string
+          error_code: number | null
+          error_message: string | null
+          final_status: string | null
+          friendly_message: string | null
+          id: string
+          initial_status: string | null
+          message_content: string | null
+          message_sid: string | null
+          recipient_name: string
+          recipient_phone: string
+          sent_at: string
+          template_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          dispatch_type?: string
+          error_code?: number | null
+          error_message?: string | null
+          final_status?: string | null
+          friendly_message?: string | null
+          id?: string
+          initial_status?: string | null
+          message_content?: string | null
+          message_sid?: string | null
+          recipient_name: string
+          recipient_phone: string
+          sent_at?: string
+          template_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          dispatch_type?: string
+          error_code?: number | null
+          error_message?: string | null
+          final_status?: string | null
+          friendly_message?: string | null
+          id?: string
+          initial_status?: string | null
+          message_content?: string | null
+          message_sid?: string | null
+          recipient_name?: string
+          recipient_phone?: string
+          sent_at?: string
+          template_type?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       workflow_chain: {

@@ -27,6 +27,7 @@ import SmartRedirect from "@/components/SmartRedirect";
 import SegsaleTest from "./pages/SegsaleTest";
 import History from "./pages/History";
 import EditRequests from "./pages/EditRequests";
+import WhatsAppMessageControl from "./pages/WhatsAppMessageControl";
 import ModuleSelection from "./pages/ModuleSelection";
 
 
@@ -227,6 +228,17 @@ function App() {
                 </ProtectedRoute>
               } />
               
+              {/* WhatsApp Message Control - under Configuração */}
+              <Route path="/whatsapp-control" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="scheduling">
+                    <Layout>
+                      <WhatsAppMessageControl />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
               {/* Module Selection - no special permissions needed */}
               <Route path="/modules" element={
                 <ProtectedRoute>

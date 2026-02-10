@@ -466,6 +466,53 @@ Deno.serve(async (req) => {
 
     // Determine if it was truly successful
     const isDeliveryError = statusCheck.errorCode || ['failed', 'undelivered'].includes(statusCheck.status);
+
+    // Log message to database
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (supabaseUrl && supabaseServiceKey) {
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.4');
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        
+        // Determine dispatch type from orderId pattern
+        const dispatchType = orderId === 'daily-agenda-auto' ? 'automatic' : 'manual';
+        
+        // Build a readable message content summary
+        let messageContent = '';
+        if (customMessage) {
+          messageContent = customMessage;
+        } else if (templateType) {
+          messageContent = `Template: ${templateType}`;
+          if (templateVariables) {
+            const vars = Object.entries(templateVariables)
+              .filter(([_, v]) => v)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(' | ');
+            if (vars) messageContent += ` | ${vars}`;
+          }
+        } else {
+          messageContent = `Pedido ${orderNumber}`;
+        }
+
+        await supabaseAdmin.from('whatsapp_message_logs').insert({
+          message_sid: messageSid,
+          recipient_name: recipientName,
+          recipient_phone: toPhone,
+          template_type: templateType || 'custom',
+          message_content: messageContent.substring(0, 2000),
+          initial_status: initialStatus,
+          final_status: statusCheck.status,
+          error_code: statusCheck.errorCode || null,
+          error_message: statusCheck.errorMessage || null,
+          friendly_message: statusCheck.friendlyMessage || null,
+          dispatch_type: dispatchType,
+        });
+        console.log('Message logged to whatsapp_message_logs');
+      }
+    } catch (logError) {
+      console.error('Failed to log message (non-critical):', logError);
+    }
     
     return new Response(
       JSON.stringify({ 
