@@ -17,7 +17,8 @@ import {
   Rocket,
   Clock,
   FileEdit,
-  Home
+  Home,
+  MessageSquare
 } from "lucide-react";
 import {
   Sidebar,
@@ -89,6 +90,7 @@ const navigationGroups: NavGroup[] = [
       { to: "/technicians", label: "Técnicos", icon: Users, module: "technicians" },
       { to: "/users", label: "Usuários", icon: UserCog, module: "users" },
       { to: "/history", label: "Histórico", icon: Clock, module: "users" },
+      { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling" },
     ]
   },
 ];
