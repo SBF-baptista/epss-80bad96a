@@ -2,6 +2,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Order } from "@/services/orderService";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Car } from "lucide-react";
 
 interface VehicleDistributionProps {
   orders: Order[];
@@ -10,82 +11,58 @@ interface VehicleDistributionProps {
 const VehicleDistribution = ({ orders }: VehicleDistributionProps) => {
   const vehicleStats = orders.reduce((acc, order) => {
     order.vehicles.forEach(vehicle => {
-      const key = `${vehicle.brand} ${vehicle.model}`;
-      if (!acc[key]) {
-        acc[key] = { brand: vehicle.brand, model: vehicle.model, quantity: 0 };
-      }
-      acc[key].quantity += vehicle.quantity;
+      const key = vehicle.brand;
+      if (!acc[key]) acc[key] = 0;
+      acc[key] += vehicle.quantity;
     });
     return acc;
-  }, {} as Record<string, { brand: string; model: string; quantity: number }>);
+  }, {} as Record<string, number>);
 
-  const chartData = Object.values(vehicleStats)
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 10)
-    .map(item => ({
-      name: `${item.brand} ${item.model}`,
-      brand: item.brand,
-      model: item.model,
-      quantity: item.quantity,
-      percentage: orders.length > 0 ? 
-        ((item.quantity / orders.reduce((sum, order) => 
-          sum + order.vehicles.reduce((vSum, v) => vSum + v.quantity, 0), 0)) * 100).toFixed(1) : 0
-    }));
+  const chartData = Object.entries(vehicleStats)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 8)
+    .map(([brand, quantity]) => ({ brand, quantity }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-sm">
-            Quantidade: <span className="font-bold">{data.quantity}</span>
-          </p>
-          <p className="text-sm">
-            Participação: <span className="font-bold">{data.percentage}%</span>
-          </p>
+        <div className="bg-popover text-popover-foreground p-2 border rounded-lg shadow-lg text-xs">
+          <p className="font-semibold">{payload[0].payload.brand}</p>
+          <p>Quantidade: <span className="font-bold">{payload[0].value}</span></p>
         </div>
       );
     }
     return null;
   };
 
+  if (chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold text-foreground">Veículos por Marca</CardTitle></CardHeader>
+        <CardContent className="pt-0 flex flex-col items-center justify-center h-40">
+          <Car className="h-5 w-5 text-muted-foreground/40 mb-2" />
+          <p className="text-xs text-muted-foreground">Sem dados no período.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-          <div className="h-2 w-2 bg-purple-500 rounded-full flex-shrink-0"></div>
-          <span className="truncate">Distribuição por Veículo</span>
-        </CardTitle>
+        <CardTitle className="text-sm font-semibold text-foreground">Veículos por Marca</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="h-48 sm:h-64">
+        <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="horizontal" margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis 
-                dataKey="name" 
-                type="category" 
-                width={100}
-                tick={{ fontSize: 10 }}
-              />
+            <BarChart data={chartData} margin={{ left: 0, right: 5, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+              <XAxis dataKey="brand" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={28} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="quantity" fill="#8B5CF6" />
+              <Bar dataKey="quantity" fill="hsl(260, 60%, 58%)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-        
-        <div className="mt-4 space-y-2 max-h-32 overflow-y-auto">
-          {chartData.map((item, index) => (
-            <div key={index} className="flex justify-between items-center text-sm">
-              <span className="truncate">{item.name}</span>
-              <div className="flex gap-3 ml-2">
-                <span className="font-medium">{item.quantity}</span>
-                <span className="text-gray-500">{item.percentage}%</span>
-              </div>
-            </div>
-          ))}
         </div>
       </CardContent>
     </Card>

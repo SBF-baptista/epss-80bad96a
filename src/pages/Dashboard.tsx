@@ -1,23 +1,31 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchOrders } from "@/services/orderService";
 import DashboardKPIs from "@/components/dashboard/DashboardKPIs";
+import DashboardFilters from "@/components/dashboard/DashboardFilters";
+import ExecutiveSummary from "@/components/dashboard/ExecutiveSummary";
 import OrdersByStatus from "@/components/dashboard/OrdersByStatus";
 import OrdersByPeriod from "@/components/dashboard/OrdersByPeriod";
-import VehicleDistribution from "@/components/dashboard/VehicleDistribution";
+import ProcessFunnel from "@/components/dashboard/ProcessFunnel";
+import AverageTimeByStage from "@/components/dashboard/AverageTimeByStage";
+import OperationalIndicators from "@/components/dashboard/OperationalIndicators";
+import OperationalInsights from "@/components/dashboard/OperationalInsights";
 import TrackerDistribution from "@/components/dashboard/TrackerDistribution";
-import ConfigurationTypes from "@/components/dashboard/ConfigurationTypes";
 import StandbyAnalysis from "@/components/dashboard/StandbyAnalysis";
-import DashboardFilters from "@/components/dashboard/DashboardFilters";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import ConfigurationTypes from "@/components/dashboard/ConfigurationTypes";
+import VehicleDistribution from "@/components/dashboard/VehicleDistribution";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw, BarChart3, AlertCircle } from "lucide-react";
 
 const Dashboard = () => {
   const [dateRange, setDateRange] = useState({
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
   });
-  
+
   const [filters, setFilters] = useState({
     status: "",
     brand: "",
@@ -27,39 +35,30 @@ const Dashboard = () => {
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: fetchOrders,
-    staleTime: 30000, // Cache por 30 segundos
+    staleTime: 30000,
     retry: 2,
   });
 
   const filteredOrders = orders.filter(order => {
     const orderDate = new Date(order.createdAt);
     const isInDateRange = orderDate >= dateRange.from && orderDate <= dateRange.to;
-    
     const matchesStatus = !filters.status || order.status === filters.status;
-    const matchesBrand = !filters.brand || 
-      order.vehicles.some(v => v.brand.toLowerCase().includes(filters.brand.toLowerCase()));
-    const matchesConfig = !filters.configurationType || 
-      order.configurationType.toLowerCase().includes(filters.configurationType.toLowerCase());
-    
+    const matchesBrand = !filters.brand || order.vehicles.some(v => v.brand.toLowerCase().includes(filters.brand.toLowerCase()));
+    const matchesConfig = !filters.configurationType || order.configurationType.toLowerCase().includes(filters.configurationType.toLowerCase());
     return isInDateRange && matchesStatus && matchesBrand && matchesConfig;
   });
 
   if (isLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-full">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-64 bg-gray-200 rounded"></div>
-              ))}
-            </div>
+      <div className="p-4 sm:p-6 bg-background min-h-full">
+        <div className="max-w-[1400px] mx-auto space-y-4">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-12 w-full" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64" />)}
           </div>
         </div>
       </div>
@@ -68,37 +67,42 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-gray-50 min-h-full">
-        <div className="max-w-7xl mx-auto">
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-red-900 mb-2">
-                Erro ao carregar dados
-              </h3>
-              <p className="text-red-700 mb-4">
-                Não foi possível carregar os dados do dashboard. Por favor, tente novamente.
-              </p>
-              <button
-                onClick={() => refetch()}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              >
-                Tentar Novamente
-              </button>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="p-6 bg-background min-h-full flex items-center justify-center">
+        <Card className="max-w-md w-full border-destructive/30">
+          <CardContent className="p-6 text-center">
+            <div className="p-3 rounded-full bg-destructive/10 w-fit mx-auto mb-4">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground mb-1">Erro ao carregar dados</h3>
+            <p className="text-sm text-muted-foreground mb-4">Não foi possível carregar os dados do dashboard.</p>
+            <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2">
+              <RefreshCw className="h-3.5 w-3.5" /> Tentar Novamente
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="p-3 sm:p-6 bg-gray-50 min-h-full">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Dashboard Analítico</h2>
+    <div className="p-3 sm:p-5 bg-background min-h-full">
+      <div className="max-w-[1400px] mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Dashboard Analítico
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Visão operacional da logística</p>
+          </div>
+          <Button onClick={() => refetch()} variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-muted-foreground">
+            <RefreshCw className="h-3 w-3" /> Atualizar
+          </Button>
         </div>
 
-        <DashboardFilters 
+        {/* Filters */}
+        <DashboardFilters
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
           filters={filters}
@@ -106,21 +110,36 @@ const Dashboard = () => {
           orders={orders}
         />
 
+        {/* Executive Summary */}
+        <ExecutiveSummary orders={filteredOrders} />
+
+        {/* KPIs */}
         <DashboardKPIs orders={filteredOrders} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Row 1: Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <OrdersByStatus orders={filteredOrders} />
           <OrdersByPeriod orders={filteredOrders} dateRange={dateRange} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <VehicleDistribution orders={filteredOrders} />
-          <TrackerDistribution orders={filteredOrders} />
+        {/* Row 2: Funnel + Time by Stage */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ProcessFunnel orders={filteredOrders} />
+          <AverageTimeByStage orders={filteredOrders} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <ConfigurationTypes orders={filteredOrders} />
+        {/* Row 3: Operational */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <OperationalIndicators orders={filteredOrders} />
+          <OperationalInsights orders={filteredOrders} />
           <StandbyAnalysis orders={filteredOrders} />
+        </div>
+
+        {/* Row 4: Distribution */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <VehicleDistribution orders={filteredOrders} />
+          <TrackerDistribution orders={filteredOrders} />
+          <ConfigurationTypes orders={filteredOrders} />
         </div>
       </div>
     </div>
