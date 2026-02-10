@@ -465,21 +465,6 @@ export const KickoffVehiclesTable = ({
                             Partida
                           </Label>
                         </div>
-                        {blocking.engineBlocking && (
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-muted-foreground">Qtd:</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={blocking.engineQuantity}
-                              onChange={(e) =>
-                                onBlockingQuantityChange(vehicle.id, "engineQuantity", parseInt(e.target.value) || 1)
-                              }
-                              className="w-14 h-7 text-xs"
-                              disabled={isPlateValidated}
-                            />
-                          </div>
-                        )}
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center space-x-2">
@@ -495,21 +480,6 @@ export const KickoffVehiclesTable = ({
                             Combustível
                           </Label>
                         </div>
-                        {blocking.fuelBlocking && (
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-muted-foreground">Qtd:</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={blocking.fuelQuantity}
-                              onChange={(e) =>
-                                onBlockingQuantityChange(vehicle.id, "fuelQuantity", parseInt(e.target.value) || 1)
-                              }
-                              className="w-14 h-7 text-xs"
-                              disabled={isPlateValidated}
-                            />
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
@@ -529,19 +499,6 @@ export const KickoffVehiclesTable = ({
                         Possui Sirene
                       </Label>
                     </div>
-                    {vehicleSiren.get(vehicle.id)?.hasSiren && (
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-muted-foreground">Qtd:</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={vehicleSiren.get(vehicle.id)?.quantity || 1}
-                          onChange={(e) => onSirenQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
-                          className="w-16 h-8 text-xs"
-                          disabled={isPlateValidated}
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -948,25 +905,6 @@ export const KickoffVehiclesTable = ({
                                 />
                                 <span className="text-xs break-words">Partida</span>
                               </div>
-                              {blocking.engineBlocking && (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs text-muted-foreground">Qtd:</span>
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    value={blocking.engineQuantity}
-                                    onChange={(e) =>
-                                      onBlockingQuantityChange(
-                                        vehicle.id,
-                                        "engineQuantity",
-                                        parseInt(e.target.value) || 1,
-                                      )
-                                    }
-                                    className="w-10 h-5 text-xs px-1"
-                                    disabled={isPlateValidated}
-                                  />
-                                </div>
-                              )}
                             </div>
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex items-start gap-1">
@@ -981,25 +919,6 @@ export const KickoffVehiclesTable = ({
                                 />
                                 <span className="text-xs break-words">Combustível</span>
                               </div>
-                              {blocking.fuelBlocking && (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs text-muted-foreground">Qtd:</span>
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    value={blocking.fuelQuantity}
-                                    onChange={(e) =>
-                                      onBlockingQuantityChange(
-                                        vehicle.id,
-                                        "fuelQuantity",
-                                        parseInt(e.target.value) || 1,
-                                      )
-                                    }
-                                    className="w-10 h-5 text-xs px-1"
-                                    disabled={isPlateValidated}
-                                  />
-                                </div>
-                              )}
                             </div>
                           </div>
                         )}
@@ -1017,19 +936,6 @@ export const KickoffVehiclesTable = ({
                           />
                           <span className="text-xs break-words">Possui Sirene</span>
                         </div>
-                        {vehicleSiren.get(vehicle.id)?.hasSiren && (
-                          <div className="flex items-center gap-1 ml-5">
-                            <span className="text-xs text-muted-foreground">Qtd:</span>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={vehicleSiren.get(vehicle.id)?.quantity || 1}
-                              onChange={(e) => onSirenQuantityChange(vehicle.id, parseInt(e.target.value) || 1)}
-                              className="w-12 h-6 text-xs px-1"
-                              disabled={isPlateValidated}
-                            />
-                          </div>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell className="border-r border-border align-top">

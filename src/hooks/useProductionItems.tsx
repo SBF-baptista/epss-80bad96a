@@ -57,6 +57,52 @@ export const useProductionItems = (
     }
   };
 
+  // Get the total expected vehicle count for this company
+  const getTotalVehicleCount = async (): Promise<number> => {
+    const currentCompanyName = getCompanyName();
+    if (!currentCompanyName) return 1;
+    
+    const normalizedCompanyName = currentCompanyName.trim().toUpperCase();
+    const { data: companySchedules } = await supabase
+      .from('kit_schedules')
+      .select('id, customer_name')
+      .in('status', ['in_progress', 'scheduled']);
+    
+    if (companySchedules) {
+      return companySchedules.filter(
+        s => s.customer_name?.trim().toUpperCase() === normalizedCompanyName
+      ).length;
+    }
+    return 1;
+  };
+
+  // Get total scanned items across all schedules for this company
+  const getTotalScannedForCompany = async (): Promise<number> => {
+    const currentCompanyName = getCompanyName();
+    if (!currentCompanyName) return productionItems.length;
+    
+    const normalizedCompanyName = currentCompanyName.trim().toUpperCase();
+    const { data: companySchedules } = await supabase
+      .from('kit_schedules')
+      .select('id, customer_name')
+      .in('status', ['in_progress', 'scheduled']);
+    
+    if (!companySchedules) return productionItems.length;
+    
+    const matchingIds = companySchedules
+      .filter(s => s.customer_name?.trim().toUpperCase() === normalizedCompanyName)
+      .map(s => s.id);
+    
+    if (matchingIds.length === 0) return productionItems.length;
+    
+    const { data: allItems } = await supabase
+      .from('production_items')
+      .select('id')
+      .in('kit_schedule_id', matchingIds);
+    
+    return allItems?.length || 0;
+  };
+
   const handleScanItem = async (imei: string, productionLineCode: string) => {
     const currentScheduleId = getScheduleId();
     
@@ -71,6 +117,35 @@ export const useProductionItems = (
 
     try {
       setIsScanning(true);
+
+      // Check if IMEI already exists globally
+      const { data: existingImei } = await supabase
+        .from('production_items')
+        .select('id, kit_schedule_id')
+        .eq('imei', imei.trim())
+        .limit(1);
+      
+      if (existingImei && existingImei.length > 0) {
+        toast({
+          title: "IMEI duplicado",
+          description: `O IMEI ${imei} já está cadastrado no sistema. Não é possível registrá-lo novamente.`,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Check vehicle count limit
+      const totalVehicles = await getTotalVehicleCount();
+      const totalScanned = await getTotalScannedForCompany();
+      
+      if (totalScanned >= totalVehicles) {
+        toast({
+          title: "Limite atingido",
+          description: `Já foram escaneados ${totalScanned} de ${totalVehicles} veículos para este cliente. Não é possível adicionar mais.`,
+          variant: "destructive"
+        });
+        return false;
+      }
       
       const { data: user } = await supabase.auth.getUser();
       
@@ -95,7 +170,7 @@ export const useProductionItems = (
       
       toast({
         title: "Item adicionado com sucesso",
-        description: `IMEI ${imei} adicionado à produção na linha ${productionLineCode}`
+        description: `IMEI ${imei} adicionado à produção na linha ${productionLineCode} (${totalScanned + 1}/${totalVehicles})`
       });
 
       // Reload items

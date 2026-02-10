@@ -207,8 +207,8 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
             <Label htmlFor="technician" className="text-sm font-semibold text-blue-900 dark:text-blue-200">
               Selecione o técnico
             </Label>
-            <Select value={selectedTechnicianId} onValueChange={handleTechnicianChange}>
-              <SelectTrigger className="bg-white dark:bg-background border-2 border-blue-400 dark:border-blue-600 font-medium text-foreground">
+            <Select value={selectedTechnicianId} onValueChange={handleTechnicianChange} disabled>
+              <SelectTrigger className="bg-muted border-2 border-blue-400 dark:border-blue-600 font-medium text-foreground cursor-not-allowed opacity-70">
                 <SelectValue placeholder="Selecione um técnico" />
               </SelectTrigger>
               <SelectContent>
@@ -219,8 +219,8 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-sm text-blue-700 dark:text-blue-400 font-medium">
-              💡 Ao selecionar um técnico, o endereço será preenchido automaticamente
+            <p className="text-sm text-muted-foreground font-medium">
+              O técnico é definido no agendamento e não pode ser alterado aqui
             </p>
           </div>
         </CardContent>

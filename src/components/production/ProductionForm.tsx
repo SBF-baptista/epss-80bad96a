@@ -1,7 +1,6 @@
 import { Order } from "@/services/orderService";
 import { ProductionItem } from "@/services/productionService";
 import ProductionStatus from "./ProductionStatus";
-import ProductionProgressBar from "./ProductionProgressBar";
 import ProductionScannerTabs from "./ProductionScannerTabs";
 
 interface ProductionFormProps {
@@ -57,11 +56,6 @@ const ProductionForm = ({
         currentStatus={order.status}
         onStartProduction={onStartProduction}
         onCompleteProduction={onCompleteProduction}
-      />
-
-      <ProductionProgressBar
-        scannedCount={scannedCount}
-        totalTrackers={totalTrackers}
       />
 
       <ProductionScannerTabs
