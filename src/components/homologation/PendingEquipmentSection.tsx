@@ -17,7 +17,7 @@ export const PendingEquipmentSection = () => {
   const [approvingItems, setApprovingItems] = useState<Set<string>>(new Set());
 
   const { data: pendingItems, isLoading } = useQuery({
-    queryKey: ['pending-homologation-items'],
+    queryKey: ["pending-homologation-items"],
     queryFn: fetchPendingHomologationItems,
     refetchInterval: 30000, // Refetch every 30 seconds to stay updated
   });
@@ -26,37 +26,34 @@ export const PendingEquipmentSection = () => {
 
   const handleApprove = async (item: PendingItem) => {
     const itemKey = item.item_name;
-    setApprovingItems(prev => new Set(prev).add(itemKey));
+    setApprovingItems((prev) => new Set(prev).add(itemKey));
 
     try {
-      const { error } = await supabase
-        .from('kit_item_options')
-        .insert({
-          item_name: item.item_name,
-          item_type: 'equipment',
-          description: `Homologado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`
-        });
+      const { error } = await supabase.from("kit_item_options").insert({
+        item_name: item.item_name,
+        item_type: "equipment",
+      });
 
       if (error) throw error;
 
       toast({
         title: "Item homologado",
-        description: `${item.item_name} foi homologado com sucesso.`
+        description: `${item.item_name} foi homologado com sucesso.`,
       });
 
       // Invalidate queries to refresh data
-      await queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
-      await queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
-      await queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+      await queryClient.invalidateQueries({ queryKey: ["pending-homologation-items"] });
+      await queryClient.invalidateQueries({ queryKey: ["homologation-kits"] });
+      await queryClient.invalidateQueries({ queryKey: ["kit-item-options"] });
     } catch (error) {
-      console.error('Error approving item:', error);
+      console.error("Error approving item:", error);
       toast({
         title: "Erro ao homologar",
         description: error instanceof Error ? error.message : "Ocorreu um erro ao homologar o item",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setApprovingItems(prev => {
+      setApprovingItems((prev) => {
         const next = new Set(prev);
         next.delete(itemKey);
         return next;
@@ -114,15 +111,13 @@ export const PendingEquipmentSection = () => {
                 <AlertTriangle className="h-5 w-5 text-purple-500" />
                 Insumos Pendentes de Homologação ({equipment.length})
               </CardTitle>
-              <ChevronDown 
-                className={`h-5 w-5 text-purple-600 transition-transform duration-200 ${
-                  isOpen ? 'rotate-180' : ''
-                }`} 
+              <ChevronDown
+                className={`h-5 w-5 text-purple-600 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
               />
             </div>
           </CardHeader>
         </CollapsibleTrigger>
-        
+
         <CollapsibleContent>
           <CardContent className="pt-0">
             <div className="mb-4 p-3 bg-purple-100 border border-purple-200 rounded-lg">
@@ -130,7 +125,10 @@ export const PendingEquipmentSection = () => {
                 <AlertTriangle className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-purple-800">
                   <p className="font-medium">Atenção!</p>
-                  <p>Os insumos abaixo estão sendo utilizados em kits ou clientes, mas ainda não foram homologados. Homologue-os para que os kits possam ser distribuídos.</p>
+                  <p>
+                    Os insumos abaixo estão sendo utilizados em kits ou clientes, mas ainda não foram homologados.
+                    Homologue-os para que os kits possam ser distribuídos.
+                  </p>
                 </div>
               </div>
             </div>
@@ -163,22 +161,20 @@ export const PendingEquipmentSection = () => {
                           disabled={approvingItems.has(item.item_name)}
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          {approvingItems.has(item.item_name) ? 'Homologando...' : 'Homologar'}
+                          {approvingItems.has(item.item_name) ? "Homologando..." : "Homologar"}
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       {item.kits && item.kits.length > 0 && (
                         <div>
-                          <p className="text-sm text-purple-700 font-medium">
-                            Usado em {item.kits.length} kit(s):
-                          </p>
+                          <p className="text-sm text-purple-700 font-medium">Usado em {item.kits.length} kit(s):</p>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {item.kits.map((kit, kitIndex) => (
-                              <Badge 
-                                key={`${kit.id}-${kitIndex}`} 
-                                variant="secondary" 
+                              <Badge
+                                key={`${kit.id}-${kitIndex}`}
+                                variant="secondary"
                                 className="bg-purple-100 text-purple-800 border-purple-200"
                               >
                                 {kit.name}
@@ -187,7 +183,7 @@ export const PendingEquipmentSection = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {item.customers && item.customers.length > 0 && (
                         <div>
                           <p className="text-sm text-blue-700 font-medium flex items-center gap-1">
@@ -196,13 +192,14 @@ export const PendingEquipmentSection = () => {
                           </p>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {item.customers.map((customer, customerIndex) => (
-                              <Badge 
-                                key={`${customer.id}-${customerIndex}`} 
-                                variant="secondary" 
+                              <Badge
+                                key={`${customer.id}-${customerIndex}`}
+                                variant="secondary"
                                 className="bg-blue-100 text-blue-800 border-blue-200"
                               >
                                 <User className="h-3 w-3 mr-1" />
-                                {customer.name} ({customer.vehicles_count} veículo{customer.vehicles_count !== 1 ? 's' : ''})
+                                {customer.name} ({customer.vehicles_count} veículo
+                                {customer.vehicles_count !== 1 ? "s" : ""})
                               </Badge>
                             ))}
                           </div>
@@ -219,7 +216,11 @@ export const PendingEquipmentSection = () => {
                 <Wrench className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium">Como homologar:</p>
-                  <p>Clique no botão "Homologar" ao lado de cada item ou use o formulário de homologação de acessórios acima (selecione tipo "Equipamento"). Depois que forem homologados, os kits correspondentes ficarão disponíveis para distribuição.</p>
+                  <p>
+                    Clique no botão "Homologar" ao lado de cada item ou use o formulário de homologação de acessórios
+                    acima (selecione tipo "Equipamento"). Depois que forem homologados, os kits correspondentes ficarão
+                    disponíveis para distribuição.
+                  </p>
                 </div>
               </div>
             </div>

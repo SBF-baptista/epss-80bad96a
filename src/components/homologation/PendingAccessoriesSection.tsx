@@ -20,7 +20,7 @@ export const PendingAccessoriesSection = () => {
   const [approvingItems, setApprovingItems] = useState<Set<string>>(new Set());
 
   const { data: pendingItems, isLoading } = useQuery({
-    queryKey: ['pending-homologation-items'],
+    queryKey: ["pending-homologation-items"],
     queryFn: fetchPendingHomologationItems,
     refetchInterval: 30000, // Refetch every 30 seconds to stay updated
   });
@@ -29,72 +29,71 @@ export const PendingAccessoriesSection = () => {
 
   const calculatePendingDays = (item: PendingItem): number => {
     if (!item.last_pending_date) return 0;
-    
+
     const pendingDate = new Date(item.last_pending_date);
     const today = new Date();
-    
+
     // Reset time to midnight for both dates to compare calendar days
     pendingDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    
+
     const diffTime = today.getTime() - pendingDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays;
   };
 
   const handleApprove = async (item: PendingItem) => {
     const itemKey = item.item_name;
-    setApprovingItems(prev => new Set(prev).add(itemKey));
+    setApprovingItems((prev) => new Set(prev).add(itemKey));
 
     try {
       // Check if item already exists (case-insensitive)
-      const existingItem = await findExistingItem(item.item_name, 'accessory');
+      const existingItem = await findExistingItem(item.item_name, "accessory");
       if (existingItem) {
         toast({
           title: "Item já homologado",
           description: `Este item já foi homologado como "${existingItem.item_name}".`,
         });
         // Refresh to update the list
-        await queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+        await queryClient.invalidateQueries({ queryKey: ["pending-homologation-items"] });
         return;
       }
 
       // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        throw new Error('Usuário não autenticado');
+        throw new Error("Usuário não autenticado");
       }
 
-      const { error } = await supabase
-        .from('kit_item_options')
-        .insert({
-          item_name: item.item_name,
-          item_type: 'accessory',
-          description: `Homologado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`,
-          created_by: user.id
-        });
+      const { error } = await supabase.from("kit_item_options").insert({
+        item_name: item.item_name,
+        item_type: "accessory",
+        created_by: user.id,
+      });
 
       if (error) throw error;
 
       toast({
         title: "Item homologado",
-        description: `${item.item_name} foi homologado com sucesso.`
+        description: `${item.item_name} foi homologado com sucesso.`,
       });
 
       // Invalidate queries to refresh data
-      await queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
-      await queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
-      await queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+      await queryClient.invalidateQueries({ queryKey: ["pending-homologation-items"] });
+      await queryClient.invalidateQueries({ queryKey: ["homologation-kits"] });
+      await queryClient.invalidateQueries({ queryKey: ["kit-item-options"] });
     } catch (error) {
-      console.error('Error approving item:', error);
+      console.error("Error approving item:", error);
       toast({
         title: "Erro ao homologar",
         description: error instanceof Error ? error.message : "Ocorreu um erro ao homologar o item",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setApprovingItems(prev => {
+      setApprovingItems((prev) => {
         const next = new Set(prev);
         next.delete(itemKey);
         return next;
@@ -132,10 +131,7 @@ export const PendingAccessoriesSection = () => {
                 <Package className="h-5 w-5 text-green-500" />
                 Acessórios Pendentes de Homologação
               </CardTitle>
-              <Button
-                onClick={() => setIsFormModalOpen(true)}
-                className="bg-primary hover:bg-primary/90"
-              >
+              <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
                 <Plus className="h-4 w-4 mr-2" />
                 Cadastrar Acessório
               </Button>
@@ -176,15 +172,13 @@ export const PendingAccessoriesSection = () => {
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
                 Acessórios Pendentes de Homologação ({accessories.length})
               </CardTitle>
-              <ChevronDown 
-                className={`h-5 w-5 text-orange-600 transition-transform duration-200 ${
-                  isOpen ? 'rotate-180' : ''
-                }`} 
+              <ChevronDown
+                className={`h-5 w-5 text-orange-600 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
               />
             </div>
           </CardHeader>
         </CollapsibleTrigger>
-        
+
         <CollapsibleContent>
           <CardContent className="pt-0">
             <div className="mb-4 p-3 bg-orange-100 border border-orange-200 rounded-lg">
@@ -192,7 +186,10 @@ export const PendingAccessoriesSection = () => {
                 <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-orange-800">
                   <p className="font-medium">Atenção!</p>
-                  <p>Os acessórios abaixo estão sendo utilizados em kits, mas ainda não foram homologados. Homologue-os para que os kits possam ser distribuídos.</p>
+                  <p>
+                    Os acessórios abaixo estão sendo utilizados em kits, mas ainda não foram homologados. Homologue-os
+                    para que os kits possam ser distribuídos.
+                  </p>
                 </div>
               </div>
             </div>
@@ -216,14 +213,14 @@ export const PendingAccessoriesSection = () => {
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
                           <Clock className="h-3 w-3 mr-1" />
-                          {calculatePendingDays(accessory)} {calculatePendingDays(accessory) === 1 ? 'dia' : 'dias'}
+                          {calculatePendingDays(accessory)} {calculatePendingDays(accessory) === 1 ? "dia" : "dias"}
                         </Badge>
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
-                          {accessory.kits?.length || 0} {accessory.kits?.length === 1 ? 'kit' : 'kits'}
+                          {accessory.kits?.length || 0} {accessory.kits?.length === 1 ? "kit" : "kits"}
                         </Badge>
                         {(accessory.vehicles_count ?? 0) > 0 && (
                           <Badge variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
-                            {accessory.vehicles_count} {accessory.vehicles_count === 1 ? 'veículo' : 'veículos'}
+                            {accessory.vehicles_count} {accessory.vehicles_count === 1 ? "veículo" : "veículos"}
                           </Badge>
                         )}
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
@@ -237,11 +234,11 @@ export const PendingAccessoriesSection = () => {
                           disabled={approvingItems.has(accessory.item_name)}
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          {approvingItems.has(accessory.item_name) ? 'Homologando...' : 'Homologar'}
+                          {approvingItems.has(accessory.item_name) ? "Homologando..." : "Homologar"}
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       {accessory.kits && accessory.kits.length > 0 && (
                         <div>
@@ -250,9 +247,9 @@ export const PendingAccessoriesSection = () => {
                           </p>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {accessory.kits.map((kit, kitIndex) => (
-                              <Badge 
-                                key={`${kit.id}-${kitIndex}`} 
-                                variant="secondary" 
+                              <Badge
+                                key={`${kit.id}-${kitIndex}`}
+                                variant="secondary"
                                 className="bg-orange-100 text-orange-800 border-orange-200"
                               >
                                 {kit.name}
@@ -261,7 +258,7 @@ export const PendingAccessoriesSection = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {accessory.customers && accessory.customers.length > 0 && (
                         <div>
                           <p className="text-sm text-blue-700 font-medium flex items-center gap-1">
@@ -270,13 +267,14 @@ export const PendingAccessoriesSection = () => {
                           </p>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {accessory.customers.map((customer, customerIndex) => (
-                              <Badge 
-                                key={`${customer.id}-${customerIndex}`} 
-                                variant="secondary" 
+                              <Badge
+                                key={`${customer.id}-${customerIndex}`}
+                                variant="secondary"
                                 className="bg-blue-100 text-blue-800 border-blue-200"
                               >
                                 <User className="h-3 w-3 mr-1" />
-                                {customer.name} ({customer.vehicles_count} veículo{customer.vehicles_count !== 1 ? 's' : ''})
+                                {customer.name} ({customer.vehicles_count} veículo
+                                {customer.vehicles_count !== 1 ? "s" : ""})
                               </Badge>
                             ))}
                           </div>
@@ -296,10 +294,7 @@ export const PendingAccessoriesSection = () => {
                   <p>Clique no botão "Homologar" ao lado de cada item ou cadastre um novo acessório.</p>
                 </div>
               </div>
-              <Button
-                onClick={() => setIsFormModalOpen(true)}
-                className="bg-primary hover:bg-primary/90"
-              >
+              <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
                 <Plus className="h-4 w-4 mr-2" />
                 Cadastrar Acessório
               </Button>
