@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 
 interface PendingSchedule {
   id: string;
+  customer_id: string | null;
   customer_name: string | null;
   customer_phone: string | null;
   vehicle_brand: string | null;
@@ -27,6 +28,7 @@ interface PendingSchedule {
   installation_address_complement: string | null;
   kit_id: string | null;
   selected_kit_ids: string[] | null;
+  incoming_vehicle_id: string | null;
 }
 
 interface PendingVehiclesSectionProps {
@@ -50,6 +52,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
         .from('kit_schedules')
         .select(`
           id,
+          customer_id,
           customer_name,
           customer_phone,
           vehicle_brand,
@@ -65,7 +68,8 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
           installation_address_postal_code,
           installation_address_complement,
           kit_id,
-          selected_kit_ids
+          selected_kit_ids,
+          incoming_vehicle_id
         `)
         .eq('status', 'shipped');
 
@@ -115,7 +119,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
     ].filter(Boolean);
     
     const vehicleData: PendingVehicleData = {
-      kitScheduleId: schedule.id, // Pass the kit_schedule id to update status later
+      kitScheduleId: schedule.id,
       brand: schedule.vehicle_brand || undefined,
       model: schedule.vehicle_model || undefined,
       year: schedule.vehicle_year || undefined,
@@ -124,6 +128,8 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
       customerName: schedule.customer_name || undefined,
       customerPhone: schedule.customer_phone || undefined,
       customerAddress: addressParts.length > 0 ? addressParts.join(', ') : undefined,
+      customerId: schedule.customer_id || undefined,
+      incomingVehicleId: schedule.incoming_vehicle_id || undefined,
     };
 
     onScheduleVehicle(vehicleData);
