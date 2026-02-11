@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,6 +42,7 @@ import { getSchedulingServiceOptions, createSchedulingServiceOption } from '@/se
 import { MapPin, CalendarIcon, Car, Cpu, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const scheduleFormSchema = z.object({
   date: z.date({ required_error: 'Data é obrigatória' }),
@@ -133,6 +134,33 @@ export const ScheduleFormModal = ({
     },
   });
 
+  const fetchCustomerContacts = useCallback(async (customerId: string) => {
+    try {
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('contacts')
+        .eq('id', customerId)
+        .maybeSingle();
+
+      if (customer?.contacts && Array.isArray(customer.contacts)) {
+        const contactStrings = (customer.contacts as any[])
+          .filter((c: any) => c.name)
+          .map((c: any) => {
+            const parts = [c.name];
+            if (c.role) parts.push(`(${c.role})`);
+            if (c.phone) parts.push(`- ${c.phone}`);
+            return parts.join(' ');
+          });
+
+        if (contactStrings.length > 0) {
+          form.setValue('local_contact', contactStrings.join(' | '));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching customer contacts:', error);
+    }
+  }, [form]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -199,6 +227,10 @@ export const ScheduleFormModal = ({
         }
         if (initialVehicleData.customerAddress) {
           form.setValue('address', initialVehicleData.customerAddress);
+        }
+        // Pre-fill local_contact from customer contacts (Kickoff data)
+        if (initialVehicleData.customerId) {
+          fetchCustomerContacts(initialVehicleData.customerId);
         }
         // Observação vazia para o usuário preencher
         form.setValue('observation', '');
