@@ -108,6 +108,10 @@ export const ScheduleFormModal = ({
   const [serviceOptions, setServiceOptions] = useState<string[]>(['Instalação', 'Manutenção', 'Retirada']);
   const [customService, setCustomService] = useState('');
   const [isAddingService, setIsAddingService] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerResults, setCustomerResults] = useState<{ id: string; name: string; phone: string }[]>([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
 
   // Determine if fields should be locked (has initial data from pipeline)
   const hasInitialData = Boolean(initialVehicleData?.plate || initialVehicleData?.model);
@@ -160,6 +164,38 @@ export const ScheduleFormModal = ({
       console.error('Error fetching customer contacts:', error);
     }
   }, [form]);
+
+  // Search customers by name for the new schedule flow
+  const searchCustomers = useCallback(async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setCustomerResults([]);
+      setShowCustomerDropdown(false);
+      return;
+    }
+    setIsSearchingCustomers(true);
+    try {
+      const { data } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .ilike('name', `%${searchTerm}%`)
+        .limit(8);
+      setCustomerResults(data || []);
+      setShowCustomerDropdown((data || []).length > 0);
+    } catch (error) {
+      console.error('Error searching customers:', error);
+    } finally {
+      setIsSearchingCustomers(false);
+    }
+  }, []);
+
+  const handleCustomerSelect = useCallback((customer: { id: string; name: string; phone: string }) => {
+    form.setValue('customer', customer.name);
+    form.setValue('phone', customer.phone || '');
+    setShowCustomerDropdown(false);
+    setCustomerSearch('');
+    // Fetch contacts from Kickoff data
+    fetchCustomerContacts(customer.id);
+  }, [form, fetchCustomerContacts]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -571,11 +607,52 @@ export const ScheduleFormModal = ({
                   control={form.control}
                   name="customer"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="relative">
                       <FormLabel className="text-sm">Cliente *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nome do cliente" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
+                        <Input
+                          placeholder="Digite para buscar cliente..."
+                          {...field}
+                          className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}
+                          disabled={hasInitialData}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (!hasInitialData) {
+                              searchCustomers(e.target.value);
+                            }
+                          }}
+                          onFocus={() => {
+                            if (field.value && field.value.length >= 2 && !hasInitialData) {
+                              searchCustomers(field.value);
+                            }
+                          }}
+                          onBlur={() => {
+                            // Delay to allow click on dropdown
+                            setTimeout(() => setShowCustomerDropdown(false), 200);
+                          }}
+                          autoComplete="off"
+                        />
                       </FormControl>
+                      {showCustomerDropdown && !hasInitialData && (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                          {customerResults.map((customer) => (
+                            <button
+                              key={customer.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors border-b border-border/50 last:border-0"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleCustomerSelect(customer);
+                              }}
+                            >
+                              <span className="font-medium">{customer.name}</span>
+                              {customer.phone && (
+                                <span className="text-xs text-muted-foreground ml-2">({customer.phone})</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
