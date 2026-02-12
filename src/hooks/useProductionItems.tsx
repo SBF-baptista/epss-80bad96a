@@ -107,10 +107,10 @@ export const useProductionItems = (
   const handleScanItem = async (imei: string, productionLineCode: string, serialNumber?: string) => {
     const currentScheduleId = getScheduleId();
     
-    if (!currentScheduleId || !imei.trim() || !productionLineCode.trim()) {
+    if (!currentScheduleId || (!imei.trim() && !serialNumber?.trim())) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, preencha o IMEI e código da linha de produção",
+        description: "Por favor, preencha o IMEI ou o Serial",
         variant: "destructive"
       });
       return false;
