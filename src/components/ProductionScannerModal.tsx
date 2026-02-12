@@ -24,10 +24,12 @@ interface ProductionScannerModalProps {
 const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: ProductionScannerModalProps) => {
   const {
     imei,
+    serialNumber,
     productionLineCode,
     scannerActive,
     scannerError,
     setImei,
+    setSerialNumber,
     setProductionLineCode,
     setScannerActive,
     handleScanResult,
@@ -52,7 +54,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
   } = useProductionItems(order, isOpen, undefined, handleStatusChange);
 
   const onScanItemClick = async () => {
-    const success = await handleScanItem(imei, productionLineCode);
+    const success = await handleScanItem(imei, productionLineCode, serialNumber);
     if (success) {
       clearForm();
     }
@@ -79,12 +81,10 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     }
   };
 
-  // Enhanced close handler with force cleanup
   const handleClose = () => {
     console.log('Modal close requested - ensuring cleanup...');
     setScannerActive(false);
     
-    // Small delay to ensure scanner is deactivated before closing
     setTimeout(() => {
       onClose();
     }, 50);
@@ -113,10 +113,12 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
             productionItems={productionItems}
             isScanning={isScanning}
             imei={imei}
+            serialNumber={serialNumber}
             productionLineCode={productionLineCode}
             scannerActive={scannerActive}
             scannerError={scannerError}
             onImeiChange={setImei}
+            onSerialNumberChange={setSerialNumber}
             onProductionLineCodeChange={setProductionLineCode}
             onScannerToggle={() => setScannerActive(!scannerActive)}
             onScanResult={handleScanResult}

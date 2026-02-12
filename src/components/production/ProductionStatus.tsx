@@ -22,8 +22,8 @@ const ProductionStatus = ({
 }: ProductionStatusProps) => {
   // Show "Iniciar Produção" for scheduled (Pedidos) status
   const showStartButton = currentStatus === 'novos' || currentStatus === 'scheduled';
-  // Show "Concluir Produção" for in_progress (Em Produção) status
-  const showCompleteButton = currentStatus === 'producao' || currentStatus === 'in_progress';
+  // "Concluir Produção" button is now rendered below ProductionItemsList in OrderModal
+  const showCompleteButton = false;
 
   return (
     <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">

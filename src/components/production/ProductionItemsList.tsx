@@ -38,6 +38,9 @@ const ProductionItemsList = ({
                 </Badge>
                 <div>
                   <p className="font-medium font-mono">{item.imei}</p>
+                  {item.serial_number && (
+                    <p className="text-sm text-muted-foreground">Serial: {item.serial_number}</p>
+                  )}
                   <p className="text-sm text-gray-600">Linha: {item.production_line_code}</p>
                 </div>
               </div>
