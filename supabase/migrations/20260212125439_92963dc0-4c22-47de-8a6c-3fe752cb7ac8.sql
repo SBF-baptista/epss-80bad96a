@@ -1,0 +1,1 @@
+ALTER TABLE public.production_items ADD COLUMN serial_number text;

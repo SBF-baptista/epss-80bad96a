@@ -6,6 +6,7 @@ import { Order } from "@/services/orderService";
 export const useProductionScannerModal = (order: Order | null, isOpen: boolean) => {
   const { toast } = useToast();
   const [imei, setImei] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
   const [productionLineCode, setProductionLineCode] = useState("");
   const [scannerActive, setScannerActive] = useState(false);
   const [scannerError, setScannerError] = useState<string>("");
@@ -13,20 +14,18 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
 
   useEffect(() => {
     if (order && isOpen) {
-      // Reset form when modal opens
       setImei("");
+      setSerialNumber("");
       setProductionLineCode("");
       setScannerError("");
     }
   }, [order, isOpen]);
 
-  // Enhanced cleanup when modal closes
   useEffect(() => {
     if (!isOpen) {
       console.log('Production scanner modal closing - running enhanced cleanup...');
       setScannerActive(false);
       
-      // Run force cleanup if available
       if (forceCleanupFn) {
         try {
           forceCleanupFn();
@@ -35,7 +34,6 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
         }
       }
       
-      // Additional cleanup with delay to ensure everything is stopped
       setTimeout(() => {
         if (forceCleanupFn) {
           try {
@@ -52,7 +50,6 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
     console.log('Scan result received:', result);
     setScannerError("");
     
-    // Auto-fill IMEI field with scanned result
     setImei(result.trim());
     
     toast({
@@ -60,11 +57,10 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
       description: `IMEI: ${result}`,
     });
     
-    // Focus on production line code field after a short delay
     setTimeout(() => {
-      const lineCodeInput = document.getElementById('lineCode');
-      if (lineCodeInput) {
-        lineCodeInput.focus();
+      const serialInput = document.getElementById('serial-number');
+      if (serialInput) {
+        serialInput.focus();
       }
     }, 100);
   };
@@ -81,12 +77,13 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
 
   const clearForm = () => {
     setImei("");
+    setSerialNumber("");
     setProductionLineCode("");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && imei.trim() && productionLineCode.trim()) {
-      return true; // Indicate that Enter was pressed with valid data
+      return true;
     }
     return false;
   };
@@ -98,10 +95,12 @@ export const useProductionScannerModal = (order: Order | null, isOpen: boolean) 
 
   return {
     imei,
+    serialNumber,
     productionLineCode,
     scannerActive,
     scannerError,
     setImei,
+    setSerialNumber,
     setProductionLineCode,
     setScannerActive,
     handleScanResult,

@@ -10,11 +10,13 @@ import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 
 interface ProductionScannerTabsProps {
   imei: string;
+  serialNumber: string;
   productionLineCode: string;
   scannerActive: boolean;
   scannerError: string;
   isScanning: boolean;
   onImeiChange: (value: string) => void;
+  onSerialNumberChange: (value: string) => void;
   onProductionLineCodeChange: (value: string) => void;
   onScannerToggle: () => void;
   onScanResult: (result: string) => void;
@@ -26,11 +28,13 @@ interface ProductionScannerTabsProps {
 
 const ProductionScannerTabs = ({
   imei,
+  serialNumber,
   productionLineCode,
   scannerActive,
   scannerError,
   isScanning,
   onImeiChange,
+  onSerialNumberChange,
   onProductionLineCodeChange,
   onScannerToggle,
   onScanResult,
@@ -41,14 +45,12 @@ const ProductionScannerTabs = ({
 }: ProductionScannerTabsProps) => {
   const [activeTab, setActiveTab] = useState("scanner");
 
-  // Get force cleanup function from scanner hook
   const { forceCleanup } = useBarcodeScanner({
     onScan: onScanResult,
     onError: onScanError,
     isActive: scannerActive,
   });
 
-  // Register the force cleanup function
   useEffect(() => {
     if (forceCleanup) {
       onRegisterForceCleanup(forceCleanup);
@@ -83,7 +85,7 @@ const ProductionScannerTabs = ({
           </div>
         )}
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="scanned-imei">IMEI Escaneado</Label>
             <Input
@@ -91,6 +93,16 @@ const ProductionScannerTabs = ({
               value={imei}
               onChange={(e) => onImeiChange(e.target.value)}
               placeholder="Resultado do scanner aparecerá aqui"
+              onKeyPress={onKeyPress}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="serial-number">Serial</Label>
+            <Input
+              id="serial-number"
+              value={serialNumber}
+              onChange={(e) => onSerialNumberChange(e.target.value)}
+              placeholder="Digite o número serial"
               onKeyPress={onKeyPress}
             />
           </div>
@@ -119,7 +131,7 @@ const ProductionScannerTabs = ({
 
       <TabsContent value="manual" className="space-y-4">
         <h3 className="font-semibold">Entrada Manual de Dados</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="manual-imei">IMEI</Label>
             <Input
@@ -127,6 +139,16 @@ const ProductionScannerTabs = ({
               value={imei}
               onChange={(e) => onImeiChange(e.target.value)}
               placeholder="Digite o IMEI manualmente"
+              onKeyPress={onKeyPress}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="manual-serial">Serial</Label>
+            <Input
+              id="manual-serial"
+              value={serialNumber}
+              onChange={(e) => onSerialNumberChange(e.target.value)}
+              placeholder="Digite o número serial"
               onKeyPress={onKeyPress}
             />
           </div>

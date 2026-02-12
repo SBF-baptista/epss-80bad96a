@@ -7,6 +7,7 @@ export interface ProductionItem {
   pedido_id: string | null
   kit_schedule_id: string | null
   imei: string
+  serial_number: string | null
   production_line_code: string
   scanned_at: string
   created_by?: string
@@ -16,21 +17,28 @@ export const addProductionItem = async (
   pedidoId: string | null, 
   imei: string, 
   productionLineCode: string,
-  kitScheduleId?: string
+  kitScheduleId?: string,
+  serialNumber?: string
 ): Promise<ProductionItem> => {
-  console.log('Adding production item:', { pedidoId, kitScheduleId, imei, productionLineCode })
+  console.log('Adding production item:', { pedidoId, kitScheduleId, imei, serialNumber, productionLineCode })
   
   const { data: user } = await supabase.auth.getUser()
   
+  const insertData: any = {
+    pedido_id: pedidoId,
+    kit_schedule_id: kitScheduleId,
+    imei: imei,
+    production_line_code: productionLineCode,
+    created_by: user.user?.id
+  }
+  
+  if (serialNumber) {
+    insertData.serial_number = serialNumber
+  }
+  
   const { data, error } = await supabase
     .from('production_items')
-    .insert({
-      pedido_id: pedidoId,
-      kit_schedule_id: kitScheduleId,
-      imei: imei,
-      production_line_code: productionLineCode,
-      created_by: user.user?.id
-    })
+    .insert(insertData)
     .select()
     .single()
 
@@ -39,7 +47,6 @@ export const addProductionItem = async (
     throw error
   }
 
-  // Registrar log da adição de item de produção
   await logCreate(
     "Produção",
     "item de produção",
@@ -108,7 +115,6 @@ export const updateProductionStatus = async (
     throw error
   }
 
-  // Registrar log da atualização de status
   await logUpdate(
     "Produção",
     "status de produção",

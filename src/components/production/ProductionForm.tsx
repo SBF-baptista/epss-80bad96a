@@ -8,10 +8,12 @@ interface ProductionFormProps {
   productionItems: ProductionItem[];
   isScanning: boolean;
   imei: string;
+  serialNumber: string;
   productionLineCode: string;
   scannerActive: boolean;
   scannerError: string;
   onImeiChange: (value: string) => void;
+  onSerialNumberChange: (value: string) => void;
   onProductionLineCodeChange: (value: string) => void;
   onScannerToggle: () => void;
   onScanResult: (result: string) => void;
@@ -28,10 +30,12 @@ const ProductionForm = ({
   productionItems,
   isScanning,
   imei,
+  serialNumber,
   productionLineCode,
   scannerActive,
   scannerError,
   onImeiChange,
+  onSerialNumberChange,
   onProductionLineCodeChange,
   onScannerToggle,
   onScanResult,
@@ -60,11 +64,13 @@ const ProductionForm = ({
 
       <ProductionScannerTabs
         imei={imei}
+        serialNumber={serialNumber}
         productionLineCode={productionLineCode}
         scannerActive={scannerActive}
         scannerError={scannerError}
         isScanning={isScanning}
         onImeiChange={onImeiChange}
+        onSerialNumberChange={onSerialNumberChange}
         onProductionLineCodeChange={onProductionLineCodeChange}
         onScannerToggle={onScannerToggle}
         onScanResult={onScanResult}

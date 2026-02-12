@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
-import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText, Car, Settings, Clock, Package } from "lucide-react";
+import { Calendar, User, MapPin, Eye, EyeOff, Scan, Phone, Mail, FileText, Car, Settings, Clock, Package, CheckCircle, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cleanItemName, normalizeItemName } from "@/utils/itemNormalization";
 import ProductionForm from "./production/ProductionForm";
@@ -58,14 +58,17 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
   const [scheduleAccessoriesMap, setScheduleAccessoriesMap] = useState<Record<string, { name: string; quantity: number }[]>>({});
   const [kitNamesMap, setKitNamesMap] = useState<Record<string, string>>({});
   const [showVehiclesSection, setShowVehiclesSection] = useState(false);
+  const [cameraExtras, setCameraExtras] = useState<Array<{ vehicleName: string; quantity: number; locations: string }>>([]);
 
   // Production scanner hooks
   const {
     imei,
+    serialNumber,
     productionLineCode,
     scannerActive,
     scannerError,
     setImei,
+    setSerialNumber,
     setProductionLineCode,
     setScannerActive,
     handleScanResult,
@@ -90,7 +93,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
   } = useProductionItems(order, isOpen, undefined, handleStatusChange, order?.company_name);
 
   const onScanItemClick = async () => {
-    const success = await handleScanItem(imei, productionLineCode);
+    const success = await handleScanItem(imei, productionLineCode, serialNumber);
     if (success) {
       clearForm();
     }
@@ -246,6 +249,44 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
 
     fetchKitNames();
   }, [isOpen, allSchedules]);
+
+  // Fetch camera extras from incoming_vehicles
+  useEffect(() => {
+    const fetchCameraExtras = async () => {
+      if (!isOpen || !schedule) return;
+      try {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('sale_summary_id')
+          .eq('id', schedule.customer_id)
+          .maybeSingle();
+        if (!customer?.sale_summary_id) return;
+
+        const { data: vehicles } = await supabase
+          .from('incoming_vehicles')
+          .select('brand, vehicle, camera_extra_quantity, camera_extra_locations')
+          .eq('sale_summary_id', customer.sale_summary_id)
+          .not('camera_extra_quantity', 'is', null);
+
+        if (vehicles && vehicles.length > 0) {
+          setCameraExtras(vehicles
+            .filter(v => v.camera_extra_quantity && v.camera_extra_quantity > 0)
+            .map(v => ({
+              vehicleName: `${v.brand} ${v.vehicle}`,
+              quantity: v.camera_extra_quantity!,
+              locations: v.camera_extra_locations || 'Não especificado',
+            }))
+          );
+        } else {
+          setCameraExtras([]);
+        }
+      } catch (error) {
+        console.error('Error fetching camera extras:', error);
+      }
+    };
+
+    fetchCameraExtras();
+  }, [isOpen, schedule]);
 
   if (!order) return null;
 
@@ -478,10 +519,12 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                   productionItems={productionItems}
                   isScanning={isScanning}
                   imei={imei}
+                  serialNumber={serialNumber}
                   productionLineCode={productionLineCode}
                   scannerActive={scannerActive}
                   scannerError={scannerError}
                   onImeiChange={setImei}
+                  onSerialNumberChange={setSerialNumber}
                   onProductionLineCodeChange={setProductionLineCode}
                   onScannerToggle={() => setScannerActive(!scannerActive)}
                   onScanResult={handleScanResult}
@@ -498,6 +541,15 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                   totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
                   isLoading={productionLoading}
                 />
+                {/* Concluir Produção button below items list */}
+                {(order.status === 'producao' || order.status === 'in_progress') && (
+                  <div className="flex justify-end pt-2">
+                    <Button onClick={onCompleteProduction} className="bg-green-600 hover:bg-green-700">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Concluir Produção
+                    </Button>
+                  </div>
+                )}
               </>
             )}
 
@@ -1089,8 +1141,33 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                                     ))}
                                   </div>
                                 </div>
-                              )}
+                )}
 
+                {/* Camera Extras from Kickoff */}
+                {cameraExtras.length > 0 && (
+                  <>
+                    <Separator className="my-6" />
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg text-primary flex items-center gap-2">
+                        <Camera className="h-5 w-5" />
+                        Câmeras Extras
+                      </h3>
+                      <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
+                        {cameraExtras.map((camera, idx) => (
+                          <div key={idx} className="flex items-start justify-between p-3 bg-card border rounded-lg">
+                            <div className="space-y-1">
+                              <p className="font-medium text-sm text-foreground">{camera.vehicleName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Local: {camera.locations}
+                              </p>
+                            </div>
+                            <Badge variant="secondary" className="ml-2">{camera.quantity}x</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                               {/* Supplies */}
                               {suppliesItems.length > 0 && (

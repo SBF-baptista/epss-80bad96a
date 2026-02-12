@@ -1399,6 +1399,7 @@ export type Database = {
           pedido_id: string | null
           production_line_code: string
           scanned_at: string
+          serial_number: string | null
         }
         Insert: {
           created_at?: string
@@ -1409,6 +1410,7 @@ export type Database = {
           pedido_id?: string | null
           production_line_code: string
           scanned_at?: string
+          serial_number?: string | null
         }
         Update: {
           created_at?: string
@@ -1419,6 +1421,7 @@ export type Database = {
           pedido_id?: string | null
           production_line_code?: string
           scanned_at?: string
+          serial_number?: string | null
         }
         Relationships: [
           {

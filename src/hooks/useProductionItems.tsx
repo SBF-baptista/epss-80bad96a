@@ -9,6 +9,7 @@ export interface ProductionItem {
   pedido_id: string | null;
   kit_schedule_id: string | null;
   imei: string;
+  serial_number: string | null;
   production_line_code: string;
   scanned_at: string;
   created_by?: string;
@@ -103,7 +104,7 @@ export const useProductionItems = (
     return allItems?.length || 0;
   };
 
-  const handleScanItem = async (imei: string, productionLineCode: string) => {
+  const handleScanItem = async (imei: string, productionLineCode: string, serialNumber?: string) => {
     const currentScheduleId = getScheduleId();
     
     if (!currentScheduleId || !imei.trim() || !productionLineCode.trim()) {
@@ -149,14 +150,19 @@ export const useProductionItems = (
       
       const { data: user } = await supabase.auth.getUser();
       
+      const insertData: any = {
+        kit_schedule_id: currentScheduleId,
+        imei: imei.trim(),
+        production_line_code: productionLineCode.trim(),
+        created_by: user.user?.id
+      };
+      if (serialNumber?.trim()) {
+        insertData.serial_number = serialNumber.trim();
+      }
+      
       const { error } = await supabase
         .from('production_items')
-        .insert({
-          kit_schedule_id: currentScheduleId,
-          imei: imei.trim(),
-          production_line_code: productionLineCode.trim(),
-          created_by: user.user?.id
-        });
+        .insert(insertData);
       
       if (error) {
         console.error('Error adding production item:', error);
