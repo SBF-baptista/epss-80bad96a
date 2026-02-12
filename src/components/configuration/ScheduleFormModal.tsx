@@ -108,10 +108,7 @@ export const ScheduleFormModal = ({
   const [serviceOptions, setServiceOptions] = useState<string[]>(['Instalação', 'Manutenção', 'Retirada']);
   const [customService, setCustomService] = useState('');
   const [isAddingService, setIsAddingService] = useState(false);
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [customerResults, setCustomerResults] = useState<{ id: string; name: string; phone: string }[]>([]);
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
+  const [kickoffContacts, setKickoffContacts] = useState<{ name: string; role?: string; phone?: string }[]>([]);
 
   // Determine if fields should be locked (has initial data from pipeline)
   const hasInitialData = Boolean(initialVehicleData?.plate || initialVehicleData?.model);
@@ -147,14 +144,21 @@ export const ScheduleFormModal = ({
         .maybeSingle();
 
       if (customer?.contacts && Array.isArray(customer.contacts)) {
-        const contactStrings = (customer.contacts as any[])
-          .filter((c: any) => c.name)
-          .map((c: any) => {
-            const parts = [c.name];
-            if (c.role) parts.push(`(${c.role})`);
-            if (c.phone) parts.push(`- ${c.phone}`);
-            return parts.join(' ');
-          });
+        const contacts = (customer.contacts as any[])
+          .filter((c: any) => c.name);
+
+        setKickoffContacts(contacts.map((c: any) => ({
+          name: c.name,
+          role: c.role,
+          phone: c.phone,
+        })));
+
+        const contactStrings = contacts.map((c: any) => {
+          const parts = [c.name];
+          if (c.role) parts.push(`(${c.role})`);
+          if (c.phone) parts.push(`- ${c.phone}`);
+          return parts.join(' ');
+        });
 
         if (contactStrings.length > 0) {
           form.setValue('local_contact', contactStrings.join(' | '));
@@ -164,38 +168,6 @@ export const ScheduleFormModal = ({
       console.error('Error fetching customer contacts:', error);
     }
   }, [form]);
-
-  // Search customers by name for the new schedule flow
-  const searchCustomers = useCallback(async (searchTerm: string) => {
-    if (searchTerm.length < 2) {
-      setCustomerResults([]);
-      setShowCustomerDropdown(false);
-      return;
-    }
-    setIsSearchingCustomers(true);
-    try {
-      const { data } = await supabase
-        .from('customers')
-        .select('id, name, phone')
-        .ilike('name', `%${searchTerm}%`)
-        .limit(8);
-      setCustomerResults(data || []);
-      setShowCustomerDropdown((data || []).length > 0);
-    } catch (error) {
-      console.error('Error searching customers:', error);
-    } finally {
-      setIsSearchingCustomers(false);
-    }
-  }, []);
-
-  const handleCustomerSelect = useCallback((customer: { id: string; name: string; phone: string }) => {
-    form.setValue('customer', customer.name);
-    form.setValue('phone', customer.phone || '');
-    setShowCustomerDropdown(false);
-    setCustomerSearch('');
-    // Fetch contacts from Kickoff data
-    fetchCustomerContacts(customer.id);
-  }, [form, fetchCustomerContacts]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -284,6 +256,7 @@ export const ScheduleFormModal = ({
       }
     } else {
       form.reset();
+      setKickoffContacts([]);
     }
   }, [open, selectedTime, selectedDate, form, initialVehicleData]);
 
@@ -607,52 +580,16 @@ export const ScheduleFormModal = ({
                   control={form.control}
                   name="customer"
                   render={({ field }) => (
-                    <FormItem className="relative">
+                    <FormItem>
                       <FormLabel className="text-sm">Cliente *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Digite para buscar cliente..."
+                          placeholder="Nome do cliente"
                           {...field}
                           className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}
                           disabled={hasInitialData}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            if (!hasInitialData) {
-                              searchCustomers(e.target.value);
-                            }
-                          }}
-                          onFocus={() => {
-                            if (field.value && field.value.length >= 2 && !hasInitialData) {
-                              searchCustomers(field.value);
-                            }
-                          }}
-                          onBlur={() => {
-                            // Delay to allow click on dropdown
-                            setTimeout(() => setShowCustomerDropdown(false), 200);
-                          }}
-                          autoComplete="off"
                         />
                       </FormControl>
-                      {showCustomerDropdown && !hasInitialData && (
-                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                          {customerResults.map((customer) => (
-                            <button
-                              key={customer.id}
-                              type="button"
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors border-b border-border/50 last:border-0"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                handleCustomerSelect(customer);
-                              }}
-                            >
-                              <span className="font-medium">{customer.name}</span>
-                              {customer.phone && (
-                                <span className="text-xs text-muted-foreground ml-2">({customer.phone})</span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -702,19 +639,35 @@ export const ScheduleFormModal = ({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="local_contact"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Contato Local *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nome do contato no local" {...field} className="h-9" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {kickoffContacts.length === 0 ? (
+                  <FormField
+                    control={form.control}
+                    name="local_contact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm">Contato Local *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome do contato no local" {...field} className="h-9" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <div className="space-y-2 sm:col-span-2">
+                    <label className="text-sm font-medium">Contato(s) Local *</label>
+                    {kickoffContacts.map((contact, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border">
+                        <div className="flex-1 text-sm">
+                          <span className="font-medium">{contact.name}</span>
+                          {contact.role && <span className="text-muted-foreground ml-1">({contact.role})</span>}
+                          {contact.phone && <span className="text-muted-foreground ml-2">- {contact.phone}</span>}
+                        </div>
+                      </div>
+                    ))}
+                    <input type="hidden" {...form.register('local_contact')} />
+                  </div>
+                )}
               </div>
 
               <FormField
