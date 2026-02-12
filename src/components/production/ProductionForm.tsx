@@ -1,6 +1,5 @@
 import { Order } from "@/services/orderService";
 import { ProductionItem } from "@/services/productionService";
-import ProductionStatus from "./ProductionStatus";
 import ProductionScannerTabs from "./ProductionScannerTabs";
 
 interface ProductionFormProps {
@@ -52,16 +51,6 @@ const ProductionForm = ({
 
   return (
     <div className="space-y-6">
-      <ProductionStatus
-        orderNumber={order.number}
-        scannedCount={scannedCount}
-        totalTrackers={totalTrackers}
-        isProductionComplete={isProductionComplete}
-        currentStatus={order.status}
-        onStartProduction={onStartProduction}
-        onCompleteProduction={onCompleteProduction}
-      />
-
       <ProductionScannerTabs
         imei={imei}
         serialNumber={serialNumber}

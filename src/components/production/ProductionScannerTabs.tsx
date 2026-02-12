@@ -119,7 +119,7 @@ const ProductionScannerTabs = ({
           <div className="flex items-end">
             <Button 
               onClick={onScanItem} 
-              disabled={isScanning || !imei.trim() || !productionLineCode.trim()}
+              disabled={isScanning || (!imei.trim() && !serialNumber.trim())}
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -165,7 +165,7 @@ const ProductionScannerTabs = ({
           <div className="flex items-end">
             <Button 
               onClick={onScanItem} 
-              disabled={isScanning || !imei.trim() || !productionLineCode.trim()}
+              disabled={isScanning || (!imei.trim() && !serialNumber.trim())}
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />
