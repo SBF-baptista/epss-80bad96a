@@ -67,8 +67,8 @@ const eventTypeIcons: Record<string, React.ReactNode> = {
   'homologation_created': <Wrench className="h-4 w-4" />,
   'homologation_status_change': <CheckCircle2 className="h-4 w-4" />,
   'schedule_created': <CalendarCheck className="h-4 w-4" />,
-  'schedule_status_change': <RefreshCw className="h-4 w-4" />,
-  'order_created': <Package className="h-4 w-4" />,
+  'schedule_status_change': <Truck className="h-4 w-4" />,
+  'order_created': <Truck className="h-4 w-4" />,
   'order_status_change': <Truck className="h-4 w-4" />,
 };
 
