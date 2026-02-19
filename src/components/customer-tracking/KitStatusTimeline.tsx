@@ -196,7 +196,26 @@ export const KitStatusTimeline = ({
            step.statusType === "step3";
   };
 
-  const getStepStyles = (step: typeof steps[0]) => {
+  // Find the index of the next pending step after the last completed/in-progress one
+  const getNextPendingIndex = () => {
+    let lastActiveIndex = -1;
+    for (let i = 0; i < steps.length; i++) {
+      if (isCompleted(steps[i]) || isInProgress(steps[i])) {
+        lastActiveIndex = i;
+      }
+    }
+    if (lastActiveIndex >= 0 && lastActiveIndex < steps.length - 1) {
+      const nextStep = steps[lastActiveIndex + 1];
+      if (nextStep.statusType === "pending") {
+        return lastActiveIndex + 1;
+      }
+    }
+    return -1;
+  };
+
+  const nextPendingIndex = getNextPendingIndex();
+
+  const getStepStyles = (step: typeof steps[0], index: number) => {
     if (isCompleted(step)) {
       return {
         circle: "bg-green-500/15 border-green-500/40 text-green-600",
@@ -211,6 +230,14 @@ export const KitStatusTimeline = ({
         icon: "text-primary",
         name: "text-foreground font-medium",
         status: "text-primary",
+      };
+    }
+    if (index === nextPendingIndex) {
+      return {
+        circle: "bg-yellow-500/15 border-yellow-500/50 text-yellow-600",
+        icon: "text-yellow-600",
+        name: "text-yellow-700 font-medium",
+        status: "text-yellow-600",
       };
     }
     return {
@@ -238,7 +265,7 @@ export const KitStatusTimeline = ({
     <div className="py-3 px-1">
       <div className="flex items-start w-full">
         {steps.map((step, index) => {
-          const styles = getStepStyles(step);
+          const styles = getStepStyles(step, index);
           const Icon = step.icon;
           const isLastStep = index === steps.length - 1;
 
