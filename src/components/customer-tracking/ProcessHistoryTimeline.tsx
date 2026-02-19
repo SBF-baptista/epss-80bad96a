@@ -22,7 +22,7 @@ const moduleColors: Record<string, string> = {
   'Kickoff': 'bg-purple-100 text-purple-800 border-purple-300',
   'Homologação': 'bg-blue-100 text-blue-800 border-blue-300',
   'Agendamento': 'bg-cyan-100 text-cyan-800 border-cyan-300',
-  'Esteira de Pedidos': 'bg-orange-100 text-orange-800 border-orange-300'
+  'Logística': 'bg-orange-100 text-orange-800 border-orange-300'
 };
 
 export const ProcessHistoryTimeline = ({ 
