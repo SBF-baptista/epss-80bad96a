@@ -130,13 +130,13 @@ export const ProcessHistoryTimeline = ({
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">{event.title}</span>
                       <Badge 
                         variant="outline" 
                         className={`text-xs ${moduleColors[event.module] || ''}`}
                       >
                         {event.module}
                       </Badge>
+                      <span className="font-medium text-sm">{event.title}</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {event.description}
