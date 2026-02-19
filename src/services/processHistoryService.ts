@@ -164,8 +164,8 @@ export const fetchProcessHistory = async (
                   formattedDate: format(new Date(orderData.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
                   timeAgo: formatDistanceToNow(new Date(orderData.created_at), { addSuffix: true, locale: ptBR }),
                   status: orderStatusLabels[orderData.status] || orderData.status,
-                  module: 'Esteira de Pedidos',
-                  icon: '📦'
+                  module: 'Logística',
+                  icon: '🚚'
                 });
               }
             }
@@ -209,8 +209,8 @@ export const fetchProcessHistory = async (
         formattedDate: format(new Date(schedule.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
         timeAgo: formatDistanceToNow(new Date(schedule.created_at), { addSuffix: true, locale: ptBR }),
         status: scheduleStatusLabels[schedule.status] || schedule.status,
-        module: 'Esteira de Pedidos',
-        icon: '📦'
+        module: 'Logística',
+        icon: '🚚'
       });
     }
 
@@ -244,7 +244,7 @@ export const fetchProcessHistory = async (
           formattedDate: format(new Date(entry.changed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
           timeAgo: formatDistanceToNow(new Date(entry.changed_at), { addSuffix: true, locale: ptBR }),
           status: scheduleStatusLabels[entry.new_status] || entry.new_status,
-          module: 'Esteira de Pedidos',
+          module: 'Logística',
           icon: '🔄'
         });
       });

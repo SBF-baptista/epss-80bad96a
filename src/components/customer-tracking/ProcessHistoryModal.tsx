@@ -48,7 +48,7 @@ const moduleConfig: Record<string, { bg: string; text: string; border: string; i
     iconBg: 'bg-teal-50', iconBorder: 'border-teal-300', iconText: 'text-teal-600',
     dot: 'bg-teal-400'
   },
-  'Esteira de Pedidos': {
+  'Logística': {
     bg: 'bg-amber-50/80', text: 'text-amber-700', border: 'border-amber-200/60',
     iconBg: 'bg-amber-50', iconBorder: 'border-amber-300', iconText: 'text-amber-600',
     dot: 'bg-amber-400'
