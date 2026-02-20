@@ -1243,8 +1243,8 @@ export const ScheduleModal = ({
               <h3 className="text-lg font-semibold">Detalhes da Instalação por Veículo</h3>
               
               <div className="space-y-6">
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                  <div className="border rounded-lg">
+                    <div className="overflow-x-auto max-h-[400px] overflow-y-auto relative">
                       <table className="w-full">
                         <thead className="bg-muted">
                           <tr>
