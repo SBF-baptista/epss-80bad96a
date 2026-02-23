@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface SegsaleExtra {
@@ -18,8 +18,42 @@ interface SegsaleProduct {
   descricaoVenda: string;
 }
 
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 15000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = 2, timeoutMs = 15000): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await fetchWithTimeout(url, options, timeoutMs);
+      if (response.ok) return response;
+      // On 5xx, retry
+      if (response.status >= 500 && i < retries) {
+        console.warn(`Attempt ${i + 1} failed with ${response.status}, retrying...`);
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        continue;
+      }
+      return response; // Return non-retryable error response
+    } catch (err) {
+      lastError = err;
+      if (i < retries) {
+        console.warn(`Attempt ${i + 1} failed with ${err.message}, retrying...`);
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      }
+    }
+  }
+  throw lastError || new Error('All retry attempts failed');
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,7 +61,6 @@ serve(async (req) => {
   try {
     const { category, type } = await req.json();
 
-    // Fetch products if type is 'products'
     if (type === 'products') {
       const productsToken = Deno.env.get('SEGSALE_PRODUTOSS');
       if (!productsToken) {
@@ -36,27 +69,23 @@ serve(async (req) => {
       
       console.log('Fetching Segsale products with SEGSALE_PRODUTOSS token');
       
-      const response = await fetch('https://ws-sale-teste.segsat.com/segsale/produto/6/itens', {
+      const response = await fetchWithRetry('https://ws-sale-teste.segsat.com/segsale/produto/6/itens', {
         method: 'GET',
-        headers: {
-          'Token': productsToken,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Token': productsToken, 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Segsale API error:', response.status, errorText);
-        throw new Error(`Segsale API returned ${response.status}: ${errorText}`);
+        console.error('Segsale API error after retries:', response.status);
+        // Return empty items instead of throwing - graceful degradation
+        return new Response(JSON.stringify({ items: [], error: `Segsale API indisponível (${response.status})` }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       const data: SegsaleProduct[] = await response.json();
       console.log(`Received ${data.length} products from Segsale`);
-      if (data.length > 0) {
-        console.log('Sample product from API:', JSON.stringify(data[0]));
-      }
 
-      // Format products as "descricao - descricaoVenda" or just "descricao" if descricaoVenda is missing
       const items = data.map(item => ({
         id: item.id,
         nome: item.descricaoVenda ? `${item.descricao} - ${item.descricaoVenda}`.trim() : item.descricao,
@@ -69,7 +98,7 @@ serve(async (req) => {
       });
     }
 
-    // Default: fetch extras (accessories/modules) - uses SEGSALE_ACCESSORIES_TOKEN
+    // Default: fetch extras (accessories/modules)
     const accessoriesToken = Deno.env.get('SEGSALE_ACCESSORIES_TOKEN');
     if (!accessoriesToken) {
       throw new Error('SEGSALE_ACCESSORIES_TOKEN not configured');
@@ -77,24 +106,21 @@ serve(async (req) => {
     
     console.log(`Fetching Segsale extras for category: ${category || 'all'}`);
 
-    const response = await fetch('https://ws-sale-teste.segsat.com/segsale/produto/6/extras', {
+    const response = await fetchWithRetry('https://ws-sale-teste.segsat.com/segsale/produto/6/extras', {
       method: 'GET',
-      headers: {
-        'Token': accessoriesToken,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Token': accessoriesToken, 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Segsale API error:', response.status, errorText);
-      throw new Error(`Segsale API returned ${response.status}: ${errorText}`);
+      console.error('Segsale API error after retries:', response.status);
+      return new Response(JSON.stringify({ items: [], error: `Segsale API indisponível (${response.status})` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data: SegsaleExtra[] = await response.json();
     console.log(`Received ${data.length} extras from Segsale`);
 
-    // Filter by category if specified
     let filteredData = data;
     if (category) {
       filteredData = data.filter(item => 
@@ -103,7 +129,6 @@ serve(async (req) => {
       console.log(`Filtered to ${filteredData.length} items with category: ${category}`);
     }
 
-    // Extract unique names
     const items = filteredData.map(item => ({
       id: item.id,
       nome: item.nome,
@@ -117,13 +142,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in fetch-segsale-extras:', error);
+    // Return empty items with 200 to avoid breaking the UI
     return new Response(
       JSON.stringify({ 
         error: error.message,
         items: [] 
       }),
       { 
-        status: 500, 
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
