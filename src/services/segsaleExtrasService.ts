@@ -26,19 +26,18 @@ export const fetchSegsaleExtras = async (category?: 'Acessórios' | 'Módulos'):
     });
 
     if (error) {
-      console.error('Error calling fetch-segsale-extras:', error);
-      throw error;
+      console.warn('Error calling fetch-segsale-extras:', error);
+      return []; // Graceful fallback
     }
 
     if (data.error) {
-      console.error('API error:', data.error);
-      throw new Error(data.error);
+      console.warn('Segsale API warning:', data.error);
     }
 
     return data.items || [];
   } catch (error) {
-    console.error('Error fetching Segsale extras:', error);
-    throw error;
+    console.warn('Error fetching Segsale extras:', error);
+    return []; // Graceful fallback
   }
 };
 
@@ -49,19 +48,18 @@ export const fetchSegsaleProducts = async (): Promise<SegsaleProduct[]> => {
     });
 
     if (error) {
-      console.error('Error calling fetch-segsale-extras for products:', error);
-      throw error;
+      console.warn('Error calling fetch-segsale-extras for products:', error);
+      return []; // Graceful fallback
     }
 
     if (data.error) {
-      console.error('API error:', data.error);
-      throw new Error(data.error);
+      console.warn('Segsale API warning:', data.error);
     }
 
     return data.items || [];
   } catch (error) {
-    console.error('Error fetching Segsale products:', error);
-    throw error;
+    console.warn('Error fetching Segsale products:', error);
+    return []; // Graceful fallback
   }
 };
 
