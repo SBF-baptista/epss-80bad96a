@@ -97,23 +97,19 @@ async function writeCachedSegsaleResponse(supabase: any, idResumoVenda: string, 
     .maybeSingle()
 
   if (existing) {
-    const { error } = await supabase.from('integration_state')
+    const { error: updateError } = await supabase.from('integration_state')
       .update({ status: 'ok', last_poll_at: now, metadata: { sales }, updated_at: now })
       .eq('id', existing.id)
-    if (error) console.warn('⚠️ Failed to update cache:', error)
+    if (updateError) console.warn('⚠️ Failed to update cache:', updateError)
   } else {
-    const { error } = await supabase.from('integration_state').insert({
+    const { error: insertError } = await supabase.from('integration_state').insert({
       integration_name: cacheKey,
       status: 'ok',
       last_poll_at: now,
       metadata: { sales },
       updated_at: now,
     })
-    if (error) console.warn('⚠️ Failed to insert cache:', error)
-  }
-
-  if (error) {
-    console.warn('⚠️ Failed to write cache to integration_state:', error)
+    if (insertError) console.warn('⚠️ Failed to insert cache:', insertError)
   }
 }
 
@@ -157,8 +153,8 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
           },
         },
-        2, // maxRetries (avoid long-running edge executions)
-        60000, // 60s timeout (Segsale test env can be very slow)
+        2, // maxRetries
+        25000, // 25s timeout (stay within edge function limits)
       )
     } catch (fetchError: any) {
       console.error('❌ Segsale fetch failed (timeout/retries exceeded):', fetchError?.message ?? fetchError)
