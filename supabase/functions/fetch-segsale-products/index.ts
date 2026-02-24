@@ -67,11 +67,11 @@ async function fetchWithRetry(
 }
 
 async function readCachedSegsaleResponse(supabase: any, idResumoVenda: string) {
-  const cacheKey = `segsale_products:${idResumoVenda}`
+  const cacheKey = `segsale_products_${idResumoVenda}`
   const { data, error } = await supabase
     .from('integration_state')
     .select('metadata, updated_at')
-    .eq('id', cacheKey)
+    .eq('integration_name', cacheKey)
     .maybeSingle()
 
   if (error) {
@@ -86,17 +86,31 @@ async function readCachedSegsaleResponse(supabase: any, idResumoVenda: string) {
 }
 
 async function writeCachedSegsaleResponse(supabase: any, idResumoVenda: string, sales: any) {
-  const cacheKey = `segsale_products:${idResumoVenda}`
+  const cacheKey = `segsale_products_${idResumoVenda}`
   const now = new Date().toISOString()
 
-  const { error } = await supabase.from('integration_state').upsert({
-    id: cacheKey,
-    integration_name: 'segsale_products',
-    status: 'ok',
-    last_poll_at: now,
-    metadata: { sales },
-    updated_at: now,
-  })
+  // Try update first, then insert if not found
+  const { data: existing } = await supabase
+    .from('integration_state')
+    .select('id')
+    .eq('integration_name', cacheKey)
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await supabase.from('integration_state')
+      .update({ status: 'ok', last_poll_at: now, metadata: { sales }, updated_at: now })
+      .eq('id', existing.id)
+    if (error) console.warn('⚠️ Failed to update cache:', error)
+  } else {
+    const { error } = await supabase.from('integration_state').insert({
+      integration_name: cacheKey,
+      status: 'ok',
+      last_poll_at: now,
+      metadata: { sales },
+      updated_at: now,
+    })
+    if (error) console.warn('⚠️ Failed to insert cache:', error)
+  }
 
   if (error) {
     console.warn('⚠️ Failed to write cache to integration_state:', error)

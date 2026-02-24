@@ -41,8 +41,16 @@ export const fetchSegsaleProductsDirect = async (idResumoVenda: number): Promise
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `HTTP ${response.status}`);
+    const errorData = await response.json().catch(() => ({}));
+    console.warn(`Segsale API returned ${response.status}:`, errorData);
+    // Return a graceful fallback instead of throwing
+    return {
+      success: false,
+      message: errorData.suggestion || errorData.error || `HTTP ${response.status}`,
+      id_resumo_venda: String(idResumoVenda),
+      sales: [],
+      stored_count: 0,
+    } as SegsaleFetchResponse;
   }
 
   return response.json();
