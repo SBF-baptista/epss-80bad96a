@@ -478,19 +478,38 @@ Deno.serve(async (req) => {
         // Determine dispatch type from orderId pattern
         const dispatchType = orderId === 'daily-agenda-auto' ? 'automatic' : 'manual';
         
-        // Build a readable message content summary
+    // Build a readable message content that matches what's delivered on WhatsApp
+        const cleanBold = (s: string) => s.replace(/\*/g, '');
         let messageContent = '';
         if (customMessage) {
           messageContent = customMessage;
+        } else if (templateType === 'daily_agenda') {
+          const header = `Agenda ${templateVariables?.scheduledDate || ''} - ${templateVariables?.technicianName || recipientName}`;
+          const schedules = [
+            templateVariables?.schedule1,
+            templateVariables?.schedule2,
+            templateVariables?.schedule3,
+            templateVariables?.schedule4,
+            templateVariables?.schedule5,
+          ].filter(s => s && s !== '-' && s.trim() !== '').map(s => cleanBold(s!));
+          messageContent = header + (schedules.length ? '\n\n' + schedules.join('\n\n') : '');
+        } else if (templateType === 'technician_schedule' || templateType === 'technician_schedule_notification') {
+          messageContent = [
+            `Agendamento - ${templateVariables?.technicianName || recipientName}`,
+            `Data: ${templateVariables?.scheduledDate || '-'}`,
+            `Horário: ${templateVariables?.scheduledTime || '-'}`,
+            `Cliente: ${templateVariables?.customerName || '-'}`,
+            `Endereço: ${templateVariables?.address || '-'}`,
+            `Contato: ${templateVariables?.contactPhone || templateVariables?.customerPhone || '-'}`,
+          ].join('\n');
+        } else if (templateType === 'technician_next_day_agenda') {
+          const header = `Agenda ${templateVariables?.scheduledDate || ''} - ${templateVariables?.technicianName || recipientName}`;
+          const list = templateVariables?.scheduleList ? cleanBold(templateVariables.scheduleList) : '';
+          messageContent = header + (list ? '\n\n' + list : '');
+        } else if (templateType === 'order_shipped') {
+          messageContent = `Pedido ${orderNumber} enviado para ${recipientName}${companyName ? ` (${companyName})` : ''}`;
         } else if (templateType) {
           messageContent = `Template: ${templateType}`;
-          if (templateVariables) {
-            const vars = Object.entries(templateVariables)
-              .filter(([_, v]) => v)
-              .map(([k, v]) => `${k}: ${v}`)
-              .join(' | ');
-            if (vars) messageContent += ` | ${vars}`;
-          }
         } else {
           messageContent = `Pedido ${orderNumber}`;
         }
