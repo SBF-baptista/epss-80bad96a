@@ -45,6 +45,7 @@ interface KickoffVehiclesTableProps {
   onPlateValidationChange: (vehicleId: string, validated: boolean) => void;
   vehicleCameraExtra?: Map<string, number>;
   onCameraExtraQuantityChange?: (vehicleId: string, quantity: number) => void;
+  onValidateAll?: (validated: boolean) => void;
 }
 
 // Helper function to capitalize first letter of each word (PT-BR style)
@@ -86,6 +87,7 @@ export const KickoffVehiclesTable = ({
   onPlateValidationChange,
   vehicleCameraExtra,
   onCameraExtraQuantityChange,
+  onValidateAll,
 }: KickoffVehiclesTableProps) => {
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -795,7 +797,19 @@ export const KickoffVehiclesTable = ({
                 <TableHead className="w-[12%] border-r border-border">Bloqueio</TableHead>
                 <TableHead className="w-[8%] border-r border-border">Sirene</TableHead>
                 <TableHead className="w-[10%] border-r border-border">FIPE</TableHead>
-                <TableHead className="w-[8%]">Validação</TableHead>
+                <TableHead className="w-[8%]">
+                  <div className="flex items-center gap-2">
+                    <span>Validação</span>
+                    {onValidateAll && (
+                      <Checkbox
+                        checked={validatedPlates.size === vehicles.length && vehicles.length > 0}
+                        onCheckedChange={(checked) => onValidateAll(checked as boolean)}
+                        title="Validar todos"
+                        className="shrink-0"
+                      />
+                    )}
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
