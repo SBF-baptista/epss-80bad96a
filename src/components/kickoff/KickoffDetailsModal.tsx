@@ -99,9 +99,9 @@ export const KickoffDetailsModal = ({
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
 
   // Camera extras sale state
-  const [cameraExtraSale, setCameraExtraSale] = useState({ quantity: 0, unitPrice: 0 });
+  const [cameraExtraSale, setCameraExtraSale] = useState<{ quantity: number | ''; unitPrice: number | '' }>({ quantity: '', unitPrice: '' });
   // Accessories sale state
-  const [accessoriesSale, setAccessoriesSale] = useState({ quantity: 0, unitPrice: 0 });
+  const [accessoriesSale, setAccessoriesSale] = useState<{ quantity: number | ''; unitPrice: number | '' }>({ quantity: '', unitPrice: '' });
 
   // Helper to normalize text for accessory detection
   const normalizeForSearch = (text: string): string => {
@@ -952,8 +952,8 @@ export const KickoffDetailsModal = ({
                 <Input
                   type="number"
                   min={0}
-                  value={cameraExtraSale.quantity}
-                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                  value={cameraExtraSale.quantity === '' ? '' : cameraExtraSale.quantity}
+                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, quantity: e.target.value === '' ? '' : (parseInt(e.target.value) || 0) }))}
                   className="mt-1"
                 />
               </div>
@@ -963,8 +963,8 @@ export const KickoffDetailsModal = ({
                   type="number"
                   min={0}
                   step="0.01"
-                  value={cameraExtraSale.unitPrice}
-                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                  value={cameraExtraSale.unitPrice === '' ? '' : cameraExtraSale.unitPrice}
+                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, unitPrice: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) }))}
                   className="mt-1"
                 />
               </div>
@@ -973,7 +973,7 @@ export const KickoffDetailsModal = ({
                 <Input
                   type="text"
                   readOnly
-                  value={(cameraExtraSale.quantity * cameraExtraSale.unitPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  value={((Number(cameraExtraSale.quantity) || 0) * (Number(cameraExtraSale.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   className="mt-1 bg-muted"
                 />
               </div>
@@ -992,8 +992,8 @@ export const KickoffDetailsModal = ({
                 <Input
                   type="number"
                   min={0}
-                  value={accessoriesSale.quantity}
-                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                  value={accessoriesSale.quantity === '' ? '' : accessoriesSale.quantity}
+                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, quantity: e.target.value === '' ? '' : (parseInt(e.target.value) || 0) }))}
                   className="mt-1"
                 />
               </div>
@@ -1003,8 +1003,8 @@ export const KickoffDetailsModal = ({
                   type="number"
                   min={0}
                   step="0.01"
-                  value={accessoriesSale.unitPrice}
-                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                  value={accessoriesSale.unitPrice === '' ? '' : accessoriesSale.unitPrice}
+                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, unitPrice: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) }))}
                   className="mt-1"
                 />
               </div>
@@ -1013,7 +1013,7 @@ export const KickoffDetailsModal = ({
                 <Input
                   type="text"
                   readOnly
-                  value={(accessoriesSale.quantity * accessoriesSale.unitPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  value={((Number(accessoriesSale.quantity) || 0) * (Number(accessoriesSale.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   className="mt-1 bg-muted"
                 />
               </div>
