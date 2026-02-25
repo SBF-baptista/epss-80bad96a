@@ -108,7 +108,8 @@ export const processKickoffVehicles = async (saleSummaryId: number, validatedVeh
         const { data: linkedCards, error: linkedErr } = await supabase
           .from('homologation_cards')
           .select('id, status, configuration, incoming_vehicle_id')
-          .eq('incoming_vehicle_id', vehicle.id);
+          .eq('incoming_vehicle_id', vehicle.id)
+          .is('deleted_at', null);
 
         if (linkedErr) {
           console.error(`Error fetching linked cards for vehicle ${vehicle.id}:`, linkedErr);
@@ -123,6 +124,7 @@ export const processKickoffVehicles = async (saleSummaryId: number, validatedVeh
             .from('homologation_cards')
             .select('id, status, configuration, incoming_vehicle_id')
             .eq('id', vehicle.created_homologation_id)
+            .is('deleted_at', null)
             .maybeSingle();
 
           if (createdCardErr) {
@@ -140,6 +142,13 @@ export const processKickoffVehicles = async (saleSummaryId: number, validatedVeh
               }
             }
             existingCards.push(createdCard);
+          } else {
+            // Card was deleted (soft-delete), clear the stale reference
+            console.log(`[KICKOFF] created_homologation_id ${vehicle.created_homologation_id} was deleted, clearing reference for vehicle ${vehicle.id}`);
+            await supabase
+              .from('incoming_vehicles')
+              .update({ created_homologation_id: null, homologation_status: 'homologar' })
+              .eq('id', vehicle.id);
           }
         }
 
@@ -153,6 +162,7 @@ export const processKickoffVehicles = async (saleSummaryId: number, validatedVeh
           .eq('brand', vehicle.brand)
           .eq('model', vehicle.vehicle)
           .eq('year', vehicle.year || 0)
+          .is('deleted_at', null)
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -201,6 +211,7 @@ export const processKickoffVehicles = async (saleSummaryId: number, validatedVeh
             .eq('brand', vehicle.brand)
             .eq('model', vehicle.vehicle)
             .eq('year', vehicle.year || 0)
+            .is('deleted_at', null)
             .maybeSingle();
           
           if (checkCard) {
