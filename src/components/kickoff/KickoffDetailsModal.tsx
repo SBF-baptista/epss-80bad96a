@@ -380,6 +380,37 @@ export const KickoffDetailsModal = ({
     setInstallationLocations(updated);
   };
 
+  const updateLocationMultiple = (index: number, fields: Partial<InstallationLocation>) => {
+    setInstallationLocations(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], ...fields };
+      return updated;
+    });
+  };
+
+  const [cepLoading, setCepLoading] = useState<Map<number, boolean>>(new Map());
+
+  const fetchAndFillCEP = async (index: number, cep: string) => {
+    if (!isValidCEP(cep)) return;
+    setCepLoading(prev => new Map(prev).set(index, true));
+    try {
+      const data = await fetchAddressByCEP(cep);
+      if (data) {
+        updateLocationMultiple(index, {
+          state: data.uf,
+          city: data.localidade,
+          neighborhood: data.bairro || "",
+          street: data.logradouro || "",
+        });
+      }
+    } catch (err: any) {
+      console.error("Erro ao buscar CEP:", err);
+      toast.error(err?.message || "CEP não encontrado");
+    } finally {
+      setCepLoading(prev => new Map(prev).set(index, false));
+    }
+  };
+
   // Validation checks
   const hasValidLocations = installationLocations.some(loc => loc.city.trim() !== "" && loc.state.trim() !== "");
   const hasAtLeastOneValidatedPlate = validatedPlates.size > 0;
@@ -1017,32 +1048,25 @@ export const KickoffDetailsModal = ({
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <div>
                     <Label className="text-sm">CEP</Label>
-                    <Input
-                      value={location.cep || ""}
-                      onChange={(e) => {
-                        const formatted = formatCEP(e.target.value);
-                        updateLocation(index, "cep", formatted);
-                      }}
-                      onBlur={async (e) => {
-                        const cep = e.target.value;
-                        if (isValidCEP(cep)) {
-                          try {
-                            const data = await fetchAddressByCEP(cep);
-                            if (data) {
-                              updateLocation(index, "state", data.uf);
-                              updateLocation(index, "city", data.localidade);
-                              updateLocation(index, "neighborhood", data.bairro || "");
-                              updateLocation(index, "street", data.logradouro || "");
-                            }
-                          } catch (err) {
-                            console.error("Erro ao buscar CEP:", err);
+                    <div className="relative">
+                      <Input
+                        value={location.cep || ""}
+                        onChange={(e) => {
+                          const formatted = formatCEP(e.target.value);
+                          updateLocation(index, "cep", formatted);
+                          // Auto-fetch when a valid CEP is typed
+                          if (isValidCEP(formatted)) {
+                            fetchAndFillCEP(index, formatted);
                           }
-                        }
-                      }}
-                      placeholder="00000-000"
-                      maxLength={9}
-                      className="mt-1"
-                    />
+                        }}
+                        placeholder="00000-000"
+                        maxLength={9}
+                        className="mt-1"
+                      />
+                      {cepLoading.get(index) && (
+                        <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground mt-0.5" />
+                      )}
+                    </div>
                   </div>
                   <div>
                     <Label className="text-sm">UF (Estado)</Label>
