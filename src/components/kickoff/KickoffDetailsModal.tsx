@@ -17,6 +17,7 @@ import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
 import { LocationSelector } from "@/components/shipment";
 import { logCreate } from "@/services/logService";
+import { fetchAddressByCEP, isValidCEP, formatCEP } from "@/services/cepService";
 
 interface KickoffDetailsModalProps {
   open: boolean;
@@ -30,10 +31,11 @@ interface KickoffDetailsModalProps {
 interface InstallationLocation {
   city: string;
   state: string;
+  cep?: string;
 }
 
 interface Contact {
-  type: 'decisor' | 'influenciador' | 'operacoes';
+  type: 'decisor' | 'influenciador' | 'operacoes' | 'ponto_focal';
   name: string;
   role: string;
   email: string;
@@ -93,6 +95,11 @@ export const KickoffDetailsModal = ({
   const [cameraExtraLocations, setCameraExtraLocations] = useState<Map<string, string>>(new Map());
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
+
+  // Camera extras sale state
+  const [cameraExtraSale, setCameraExtraSale] = useState({ quantity: 0, unitPrice: 0 });
+  // Accessories sale state
+  const [accessoriesSale, setAccessoriesSale] = useState({ quantity: 0, unitPrice: 0 });
 
   // Helper to normalize text for accessory detection
   const normalizeForSearch = (text: string): string => {
@@ -681,6 +688,15 @@ export const KickoffDetailsModal = ({
                   return newMap;
                 });
               }}
+              onValidateAll={(validated) => {
+                setValidatedPlates(prev => {
+                  if (validated) {
+                    return new Set(vehicles.map(v => v.id));
+                  } else {
+                    return new Set();
+                  }
+                });
+              }}
             />
           </div>
 
@@ -710,6 +726,7 @@ export const KickoffDetailsModal = ({
                       <SelectItem value="decisor">Decisor</SelectItem>
                       <SelectItem value="influenciador">Influenciador</SelectItem>
                       <SelectItem value="operacoes">Operações</SelectItem>
+                      <SelectItem value="ponto_focal">Ponto focal da implantação</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button
@@ -790,6 +807,33 @@ export const KickoffDetailsModal = ({
                   onCityChange={(value) => updateLocation(index, "city", value)}
                   disabled={loading}
                 />
+                <div className="mt-2">
+                  <Label className="text-sm">CEP</Label>
+                  <Input
+                    value={location.cep || ""}
+                    onChange={(e) => {
+                      const formatted = formatCEP(e.target.value);
+                      updateLocation(index, "cep" as any, formatted);
+                    }}
+                    onBlur={async (e) => {
+                      const cep = e.target.value;
+                      if (isValidCEP(cep)) {
+                        try {
+                          const data = await fetchAddressByCEP(cep);
+                          if (data) {
+                            updateLocation(index, "state", data.uf);
+                            updateLocation(index, "city", data.localidade);
+                          }
+                        } catch (err) {
+                          console.error("Erro ao buscar CEP:", err);
+                        }
+                      }
+                    }}
+                    placeholder="00000-000"
+                    maxLength={9}
+                    className="mt-1"
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -859,6 +903,86 @@ export const KickoffDetailsModal = ({
               })}
             </div>
           )}
+
+          {/* Venda Câmeras Extras */}
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <Camera className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-lg">Venda Câmeras Extras</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label>Quantidade</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={cameraExtraSale.quantity}
+                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Valor unitário (R$)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={cameraExtraSale.unitPrice}
+                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Total (R$)</Label>
+                <Input
+                  type="text"
+                  readOnly
+                  value={(cameraExtraSale.quantity * cameraExtraSale.unitPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  className="mt-1 bg-muted"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Venda de Acessórios */}
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-lg">Venda de Acessórios</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label>Quantidade</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={accessoriesSale.quantity}
+                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Valor unitário (R$)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={accessoriesSale.unitPrice}
+                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Total (R$)</Label>
+                <Input
+                  type="text"
+                  readOnly
+                  value={(accessoriesSale.quantity * accessoriesSale.unitPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  className="mt-1 bg-muted"
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Particularidade de Instalação */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
