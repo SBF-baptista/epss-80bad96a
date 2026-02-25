@@ -19,20 +19,40 @@ export const fetchAddressByCEP = async (cep: string): Promise<CEPData | null> =>
   }
   
   try {
-    const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+    const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`, {
+      signal: AbortSignal.timeout(5000),
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch address: ${response.status}`);
     }
     
-    const data: CEPData = await response.json();
+    const data = await response.json();
     
-    // Check if CEP was found
+    // ViaCEP returns { erro: true } for valid format but nonexistent CEPs
     if (data.erro) {
+      // Try BrasilAPI as fallback
+      try {
+        const fallback = await fetch(`https://brasilapi.com.br/api/cep/v2/${cleanCEP}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (fallback.ok) {
+          const fbData = await fallback.json();
+          return {
+            cep: fbData.cep,
+            logradouro: fbData.street || '',
+            bairro: fbData.neighborhood || '',
+            localidade: fbData.city || '',
+            uf: fbData.state || '',
+          };
+        }
+      } catch {
+        // fallback also failed
+      }
       throw new Error('CEP não encontrado');
     }
     
-    return data;
+    return data as CEPData;
   } catch (error) {
     console.error('Error fetching address from ViaCEP:', error);
     throw error;
