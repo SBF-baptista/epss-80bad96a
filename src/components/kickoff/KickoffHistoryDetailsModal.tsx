@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, Mail, Phone, MapPin, FileText, AlertCircle } from "lucide-react";
+import { User, Mail, Phone, MapPin, FileText, AlertCircle, Camera, Package } from "lucide-react";
 import { cleanItemName } from "@/utils/itemNormalization";
 
 interface KickoffHistoryDetailsModalProps {
@@ -220,6 +220,62 @@ export const KickoffHistoryDetailsModal = ({
                     {[loc.cep, loc.state, loc.city, loc.neighborhood, loc.street].filter(Boolean).join(', ')}
                   </Badge>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Venda Câmeras Extras */}
+          {(record as any).camera_extra_sale && (
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                Venda Câmeras Extras
+              </h3>
+              <div className="grid grid-cols-3 gap-4 p-3 bg-muted rounded-lg text-sm">
+                <div>
+                  <span className="text-muted-foreground">Quantidade:</span>{" "}
+                  <span className="font-medium">{(record as any).camera_extra_sale.quantity}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Valor unitário:</span>{" "}
+                  <span className="font-medium">{Number((record as any).camera_extra_sale.unitPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total:</span>{" "}
+                  <span className="font-medium">{Number((record as any).camera_extra_sale.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Venda de Acessórios */}
+          {Array.isArray((record as any).accessories_sale) && (record as any).accessories_sale.length > 0 && (
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Venda de Acessórios
+              </h3>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Quantidade</TableHead>
+                      <TableHead>Valor Unitário</TableHead>
+                      <TableHead>Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(record as any).accessories_sale.map((item: any, idx: number) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium">{item.description}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>{Number(item.unitPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                        <TableCell>{Number(item.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}

@@ -100,8 +100,31 @@ export const KickoffDetailsModal = ({
 
   // Camera extras sale state
   const [cameraExtraSale, setCameraExtraSale] = useState<{ quantity: number | ''; unitPrice: number | '' }>({ quantity: '', unitPrice: '' });
-  // Accessories sale state
-  const [accessoriesSale, setAccessoriesSale] = useState<{ quantity: number | ''; unitPrice: number | '' }>({ quantity: '', unitPrice: '' });
+  // Accessories sale state - supports multiple items
+  interface AccessorySaleItem {
+    description: string;
+    quantity: number | '';
+    unitPrice: number | '';
+  }
+  const [accessoriesSaleItems, setAccessoriesSaleItems] = useState<AccessorySaleItem[]>([
+    { description: '', quantity: '', unitPrice: '' }
+  ]);
+
+  const addAccessorySaleItem = () => {
+    setAccessoriesSaleItems(prev => [...prev, { description: '', quantity: '', unitPrice: '' }]);
+  };
+
+  const removeAccessorySaleItem = (index: number) => {
+    setAccessoriesSaleItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateAccessorySaleItem = (index: number, field: keyof AccessorySaleItem, value: string | number | '') => {
+    setAccessoriesSaleItems(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
   // Helper to normalize text for accessory detection
   const normalizeForSearch = (text: string): string => {
@@ -546,6 +569,22 @@ export const KickoffDetailsModal = ({
       // Get current user ID
       const { data: { user } } = await supabase.auth.getUser();
 
+      // Prepare sales data
+      const cameraExtraSaleData = (Number(cameraExtraSale.quantity) || 0) > 0 ? {
+        quantity: Number(cameraExtraSale.quantity) || 0,
+        unitPrice: Number(cameraExtraSale.unitPrice) || 0,
+        total: (Number(cameraExtraSale.quantity) || 0) * (Number(cameraExtraSale.unitPrice) || 0)
+      } : null;
+
+      const accessoriesSaleData = accessoriesSaleItems
+        .filter(item => item.description.trim() !== '' && (Number(item.quantity) || 0) > 0)
+        .map(item => ({
+          description: item.description,
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(item.unitPrice) || 0,
+          total: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+        }));
+
       // Save to kickoff history
       const { error: historyError } = await supabase
         .from("kickoff_history")
@@ -560,6 +599,8 @@ export const KickoffDetailsModal = ({
           kickoff_notes: notes || null,
           vehicles_data: vehiclesData as any,
           approved_by: user?.id || null,
+          camera_extra_sale: cameraExtraSaleData as any,
+          accessories_sale: (accessoriesSaleData.length > 0 ? accessoriesSaleData : null) as any,
         });
 
       if (historyError) throw historyError;
@@ -982,41 +1023,66 @@ export const KickoffDetailsModal = ({
 
           {/* Venda de Acessórios */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-            <div className="flex items-center gap-2 mb-3">
-              <Package className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-lg">Venda de Acessórios</h3>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Venda de Acessórios</h3>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addAccessorySaleItem}>
+                <Plus className="h-4 w-4 mr-1" /> Adicionar
+              </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <Label>Quantidade</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={accessoriesSale.quantity === '' ? '' : accessoriesSale.quantity}
-                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, quantity: e.target.value === '' ? '' : (parseInt(e.target.value) || 0) }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Valor unitário (R$)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={accessoriesSale.unitPrice === '' ? '' : accessoriesSale.unitPrice}
-                  onChange={(e) => setAccessoriesSale(prev => ({ ...prev, unitPrice: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Total (R$)</Label>
-                <Input
-                  type="text"
-                  readOnly
-                  value={((Number(accessoriesSale.quantity) || 0) * (Number(accessoriesSale.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  className="mt-1 bg-muted"
-                />
-              </div>
+            <div className="space-y-3">
+              {accessoriesSaleItems.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_120px_120px_40px] gap-3 items-end">
+                  <div>
+                    <Label>Descrição</Label>
+                    <Input
+                      placeholder="Ex: Sensor de temperatura"
+                      value={item.description}
+                      onChange={(e) => updateAccessorySaleItem(idx, 'description', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Qtd</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={item.quantity === '' ? '' : item.quantity}
+                      onChange={(e) => updateAccessorySaleItem(idx, 'quantity', e.target.value === '' ? '' : (parseInt(e.target.value) || 0))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Valor unit. (R$)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={item.unitPrice === '' ? '' : item.unitPrice}
+                      onChange={(e) => updateAccessorySaleItem(idx, 'unitPrice', e.target.value === '' ? '' : (parseFloat(e.target.value) || 0))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Total (R$)</Label>
+                    <Input
+                      type="text"
+                      readOnly
+                      value={((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      className="mt-1 bg-muted"
+                    />
+                  </div>
+                  <div>
+                    {accessoriesSaleItems.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeAccessorySaleItem(idx)} className="mt-1">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

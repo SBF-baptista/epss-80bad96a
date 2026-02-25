@@ -1041,8 +1041,10 @@ export type Database = {
       }
       kickoff_history: {
         Row: {
+          accessories_sale: Json | null
           approved_at: string
           approved_by: string | null
+          camera_extra_sale: Json | null
           company_name: string
           contacts: Json | null
           created_at: string
@@ -1057,8 +1059,10 @@ export type Database = {
           vehicles_data: Json
         }
         Insert: {
+          accessories_sale?: Json | null
           approved_at?: string
           approved_by?: string | null
+          camera_extra_sale?: Json | null
           company_name: string
           contacts?: Json | null
           created_at?: string
@@ -1073,8 +1077,10 @@ export type Database = {
           vehicles_data?: Json
         }
         Update: {
+          accessories_sale?: Json | null
           approved_at?: string
           approved_by?: string | null
+          camera_extra_sale?: Json | null
           company_name?: string
           contacts?: Json | null
           created_at?: string
