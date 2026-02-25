@@ -743,6 +743,177 @@ export const KickoffDetailsModal = ({
             />
           </div>
 
+          {/* Câmeras Extras Section - Only show if any vehicle has camera extra */}
+          {vehiclesWithCameraExtra.length > 0 && (
+            <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+              <div className="flex items-center gap-2 mb-3">
+                <Camera className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Câmeras Extras</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Configure a quantidade e localização das câmeras extras para cada veículo.
+              </p>
+              {vehiclesWithCameraExtra.map((vehicle) => {
+                const cameraAccessory = vehicle.modules.find(m => {
+                  const normalizedName = normalizeForSearch(m.name);
+                  return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
+                });
+                return (
+                  <div key={vehicle.id} className="border rounded-lg p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-semibold">{vehicle.brand} {vehicle.model}</span>
+                        {vehicle.plate && (
+                          <Badge variant="secondary" className="ml-2">{vehicle.plate}</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-sm">Quantidade de câmeras extras</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={vehicleCameraExtra.get(vehicle.id) || 1}
+                          onChange={(e) => {
+                            const quantity = Math.max(1, Math.min(10, parseInt(e.target.value) || 1));
+                            setVehicleCameraExtra(prev => {
+                              const newMap = new Map(prev);
+                              newMap.set(vehicle.id, quantity);
+                              return newMap;
+                            });
+                          }}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Local onde ficarão as câmeras extras</Label>
+                        <Input
+                          value={cameraExtraLocations.get(vehicle.id) || ""}
+                          onChange={(e) => {
+                            setCameraExtraLocations(prev => {
+                              const newMap = new Map(prev);
+                              newMap.set(vehicle.id, e.target.value);
+                              return newMap;
+                            });
+                          }}
+                          placeholder="Ex: Cabine, Baú, Lateral direita..."
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Venda Câmeras Extras */}
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <Camera className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-lg">Venda Câmeras Extras</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label>Quantidade</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={cameraExtraSale.quantity === '' ? '' : cameraExtraSale.quantity}
+                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, quantity: e.target.value === '' ? '' : (parseInt(e.target.value) || 0) }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Valor unitário (R$)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={cameraExtraSale.unitPrice === '' ? '' : cameraExtraSale.unitPrice}
+                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, unitPrice: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Total (R$)</Label>
+                <Input
+                  type="text"
+                  readOnly
+                  value={((Number(cameraExtraSale.quantity) || 0) * (Number(cameraExtraSale.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  className="mt-1 bg-muted"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Venda de Acessórios */}
+          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Venda de Acessórios</h3>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addAccessorySaleItem}>
+                <Plus className="h-4 w-4 mr-1" /> Adicionar
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {accessoriesSaleItems.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_120px_120px_40px] gap-3 items-end">
+                  <div>
+                    <Label>Descrição</Label>
+                    <Input
+                      placeholder="Ex: Sensor de temperatura"
+                      value={item.description}
+                      onChange={(e) => updateAccessorySaleItem(idx, 'description', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Qtd</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={item.quantity === '' ? '' : item.quantity}
+                      onChange={(e) => updateAccessorySaleItem(idx, 'quantity', e.target.value === '' ? '' : (parseInt(e.target.value) || 0))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Valor unit. (R$)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={item.unitPrice === '' ? '' : item.unitPrice}
+                      onChange={(e) => updateAccessorySaleItem(idx, 'unitPrice', e.target.value === '' ? '' : (parseFloat(e.target.value) || 0))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Total (R$)</Label>
+                    <Input
+                      type="text"
+                      readOnly
+                      value={((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      className="mt-1 bg-muted"
+                    />
+                  </div>
+                  <div>
+                    {accessoriesSaleItems.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeAccessorySaleItem(idx)} className="mt-1">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Contatos */}
           <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
             <div className="flex items-center justify-between mb-3">
@@ -913,177 +1084,6 @@ export const KickoffDetailsModal = ({
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Câmeras Extras Section - Only show if any vehicle has camera extra */}
-          {vehiclesWithCameraExtra.length > 0 && (
-            <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-              <div className="flex items-center gap-2 mb-3">
-                <Camera className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">Câmeras Extras</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Configure a quantidade e localização das câmeras extras para cada veículo.
-              </p>
-              {vehiclesWithCameraExtra.map((vehicle) => {
-                const cameraAccessory = vehicle.modules.find(m => {
-                  const normalizedName = normalizeForSearch(m.name);
-                  return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
-                });
-                return (
-                  <div key={vehicle.id} className="border rounded-lg p-3 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="font-semibold">{vehicle.brand} {vehicle.model}</span>
-                        {vehicle.plate && (
-                          <Badge variant="secondary" className="ml-2">{vehicle.plate}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-sm">Quantidade de câmeras extras</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={10}
-                          value={vehicleCameraExtra.get(vehicle.id) || 1}
-                          onChange={(e) => {
-                            const quantity = Math.max(1, Math.min(10, parseInt(e.target.value) || 1));
-                            setVehicleCameraExtra(prev => {
-                              const newMap = new Map(prev);
-                              newMap.set(vehicle.id, quantity);
-                              return newMap;
-                            });
-                          }}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Local onde ficarão as câmeras extras</Label>
-                        <Input
-                          value={cameraExtraLocations.get(vehicle.id) || ""}
-                          onChange={(e) => {
-                            setCameraExtraLocations(prev => {
-                              const newMap = new Map(prev);
-                              newMap.set(vehicle.id, e.target.value);
-                              return newMap;
-                            });
-                          }}
-                          placeholder="Ex: Cabine, Baú, Lateral direita..."
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Venda Câmeras Extras */}
-          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-            <div className="flex items-center gap-2 mb-3">
-              <Camera className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-lg">Venda Câmeras Extras</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <Label>Quantidade</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={cameraExtraSale.quantity === '' ? '' : cameraExtraSale.quantity}
-                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, quantity: e.target.value === '' ? '' : (parseInt(e.target.value) || 0) }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Valor unitário (R$)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={cameraExtraSale.unitPrice === '' ? '' : cameraExtraSale.unitPrice}
-                  onChange={(e) => setCameraExtraSale(prev => ({ ...prev, unitPrice: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Total (R$)</Label>
-                <Input
-                  type="text"
-                  readOnly
-                  value={((Number(cameraExtraSale.quantity) || 0) * (Number(cameraExtraSale.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  className="mt-1 bg-muted"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Venda de Acessórios */}
-          <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">Venda de Acessórios</h3>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={addAccessorySaleItem}>
-                <Plus className="h-4 w-4 mr-1" /> Adicionar
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {accessoriesSaleItems.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_120px_120px_40px] gap-3 items-end">
-                  <div>
-                    <Label>Descrição</Label>
-                    <Input
-                      placeholder="Ex: Sensor de temperatura"
-                      value={item.description}
-                      onChange={(e) => updateAccessorySaleItem(idx, 'description', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Qtd</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={item.quantity === '' ? '' : item.quantity}
-                      onChange={(e) => updateAccessorySaleItem(idx, 'quantity', e.target.value === '' ? '' : (parseInt(e.target.value) || 0))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Valor unit. (R$)</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={item.unitPrice === '' ? '' : item.unitPrice}
-                      onChange={(e) => updateAccessorySaleItem(idx, 'unitPrice', e.target.value === '' ? '' : (parseFloat(e.target.value) || 0))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Total (R$)</Label>
-                    <Input
-                      type="text"
-                      readOnly
-                      value={((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      className="mt-1 bg-muted"
-                    />
-                  </div>
-                  <div>
-                    {accessoriesSaleItems.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeAccessorySaleItem(idx)} className="mt-1">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Particularidade de Instalação */}
