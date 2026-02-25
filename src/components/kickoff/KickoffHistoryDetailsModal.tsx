@@ -217,7 +217,7 @@ export const KickoffHistoryDetailsModal = ({
               <div className="flex gap-2 flex-wrap">
                 {record.installation_locations.map((loc: any, idx: number) => (
                   <Badge key={idx} variant="outline" className="text-sm py-1 px-3">
-                    {loc.city}/{loc.state}
+                    {[loc.cep, loc.state, loc.city, loc.neighborhood, loc.street].filter(Boolean).join(', ')}
                   </Badge>
                 ))}
               </div>

@@ -15,7 +15,7 @@ import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
-import { LocationSelector } from "@/components/shipment";
+
 import { logCreate } from "@/services/logService";
 import { fetchAddressByCEP, isValidCEP, formatCEP } from "@/services/cepService";
 
@@ -29,9 +29,11 @@ interface KickoffDetailsModalProps {
 }
 
 interface InstallationLocation {
-  city: string;
-  state: string;
   cep?: string;
+  state: string;
+  city: string;
+  neighborhood?: string;
+  street?: string;
 }
 
 interface Contact {
@@ -62,7 +64,7 @@ export const KickoffDetailsModal = ({
   
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [installationLocations, setInstallationLocations] = useState<InstallationLocation[]>([
-    { city: "", state: "" }
+    { cep: "", state: "", city: "", neighborhood: "", street: "" }
   ]);
   const [particularityDetails, setParticularityDetails] = useState("");
   const [notes, setNotes] = useState("");
@@ -342,7 +344,7 @@ export const KickoffDetailsModal = ({
   };
 
   const addLocation = () => {
-    setInstallationLocations([...installationLocations, { city: "", state: "" }]);
+    setInstallationLocations([...installationLocations, { cep: "", state: "", city: "", neighborhood: "", street: "" }]);
   };
 
   const removeLocation = (index: number) => {
@@ -800,39 +802,73 @@ export const KickoffDetailsModal = ({
                     </Button>
                   )}
                 </div>
-                <LocationSelector
-                  selectedUF={location.state}
-                  selectedCity={location.city}
-                  onUFChange={(value) => updateLocation(index, "state", value)}
-                  onCityChange={(value) => updateLocation(index, "city", value)}
-                  disabled={loading}
-                />
-                <div className="mt-2">
-                  <Label className="text-sm">CEP</Label>
-                  <Input
-                    value={location.cep || ""}
-                    onChange={(e) => {
-                      const formatted = formatCEP(e.target.value);
-                      updateLocation(index, "cep" as any, formatted);
-                    }}
-                    onBlur={async (e) => {
-                      const cep = e.target.value;
-                      if (isValidCEP(cep)) {
-                        try {
-                          const data = await fetchAddressByCEP(cep);
-                          if (data) {
-                            updateLocation(index, "state", data.uf);
-                            updateLocation(index, "city", data.localidade);
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <div>
+                    <Label className="text-sm">CEP</Label>
+                    <Input
+                      value={location.cep || ""}
+                      onChange={(e) => {
+                        const formatted = formatCEP(e.target.value);
+                        updateLocation(index, "cep", formatted);
+                      }}
+                      onBlur={async (e) => {
+                        const cep = e.target.value;
+                        if (isValidCEP(cep)) {
+                          try {
+                            const data = await fetchAddressByCEP(cep);
+                            if (data) {
+                              updateLocation(index, "state", data.uf);
+                              updateLocation(index, "city", data.localidade);
+                              updateLocation(index, "neighborhood", data.bairro || "");
+                              updateLocation(index, "street", data.logradouro || "");
+                            }
+                          } catch (err) {
+                            console.error("Erro ao buscar CEP:", err);
                           }
-                        } catch (err) {
-                          console.error("Erro ao buscar CEP:", err);
                         }
-                      }
-                    }}
-                    placeholder="00000-000"
-                    maxLength={9}
-                    className="mt-1"
-                  />
+                      }}
+                      placeholder="00000-000"
+                      maxLength={9}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">UF (Estado)</Label>
+                    <Input
+                      value={location.state}
+                      onChange={(e) => updateLocation(index, "state", e.target.value)}
+                      placeholder="UF"
+                      maxLength={2}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Cidade</Label>
+                    <Input
+                      value={location.city}
+                      onChange={(e) => updateLocation(index, "city", e.target.value)}
+                      placeholder="Cidade"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Bairro</Label>
+                    <Input
+                      value={location.neighborhood || ""}
+                      onChange={(e) => updateLocation(index, "neighborhood", e.target.value)}
+                      placeholder="Bairro"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Logradouro/Nome</Label>
+                    <Input
+                      value={location.street || ""}
+                      onChange={(e) => updateLocation(index, "street", e.target.value)}
+                      placeholder="Rua, Avenida..."
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
