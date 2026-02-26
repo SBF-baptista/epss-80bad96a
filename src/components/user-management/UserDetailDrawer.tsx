@@ -148,10 +148,14 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
               <div className="grid grid-cols-2 gap-3">
                 <InfoItem icon={<Mail className="h-3.5 w-3.5" />} label="Email confirmado" value={user.email_confirmed_at ? 'Confirmado ✔️' : 'Não confirmado ❌'} />
                 <InfoItem icon={<Clock className="h-3.5 w-3.5" />} label="Criado em" value={formatDate(user.created_at)} />
-                <InfoItem icon={<Key className="h-3.5 w-3.5" />} label="Último acesso" value={formatDate(user.last_sign_in_at)} />
                 <InfoItem icon={<RefreshCw className="h-3.5 w-3.5" />} label="Atualizado em" value={formatDate(user.updated_at)} />
               </div>
             </section>
+
+            <Separator />
+
+            {/* Last access highlight */}
+            <LastAccessCard lastSignInAt={user.last_sign_in_at} createdAt={user.created_at} />
 
             <Separator />
 
@@ -407,5 +411,49 @@ function AuditEntry({ icon, label, date, type }: { icon: React.ReactNode; label:
         <p className="text-xs text-muted-foreground">{date}</p>
       </div>
     </div>
+  )
+}
+
+function LastAccessCard({ lastSignInAt, createdAt }: { lastSignInAt?: string | null; createdAt: string }) {
+  const neverAccessed = !lastSignInAt
+  const isSameAsCreation = lastSignInAt && Math.abs(new Date(lastSignInAt).getTime() - new Date(createdAt).getTime()) < 60000
+
+  const getAccessStatus = () => {
+    if (neverAccessed || isSameAsCreation) {
+      return { level: 'none' as const, label: 'Sem registros de acesso', sublabel: 'Este usuário nunca realizou login no sistema.', color: 'text-muted-foreground', bg: 'bg-muted/50', border: 'border-border', iconColor: 'text-muted-foreground' }
+    }
+    const daysSince = Math.floor((Date.now() - new Date(lastSignInAt!).getTime()) / (1000 * 60 * 60 * 24))
+    if (daysSince > 30) {
+      return { level: 'warning' as const, label: `Sem acesso há ${daysSince} dias`, sublabel: 'Este usuário não acessa o sistema há mais de 30 dias.', color: 'text-destructive', bg: 'bg-destructive/5', border: 'border-destructive/20', iconColor: 'text-destructive' }
+    }
+    if (daysSince <= 7) {
+      return { level: 'ok' as const, label: 'Acesso recente', sublabel: `Último login: ${formatDate(lastSignInAt)}`, color: 'text-primary', bg: 'bg-primary/5', border: 'border-primary/20', iconColor: 'text-primary' }
+    }
+    return { level: 'normal' as const, label: 'Acesso normal', sublabel: `Último login: ${formatDate(lastSignInAt)}`, color: 'text-foreground', bg: 'bg-muted/30', border: 'border-border', iconColor: 'text-muted-foreground' }
+  }
+
+  const status = getAccessStatus()
+
+  return (
+    <section className="space-y-2">
+      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <Key className="h-4 w-4 text-muted-foreground" />
+        Último Acesso
+      </h4>
+      <div className={`rounded-xl border ${status.border} ${status.bg} p-4`}>
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-lg ${status.bg} border ${status.border}`}>
+            {status.level === 'warning' ? <AlertTriangle className={`h-4 w-4 ${status.iconColor}`} /> : status.level === 'none' ? <Clock className={`h-4 w-4 ${status.iconColor}`} /> : <UserCheck className={`h-4 w-4 ${status.iconColor}`} />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium ${status.color}`}>{status.label}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{status.sublabel}</p>
+            {!neverAccessed && !isSameAsCreation && (
+              <p className="text-xs text-muted-foreground mt-1 opacity-70">Último login realizado pelo usuário</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
