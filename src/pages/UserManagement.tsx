@@ -8,6 +8,8 @@ import { userManagementService, type User } from '@/services/userManagementServi
 import { accessProfileService, AccessProfile } from '@/services/accessProfileService'
 import { CreateUserModal } from '@/components/user-management/CreateUserModal'
 import { UserList } from '@/components/user-management/UserList'
+import { UserManagementStats } from '@/components/user-management/UserManagementStats'
+import { UserFilters, type UserFilterState } from '@/components/user-management/UserFilters'
 import { AccessProfileModal } from '@/components/access-profiles/AccessProfileModal'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,13 +26,12 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const UserManagement = () => {
-  // Users state
   const [users, setUsers] = useState<User[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [isRefreshingUsers, setIsRefreshingUsers] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [filters, setFilters] = useState<UserFilterState>({ search: '', status: 'all', role: 'all' })
   
-  // Profiles state
   const [profiles, setProfiles] = useState<AccessProfile[]>([])
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(true)
   const [isRefreshingProfiles, setIsRefreshingProfiles] = useState(false)
@@ -42,39 +43,17 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      console.log('Fetching users from page...');
-      const response = await userManagementService.listUsers();
-      
-      console.log('Page response:', response);
-      
+      const response = await userManagementService.listUsers()
       if (response && response.users) {
-        console.log('Setting users:', response.users);
-        setUsers(response.users);
+        setUsers(response.users)
       } else if (response && response.success === false) {
-        console.log('Response error:', response.error);
-        toast({
-          title: 'Erro',
-          description: response.error || 'Falha ao carregar usuários',
-          variant: 'destructive'
-        });
-      } else {
-        console.log('Unexpected response format:', response);
-        toast({
-          title: 'Erro',
-          description: 'Formato de resposta inesperado',
-          variant: 'destructive'
-        });
+        toast({ title: 'Erro', description: response.error || 'Falha ao carregar usuários', variant: 'destructive' })
       }
     } catch (error: any) {
-      console.error('Fetch users error:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro inesperado ao carregar usuários',
-        variant: 'destructive'
-      });
+      toast({ title: 'Erro', description: error.message || 'Erro inesperado', variant: 'destructive' })
     } finally {
-      setIsLoadingUsers(false);
-      setIsRefreshingUsers(false);
+      setIsLoadingUsers(false)
+      setIsRefreshingUsers(false)
     }
   }
 
@@ -83,46 +62,25 @@ const UserManagement = () => {
       const data = await accessProfileService.listProfiles()
       setProfiles(data)
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message || 'Falha ao carregar perfis',
-        variant: 'destructive'
-      })
+      toast({ title: 'Erro', description: error.message || 'Falha ao carregar perfis', variant: 'destructive' })
     } finally {
       setIsLoadingProfiles(false)
       setIsRefreshingProfiles(false)
     }
   }
 
-  const handleRefreshUsers = () => {
-    setIsRefreshingUsers(true)
-    fetchUsers()
-  }
-
-  const handleRefreshProfiles = () => {
-    setIsRefreshingProfiles(true)
-    fetchProfiles()
-  }
+  const handleRefreshUsers = () => { setIsRefreshingUsers(true); fetchUsers() }
+  const handleRefreshProfiles = () => { setIsRefreshingProfiles(true); fetchProfiles() }
 
   const handleDeleteProfile = async () => {
     if (!deletingProfile) return
-    
     const result = await accessProfileService.deleteProfile(deletingProfile.id)
-    
     if (result.success) {
-      toast({
-        title: 'Sucesso',
-        description: 'Perfil excluído com sucesso'
-      })
+      toast({ title: 'Sucesso', description: 'Perfil excluído com sucesso' })
       fetchProfiles()
     } else {
-      toast({
-        title: 'Erro',
-        description: result.error || 'Falha ao excluir perfil',
-        variant: 'destructive'
-      })
+      toast({ title: 'Erro', description: result.error || 'Falha ao excluir perfil', variant: 'destructive' })
     }
-    
     setDeletingProfile(null)
   }
 
@@ -151,8 +109,8 @@ const UserManagement = () => {
       <Layout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Carregando...</p>
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Carregando...</p>
           </div>
         </div>
       </Layout>
@@ -162,65 +120,70 @@ const UserManagement = () => {
   return (
     <Layout>
       <div className="container mx-auto py-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciamento de Usuários</h1>
-          <p className="text-muted-foreground">
-            Gerencie usuários e perfis de acesso do sistema
-          </p>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Gerenciamento de Usuários</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gerencie usuários, perfis de acesso e segurança do sistema
+            </p>
+          </div>
         </div>
 
+        {/* KPI Stats */}
+        <UserManagementStats users={users} />
+
         <Tabs defaultValue="users" className="w-full">
-          <TabsList>
+          <TabsList className="bg-muted/60">
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="profiles">Perfis de Acesso</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="mt-4">
-            <div className="flex justify-end gap-2 mb-4">
-              <Button
-                variant="outline"
-                onClick={handleRefreshUsers}
-                disabled={isRefreshingUsers}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-              <Button onClick={() => setShowCreateModal(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Novo Usuário
-              </Button>
+          <TabsContent value="users" className="mt-4 space-y-4">
+            {/* Filters + Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <UserFilters filters={filters} onChange={setFilters} />
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshUsers}
+                  disabled={isRefreshingUsers}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+                <Button size="sm" onClick={() => setShowCreateModal(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Novo Usuário
+                </Button>
+              </div>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Usuários do Sistema</CardTitle>
-                <CardDescription>
-                  Lista de todos os usuários cadastrados no sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {users.length > 0 ? (
-                  <UserList users={users} onUserUpdated={fetchUsers} />
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Nenhum usuário encontrado</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* User List */}
+            {users.length > 0 ? (
+              <UserList users={users} onUserUpdated={fetchUsers} filters={filters} />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <p className="text-muted-foreground">Nenhum usuário encontrado</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="profiles" className="mt-4">
             <div className="flex justify-end gap-2 mb-4">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleRefreshProfiles}
                 disabled={isRefreshingProfiles}
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingProfiles ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
-              <Button onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
+              <Button size="sm" onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Perfil
               </Button>
@@ -243,7 +206,7 @@ const UserManagement = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {profiles.map((profile) => (
-                  <Card key={profile.id} className="group hover:shadow-md transition-shadow">
+                  <Card key={profile.id} className="group hover:shadow-md transition-shadow border-none shadow-sm">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div>

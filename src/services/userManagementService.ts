@@ -6,6 +6,11 @@ export interface User {
   email: string
   created_at: string
   last_sign_in_at?: string
+  email_confirmed_at?: string
+  confirmed_at?: string
+  banned_until?: string
+  updated_at?: string
+  status: 'active' | 'banned' | 'inactive'
   roles: string[]
   permissions?: { module: string; permission: string }[]
 }
