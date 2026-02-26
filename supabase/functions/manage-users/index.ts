@@ -285,7 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // LIST USERS - Enhanced with security metadata
+    // LIST USERS - Enhanced with security metadata + real last_seen
     console.log('Listing users...');
     const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
     
@@ -298,24 +298,34 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: roles } = await supabaseAdmin.from('user_roles').select('user_id, role');
     const { data: allPermissions } = await supabaseAdmin.from('user_module_permissions').select('*');
+    const { data: lastSeenData } = await supabaseAdmin.from('user_last_seen').select('user_id, last_seen_at');
+
+    const lastSeenMap: Record<string, string> = {};
+    if (lastSeenData) {
+      for (const entry of lastSeenData) {
+        lastSeenMap[entry.user_id] = entry.last_seen_at;
+      }
+    }
 
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const usersWithRoles = users.users.map(user => {
       const isBanned = !!(user.banned_until && new Date(user.banned_until) > now);
-      const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at) : null;
-      const isInactive = !lastSignIn || lastSignIn < thirtyDaysAgo;
+      // Use real last_seen from our table, fallback to auth last_sign_in_at
+      const realLastSeen = lastSeenMap[user.id] || user.last_sign_in_at || null;
+      const lastAccess = realLastSeen ? new Date(realLastSeen) : null;
+      const isInactive = !lastAccess || lastAccess < thirtyDaysAgo;
       
       let status: 'active' | 'banned' | 'inactive' = 'active';
       if (isBanned) status = 'banned';
-      else if (!lastSignIn || isInactive) status = 'inactive';
+      else if (!lastAccess || isInactive) status = 'inactive';
 
       return {
         id: user.id,
         email: user.email,
         created_at: user.created_at,
-        last_sign_in_at: user.last_sign_in_at,
+        last_sign_in_at: realLastSeen,
         email_confirmed_at: user.email_confirmed_at,
         confirmed_at: user.confirmed_at,
         banned_until: user.banned_until,
