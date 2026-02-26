@@ -73,7 +73,7 @@ const modules: ModuleCard[] = [
     title: "Agendamento",
     description: "Agenda de técnicos e instalações",
     icon: Clock,
-    path: "/config",
+    path: "/scheduling",
     module: "scheduling",
     gradient: "from-cyan-500 to-sky-600",
     iconBg: "bg-cyan-500/10",
