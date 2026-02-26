@@ -12,13 +12,20 @@ import {
 } from '@/components/ui/sheet'
 import {
   Shield, Key, Lock, Unlock, Ban, UserCheck, Clock,
-  AlertTriangle, History, RefreshCw
+  AlertTriangle, History, RefreshCw, Copy, Check, Mail,
+  ShieldAlert, Timer
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { userManagementService, type User } from '@/services/userManagementService'
 import { supabase } from '@/integrations/supabase/client'
 import { getRoleLabel, getRoleBadgeVariant } from '@/services/permissionsService'
 import { PERMISSION_LABELS, MODULE_GROUPS } from '@/types/permissions'
+
+interface PasswordResetInfo {
+  temporaryPassword: string
+  resetAt: string
+  userEmail: string
+}
 
 interface UserDetailDrawerProps {
   user: User | null
@@ -29,33 +36,11 @@ interface UserDetailDrawerProps {
 
 export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: UserDetailDrawerProps) => {
   const [isLoading, setIsLoading] = useState<string | null>(null)
+  const [passwordResetInfo, setPasswordResetInfo] = useState<PasswordResetInfo | null>(null)
+  const [copied, setCopied] = useState(false)
   const { toast } = useToast()
 
   if (!user) return null
-
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return 'Nunca'
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const getStatusConfig = (status: User['status']) => {
-    switch (status) {
-      case 'active':
-        return { label: 'Ativo', icon: UserCheck, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' }
-      case 'banned':
-        return { label: 'Bloqueado', icon: Ban, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' }
-      case 'inactive':
-        return { label: 'Inativo', icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
-      default:
-        return { label: 'Desconhecido', icon: AlertTriangle, color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
-    }
-  }
 
   const statusConfig = getStatusConfig(user.status)
   const StatusIcon = statusConfig.icon
@@ -65,14 +50,14 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
     try {
       if (action === 'reset-password') {
         const response = await userManagementService.resetUserPassword(user.id)
-        if (response.success) {
-          toast({
-            title: 'Senha resetada',
-            description: `Nova senha temporária: ${response.temporaryPassword}`,
-            duration: 15000
+        if (response.success && response.temporaryPassword) {
+          setPasswordResetInfo({
+            temporaryPassword: response.temporaryPassword,
+            resetAt: new Date().toISOString(),
+            userEmail: user.email,
           })
         } else {
-          throw new Error(response.error)
+          throw new Error(response.error || 'Erro ao redefinir senha')
         }
       } else if (action === 'ban' || action === 'unban') {
         const { data, error } = await supabase.functions.invoke('manage-users', {
@@ -99,20 +84,24 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
     }
   }
 
+  const handleCopyPassword = async () => {
+    if (!passwordResetInfo) return
+    await navigator.clipboard.writeText(passwordResetInfo.temporaryPassword)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
   const permissionsByGroup = Object.entries(MODULE_GROUPS).map(([groupKey, group]) => ({
     groupKey,
     label: group.label,
     modules: group.modules.map(mod => {
       const userPerm = user.permissions?.find(p => p.module === mod.key)
-      return {
-        ...mod,
-        permission: userPerm?.permission || 'none'
-      }
+      return { ...mod, permission: userPerm?.permission || 'none' }
     })
   }))
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setPasswordResetInfo(null); setCopied(false) } }}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="pb-4">
           <div className="flex items-center gap-3">
@@ -138,42 +127,96 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
         <Tabs defaultValue="security" className="mt-2">
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="security" className="text-xs">
-              <Key className="h-3.5 w-3.5 mr-1.5" />
-              Segurança
+              <Key className="h-3.5 w-3.5 mr-1.5" />Segurança
             </TabsTrigger>
             <TabsTrigger value="access" className="text-xs">
-              <Shield className="h-3.5 w-3.5 mr-1.5" />
-              Acesso
+              <Shield className="h-3.5 w-3.5 mr-1.5" />Acesso
             </TabsTrigger>
             <TabsTrigger value="audit" className="text-xs">
-              <History className="h-3.5 w-3.5 mr-1.5" />
-              Auditoria
+              <History className="h-3.5 w-3.5 mr-1.5" />Auditoria
             </TabsTrigger>
           </TabsList>
 
-          {/* Security Tab */}
+          {/* ─── Security Tab ─── */}
           <TabsContent value="security" className="mt-4 space-y-5">
-            {/* Status & Metadata */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground">Informações de Segurança</h4>
+            {/* Info cards */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                Informações de Segurança
+              </h4>
               <div className="grid grid-cols-2 gap-3">
-                <InfoItem label="Email confirmado" value={user.email_confirmed_at ? 'Sim ✔️' : 'Não ❌'} />
-                <InfoItem label="Criado em" value={formatDate(user.created_at)} />
-                <InfoItem label="Último acesso" value={formatDate(user.last_sign_in_at)} />
-                <InfoItem label="Atualizado em" value={formatDate(user.updated_at)} />
+                <InfoItem icon={<Mail className="h-3.5 w-3.5" />} label="Email confirmado" value={user.email_confirmed_at ? 'Confirmado ✔️' : 'Não confirmado ❌'} />
+                <InfoItem icon={<Clock className="h-3.5 w-3.5" />} label="Criado em" value={formatDate(user.created_at)} />
+                <InfoItem icon={<Key className="h-3.5 w-3.5" />} label="Último acesso" value={formatDate(user.last_sign_in_at)} />
+                <InfoItem icon={<RefreshCw className="h-3.5 w-3.5" />} label="Atualizado em" value={formatDate(user.updated_at)} />
               </div>
-            </div>
+            </section>
 
             <Separator />
 
-            {/* Risk Indicators */}
+            {/* ─── Credential History ─── */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                Credenciais e Ações de Senha
+              </h4>
+
+              {passwordResetInfo ? (
+                <div className="space-y-3">
+                  {/* Temp password card */}
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium text-primary">Senha temporária gerada</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-wider select-all">
+                        {passwordResetInfo.temporaryPassword}
+                      </code>
+                      <Button variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={handleCopyPassword}>
+                        {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+
+                    <div className="rounded-lg bg-accent/50 border border-accent px-3 py-2">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        <AlertTriangle className="h-3 w-3 inline mr-1 text-destructive" />
+                        Esta senha não poderá ser visualizada novamente após fechar este painel. Copie-a agora.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Reset metadata */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <InfoItem icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={passwordResetInfo.userEmail} />
+                    <InfoItem icon={<Clock className="h-3.5 w-3.5" />} label="Redefinida em" value={formatDate(passwordResetInfo.resetAt)} />
+                  </div>
+
+                  {/* Status indicator */}
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                    <Timer className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Aguardando primeiro login com a nova senha</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+                  <p className="text-xs text-muted-foreground">Nenhuma ação recente de credenciais registrada nesta sessão.</p>
+                </div>
+              )}
+            </section>
+
+            <Separator />
+
+            {/* Risk indicators */}
             {(user.status === 'inactive' || user.status === 'banned') && (
               <>
-                <div className="rounded-xl border border-[hsl(var(--warning-border))] bg-[hsl(var(--warning-light))] p-3">
+                <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))] mt-0.5 shrink-0" />
+                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                     <div className="text-sm">
-                      <p className="font-medium text-[hsl(var(--warning))]">
+                      <p className="font-medium text-destructive">
                         {user.status === 'banned' ? 'Usuário bloqueado' : 'Sem acesso recente'}
                       </p>
                       <p className="text-muted-foreground text-xs mt-0.5">
@@ -188,14 +231,12 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
               </>
             )}
 
-            {/* Admin Actions */}
-            <div className="space-y-3">
+            {/* Admin actions */}
+            <section className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">Ações Administrativas</h4>
               <div className="grid grid-cols-1 gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
+                  variant="outline" size="sm" className="justify-start"
                   onClick={() => handleAction('reset-password')}
                   disabled={isLoading === 'reset-password'}
                 >
@@ -204,9 +245,7 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
                 </Button>
                 {user.status === 'banned' ? (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="justify-start text-[hsl(var(--success))]"
+                    variant="outline" size="sm" className="justify-start text-primary"
                     onClick={() => handleAction('unban')}
                     disabled={isLoading === 'unban'}
                   >
@@ -215,9 +254,7 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
                   </Button>
                 ) : (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="justify-start text-destructive"
+                    variant="outline" size="sm" className="justify-start text-destructive"
                     onClick={() => handleAction('ban')}
                     disabled={isLoading === 'ban'}
                   >
@@ -226,10 +263,10 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
                   </Button>
                 )}
               </div>
-            </div>
+            </section>
           </TabsContent>
 
-          {/* Access Tab */}
+          {/* ─── Access Tab ─── */}
           <TabsContent value="access" className="mt-4 space-y-5">
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">Perfis Vinculados</h4>
@@ -287,40 +324,20 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
             </div>
           </TabsContent>
 
-          {/* Audit Tab */}
+          {/* ─── Audit Tab ─── */}
           <TabsContent value="audit" className="mt-4 space-y-5">
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">Linha do Tempo</h4>
               <div className="space-y-3">
-                <AuditEntry
-                  icon={<UserCheck className="h-3.5 w-3.5" />}
-                  label="Conta criada"
-                  date={formatDate(user.created_at)}
-                  type="info"
-                />
+                <AuditEntry icon={<UserCheck className="h-3.5 w-3.5" />} label="Conta criada" date={formatDate(user.created_at)} type="info" />
                 {user.email_confirmed_at && (
-                  <AuditEntry
-                    icon={<Shield className="h-3.5 w-3.5" />}
-                    label="Email confirmado"
-                    date={formatDate(user.email_confirmed_at)}
-                    type="success"
-                  />
+                  <AuditEntry icon={<Shield className="h-3.5 w-3.5" />} label="Email confirmado" date={formatDate(user.email_confirmed_at)} type="success" />
                 )}
                 {user.last_sign_in_at && (
-                  <AuditEntry
-                    icon={<Key className="h-3.5 w-3.5" />}
-                    label="Último login"
-                    date={formatDate(user.last_sign_in_at)}
-                    type="info"
-                  />
+                  <AuditEntry icon={<Key className="h-3.5 w-3.5" />} label="Último login" date={formatDate(user.last_sign_in_at)} type="info" />
                 )}
                 {user.status === 'banned' && (
-                  <AuditEntry
-                    icon={<Ban className="h-3.5 w-3.5" />}
-                    label="Usuário bloqueado"
-                    date={formatDate(user.banned_until)}
-                    type="error"
-                  />
+                  <AuditEntry icon={<Ban className="h-3.5 w-3.5" />} label="Usuário bloqueado" date={formatDate(user.banned_until)} type="error" />
                 )}
               </div>
             </div>
@@ -342,10 +359,35 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
   )
 }
 
-function InfoItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+/* ─── Helpers ─── */
+
+function formatDate(dateString?: string | null) {
+  if (!dateString) return 'Nunca'
+  return new Date(dateString).toLocaleDateString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+}
+
+function getStatusConfig(status: User['status']) {
+  switch (status) {
+    case 'active':
+      return { label: 'Ativo', icon: UserCheck, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' }
+    case 'banned':
+      return { label: 'Bloqueado', icon: Ban, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' }
+    case 'inactive':
+      return { label: 'Inativo', icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
+    default:
+      return { label: 'Desconhecido', icon: AlertTriangle, color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
+  }
+}
+
+function InfoItem({ label, value, mono, icon }: { label: string; value: string; mono?: boolean; icon?: React.ReactNode }) {
   return (
     <div className="bg-muted/50 rounded-lg px-3 py-2">
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-1.5">
+        {icon && <span className="text-muted-foreground">{icon}</span>}
+        <p className="text-xs text-muted-foreground">{label}</p>
+      </div>
       <p className={`text-sm font-medium mt-0.5 ${mono ? 'font-mono text-xs break-all' : ''}`}>{value}</p>
     </div>
   )
@@ -354,15 +396,12 @@ function InfoItem({ label, value, mono }: { label: string; value: string; mono?:
 function AuditEntry({ icon, label, date, type }: { icon: React.ReactNode; label: string; date: string; type: 'info' | 'success' | 'error' }) {
   const colors = {
     info: 'bg-primary/10 text-primary border-primary/20',
-    success: 'bg-[hsl(var(--success-light))] text-[hsl(var(--success))] border-[hsl(var(--success-border))]',
+    success: 'bg-primary/10 text-primary border-primary/20',
     error: 'bg-destructive/10 text-destructive border-destructive/30'
   }
-
   return (
     <div className="flex items-start gap-3">
-      <div className={`p-1.5 rounded-lg border ${colors[type]} shrink-0 mt-0.5`}>
-        {icon}
-      </div>
+      <div className={`p-1.5 rounded-lg border ${colors[type]} shrink-0 mt-0.5`}>{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">{label}</p>
         <p className="text-xs text-muted-foreground">{date}</p>
