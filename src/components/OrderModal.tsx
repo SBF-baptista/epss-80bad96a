@@ -59,6 +59,10 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
   const [kitNamesMap, setKitNamesMap] = useState<Record<string, string>>({});
   const [showVehiclesSection, setShowVehiclesSection] = useState(false);
   const [cameraExtras, setCameraExtras] = useState<Array<{ vehicleName: string; quantity: number; locations: string }>>([]);
+  const [kickoffSalesData, setKickoffSalesData] = useState<{
+    cameraExtraSale: { quantity: number; unitPrice: number; total: number } | null;
+    accessoriesSale: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
+  }>({ cameraExtraSale: null, accessoriesSale: [] });
 
   // Production scanner hooks
   const {
@@ -288,6 +292,51 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
     fetchCameraExtras();
   }, [isOpen, schedule]);
 
+  // Fetch kickoff sales data (camera_extra_sale, accessories_sale)
+  useEffect(() => {
+    const fetchKickoffSalesData = async () => {
+      if (!isOpen || !schedule?.customer_id) return;
+      try {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('sale_summary_id')
+          .eq('id', schedule.customer_id)
+          .maybeSingle();
+        if (!customer?.sale_summary_id) return;
+
+        const { data: kickoff } = await supabase
+          .from('kickoff_history')
+          .select('camera_extra_sale, accessories_sale')
+          .eq('sale_summary_id', customer.sale_summary_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (kickoff) {
+          const camSale = kickoff.camera_extra_sale as any;
+          const accSale = kickoff.accessories_sale as any;
+          setKickoffSalesData({
+            cameraExtraSale: camSale && camSale.quantity ? {
+              quantity: Number(camSale.quantity) || 0,
+              unitPrice: Number(camSale.unitPrice) || 0,
+              total: Number(camSale.total) || 0,
+            } : null,
+            accessoriesSale: Array.isArray(accSale) ? accSale.map((a: any) => ({
+              description: a.description || '',
+              quantity: Number(a.quantity) || 0,
+              unitPrice: Number(a.unitPrice) || 0,
+              total: Number(a.total) || 0,
+            })) : [],
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching kickoff sales data:', error);
+      }
+    };
+
+    fetchKickoffSalesData();
+  }, [isOpen, schedule]);
+
   if (!order) return null;
 
   const getStatusLabel = (status: string) => {
@@ -491,6 +540,101 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                     )}
                   </div>
                 </div>
+
+                {/* Câmeras Extras - from incoming_vehicles */}
+                {cameraExtras.length > 0 && (
+                  <div className="bg-muted/30 p-4 rounded-lg border">
+                    <h3 className="font-semibold text-base mb-3 text-primary flex items-center gap-2">
+                      <Camera className="h-4 w-4" />
+                      Câmeras Extras
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3">Configure a quantidade e localização das câmeras extras para cada veículo.</p>
+                    <div className="space-y-3">
+                      {cameraExtras.map((cam, idx) => (
+                        <div key={idx} className="bg-card border rounded-lg p-3 space-y-2">
+                          <p className="font-medium text-sm text-foreground">{cam.vehicleName}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Quantidade de câmeras extras</Label>
+                              <Input value={cam.quantity} disabled className="bg-muted/30 mt-1 disabled:opacity-100" />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Local onde ficarão as câmeras extras</Label>
+                              <Input value={cam.locations} disabled className="bg-muted/30 mt-1 disabled:opacity-100" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Venda Câmeras Extras - from kickoff_history */}
+                {kickoffSalesData.cameraExtraSale && (
+                  <div className="bg-muted/30 p-4 rounded-lg border">
+                    <h3 className="font-semibold text-base mb-3 text-primary flex items-center gap-2">
+                      <Camera className="h-4 w-4" />
+                      Venda Câmeras Extras
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Quantidade</Label>
+                        <Input value={kickoffSalesData.cameraExtraSale.quantity || ''} disabled className="bg-muted/30 mt-1 disabled:opacity-100" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Valor unitário (R$)</Label>
+                        <Input value={kickoffSalesData.cameraExtraSale.unitPrice || ''} disabled className="bg-muted/30 mt-1 disabled:opacity-100" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Total (R$)</Label>
+                        <Input 
+                          value={`R$ ${(kickoffSalesData.cameraExtraSale.total || 0).toFixed(2).replace('.', ',')}`} 
+                          disabled 
+                          className="bg-muted/50 mt-1 disabled:opacity-100 font-medium" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Venda de Acessórios - from kickoff_history */}
+                {kickoffSalesData.accessoriesSale.length > 0 && (
+                  <div className="bg-muted/30 p-4 rounded-lg border">
+                    <h3 className="font-semibold text-base mb-3 text-primary flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Venda de Acessórios
+                    </h3>
+                    <div className="space-y-2">
+                      {/* Header */}
+                      <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1">
+                        <div className="col-span-6">Descrição</div>
+                        <div className="col-span-2 text-center">Qtd</div>
+                        <div className="col-span-2 text-center">Valor unit. (R$)</div>
+                        <div className="col-span-2 text-center">Total (R$)</div>
+                      </div>
+                      {kickoffSalesData.accessoriesSale.map((acc, idx) => (
+                        <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                          <div className="col-span-6">
+                            <Input value={acc.description} disabled className="bg-muted/30 disabled:opacity-100 text-sm" />
+                          </div>
+                          <div className="col-span-2">
+                            <Input value={acc.quantity} disabled className="bg-muted/30 disabled:opacity-100 text-sm text-center" />
+                          </div>
+                          <div className="col-span-2">
+                            <Input value={acc.unitPrice} disabled className="bg-muted/30 disabled:opacity-100 text-sm text-center" />
+                          </div>
+                          <div className="col-span-2">
+                            <Input 
+                              value={`R$ ${(acc.total || 0).toFixed(2).replace('.', ',')}`} 
+                              disabled 
+                              className="bg-muted/50 disabled:opacity-100 text-sm text-center font-medium" 
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
