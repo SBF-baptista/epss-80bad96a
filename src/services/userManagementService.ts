@@ -155,6 +155,33 @@ class UserManagementService {
       baseRole
     })
   }
+
+  async deleteUser(userId: string): Promise<UserManagementResponse> {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'delete-user', userId }
+      })
+      if (error) throw error
+      if (data.success) {
+        await logCreate("Usuários", "exclusão de usuário", userId)
+      }
+      return data
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Failed to delete user' }
+    }
+  }
+
+  async bulkAction(userIds: string[], bulkAction: 'ban' | 'unban' | 'delete'): Promise<UserManagementResponse> {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'bulk-action', userIds, bulkAction }
+      })
+      if (error) throw error
+      return data
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Failed to execute bulk action' }
+    }
+  }
 }
 
 export const userManagementService = new UserManagementService()
