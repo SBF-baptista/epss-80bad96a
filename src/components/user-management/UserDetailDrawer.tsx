@@ -47,11 +47,13 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
   const getStatusConfig = (status: User['status']) => {
     switch (status) {
       case 'active':
-        return { label: 'Ativo', icon: UserCheck, color: 'text-[hsl(var(--success))]', bg: 'bg-[hsl(var(--success-light))]', border: 'border-[hsl(var(--success-border))]' }
+        return { label: 'Ativo', icon: UserCheck, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' }
       case 'banned':
         return { label: 'Bloqueado', icon: Ban, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' }
       case 'inactive':
-        return { label: 'Inativo', icon: Clock, color: 'text-[hsl(var(--warning))]', bg: 'bg-[hsl(var(--warning-light))]', border: 'border-[hsl(var(--warning-border))]' }
+        return { label: 'Inativo', icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
+      default:
+        return { label: 'Desconhecido', icon: AlertTriangle, color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
     }
   }
 
