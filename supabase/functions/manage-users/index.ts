@@ -6,20 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface CreateUserRequest {
-  email: string;
-  password: string;
-  baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador';
-  permissions?: Record<string, string>;
-}
-
-interface UpdateUserRequest {
-  userId: string;
-  baseRole?: 'admin' | 'gestor' | 'operador' | 'visualizador';
-  permissions?: Record<string, string>;
-  resetPassword?: boolean;
-}
-
 const ALL_MODULES = [
   'kickoff', 'customer_tracking', 'homologation', 'kits', 
   'accessories_supplies', 'planning', 'scheduling', 'kanban', 
@@ -30,7 +16,6 @@ const handler = async (req: Request): Promise<Response> => {
   console.log(`========= NEW REQUEST =========`);
   console.log(`Request method: ${req.method}`);
   
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -112,7 +97,6 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Create user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -126,19 +110,16 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Create user profile
       await supabaseAdmin.from('usuarios').insert({
         id: newUser.user!.id,
         email: newUser.user!.email!
       });
 
-      // Assign base role
       await supabaseAdmin.from('user_roles').insert({
         user_id: newUser.user!.id,
         role: baseRole
       });
 
-      // Set module permissions
       if (permissions) {
         const permissionRecords = Object.entries(permissions)
           .filter(([_, level]) => level !== 'none')
@@ -174,18 +155,14 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Update base role
       if (baseRole) {
         await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
         await supabaseAdmin.from('user_roles').insert({ user_id: userId, role: baseRole });
       }
 
-      // Update module permissions
       if (permissions) {
-        // Delete existing permissions
         await supabaseAdmin.from('user_module_permissions').delete().eq('user_id', userId);
         
-        // Insert new permissions
         const permissionRecords = Object.entries(permissions)
           .filter(([_, level]) => level !== 'none')
           .map(([module, level]) => ({
@@ -200,6 +177,60 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       return new Response(JSON.stringify({ success: true, message: 'Permissions updated' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // BAN USER
+    if (req.method === 'POST' && action === 'ban-user') {
+      const { userId } = requestData;
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        ban_duration: '876000h' // ~100 years
+      });
+
+      if (banError) {
+        return new Response(JSON.stringify({ success: false, error: banError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: 'User banned' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // UNBAN USER
+    if (req.method === 'POST' && action === 'unban-user') {
+      const { userId } = requestData;
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { error: unbanError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        ban_duration: 'none'
+      });
+
+      if (unbanError) {
+        return new Response(JSON.stringify({ success: false, error: unbanError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: 'User unbanned' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -254,7 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // LIST USERS
+    // LIST USERS - Enhanced with security metadata
     console.log('Listing users...');
     const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
     
@@ -265,22 +296,37 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Get roles for all users
     const { data: roles } = await supabaseAdmin.from('user_roles').select('user_id, role');
-    
-    // Get permissions for all users
     const { data: allPermissions } = await supabaseAdmin.from('user_module_permissions').select('*');
 
-    const usersWithRoles = users.users.map(user => ({
-      id: user.id,
-      email: user.email,
-      created_at: user.created_at,
-      last_sign_in_at: user.last_sign_in_at,
-      roles: roles?.filter(r => r.user_id === user.id).map(r => r.role) || [],
-      permissions: allPermissions?.filter(p => p.user_id === user.id) || []
-    }));
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    return new Response(JSON.stringify({ users: usersWithRoles }), {
+    const usersWithRoles = users.users.map(user => {
+      const isBanned = !!(user.banned_until && new Date(user.banned_until) > now);
+      const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at) : null;
+      const isInactive = !lastSignIn || lastSignIn < thirtyDaysAgo;
+      
+      let status: 'active' | 'banned' | 'inactive' = 'active';
+      if (isBanned) status = 'banned';
+      else if (!lastSignIn || isInactive) status = 'inactive';
+
+      return {
+        id: user.id,
+        email: user.email,
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+        email_confirmed_at: user.email_confirmed_at,
+        confirmed_at: user.confirmed_at,
+        banned_until: user.banned_until,
+        updated_at: user.updated_at,
+        status,
+        roles: roles?.filter(r => r.user_id === user.id).map(r => r.role) || [],
+        permissions: allPermissions?.filter(p => p.user_id === user.id) || []
+      };
+    });
+
+    return new Response(JSON.stringify({ success: true, users: usersWithRoles }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
