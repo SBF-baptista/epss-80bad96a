@@ -254,64 +254,104 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
     fetchKitNames();
   }, [isOpen, allSchedules]);
 
-  // Fetch camera extras from incoming_vehicles
-  useEffect(() => {
-    const fetchCameraExtras = async () => {
-      if (!isOpen || !schedule) return;
-      try {
-        const { data: customer } = await supabase
-          .from('customers')
-          .select('sale_summary_id')
-          .eq('id', schedule.customer_id)
-          .maybeSingle();
-        if (!customer?.sale_summary_id) return;
+  // Helper: find the correct sale_summary_id with fallback strategy
+  const findKickoffData = async (): Promise<{ saleSummaryId: number | null; kickoff: any | null }> => {
+    if (!schedule?.customer_id) return { saleSummaryId: null, kickoff: null };
 
-        const { data: vehicles } = await supabase
-          .from('incoming_vehicles')
-          .select('brand, vehicle, camera_extra_quantity, camera_extra_locations')
-          .eq('sale_summary_id', customer.sale_summary_id)
-          .not('camera_extra_quantity', 'is', null);
+    // Attempt 1: customer's sale_summary_id
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('sale_summary_id')
+      .eq('id', schedule.customer_id)
+      .maybeSingle();
 
-        if (vehicles && vehicles.length > 0) {
-          setCameraExtras(vehicles
-            .filter(v => v.camera_extra_quantity && v.camera_extra_quantity > 0)
-            .map(v => ({
-              vehicleName: `${v.brand} ${v.vehicle}`,
-              quantity: v.camera_extra_quantity!,
-              locations: v.camera_extra_locations || 'Não especificado',
-            }))
-          );
-        } else {
-          setCameraExtras([]);
-        }
-      } catch (error) {
-        console.error('Error fetching camera extras:', error);
-      }
-    };
+    if (customer?.sale_summary_id) {
+      const { data: kickoff } = await supabase
+        .from('kickoff_history')
+        .select('camera_extra_sale, accessories_sale, sale_summary_id')
+        .eq('sale_summary_id', customer.sale_summary_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    fetchCameraExtras();
-  }, [isOpen, schedule]);
+      if (kickoff) return { saleSummaryId: customer.sale_summary_id, kickoff };
+    }
 
-  // Fetch kickoff sales data (camera_extra_sale, accessories_sale)
-  useEffect(() => {
-    const fetchKickoffSalesData = async () => {
-      if (!isOpen || !schedule?.customer_id) return;
-      try {
-        const { data: customer } = await supabase
-          .from('customers')
-          .select('sale_summary_id')
-          .eq('id', schedule.customer_id)
-          .maybeSingle();
-        if (!customer?.sale_summary_id) return;
+    // Attempt 2: find sale_summary_id from incoming_vehicles matching the vehicle
+    if (schedule.vehicle_brand && schedule.vehicle_model) {
+      const firstToken = (schedule.vehicle_model || '').split(' ')[0]?.toUpperCase() || '';
+      const { data: vehicle } = await supabase
+        .from('incoming_vehicles')
+        .select('sale_summary_id')
+        .eq('brand', schedule.vehicle_brand)
+        .ilike('vehicle', `%${firstToken}%`)
+        .not('sale_summary_id', 'is', null)
+        .order('received_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
+      if (vehicle?.sale_summary_id) {
         const { data: kickoff } = await supabase
           .from('kickoff_history')
-          .select('camera_extra_sale, accessories_sale')
-          .eq('sale_summary_id', customer.sale_summary_id)
+          .select('camera_extra_sale, accessories_sale, sale_summary_id')
+          .eq('sale_summary_id', vehicle.sale_summary_id)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
+        if (kickoff) return { saleSummaryId: vehicle.sale_summary_id, kickoff };
+      }
+    }
+
+    // Attempt 3: search by company_name
+    if (order?.company_name || schedule.customer_name) {
+      const companyName = order?.company_name || schedule.customer_name;
+      const { data: kickoff } = await supabase
+        .from('kickoff_history')
+        .select('camera_extra_sale, accessories_sale, sale_summary_id')
+        .ilike('company_name', `%${companyName}%`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (kickoff) return { saleSummaryId: kickoff.sale_summary_id, kickoff };
+    }
+
+    return { saleSummaryId: null, kickoff: null };
+  };
+
+  // Fetch camera extras + kickoff sales data with fallback
+  useEffect(() => {
+    const fetchKickoffRelatedData = async () => {
+      if (!isOpen || !schedule) return;
+      try {
+        const { saleSummaryId, kickoff } = await findKickoffData();
+
+        // Fetch camera extras using resolved saleSummaryId
+        if (saleSummaryId) {
+          const { data: vehicles } = await supabase
+            .from('incoming_vehicles')
+            .select('brand, vehicle, camera_extra_quantity, camera_extra_locations')
+            .eq('sale_summary_id', saleSummaryId)
+            .not('camera_extra_quantity', 'is', null);
+
+          if (vehicles && vehicles.length > 0) {
+            setCameraExtras(vehicles
+              .filter(v => v.camera_extra_quantity && v.camera_extra_quantity > 0)
+              .map(v => ({
+                vehicleName: `${v.brand} ${v.vehicle}`,
+                quantity: v.camera_extra_quantity!,
+                locations: v.camera_extra_locations || 'Não especificado',
+              }))
+            );
+          } else {
+            setCameraExtras([]);
+          }
+        } else {
+          setCameraExtras([]);
+        }
+
+        // Process kickoff sales data
         if (kickoff) {
           const camSale = kickoff.camera_extra_sale as any;
           const accSale = kickoff.accessories_sale as any;
@@ -328,13 +368,15 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
               total: Number(a.total) || 0,
             })) : [],
           });
+        } else {
+          setKickoffSalesData({ cameraExtraSale: null, accessoriesSale: [] });
         }
       } catch (error) {
-        console.error('Error fetching kickoff sales data:', error);
+        console.error('Error fetching kickoff related data:', error);
       }
     };
 
-    fetchKickoffSalesData();
+    fetchKickoffRelatedData();
   }, [isOpen, schedule]);
 
   if (!order) return null;
