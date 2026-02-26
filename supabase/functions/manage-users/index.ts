@@ -236,6 +236,100 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // DELETE USER
+    if (req.method === 'POST' && action === 'delete-user') {
+      const { userId } = requestData;
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Prevent self-deletion
+      if (userId === user.id) {
+        return new Response(JSON.stringify({ success: false, error: 'Você não pode excluir sua própria conta' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Clean up related data
+      await supabaseAdmin.from('user_module_permissions').delete().eq('user_id', userId);
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+      await supabaseAdmin.from('user_last_seen').delete().eq('user_id', userId);
+      await supabaseAdmin.from('usuarios').delete().eq('id', userId);
+
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (deleteError) {
+        return new Response(JSON.stringify({ success: false, error: deleteError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: 'User deleted' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // BULK ACTION (ban, unban, delete)
+    if (req.method === 'POST' && action === 'bulk-action') {
+      const { userIds, bulkAction } = requestData;
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0 || !bulkAction) {
+        return new Response(JSON.stringify({ error: 'Missing userIds or bulkAction' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Filter out self from bulk actions
+      const safeIds = userIds.filter((id: string) => id !== user.id);
+      if (safeIds.length === 0) {
+        return new Response(JSON.stringify({ success: false, error: 'Nenhum usuário válido para a ação (você não pode aplicar ações em si mesmo)' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const results: { id: string; success: boolean; error?: string }[] = [];
+
+      for (const uid of safeIds) {
+        try {
+          if (bulkAction === 'ban') {
+            const { error } = await supabaseAdmin.auth.admin.updateUserById(uid, { ban_duration: '876000h' });
+            results.push({ id: uid, success: !error, error: error?.message });
+          } else if (bulkAction === 'unban') {
+            const { error } = await supabaseAdmin.auth.admin.updateUserById(uid, { ban_duration: 'none' });
+            results.push({ id: uid, success: !error, error: error?.message });
+          } else if (bulkAction === 'delete') {
+            await supabaseAdmin.from('user_module_permissions').delete().eq('user_id', uid);
+            await supabaseAdmin.from('user_roles').delete().eq('user_id', uid);
+            await supabaseAdmin.from('user_last_seen').delete().eq('user_id', uid);
+            await supabaseAdmin.from('usuarios').delete().eq('id', uid);
+            const { error } = await supabaseAdmin.auth.admin.deleteUser(uid);
+            results.push({ id: uid, success: !error, error: error?.message });
+          }
+        } catch (e: any) {
+          results.push({ id: uid, success: false, error: e.message });
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: `${successCount} usuário(s) processado(s) com sucesso${failCount > 0 ? `, ${failCount} falha(s)` : ''}`,
+        results 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // UPDATE USER (legacy role update)
     if (req.method === 'POST' && action === 'update') {
       const { userId, role, resetPassword } = requestData;

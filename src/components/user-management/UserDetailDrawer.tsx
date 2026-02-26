@@ -4,6 +4,10 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -13,8 +17,9 @@ import {
 import {
   Shield, Key, Lock, Unlock, Ban, UserCheck, Clock,
   AlertTriangle, History, RefreshCw, Copy, Check, Mail,
-  ShieldAlert, Timer
+  ShieldAlert, Timer, Trash2
 } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { userManagementService, type User } from '@/services/userManagementService'
 import { supabase } from '@/integrations/supabase/client'
@@ -38,6 +43,8 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
   const [isLoading, setIsLoading] = useState<string | null>(null)
   const [passwordResetInfo, setPasswordResetInfo] = useState<PasswordResetInfo | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const { user: currentUser } = useAuth()
   const { toast } = useToast()
 
   if (!user) return null
@@ -84,6 +91,25 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
     }
   }
 
+  const handleDeleteUser = async () => {
+    setIsLoading('delete')
+    try {
+      const response = await userManagementService.deleteUser(user.id)
+      if (response.success) {
+        toast({ title: 'Usuário excluído', description: 'O usuário foi removido permanentemente.' })
+        setShowDeleteDialog(false)
+        onOpenChange(false)
+        onUserUpdated()
+      } else {
+        toast({ title: 'Erro', description: response.error || 'Falha ao excluir', variant: 'destructive' })
+      }
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsLoading(null)
+    }
+  }
+
   const handleCopyPassword = async () => {
     if (!passwordResetInfo) return
     await navigator.clipboard.writeText(passwordResetInfo.temporaryPassword)
@@ -101,6 +127,7 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
   }))
 
   return (
+    <>
     <Sheet open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setPasswordResetInfo(null); setCopied(false) } }}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="pb-4">
@@ -266,6 +293,16 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
                     Bloquear login
                   </Button>
                 )}
+                {currentUser?.id !== user.id && (
+                  <Button
+                    variant="outline" size="sm" className="justify-start text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => setShowDeleteDialog(true)}
+                    disabled={isLoading === 'delete'}
+                  >
+                    <Trash2 className={`h-4 w-4 mr-2 ${isLoading === 'delete' ? 'animate-spin' : ''}`} />
+                    Excluir usuário
+                  </Button>
+                )}
               </div>
             </section>
           </TabsContent>
@@ -360,6 +397,37 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
         </Tabs>
       </SheetContent>
     </Sheet>
+
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Trash2 className="h-5 w-5 text-destructive" />
+            Excluir Usuário
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>Tem certeza que deseja excluir permanentemente o usuário <strong>{user.email}</strong>?</p>
+            <ul className="text-xs list-disc pl-4 space-y-1 mt-2">
+              <li>O usuário perderá acesso ao sistema imediatamente</li>
+              <li>Dados de permissões e roles serão removidos</li>
+              <li>Registros de auditoria serão mantidos para rastreabilidade</li>
+            </ul>
+            <p className="text-destructive font-medium text-sm mt-2">Esta ação não pode ser desfeita.</p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isLoading === 'delete'}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeleteUser}
+            disabled={isLoading === 'delete'}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isLoading === 'delete' ? 'Excluindo...' : 'Excluir'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
 
