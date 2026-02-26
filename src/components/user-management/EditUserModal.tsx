@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -24,8 +34,9 @@ import {
   BaseRole, 
   PermissionLevel, 
   BASE_ROLE_LABELS,
-  getDefaultPermissionsForRole 
+  ALL_MODULES
 } from '@/types/permissions'
+import { Info } from 'lucide-react'
 
 interface User {
   id: string
@@ -45,7 +56,8 @@ const PROTECTED_ADMIN_EMAIL = 'pedro.albuquerque@segsat.com'
 
 export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditUserModalProps) => {
   const isProtectedAdmin = user.email === PROTECTED_ADMIN_EMAIL
-  
+  const { toast } = useToast()
+
   const getInitialRole = (): BaseRole => {
     const currentRole = user.roles[0]
     if (currentRole === 'admin') return 'admin'
@@ -54,33 +66,36 @@ export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditU
     return 'visualizador'
   }
 
+  // Only load actually saved permissions — never pre-fill from base role
   const getInitialPermissions = (): Record<AppModule, PermissionLevel> => {
-    const defaultPerms = getDefaultPermissionsForRole(getInitialRole())
-    
-    // Override with existing permissions
+    const perms: Record<AppModule, PermissionLevel> = {} as Record<AppModule, PermissionLevel>
+    ALL_MODULES.forEach(m => { perms[m.key] = 'none' })
+
     if (user.permissions && user.permissions.length > 0) {
       user.permissions.forEach(p => {
         const module = p.module as AppModule
         const level = p.permission as PermissionLevel
         if (module && level) {
-          defaultPerms[module] = level
+          perms[module] = level
         }
       })
     }
-    
-    return defaultPerms
+
+    return perms
   }
 
   const [baseRole, setBaseRole] = useState<BaseRole>(getInitialRole())
   const [permissions, setPermissions] = useState<Record<AppModule, PermissionLevel>>(getInitialPermissions())
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const [showNoPermissionAlert, setShowNoPermissionAlert] = useState(false)
 
-  // Update permissions when base role changes (unless editing existing)
+  // Base role change does NOT auto-fill permissions
   const handleRoleChange = (newRole: BaseRole) => {
     setBaseRole(newRole)
-    setPermissions(getDefaultPermissionsForRole(newRole))
+    // Permissions remain unchanged — admin decides explicitly
   }
+
+  const hasAnyPermission = Object.values(permissions).some(level => level !== 'none')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,6 +109,16 @@ export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditU
       return
     }
 
+    // If no permissions selected and not admin, confirm
+    if (!hasAnyPermission && baseRole !== 'admin') {
+      setShowNoPermissionAlert(true)
+      return
+    }
+
+    await doSave()
+  }
+
+  const doSave = async () => {
     setIsLoading(true)
     
     try {
@@ -129,73 +154,105 @@ export const EditUserModal = ({ user, open, onOpenChange, onUserUpdated }: EditU
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar Permissões</DialogTitle>
-          <DialogDescription>
-            Configure as permissões do usuário {user.email}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email (readonly) */}
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
-              {user.email}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Permissões</DialogTitle>
+            <DialogDescription>
+              Configure as permissões do usuário {user.email}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email (readonly) */}
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
+                {user.email}
+              </div>
             </div>
-          </div>
 
-          {/* Base Role */}
-          <div className="space-y-2">
-            <Label htmlFor="baseRole">Função Base</Label>
-            <Select 
-              value={baseRole} 
-              onValueChange={(value: BaseRole) => handleRoleChange(value)}
-              disabled={isProtectedAdmin}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma função" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(BASE_ROLE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isProtectedAdmin && (
-              <p className="text-xs text-amber-600">
-                Este usuário é protegido e deve permanecer como administrador.
+            {/* Base Role */}
+            <div className="space-y-2">
+              <Label htmlFor="baseRole">Função Base</Label>
+              <Select 
+                value={baseRole} 
+                onValueChange={(value: BaseRole) => handleRoleChange(value)}
+                disabled={isProtectedAdmin}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma função" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(BASE_ROLE_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Info className="h-3 w-3" />
+                A função base é apenas uma referência conceitual. As permissões devem ser configuradas manualmente abaixo.
               </p>
-            )}
-          </div>
+              {isProtectedAdmin && (
+                <p className="text-xs text-amber-600">
+                  Este usuário é protegido e deve permanecer como administrador.
+                </p>
+              )}
+            </div>
 
-          {/* Permission Matrix */}
-          <div className="space-y-2">
-            <Label>Permissões por Módulo</Label>
-            <PermissionMatrix 
-              permissions={permissions} 
-              onChange={setPermissions}
-              disabled={baseRole === 'admin' || isProtectedAdmin}
-            />
-            {baseRole === 'admin' && (
-              <p className="text-xs text-muted-foreground">
-                Administradores têm acesso total a todos os módulos.
-              </p>
-            )}
-          </div>
+            {/* Permission Matrix */}
+            <div className="space-y-2">
+              <Label>Permissões por Módulo</Label>
+              {baseRole !== 'admin' && !isProtectedAdmin && (
+                <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-md px-3 py-2">
+                  <Info className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Selecione manualmente as permissões desejadas para este usuário. Nenhuma permissão é aplicada automaticamente.
+                  </p>
+                </div>
+              )}
+              <PermissionMatrix 
+                permissions={permissions} 
+                onChange={setPermissions}
+                disabled={baseRole === 'admin' || isProtectedAdmin}
+              />
+              {baseRole === 'admin' && (
+                <p className="text-xs text-muted-foreground">
+                  Administradores têm acesso total a todos os módulos.
+                </p>
+              )}
+            </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading || isProtectedAdmin}>
-              {isLoading ? 'Salvando...' : 'Salvar Permissões'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading || isProtectedAdmin}>
+                {isLoading ? 'Salvando...' : 'Salvar Permissões'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation when no permissions */}
+      <AlertDialog open={showNoPermissionAlert} onOpenChange={setShowNoPermissionAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usuário sem permissões</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este usuário ficará sem nenhuma permissão ativa e não poderá acessar nenhum módulo do sistema. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowNoPermissionAlert(false); doSave(); }}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
