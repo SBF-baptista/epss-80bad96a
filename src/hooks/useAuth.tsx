@@ -21,12 +21,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const updateLastSeen = async (userId: string) => {
+      try {
+        await supabase.from('user_last_seen').upsert(
+          { user_id: userId, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
+      } catch (e) {
+        console.error('Failed to update last_seen:', e)
+      }
+    }
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
+
+        // Record last seen on any auth event with a valid session
+        if (session?.user?.id && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+          setTimeout(() => updateLastSeen(session.user.id), 500)
+        }
       }
     )
 
@@ -35,6 +51,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+
+      if (session?.user?.id) {
+        updateLastSeen(session.user.id)
+      }
     })
 
     return () => subscription.unsubscribe()
