@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,8 +27,14 @@ import { PermissionMatrix } from '@/components/user-management/PermissionMatrix'
 import { 
   AppModule, 
   PermissionLevel, 
-  getDefaultPermissionsForRole 
+  ALL_MODULES
 } from '@/types/permissions'
+
+const getEmptyPermissions = (): Record<AppModule, PermissionLevel> => {
+  const permissions = {} as Record<AppModule, PermissionLevel>;
+  ALL_MODULES.forEach(m => { permissions[m.key] = 'none'; });
+  return permissions;
+}
 
 interface AccessProfileModalProps {
   open: boolean
@@ -33,10 +49,13 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [permissions, setPermissions] = useState<Record<AppModule, PermissionLevel>>(() => 
-    getDefaultPermissionsForRole('operador')
+    getEmptyPermissions()
   )
   const [isLoading, setIsLoading] = useState(false)
+  const [showNoPermissionsAlert, setShowNoPermissionsAlert] = useState(false)
   const { toast } = useToast()
+
+  const hasAnyPermission = Object.values(permissions).some(p => p !== 'none')
 
   // Reset form when modal opens
   useEffect(() => {
@@ -48,7 +67,7 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
       } else {
         setName('')
         setDescription('')
-        setPermissions(getDefaultPermissionsForRole('operador'))
+        setPermissions(getEmptyPermissions())
       }
     }
   }, [open, profile])
@@ -65,6 +84,15 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
       return
     }
 
+    if (!hasAnyPermission) {
+      setShowNoPermissionsAlert(true)
+      return
+    }
+
+    await saveProfile()
+  }
+
+  const saveProfile = async () => {
     setIsLoading(true)
     
     try {
@@ -112,61 +140,81 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Perfil' : 'Novo Perfil de Acesso'}</DialogTitle>
-          <DialogDescription>
-            {isEditing 
-              ? 'Edite as configurações do perfil de acesso.'
-              : 'Crie um novo perfil de acesso com as permissões desejadas.'}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome do Perfil *</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Operador de Campo"
-              />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Editar Perfil' : 'Novo Perfil de Acesso'}</DialogTitle>
+            <DialogDescription>
+              {isEditing 
+                ? 'Edite as configurações do perfil de acesso.'
+                : 'Crie um novo perfil de acesso. Selecione manualmente as permissões desejadas — nenhuma vem ativa por padrão.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome do Perfil *</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex: Operador de Campo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Descreva o propósito deste perfil..."
+                  rows={2}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descreva o propósito deste perfil..."
-                rows={2}
+              <Label>Permissões por Módulo</Label>
+              <p className="text-xs text-muted-foreground">
+                Selecione manualmente as permissões desejadas para este perfil. Nenhuma permissão é concedida automaticamente.
+              </p>
+              <PermissionMatrix 
+                permissions={permissions} 
+                onChange={setPermissions}
               />
             </div>
-          </div>
 
-          {/* Permission Matrix */}
-          <div className="space-y-2">
-            <Label>Permissões por Módulo</Label>
-            <PermissionMatrix 
-              permissions={permissions} 
-              onChange={setPermissions}
-            />
-          </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Criar Perfil')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Criar Perfil')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <AlertDialog open={showNoPermissionsAlert} onOpenChange={setShowNoPermissionsAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Perfil sem permissões</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este perfil será {isEditing ? 'salvo' : 'criado'} sem nenhuma permissão de acesso. Usuários vinculados a ele não terão acesso a nenhum módulo. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowNoPermissionsAlert(false); saveProfile(); }}>
+              Continuar sem permissões
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
