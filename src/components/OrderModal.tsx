@@ -639,11 +639,7 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                     {kickoffSalesData.cameraExtraSale && (
                       <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
                         <SectionHeader icon={Camera} title="Venda Câmeras Extras" />
-                        <div className="grid grid-cols-3 gap-3">
-                          <InfoField label="Quantidade" value={String(kickoffSalesData.cameraExtraSale.quantity || 0)} />
-                          <InfoField label="Valor Unitário" value={`R$ ${(kickoffSalesData.cameraExtraSale.unitPrice || 0).toFixed(2).replace('.', ',')}`} />
-                          <InfoField label="Total" value={`R$ ${(kickoffSalesData.cameraExtraSale.total || 0).toFixed(2).replace('.', ',')}`} />
-                        </div>
+                        <InfoField label="Quantidade" value={String(kickoffSalesData.cameraExtraSale.quantity || 0)} />
                       </div>
                     )}
 
@@ -651,27 +647,13 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                     {kickoffSalesData.accessoriesSale.length > 0 && (
                       <div className={`bg-muted/20 p-4 rounded-xl border space-y-3 ${!kickoffSalesData.cameraExtraSale ? 'lg:col-span-2' : ''}`}>
                         <SectionHeader icon={Package} title="Venda de Acessórios" />
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider border-b">
-                                <th className="text-left pb-2">Descrição</th>
-                                <th className="text-center pb-2 w-16">Qtd</th>
-                                <th className="text-right pb-2 w-24">Valor unit.</th>
-                                <th className="text-right pb-2 w-24">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/50">
-                              {kickoffSalesData.accessoriesSale.map((acc, idx) => (
-                                <tr key={idx}>
-                                  <td className="py-2 font-medium text-foreground">{acc.description}</td>
-                                  <td className="py-2 text-center text-muted-foreground">{acc.quantity}</td>
-                                  <td className="py-2 text-right text-muted-foreground">R$ {(acc.unitPrice || 0).toFixed(2).replace('.', ',')}</td>
-                                  <td className="py-2 text-right font-semibold text-foreground">R$ {(acc.total || 0).toFixed(2).replace('.', ',')}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                        <div className="space-y-1.5">
+                          {kickoffSalesData.accessoriesSale.map((acc, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2.5 bg-card border rounded-lg">
+                              <span className="font-medium text-sm text-foreground">{acc.description}</span>
+                              <Badge variant="secondary" className="ml-2">{acc.quantity}</Badge>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -859,6 +841,21 @@ const OrderModal = ({ order, isOpen, onClose, onUpdate, schedule, kit, viewMode 
                           });
                         }
                       });
+
+                      // Add camera extras quantity from kickoff sales
+                      if (kickoffSalesData.cameraExtraSale && kickoffSalesData.cameraExtraSale.quantity > 0) {
+                        const key = 'Câmeras Extras (Venda)';
+                        totals[key] = (totals[key] || 0) + kickoffSalesData.cameraExtraSale.quantity;
+                      }
+
+                      // Add accessories from kickoff sales
+                      kickoffSalesData.accessoriesSale.forEach((acc) => {
+                        if (acc.description && acc.quantity > 0) {
+                          const key = cleanItemName(acc.description);
+                          totals[key] = (totals[key] || 0) + acc.quantity;
+                        }
+                      });
+
                       const sortedItems = Object.entries(totals).sort(([a], [b]) => a.localeCompare(b));
                       return sortedItems.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
