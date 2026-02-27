@@ -17,8 +17,13 @@ import {
   Rocket,
   Clock,
   FileEdit,
-  Home,
-  MessageSquare
+  LayoutDashboard,
+  MessageSquare,
+  History,
+  Truck,
+  Shield,
+  FolderOpen,
+  Zap,
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,7 +47,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEditRequestsCount } from "@/hooks/useEditRequestsCount";
 import { AppModule } from "@/types/permissions";
 
-// Navigation items with module-based permissions
 interface NavItem {
   to: string;
   label: string;
@@ -57,53 +61,41 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// Single navigation items (shown first after Home)
-const singleNavigationItems: NavItem[] = [
-  { to: "/kickoff", label: "Kickoff", icon: Rocket, module: "kickoff" },
-];
-
-// Navigation structure (groups shown after single items)
-const navigationGroups: NavGroup[] = [
+// Domain-based navigation structure
+const navigationDomains: NavGroup[] = [
   {
-    label: "Homologação",
-    icon: CheckSquare,
+    label: "Cadastros",
+    icon: FolderOpen,
     items: [
-      { to: "/homologation", label: "Homologação de Veículos", icon: CheckSquare, module: "homologation" },
       { to: "/kits", label: "Kits", icon: Package, module: "kits" },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies" },
       { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling" },
-      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
-    ]
-  },
-  {
-    label: "Logística",
-    icon: BarChart3,
-    items: [
-      { to: "/kanban", label: "Kanban", icon: Kanban, module: "kanban" },
-      { to: "/dashboard", label: "Dash Logística", icon: BarChart3, module: "dashboard" },
-    ]
-  },
-  {
-    label: "Configuração",
-    icon: Settings,
-    items: [
       { to: "/technicians", label: "Técnicos", icon: Users, module: "technicians" },
       { to: "/users", label: "Usuários", icon: UserCog, module: "users" },
-      { to: "/history", label: "Histórico", icon: Clock, module: "users" },
+    ]
+  },
+  {
+    label: "Operações",
+    icon: Zap,
+    items: [
+      { to: "/kickoff", label: "Kickoff", icon: Rocket, module: "kickoff" },
+      { to: "/homologation", label: "Homologação de Veículos", icon: CheckSquare, module: "homologation" },
+      { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" },
+      { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" },
+      { to: "/kanban", label: "Kanban", icon: Kanban, module: "kanban" },
+      { to: "/dashboard", label: "Dash Logística", icon: BarChart3, module: "dashboard" },
+      { to: "/customer-tracking", label: "Acompanhamento", icon: UserCheck, module: "customer_tracking" },
+    ]
+  },
+  {
+    label: "Governança",
+    icon: Shield,
+    items: [
+      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
+      { to: "/history", label: "Histórico", icon: History, module: "users" },
       { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling" },
     ]
   },
-];
-
-// Single item - Planejamento (before Logística)
-const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" };
-
-// Single item - Agendamento (after Logística)
-const schedulingItem: NavItem = { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" };
-
-// Additional single items after Agendamento
-const additionalSingleItems: NavItem[] = [
-  { to: "/customer-tracking", label: "Acompanhamento de Clientes", icon: UserCheck, module: "customer_tracking" },
 ];
 
 export function AppNavigation() {
@@ -116,12 +108,17 @@ export function AppNavigation() {
   
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  // Collapse all dropdowns when sidebar is collapsed
+  // Auto-open group containing the active route
   useEffect(() => {
     if (isCollapsed) {
       setOpenGroups({});
+      return;
     }
-  }, [isCollapsed]);
+    const activeGroup = navigationDomains.find(g => g.items.some(i => location.pathname === i.to));
+    if (activeGroup && !openGroups[activeGroup.label]) {
+      setOpenGroups(prev => ({ ...prev, [activeGroup.label]: true }));
+    }
+  }, [location.pathname, isCollapsed]);
 
   const handleGroupToggle = (groupLabel: string) => {
     if (isCollapsed) {
@@ -134,20 +131,15 @@ export function AppNavigation() {
   };
 
   const isActive = (path: string) => location.pathname === path;
-  
-  const isGroupActive = (items: NavItem[]) => {
-    return items.some(item => isActive(item.to));
-  };
+  const isGroupActive = (items: NavItem[]) => items.some(item => isActive(item.to));
 
-  // Filter items based on module permissions
   const canAccessItem = (item: NavItem) => {
     if (role === 'admin') return true;
     return canViewModule(item.module);
   };
 
-  // Filter groups to show only those with accessible items
-  const getVisibleGroups = () => {
-    return navigationGroups
+  const getVisibleDomains = () => {
+    return navigationDomains
       .map(group => ({
         ...group,
         items: group.items.filter(canAccessItem)
@@ -174,29 +166,91 @@ export function AppNavigation() {
       <Sidebar collapsible="icon" className="border-r">
         <SidebarContent className="safe-area-inset">
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
           </div>
         </SidebarContent>
       </Sidebar>
     );
   }
 
-  const visibleGroups = getVisibleGroups();
-  const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
-  const canSeePlanning = canAccessItem(planningItem);
-  const canSeeScheduling = canAccessItem(schedulingItem);
-  const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
+  const visibleDomains = getVisibleDomains();
+
+  const renderGroupItem = (item: NavItem) => {
+    const Icon = item.icon;
+    return (
+      <SidebarMenuButton
+        key={item.to}
+        asChild
+        isActive={isActive(item.to)}
+        className="touch-manipulation tap-target"
+      >
+        <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+          <Icon className="h-4 w-4 flex-shrink-0" />
+          {!isCollapsed && (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="font-medium text-sm truncate">{item.label}</span>
+              {item.showBadge && editRequestsCount > 0 && (
+                <Badge variant="destructive" className="text-xs px-1.5 py-0 flex-shrink-0">
+                  {editRequestsCount}
+                </Badge>
+              )}
+            </div>
+          )}
+        </NavLink>
+      </SidebarMenuButton>
+    );
+  };
+
+  const renderGroup = (group: NavGroup) => {
+    const GroupIcon = group.icon;
+    const isOpen = openGroups[group.label] || false;
+    const groupActive = isGroupActive(group.items);
+    const hasBadge = group.items.some(i => i.showBadge) && editRequestsCount > 0;
+
+    return (
+      <SidebarMenuItem key={group.label}>
+        <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton
+              tooltip={isCollapsed ? group.label : undefined}
+              className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
+            >
+              <GroupIcon className="h-4 w-4 flex-shrink-0" />
+              {!isCollapsed && (
+                <>
+                  <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
+                  {hasBadge && !isOpen && (
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0 mr-1">
+                      {editRequestsCount}
+                    </Badge>
+                  )}
+                  {isOpen ? (
+                    <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                  )}
+                </>
+              )}
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pl-4">
+            {group.items.map(renderGroupItem)}
+          </CollapsibleContent>
+        </Collapsible>
+      </SidebarMenuItem>
+    );
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r">
       <SidebarContent className="safe-area-inset">
+        {/* Dashboard / Home */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-base font-bold text-white px-2">
-            {!isCollapsed && "Menu"}
+          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
+            {!isCollapsed && "Dashboard"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Home */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -205,256 +259,37 @@ export function AppNavigation() {
                   className="touch-manipulation tap-target"
                 >
                   <NavLink to="/modules" className="flex items-center gap-3 px-2 py-2">
-                    <Home className="h-4 w-4 flex-shrink-0" />
+                    <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
                     {!isCollapsed && <span className="font-medium text-sm">Início</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
-              {/* Single Navigation Items */}
-              {visibleSingleItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.to)}
-                      tooltip={isCollapsed ? item.label : undefined}
-                      className="touch-manipulation tap-target"
-                    >
-                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-
-              {/* Homologação Group */}
-              {visibleGroups.filter(g => g.label === "Homologação").map((group) => {
-                const GroupIcon = group.icon;
-                const isOpen = openGroups[group.label] || false;
-                const groupActive = isGroupActive(group.items);
-                
-                return (
-                  <SidebarMenuItem key={group.label}>
-                    <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          tooltip={isCollapsed ? group.label : undefined}
-                          className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
-                        >
-                          <GroupIcon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && (
-                            <>
-                              <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
-                              {isOpen ? (
-                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 flex-shrink-0" />
-                              )}
-                            </>
-                          )}
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="pl-4">
-                        {group.items.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <SidebarMenuButton
-                              key={item.to}
-                              asChild
-                              isActive={isActive(item.to)}
-                              className="touch-manipulation tap-target"
-                            >
-                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                                <Icon className="h-4 w-4 flex-shrink-0" />
-                                {!isCollapsed && (
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <span className="font-medium text-sm truncate">{item.label}</span>
-                                    {item.showBadge && editRequestsCount > 0 && (
-                                      <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                        {editRequestsCount}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                )}
-                              </NavLink>
-                            </SidebarMenuButton>
-                          );
-                        })}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
-                );
-              })}
-
-              {/* Planejamento - Before Logística */}
-              {canSeePlanning && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(planningItem.to)}
-                    tooltip={isCollapsed ? planningItem.label : undefined}
-                    className="touch-manipulation tap-target"
-                  >
-                    <NavLink to={planningItem.to} className="flex items-center gap-3 px-2 py-2">
-                      <planningItem.icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="font-medium text-sm truncate">{planningItem.label}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              {/* Logística Group */}
-              {visibleGroups.filter(g => g.label === "Logística").map((group) => {
-                const GroupIcon = group.icon;
-                const isOpen = openGroups[group.label] || false;
-                const groupActive = isGroupActive(group.items);
-                
-                return (
-                  <SidebarMenuItem key={group.label}>
-                    <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          tooltip={isCollapsed ? group.label : undefined}
-                          className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
-                        >
-                          <GroupIcon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && (
-                            <>
-                              <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
-                              {isOpen ? (
-                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 flex-shrink-0" />
-                              )}
-                            </>
-                          )}
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="pl-4">
-                        {group.items.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <SidebarMenuButton
-                              key={item.to}
-                              asChild
-                              isActive={isActive(item.to)}
-                              className="touch-manipulation tap-target"
-                            >
-                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                                <Icon className="h-4 w-4 flex-shrink-0" />
-                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                              </NavLink>
-                            </SidebarMenuButton>
-                          );
-                        })}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
-                );
-              })}
-
-              {/* Agendamento - After Logística */}
-              {canSeeScheduling && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(schedulingItem.to)}
-                    tooltip={isCollapsed ? schedulingItem.label : undefined}
-                    className="touch-manipulation tap-target"
-                  >
-                    <NavLink to={schedulingItem.to} className="flex items-center gap-3 px-2 py-2">
-                      <schedulingItem.icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="font-medium text-sm truncate">{schedulingItem.label}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              {/* Acompanhamento de Clientes - After Agendamento */}
-              {visibleAdditionalItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.to)}
-                      tooltip={isCollapsed ? item.label : undefined}
-                      className="touch-manipulation tap-target"
-                    >
-                      <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-
-              {/* Configuração Group - With Histórico inside */}
-              {visibleGroups.filter(g => g.label === "Configuração").map((group) => {
-                const GroupIcon = group.icon;
-                const isOpen = openGroups[group.label] || false;
-                const groupActive = isGroupActive(group.items);
-                
-                return (
-                  <SidebarMenuItem key={group.label}>
-                    <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          tooltip={isCollapsed ? group.label : undefined}
-                          className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
-                        >
-                          <GroupIcon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && (
-                            <>
-                              <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
-                              {isOpen ? (
-                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 flex-shrink-0" />
-                              )}
-                            </>
-                          )}
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="pl-4">
-                        {group.items.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <SidebarMenuButton
-                              key={item.to}
-                              asChild
-                              isActive={isActive(item.to)}
-                              className="touch-manipulation tap-target"
-                            >
-                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
-                                <Icon className="h-4 w-4 flex-shrink-0" />
-                                {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
-                              </NavLink>
-                            </SidebarMenuButton>
-                          );
-                        })}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
-                );
-              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Domain Groups */}
+        {visibleDomains.map((domain) => (
+          <SidebarGroup key={domain.label}>
+            <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
+              {!isCollapsed && domain.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {renderGroup(domain)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
 
         {/* User info and logout */}
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             {!isCollapsed && (
-              <div className="px-2 py-2 text-xs text-gray-600 border-t">
+              <div className="px-2 py-2 text-xs text-muted-foreground border-t">
                 <div className="mb-2">
                   <div className="font-medium truncate">{user?.email}</div>
-                  <div className="text-gray-500 capitalize">
+                  <div className="text-muted-foreground/70 capitalize">
                     {getRoleLabel(role)}
                   </div>
                 </div>
@@ -465,7 +300,7 @@ export function AppNavigation() {
                 <SidebarMenuButton 
                   onClick={handleSignOut}
                   tooltip={isCollapsed ? "Sair" : undefined}
-                  className="touch-manipulation tap-target text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="touch-manipulation tap-target text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <LogOut className="h-4 w-4 flex-shrink-0" />
                   {!isCollapsed && <span className="font-medium text-sm">Sair</span>}
