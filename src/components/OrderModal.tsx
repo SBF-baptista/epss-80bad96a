@@ -649,7 +649,7 @@ const OrderModal = ({
                 {/* ── Câmeras Extras (technical) ── */}
                 {cameraExtras.length > 0 && (
                   <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                    <SectionHeader icon={Camera} title="Câmeras Extras" />
+                    <SectionHeader icon={Camera} title="Localização Câmeras Extras" />
                     <p className="text-xs text-muted-foreground -mt-1">
                       Quantidade e localização das câmeras extras por veículo.
                     </p>
