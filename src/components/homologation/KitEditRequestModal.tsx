@@ -29,7 +29,9 @@ import {
   Plus, 
   Trash2,
   ArrowRight,
-  Cpu
+  Cpu,
+  CheckCircle2,
+  Clock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,6 +58,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
   const [submitting, setSubmitting] = useState(false);
   const [observation, setObservation] = useState("");
   const [mode, setMode] = useState<'edit' | 'delete'>(initialMode);
+  const [submitted, setSubmitted] = useState(false);
   const { accessories: segsaleAccessories, modules: segsaleModules, loading: segsaleLoading } = useSegsaleExtras();
   
   // Form state for edited values
@@ -72,17 +75,18 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
       setNewName(kit.name);
       setNewCategory(kit.category || "");
       setNewEquipment(kit.equipment.map(e => ({ ...e })));
-      // Separate modules from accessories based on item naming patterns or keep all as accessories
       setNewAccessories(kit.accessories.map(a => ({ ...a })));
       setNewModules([]);
       setNewSupplies(kit.supplies.map(s => ({ ...s })));
       setObservation("");
       setMode(initialMode);
+      setSubmitted(false);
     }
   }, [kit, initialMode]);
 
   const handleClose = () => {
     setObservation("");
+    setSubmitted(false);
     onClose();
   };
 
@@ -132,71 +136,51 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
     }
   };
 
-
-  // Check if there are any changes
   const hasChanges = () => {
     if (!kit) return false;
-    
     if (newName.trim() !== kit.name) return true;
     if (newCategory !== (kit.category || "")) return true;
-    
-    // Compare equipment
     if (newEquipment.length !== kit.equipment.length) return true;
     for (let i = 0; i < newEquipment.length; i++) {
       if (newEquipment[i].item_name !== kit.equipment[i]?.item_name ||
           newEquipment[i].quantity !== kit.equipment[i]?.quantity) return true;
     }
-    
-    // Compare accessories
     if (newAccessories.length !== kit.accessories.length) return true;
     for (let i = 0; i < newAccessories.length; i++) {
       if (newAccessories[i].item_name !== kit.accessories[i]?.item_name ||
           newAccessories[i].quantity !== kit.accessories[i]?.quantity) return true;
     }
-    
-    // Compare supplies
     if (newSupplies.length !== kit.supplies.length) return true;
     for (let i = 0; i < newSupplies.length; i++) {
       if (newSupplies[i].item_name !== kit.supplies[i]?.item_name ||
           newSupplies[i].quantity !== kit.supplies[i]?.quantity) return true;
     }
-    
     return false;
   };
 
   const buildChangesDescription = () => {
     if (!kit) return [];
     const changes: string[] = [];
-    
     if (newName.trim() !== kit.name) {
       changes.push(`Nome: "${kit.name}" → "${newName.trim()}"`);
     }
-    
     if (newCategory !== (kit.category || "")) {
       const oldCat = KIT_CATEGORIES.find(c => c.value === kit.category)?.label || 'Nenhum';
       const newCat = KIT_CATEGORIES.find(c => c.value === newCategory)?.label || 'Nenhum';
       changes.push(`Tipo: "${oldCat}" → "${newCat}"`);
     }
-    
-    // Equipment changes
     const eqChanges = compareItems(kit.equipment, newEquipment, 'Equipamentos');
     if (eqChanges) changes.push(eqChanges);
-    
-    // Accessories changes
     const accChanges = compareItems(kit.accessories, newAccessories, 'Acessórios');
     if (accChanges) changes.push(accChanges);
-    
-    // Supplies changes
     const supChanges = compareItems(kit.supplies, newSupplies, 'Insumos');
     if (supChanges) changes.push(supChanges);
-    
     return changes;
   };
 
   const compareItems = (original: HomologationKitItem[], updated: HomologationKitItem[], label: string) => {
     const origNames = original.map(i => `${i.item_name} (${i.quantity}x)`).sort().join(', ');
     const newNames = updated.filter(i => i.item_name.trim()).map(i => `${i.item_name.trim().toUpperCase()} (${i.quantity}x)`).sort().join(', ');
-    
     if (origNames !== newNames) {
       return `${label}: [${origNames || 'vazio'}] → [${newNames || 'vazio'}]`;
     }
@@ -206,7 +190,6 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
   const handleSubmit = async () => {
     if (!kit) return;
     
-    // Handle delete request
     if (mode === 'delete') {
       if (!observation.trim()) {
         toast.error("Por favor, informe o motivo da exclusão");
@@ -227,9 +210,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
             accessories: kit.accessories,
             supplies: kit.supplies
           },
-          requested_changes: {
-            action: 'delete'
-          },
+          requested_changes: { action: 'delete' },
           reason: observation.trim(),
           requested_by: user?.id,
           status: 'pending'
@@ -240,11 +221,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
           .insert(insertData as any);
 
         if (error) throw error;
-
-        toast.success("Solicitação de exclusão enviada", {
-          description: "O gestor irá analisar sua solicitação."
-        });
-        handleClose();
+        setSubmitted(true);
       } catch (error) {
         console.error('Error submitting kit delete request:', error);
         toast.error("Erro ao enviar solicitação", {
@@ -256,13 +233,11 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
       return;
     }
     
-    // Handle edit request
     if (!hasChanges()) {
       toast.error("Nenhuma alteração foi feita");
       return;
     }
 
-    // Validate that equipment has at least one item
     const validEquipment = newEquipment.filter(e => e.item_name.trim());
     if (validEquipment.length === 0) {
       toast.error("O kit precisa ter pelo menos um equipamento");
@@ -275,16 +250,13 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
         name: newName.trim(),
         category: newCategory || null,
         equipment: newEquipment.filter(e => e.item_name.trim()).map(e => ({
-          ...e,
-          item_name: e.item_name.trim().toUpperCase()
+          ...e, item_name: e.item_name.trim().toUpperCase()
         })),
         accessories: newAccessories.filter(a => a.item_name.trim()).map(a => ({
-          ...a,
-          item_name: a.item_name.trim().toUpperCase()
+          ...a, item_name: a.item_name.trim().toUpperCase()
         })),
         supplies: newSupplies.filter(s => s.item_name.trim()).map(s => ({
-          ...s,
-          item_name: s.item_name.trim().toUpperCase()
+          ...s, item_name: s.item_name.trim().toUpperCase()
         }))
       };
 
@@ -311,11 +283,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
         .insert(insertData as any);
 
       if (error) throw error;
-
-      toast.success("Solicitação enviada com sucesso", {
-        description: "O gestor irá analisar sua solicitação de edição do kit."
-      });
-      handleClose();
+      setSubmitted(true);
     } catch (error) {
       console.error('Error submitting kit edit request:', error);
       toast.error("Erro ao enviar solicitação", {
@@ -330,6 +298,41 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
 
   const changesDescription = buildChangesDescription();
 
+  // Success state after submission
+  if (submitted) {
+    return (
+      <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-4">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                Solicitação Enviada!
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {mode === 'delete' 
+                  ? `A solicitação de exclusão do kit "${kit.name}" foi enviada e está aguardando aprovação do gestor.`
+                  : `A solicitação de edição do kit "${kit.name}" foi enviada e está aguardando aprovação do gestor.`
+                }
+              </p>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <Clock className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="text-xs text-amber-700 font-medium">
+                Aguardando aprovação do gestor
+              </span>
+            </div>
+            <Button onClick={handleClose} className="mt-4 w-full">
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const renderItemList = (
     items: HomologationKitItem[],
     type: 'equipment' | 'accessory' | 'supply',
@@ -343,12 +346,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
           <Label className="text-sm font-medium">{label}</Label>
           {type === 'accessory' && segsaleLoading && <Loader2 className="h-3 w-3 animate-spin" />}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addItem(type)}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => addItem(type)}>
           <Plus className="h-3 w-3 mr-1" />
           Adicionar
         </Button>
@@ -362,18 +360,11 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
             <div key={index} className="flex items-center gap-2">
               <div className="flex-1">
                 {type === 'accessory' ? (
-                  <Select
-                    value={item.item_name}
-                    onValueChange={(value) => updateItem(type, index, 'item_name', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione acessório" />
-                    </SelectTrigger>
+                  <Select value={item.item_name} onValueChange={(value) => updateItem(type, index, 'item_name', value)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione acessório" /></SelectTrigger>
                     <SelectContent>
                       {segsaleAccessories.map((option) => (
-                        <SelectItem key={option.id} value={option.nome}>
-                          {option.nome}
-                        </SelectItem>
+                        <SelectItem key={option.id} value={option.nome}>{option.nome}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -387,19 +378,11 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
                 )}
               </div>
               <Input
-                type="number"
-                min={1}
-                value={item.quantity}
+                type="number" min={1} value={item.quantity}
                 onChange={(e) => updateItem(type, index, 'quantity', parseInt(e.target.value) || 1)}
                 className="w-20"
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeItem(type, index)}
-                className="text-destructive hover:text-destructive"
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(type, index)} className="text-destructive hover:text-destructive">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -417,12 +400,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
           <Label className="text-sm font-medium">Módulos</Label>
           {segsaleLoading && <Loader2 className="h-3 w-3 animate-spin" />}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addItem('module')}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => addItem('module')}>
           <Plus className="h-3 w-3 mr-1" />
           Adicionar
         </Button>
@@ -435,36 +413,21 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
           {newModules.map((item, index) => (
             <div key={index} className="flex items-center gap-2">
               <div className="flex-1">
-                <Select
-                  value={item.item_name}
-                  onValueChange={(value) => updateItem('module', index, 'item_name', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione módulo" />
-                  </SelectTrigger>
+                <Select value={item.item_name} onValueChange={(value) => updateItem('module', index, 'item_name', value)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione módulo" /></SelectTrigger>
                   <SelectContent>
                     {segsaleModules.map((option) => (
-                      <SelectItem key={option.id} value={option.nome}>
-                        {option.nome}
-                      </SelectItem>
+                      <SelectItem key={option.id} value={option.nome}>{option.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <Input
-                type="number"
-                min={1}
-                value={item.quantity}
+                type="number" min={1} value={item.quantity}
                 onChange={(e) => updateItem('module', index, 'quantity', parseInt(e.target.value) || 1)}
                 className="w-20"
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeItem('module', index)}
-                className="text-destructive hover:text-destructive"
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => removeItem('module', index)} className="text-destructive hover:text-destructive">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -499,7 +462,6 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
 
             <Separator />
 
-            {/* Delete Mode - Only show observation field */}
             {mode === 'delete' ? (
               <div className="space-y-4">
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
@@ -507,8 +469,6 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
                     ⚠️ Você está solicitando a exclusão deste kit. Esta ação será analisada pelo gestor.
                   </p>
                 </div>
-                
-                {/* Observation/Reason - Required for delete */}
                 <div className="space-y-2">
                   <Label htmlFor="observation" className="text-sm font-medium">
                     Motivo da Exclusão *
@@ -524,31 +484,18 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
               </div>
             ) : (
               <>
-                {/* Edit Form */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="kit-name" className="text-sm font-medium">
-                      Nome do Kit
-                    </Label>
-                    <Input
-                      id="kit-name"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Nome do kit..."
-                    />
+                    <Label htmlFor="kit-name" className="text-sm font-medium">Nome do Kit</Label>
+                    <Input id="kit-name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome do kit..." />
                   </div>
-
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Tipo do Kit</Label>
                     <Select value={newCategory} onValueChange={setNewCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo..." />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione o tipo..." /></SelectTrigger>
                       <SelectContent>
                         {KIT_CATEGORIES.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </SelectItem>
+                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -556,43 +503,15 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
                 </div>
 
                 <Separator />
-
-                {/* Equipment */}
-                {renderItemList(
-                  newEquipment,
-                  'equipment',
-                  <Wrench className="h-4 w-4 text-muted-foreground" />,
-                  'Equipamentos'
-                )}
-
+                {renderItemList(newEquipment, 'equipment', <Wrench className="h-4 w-4 text-muted-foreground" />, 'Equipamentos')}
                 <Separator />
-
-                {/* Accessories */}
-                {renderItemList(
-                  newAccessories,
-                  'accessory',
-                  <Box className="h-4 w-4 text-muted-foreground" />,
-                  'Acessórios'
-                )}
-
+                {renderItemList(newAccessories, 'accessory', <Box className="h-4 w-4 text-muted-foreground" />, 'Acessórios')}
                 <Separator />
-
-                {/* Modules */}
                 {renderModulesSection()}
-
+                <Separator />
+                {renderItemList(newSupplies, 'supply', <Package className="h-4 w-4 text-muted-foreground" />, 'Insumos')}
                 <Separator />
 
-                {/* Supplies */}
-                {renderItemList(
-                  newSupplies,
-                  'supply',
-                  <Package className="h-4 w-4 text-muted-foreground" />,
-                  'Insumos'
-                )}
-
-                <Separator />
-
-                {/* Changes Preview */}
                 {changesDescription.length > 0 && (
                   <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                     <p className="text-sm font-medium text-primary mb-2 flex items-center gap-2">
@@ -607,14 +526,10 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
                   </div>
                 )}
 
-                {/* Observation */}
                 <div className="space-y-2">
-                  <Label htmlFor="observation" className="text-sm font-medium">
-                    Observação / Motivo
-                  </Label>
+                  <Label htmlFor="observation" className="text-sm font-medium">Observação / Motivo</Label>
                   <Textarea
-                    id="observation"
-                    value={observation}
+                    id="observation" value={observation}
                     onChange={(e) => setObservation(e.target.value)}
                     placeholder="Descreva o motivo da solicitação..."
                     rows={3}
@@ -626,19 +541,13 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
         </ScrollArea>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={submitting}>
-            Cancelar
-          </Button>
+          <Button variant="outline" onClick={handleClose} disabled={submitting}>Cancelar</Button>
           <Button 
             onClick={handleSubmit} 
             disabled={submitting || (mode === 'edit' && !hasChanges()) || (mode === 'delete' && !observation.trim())}
             variant={mode === 'delete' ? 'destructive' : 'default'}
           >
-            {submitting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4 mr-2" />
-            )}
+            {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
             {mode === 'delete' ? 'Solicitar Exclusão' : 'Enviar Solicitação'}
           </Button>
         </DialogFooter>
