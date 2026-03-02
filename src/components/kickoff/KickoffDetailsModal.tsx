@@ -34,6 +34,7 @@ interface InstallationLocation {
   city: string;
   neighborhood?: string;
   street?: string;
+  plates?: string[];
 }
 
 interface Contact {
@@ -64,7 +65,7 @@ export const KickoffDetailsModal = ({
 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [installationLocations, setInstallationLocations] = useState<InstallationLocation[]>([
-    { cep: "", state: "", city: "", neighborhood: "", street: "" },
+    { cep: "", state: "", city: "", neighborhood: "", street: "", plates: [] },
   ]);
   const [particularityDetails, setParticularityDetails] = useState("");
   const [notes, setNotes] = useState("");
@@ -421,17 +422,48 @@ export const KickoffDetailsModal = ({
   const addLocation = () => {
     setInstallationLocations([
       ...installationLocations,
-      { cep: "", state: "", city: "", neighborhood: "", street: "" },
+      { cep: "", state: "", city: "", neighborhood: "", street: "", plates: [] },
     ]);
+  };
+
+  // Get all plates from vehicles
+  const allPlates: string[] = vehicles
+    .map((v) => v.plate)
+    .filter((p): p is string => !!p && p !== "Não informada");
+
+  const togglePlateForLocation = (locationIndex: number, plate: string) => {
+    setInstallationLocations((prev) => {
+      const updated = [...prev];
+      const currentPlates = updated[locationIndex].plates || [];
+      updated[locationIndex] = {
+        ...updated[locationIndex],
+        plates: currentPlates.includes(plate)
+          ? currentPlates.filter((p) => p !== plate)
+          : [...currentPlates, plate],
+      };
+      return updated;
+    });
+  };
+
+  const toggleAllPlatesForLocation = (locationIndex: number) => {
+    setInstallationLocations((prev) => {
+      const updated = [...prev];
+      const currentPlates = updated[locationIndex].plates || [];
+      updated[locationIndex] = {
+        ...updated[locationIndex],
+        plates: currentPlates.length === allPlates.length ? [] : [...allPlates],
+      };
+      return updated;
+    });
   };
 
   const removeLocation = (index: number) => {
     setInstallationLocations(installationLocations.filter((_, i) => i !== index));
   };
 
-  const updateLocation = (index: number, field: keyof InstallationLocation, value: string) => {
+  const updateLocation = (index: number, field: keyof InstallationLocation, value: any) => {
     const updated = [...installationLocations];
-    updated[index][field] = value;
+    updated[index] = { ...updated[index], [field]: value };
     setInstallationLocations(updated);
   };
 
@@ -1133,8 +1165,12 @@ export const KickoffDetailsModal = ({
                   Adicionar Local
                 </Button>
               </div>
-              {installationLocations.map((location, index) => (
-                <div key={index} className="border rounded-lg p-3 space-y-2">
+              {installationLocations.map((location, index) => {
+                const selectedPlates = location.plates || [];
+                const allSelected = allPlates.length > 0 && selectedPlates.length === allPlates.length;
+
+                return (
+                <div key={index} className="border rounded-lg p-3 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground">Local {index + 1}</span>
                     {installationLocations.length > 1 && (
@@ -1143,6 +1179,43 @@ export const KickoffDetailsModal = ({
                       </Button>
                     )}
                   </div>
+
+                  {/* Plate selection */}
+                  {allPlates.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Placas neste local</Label>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <div className="flex items-center gap-2 mr-3 border-r pr-3">
+                          <Checkbox
+                            id={`all-plates-loc-${index}`}
+                            checked={allSelected}
+                            onCheckedChange={() => toggleAllPlatesForLocation(index)}
+                          />
+                          <Label htmlFor={`all-plates-loc-${index}`} className="text-xs cursor-pointer font-medium">
+                            Todas
+                          </Label>
+                        </div>
+                        {allPlates.map((plate) => (
+                          <div key={plate} className="flex items-center gap-1.5">
+                            <Checkbox
+                              id={`plate-loc-${index}-${plate}`}
+                              checked={selectedPlates.includes(plate)}
+                              onCheckedChange={() => togglePlateForLocation(index, plate)}
+                            />
+                            <Label
+                              htmlFor={`plate-loc-${index}-${plate}`}
+                              className={`text-xs cursor-pointer ${
+                                selectedPlates.includes(plate) ? "text-primary font-medium" : "text-muted-foreground"
+                              }`}
+                            >
+                              {plate}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     <div>
                       <Label className="text-sm">CEP</Label>
@@ -1152,7 +1225,6 @@ export const KickoffDetailsModal = ({
                           onChange={(e) => {
                             const formatted = formatCEP(e.target.value);
                             updateLocation(index, "cep", formatted);
-                            // Auto-fetch when a valid CEP is typed
                             if (isValidCEP(formatted)) {
                               fetchAndFillCEP(index, formatted);
                             }
@@ -1205,7 +1277,8 @@ export const KickoffDetailsModal = ({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Particularidade de Instalação */}
