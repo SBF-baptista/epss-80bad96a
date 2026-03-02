@@ -159,12 +159,51 @@ const Auth = () => {
             title: "Limite de envio atingido",
             description: "Use o último código recebido. Verifique também a caixa de spam. Novo envio em 3 minutos."
           });
-        } else if (error.message.includes("Signups not allowed") || error.message.includes("not found")) {
-          toast({
-            title: "Erro",
-            description: "E-mail não cadastrado no sistema",
-            variant: "destructive"
-          });
+        } else if (error.message.includes("Signups not allowed") || error.message.includes("not found") || error.message.includes("otp_disabled")) {
+          // Auto-register: create account and send password reset email
+          try {
+            const tempPassword = crypto.randomUUID() + 'A1!';
+            const { error: signUpError } = await supabase.auth.signUp({
+              email,
+              password: tempPassword,
+              options: { emailRedirectTo: `${window.location.origin}/reset-password` }
+            });
+            if (signUpError) {
+              // If user already exists but OTP failed for other reason
+              if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
+                // User exists, just send password reset
+                await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/reset-password`
+                });
+                toast({
+                  title: "E-mail enviado",
+                  description: "Enviamos um link para você redefinir sua senha. Verifique seu e-mail e a caixa de spam."
+                });
+              } else {
+                toast({
+                  title: "Erro",
+                  description: "Não foi possível criar sua conta. Tente novamente.",
+                  variant: "destructive"
+                });
+              }
+            } else {
+              // New user created, send password reset so they can set their own password
+              await supabase.auth.signOut(); // sign out the auto-created session
+              await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`
+              });
+              toast({
+                title: "Conta criada!",
+                description: "Enviamos um e-mail para você definir sua senha. Verifique seu e-mail e a caixa de spam."
+              });
+            }
+          } catch {
+            toast({
+              title: "Erro",
+              description: "Erro ao processar cadastro. Tente novamente.",
+              variant: "destructive"
+            });
+          }
         } else {
           toast({
             title: "Erro",
