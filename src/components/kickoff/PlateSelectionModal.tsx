@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, CheckSquare, Car, MapPin, AlertTriangle } from "lucide-react";
+import { Search, CheckSquare, Car } from "lucide-react";
 
 interface PlateSelectionModalProps {
   open: boolean;
@@ -33,39 +33,33 @@ export const PlateSelectionModal = ({
 }: PlateSelectionModalProps) => {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set(initialSelected));
-  const [confirmRelocate, setConfirmRelocate] = useState<string | null>(null);
+  
 
   // Reset state when modal opens
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
       setSelected(new Set(initialSelected));
       setSearch("");
-      setConfirmRelocate(null);
     }
     onOpenChange(isOpen);
   };
 
-  const filteredPlates = useMemo(() => {
-    if (!search.trim()) return allPlates;
-    const term = search.toLowerCase();
-    return allPlates.filter((plate) => plate.toLowerCase().includes(term));
-  }, [allPlates, search]);
+  // Only show plates that are available (not assigned to other locations) or already assigned here
+  const availablePlates = useMemo(() => {
+    return allPlates.filter((plate) => {
+      const assignedTo = plateAssignments.get(plate);
+      // Show if: not assigned anywhere, or assigned to current location
+      return assignedTo === undefined || assignedTo === locationIndex;
+    });
+  }, [allPlates, plateAssignments, locationIndex]);
 
-  const getPlateStatus = (plate: string): "available" | "assigned_here" | "assigned_elsewhere" => {
-    if (selected.has(plate)) return "assigned_here";
-    const assignedTo = plateAssignments.get(plate);
-    if (assignedTo !== undefined && assignedTo !== locationIndex) return "assigned_elsewhere";
-    return "available";
-  };
+  const filteredPlates = useMemo(() => {
+    if (!search.trim()) return availablePlates;
+    const term = search.toLowerCase();
+    return availablePlates.filter((plate) => plate.toLowerCase().includes(term));
+  }, [availablePlates, search]);
 
   const togglePlate = (plate: string) => {
-    const status = getPlateStatus(plate);
-
-    if (status === "assigned_elsewhere" && !selected.has(plate)) {
-      setConfirmRelocate(plate);
-      return;
-    }
-
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(plate)) {
@@ -75,13 +69,6 @@ export const PlateSelectionModal = ({
       }
       return next;
     });
-  };
-
-  const confirmRelocatePlate = () => {
-    if (confirmRelocate) {
-      setSelected((prev) => new Set(prev).add(confirmRelocate));
-      setConfirmRelocate(null);
-    }
   };
 
   const selectAllVisible = () => {
@@ -135,29 +122,6 @@ export const PlateSelectionModal = ({
               </div>
             </div>
 
-            {/* Relocate confirmation */}
-            {confirmRelocate && (
-              <div className="mx-6 mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                    A placa <strong>{confirmRelocate}</strong> já está vinculada ao Local{" "}
-                    {(plateAssignments.get(confirmRelocate) ?? 0) + 1}.
-                  </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
-                    Deseja realocar esta placa para este local?
-                  </p>
-                  <div className="flex gap-2">
-                    <Button type="button" size="sm" variant="destructive" onClick={confirmRelocatePlate}>
-                      Realocar
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmRelocate(null)}>
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Plate list */}
             <ScrollArea className="flex-1 px-6">
@@ -166,9 +130,7 @@ export const PlateSelectionModal = ({
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhuma placa encontrada</p>
                 ) : (
                   filteredPlates.map((plate) => {
-                    const status = getPlateStatus(plate);
                     const isSelected = selected.has(plate);
-                    const assignedTo = plateAssignments.get(plate);
 
                     return (
                       <div
@@ -183,11 +145,6 @@ export const PlateSelectionModal = ({
                         <Checkbox checked={isSelected} onCheckedChange={() => togglePlate(plate)} />
                         <Car className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span className="font-mono font-medium text-sm flex-1">{plate}</span>
-                        {status === "assigned_elsewhere" && !isSelected && (
-                          <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800">
-                            Local {(assignedTo ?? 0) + 1}
-                          </Badge>
-                        )}
                         {isSelected && (
                           <Badge variant="default" className="text-xs">
                             Selecionada
