@@ -60,6 +60,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Session timeout: 30min inactivity + 8hr absolute
+  useEffect(() => {
+    if (!session) return
+
+    const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes
+    const ABSOLUTE_TIMEOUT = 8 * 60 * 60 * 1000 // 8 hours
+
+    let inactivityTimer: ReturnType<typeof setTimeout>
+
+    const handleAutoSignOut = async () => {
+      try {
+        await logLogout()
+        await supabase.auth.signOut()
+      } catch (e) {
+        console.error('Auto sign-out error:', e)
+      }
+    }
+
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer)
+      inactivityTimer = setTimeout(handleAutoSignOut, INACTIVITY_TIMEOUT)
+    }
+
+    // Absolute session timeout
+    const absoluteTimer = setTimeout(handleAutoSignOut, ABSOLUTE_TIMEOUT)
+
+    // Track user activity for inactivity timeout
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart']
+    activityEvents.forEach(e => window.addEventListener(e, resetInactivityTimer))
+    resetInactivityTimer()
+
+    return () => {
+      clearTimeout(inactivityTimer)
+      clearTimeout(absoluteTimer)
+      activityEvents.forEach(e => window.removeEventListener(e, resetInactivityTimer))
+    }
+  }, [session])
+
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/kanban`
     
