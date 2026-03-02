@@ -103,9 +103,13 @@ const Auth = () => {
     }
 
     if (isOtpRequestBlocked) {
+      setStep('code');
+      if (!otpExpiry || new Date() > otpExpiry) {
+        setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
+      }
       toast({
-        title: "Aguarde",
-        description: `Aguarde ${otpCooldownSeconds}s para solicitar um novo código.`
+        title: "Código já solicitado",
+        description: "Vá para a próxima etapa e informe o código recebido no e-mail."
       });
       return;
     }
@@ -121,21 +125,14 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("rate") || error.message.includes("security") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
-          // Supabase throttling: não avançar automaticamente sem garantia de envio novo
+          // Em caso de throttling, segue o fluxo para não travar na tela de e-mail
+          setStep('code');
+          setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
           setOtpRequestBlockedUntil(new Date(Date.now() + 60 * 1000));
-
-          if (otpExpiry && new Date() < otpExpiry) {
-            setStep('code');
-            toast({
-              title: "Use o código já enviado",
-              description: "Por segurança, aguarde alguns segundos para solicitar outro."
-            });
-          } else {
-            toast({
-              title: "Aguarde",
-              description: "Você solicitou códigos em sequência. Tente novamente em instantes."
-            });
-          }
+          toast({
+            title: "Código já enviado",
+            description: "Siga para a próxima etapa e informe o código de 6 dígitos."
+          });
         } else if (error.message.includes("Signups not allowed") || error.message.includes("not found")) {
           toast({
             title: "Erro",
