@@ -99,14 +99,6 @@ const InstallationLocationsSection = ({
   };
 
   const handleConfirmPlates = (plates: string[]) => {
-    installationLocations.forEach((loc, idx) => {
-      if (idx !== activeLocationIndex) {
-        const filtered = (loc.plates || []).filter((p) => !plates.includes(p));
-        if (filtered.length !== (loc.plates || []).length) {
-          onSetPlatesForLocation(idx, filtered);
-        }
-      }
-    });
     onSetPlatesForLocation(activeLocationIndex, plates);
   };
 
@@ -331,11 +323,6 @@ export const KickoffDetailsModal = ({
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
 
-  // Camera extras sale state
-  const [cameraExtraSale, setCameraExtraSale] = useState<{ quantity: number | ""; unitPrice: number | "" }>({
-    quantity: "",
-    unitPrice: "",
-  });
   // Accessories sale state - supports multiple items
   interface AccessorySaleItem {
     description: string;
@@ -931,14 +918,7 @@ export const KickoffDetailsModal = ({
       } = await supabase.auth.getUser();
 
       // Prepare sales data
-      const cameraExtraSaleData =
-        (Number(cameraExtraSale.quantity) || 0) > 0
-          ? {
-              quantity: Number(cameraExtraSale.quantity) || 0,
-              unitPrice: Number(cameraExtraSale.unitPrice) || 0,
-              total: (Number(cameraExtraSale.quantity) || 0) * (Number(cameraExtraSale.unitPrice) || 0),
-            }
-          : null;
+      const cameraExtraSaleData = null;
 
       const accessoriesSaleData = accessoriesSaleItems
         .filter((item) => item.description.trim() !== "" && (Number(item.quantity) || 0) > 0)
@@ -1175,58 +1155,6 @@ export const KickoffDetailsModal = ({
                 })}
               </div>
             )}
-
-            {/* Venda Câmeras Extras */}
-            <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-              <div className="flex items-center gap-2 mb-3">
-                <Camera className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">Câmeras Extras</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={cameraExtraSale.quantity === "" ? "" : cameraExtraSale.quantity}
-                    onChange={(e) =>
-                      setCameraExtraSale((prev) => ({
-                        ...prev,
-                        quantity: e.target.value === "" ? "" : parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>Valor unitário (R$)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={cameraExtraSale.unitPrice === "" ? "" : cameraExtraSale.unitPrice}
-                    onChange={(e) =>
-                      setCameraExtraSale((prev) => ({
-                        ...prev,
-                        unitPrice: e.target.value === "" ? "" : parseFloat(e.target.value) || 0,
-                      }))
-                    }
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>Total (R$)</Label>
-                  <Input
-                    type="text"
-                    readOnly
-                    value={(
-                      (Number(cameraExtraSale.quantity) || 0) * (Number(cameraExtraSale.unitPrice) || 0)
-                    ).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                    className="mt-1 bg-muted"
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* Venda de Acessórios */}
             <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
