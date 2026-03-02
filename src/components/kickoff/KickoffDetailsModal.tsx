@@ -1330,7 +1330,7 @@ export const KickoffDetailsModal = ({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-sm text-sm p-3">
-                    <p>São condições específicas definidas pelo cliente que influenciam como e quando o rastreador será instalado na frota. Podem envolver aspectos técnicos (tipo de veículo, modelo, forma de ligação elétrica) ou operacionais (horário preferido, liberação parcial da frota, local de instalação, tempo máximo de parada).</p>
+                    <p>São condições específicas definidas pelo cliente que influenciam como e quando a instalação será realizada. Podem envolver aspectos operacionais, como horário preferido, liberação parcial da frota ou tempo máximo de parada.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
