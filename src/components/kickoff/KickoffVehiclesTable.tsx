@@ -841,7 +841,7 @@ export const KickoffVehiclesTable = ({
                         {vehicle.plate || "Não informada"}
                       </span>
                     </TableCell>
-                    <TableCell className="border-r border-border align-top">
+                    <TableCell className="border-r border-border">
                       <span className="text-xs break-words inline-block">
                         {capitalizeWords(vehicle.usage_type || "")}
                       </span>
