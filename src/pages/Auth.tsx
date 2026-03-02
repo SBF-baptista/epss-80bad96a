@@ -65,18 +65,32 @@ const Auth = () => {
         email,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
       if (error) {
-        toast({
-          title: "Erro",
-          description: error.message.includes("Signups not allowed") || error.message.includes("otp")
-            ? "E-mail não cadastrado no sistema"
-            : "Erro ao enviar código de verificação",
-          variant: "destructive"
-        });
+        if (error.message.includes("rate") || error.message.includes("security") || error.status === 429) {
+          const seconds = error.message.match(/after (\d+) seconds/)?.[1];
+          toast({
+            title: "Aguarde",
+            description: seconds 
+              ? `Por segurança, aguarde ${seconds} segundos antes de solicitar novamente.`
+              : "Muitas tentativas. Aguarde alguns segundos e tente novamente.",
+            variant: "destructive"
+          });
+        } else if (error.message.includes("Signups not allowed") || error.message.includes("not found")) {
+          toast({
+            title: "Erro",
+            description: "E-mail não cadastrado no sistema",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erro",
+            description: "Erro ao enviar código de verificação: " + error.message,
+            variant: "destructive"
+          });
+        }
       } else {
         setStep('code');
         setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
@@ -84,7 +98,7 @@ const Auth = () => {
         setOtpCode("");
         toast({
           title: "Código enviado",
-          description: "Verifique seu e-mail para o código de verificação"
+          description: "Verifique seu e-mail para o código de 6 dígitos"
         });
       }
     } catch {
