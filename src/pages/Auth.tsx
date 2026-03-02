@@ -51,6 +51,29 @@ const Auth = () => {
 
   const isBlocked = blockedUntil && new Date() < blockedUntil;
 
+  // Forgot password
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({ title: "Erro", description: "Informe seu e-mail primeiro", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      if (error) {
+        toast({ title: "Erro", description: "Erro ao enviar e-mail de redefinição: " + error.message, variant: "destructive" });
+      } else {
+        toast({ title: "E-mail enviado", description: "Verifique seu e-mail para redefinir a senha" });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Erro inesperado", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Step 1: Send OTP via Supabase magic link
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,6 +351,9 @@ const Auth = () => {
               </Button>
               <Button type="button" variant="ghost" className="w-full" onClick={() => { setStep('email'); setPassword(''); setOtpCode(''); }}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar ao início
+              </Button>
+              <Button type="button" variant="link" className="w-full text-sm" onClick={handleForgotPassword} disabled={loading}>
+                Esqueci minha senha
               </Button>
             </form>
           )}
