@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.send-daily-agenda]
 verify_jwt = false
+
+[functions.update-bem]
+verify_jwt = false
+
+[functions.trocar-bem]
+verify_jwt = false
