@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlateSelectionModal } from "./PlateSelectionModal";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
@@ -1322,6 +1323,16 @@ export const KickoffDetailsModal = ({
               <div className="flex items-center gap-2 mb-3">
                 <Settings className="h-5 w-5 text-primary" />
                 <h3 className="font-bold text-lg">Particularidades da Instalação</h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-sm">
+                      São condições específicas definidas pelo cliente que influenciam como e quando o rastreador será instalado na frota. Podem envolver aspectos técnicos (tipo de veículo, modelo, forma de ligação elétrica) ou operacionais (horário preferido, liberação parcial da frota, local de instalação, tempo máximo de parada).
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <Textarea
                 value={particularityDetails}
