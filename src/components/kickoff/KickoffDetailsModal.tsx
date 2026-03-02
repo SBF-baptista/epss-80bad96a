@@ -1323,13 +1323,15 @@ export const KickoffDetailsModal = ({
               <div className="flex items-center gap-2 mb-3">
                 <Settings className="h-5 w-5 text-primary" />
                 <h3 className="font-bold text-lg">Particularidades da Instalação</h3>
-                <TooltipProvider>
+                <TooltipProvider delayDuration={100}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      <button type="button" className="inline-flex">
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-sm">
-                      São condições específicas definidas pelo cliente que influenciam como e quando o rastreador será instalado na frota. Podem envolver aspectos técnicos (tipo de veículo, modelo, forma de ligação elétrica) ou operacionais (horário preferido, liberação parcial da frota, local de instalação, tempo máximo de parada).
+                    <TooltipContent side="top" className="max-w-sm text-sm z-[9999] p-3">
+                      <p>São condições específicas definidas pelo cliente que influenciam como e quando o rastreador será instalado na frota. Podem envolver aspectos técnicos (tipo de veículo, modelo, forma de ligação elétrica) ou operacionais (horário preferido, liberação parcial da frota, local de instalação, tempo máximo de parada).</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
