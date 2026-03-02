@@ -22,6 +22,7 @@ import UserManagement from "./pages/UserManagement";
 import Kickoff from "./pages/Kickoff";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
+import ActivateAccount from "./pages/ActivateAccount";
 import NotFound from "./pages/NotFound";
 import SmartRedirect from "@/components/SmartRedirect";
 import SegsaleTest from "./pages/SegsaleTest";
@@ -67,6 +68,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/ativar" element={<ActivateAccount />} />
               
               {/* Smart redirect based on user role */}
               <Route path="/" element={

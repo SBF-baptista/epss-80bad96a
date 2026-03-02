@@ -17,10 +17,11 @@ export interface User {
 
 export interface CreateUserData {
   email: string
-  password: string
+  name?: string
   baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador'
   permissions?: Record<string, string>
   accessProfileId?: string
+  redirectTo?: string
 }
 
 export interface UpdateUserData {
@@ -48,9 +49,10 @@ class UserManagementService {
       const requestBody = {
         action: 'create',
         email: userData.email,
-        password: userData.password,
+        name: userData.name,
         baseRole: userData.baseRole,
-        permissions: userData.permissions
+        permissions: userData.permissions,
+        redirectTo: userData.redirectTo
       };
 
       const { data, error } = await supabase.functions.invoke('manage-users', {

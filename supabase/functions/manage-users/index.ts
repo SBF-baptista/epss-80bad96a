@@ -78,12 +78,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Action:', action);
 
-    // CREATE USER
+    // CREATE USER (via invite - no password)
     if (req.method === 'POST' && action === 'create') {
-      const { email, password, baseRole, permissions } = requestData;
+      const { email, baseRole, permissions, redirectTo, name } = requestData;
       
-      if (!email || !password || !baseRole) {
-        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+      if (!email || !baseRole) {
+        return new Response(JSON.stringify({ error: 'Missing required fields (email, baseRole)' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -97,26 +97,27 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true
+      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: redirectTo || undefined,
+        data: name ? { display_name: name } : undefined
       });
 
-      if (createError) {
-        return new Response(JSON.stringify({ error: createError.message }), {
+      if (inviteError) {
+        return new Response(JSON.stringify({ error: inviteError.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
+      const newUserId = inviteData.user!.id;
+
       await supabaseAdmin.from('usuarios').insert({
-        id: newUser.user!.id,
-        email: newUser.user!.email!
+        id: newUserId,
+        email: email
       });
 
       await supabaseAdmin.from('user_roles').insert({
-        user_id: newUser.user!.id,
+        user_id: newUserId,
         role: baseRole
       });
 
@@ -124,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
         const permissionRecords = Object.entries(permissions)
           .filter(([_, level]) => level !== 'none')
           .map(([module, level]) => ({
-            user_id: newUser.user!.id,
+            user_id: newUserId,
             module,
             permission: level
           }));
@@ -136,8 +137,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       return new Response(JSON.stringify({ 
         success: true, 
-        user: newUser.user,
-        message: 'User created successfully'
+        user: inviteData.user,
+        message: 'Convite enviado com sucesso! O usuário receberá um e-mail para definir sua senha.'
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
