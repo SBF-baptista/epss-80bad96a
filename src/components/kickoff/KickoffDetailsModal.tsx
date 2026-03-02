@@ -668,7 +668,14 @@ export const KickoffDetailsModal = ({
   };
 
   const removeLocation = (index: number) => {
-    setInstallationLocations(installationLocations.filter((_, i) => i !== index));
+    // Clear plates from the removed location so they become available again
+    const updated = installationLocations.map((loc, i) => {
+      if (i === index) {
+        return { ...loc, plates: [] };
+      }
+      return loc;
+    });
+    setInstallationLocations(updated.filter((_, i) => i !== index));
   };
 
   const updateLocation = (index: number, field: keyof InstallationLocation, value: any) => {
