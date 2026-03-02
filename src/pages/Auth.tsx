@@ -63,7 +63,18 @@ const Auth = () => {
         redirectTo: `${window.location.origin}/reset-password`
       });
       if (error) {
-        toast({ title: "Erro", description: "Erro ao enviar e-mail de redefinição: " + error.message, variant: "destructive" });
+        if (error.message.includes("security") || error.message.includes("rate") || error.status === 429) {
+          const seconds = error.message.match(/after (\d+) seconds/)?.[1];
+          toast({
+            title: "Aguarde",
+            description: seconds
+              ? `Por segurança, aguarde ${seconds} segundos antes de solicitar novamente.`
+              : "Muitas tentativas. Aguarde alguns segundos e tente novamente.",
+            variant: "destructive"
+          });
+        } else {
+          toast({ title: "Erro", description: "Erro ao enviar e-mail de redefinição. Tente novamente.", variant: "destructive" });
+        }
       } else {
         toast({ title: "E-mail enviado", description: "Verifique seu e-mail para redefinir a senha" });
       }
