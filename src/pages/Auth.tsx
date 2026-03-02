@@ -63,20 +63,17 @@ const Auth = () => {
         redirectTo: `${window.location.origin}/reset-password`
       });
       if (error) {
-        if (error.message.includes("security") || error.message.includes("rate") || error.status === 429) {
-          const seconds = error.message.match(/after (\d+) seconds/)?.[1];
+        // Rate limit or security throttle — show friendly message as if sent
+        if (error.message.includes("security") || error.message.includes("rate") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
           toast({
-            title: "Aguarde",
-            description: seconds
-              ? `Por segurança, aguarde ${seconds} segundos antes de solicitar novamente.`
-              : "Muitas tentativas. Aguarde alguns segundos e tente novamente.",
-            variant: "destructive"
+            title: "E-mail enviado",
+            description: "Se o e-mail estiver cadastrado, você receberá as instruções para redefinir sua senha."
           });
         } else {
           toast({ title: "Erro", description: "Erro ao enviar e-mail de redefinição. Tente novamente.", variant: "destructive" });
         }
       } else {
-        toast({ title: "E-mail enviado", description: "Verifique seu e-mail para redefinir a senha" });
+        toast({ title: "E-mail enviado", description: "Se o e-mail estiver cadastrado, você receberá as instruções para redefinir sua senha." });
       }
     } catch {
       toast({ title: "Erro", description: "Erro inesperado", variant: "destructive" });
@@ -103,14 +100,10 @@ const Auth = () => {
       });
 
       if (error) {
-        if (error.message.includes("rate") || error.message.includes("security") || error.status === 429) {
-          const seconds = error.message.match(/after (\d+) seconds/)?.[1];
+        if (error.message.includes("rate") || error.message.includes("security") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
           toast({
-            title: "Aguarde",
-            description: seconds 
-              ? `Por segurança, aguarde ${seconds} segundos antes de solicitar novamente.`
-              : "Muitas tentativas. Aguarde alguns segundos e tente novamente.",
-            variant: "destructive"
+            title: "Código já enviado",
+            description: "Verifique seu e-mail. Um novo código pode ser solicitado em alguns segundos."
           });
         } else if (error.message.includes("Signups not allowed") || error.message.includes("not found")) {
           toast({
