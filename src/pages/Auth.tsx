@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,35 @@ import { logLogin } from "@/services/logService";
 
 type LoginStep = 'email' | 'code' | 'password';
 
+// --- Persistent cooldown helpers (localStorage) ---
+const COOLDOWN_KEY_PREFIX = 'otp_cooldown_';
+const COOLDOWN_NORMAL_MS = 60_000; // 60s after successful send
+const COOLDOWN_RATE_LIMITED_MS = 180_000; // 3min after 429
+
+function getCooldownKey(email: string) {
+  return COOLDOWN_KEY_PREFIX + email.toLowerCase().trim();
+}
+
+function getPersistedCooldownEnd(email: string): number {
+  try {
+    const val = localStorage.getItem(getCooldownKey(email));
+    return val ? parseInt(val, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setPersistedCooldown(email: string, durationMs: number) {
+  try {
+    localStorage.setItem(getCooldownKey(email), String(Date.now() + durationMs));
+  } catch { /* ignore */ }
+}
+
+function getRemainingCooldownSeconds(email: string): number {
+  const end = getPersistedCooldownEnd(email);
+  return Math.max(0, Math.ceil((end - Date.now()) / 1000));
+}
+
 const Auth = () => {
   const [step, setStep] = useState<LoginStep>('email');
   const [email, setEmail] = useState("");
@@ -23,7 +52,6 @@ const Auth = () => {
   const [attempts, setAttempts] = useState(0);
   const [blockedUntil, setBlockedUntil] = useState<Date | null>(null);
   const [otpExpiry, setOtpExpiry] = useState<Date | null>(null);
-  const [otpRequestBlockedUntil, setOtpRequestBlockedUntil] = useState<Date | null>(null);
   const [now, setNow] = useState(Date.now());
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -36,7 +64,7 @@ const Auth = () => {
     }
   }, [user, step, navigate]);
 
-  // Handle magic link callback (user clicked link in email)
+  // Handle magic link callback
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && (hash.includes('type=magiclink') || hash.includes('type=email'))) {
@@ -51,17 +79,15 @@ const Auth = () => {
     }
   }, []);
 
-  // Re-render a cada segundo para countdowns de bloqueio/cooldown
+  // Timer for countdowns
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   const isBlocked = blockedUntil && new Date() < blockedUntil;
-  const otpCooldownSeconds = otpRequestBlockedUntil
-    ? Math.max(0, Math.ceil((otpRequestBlockedUntil.getTime() - now) / 1000))
-    : 0;
-  const isOtpRequestBlocked = otpCooldownSeconds > 0;
+  const cooldownSeconds = getRemainingCooldownSeconds(email);
+  const isCooldownActive = cooldownSeconds > 0;
 
   // Forgot password
   const handleForgotPassword = async () => {
@@ -74,18 +100,13 @@ const Auth = () => {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
+      // Always show success message for security
+      toast({
+        title: "E-mail enviado",
+        description: "Se o e-mail estiver cadastrado, você receberá as instruções para redefinir sua senha."
+      });
       if (error) {
-        // Rate limit or security throttle — show friendly message as if sent
-        if (error.message.includes("security") || error.message.includes("rate") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
-          toast({
-            title: "E-mail enviado",
-            description: "Se o e-mail estiver cadastrado, você receberá as instruções para redefinir sua senha."
-          });
-        } else {
-          toast({ title: "Erro", description: "Erro ao enviar e-mail de redefinição. Tente novamente.", variant: "destructive" });
-        }
-      } else {
-        toast({ title: "E-mail enviado", description: "Se o e-mail estiver cadastrado, você receberá as instruções para redefinir sua senha." });
+        console.warn('Reset password error (hidden from user):', error.message);
       }
     } catch {
       toast({ title: "Erro", description: "Erro inesperado", variant: "destructive" });
@@ -94,7 +115,15 @@ const Auth = () => {
     }
   };
 
-  // Step 1: Send OTP via Supabase magic link
+  // Helper: advance to code step safely
+  const advanceToCodeStep = useCallback(() => {
+    setStep('code');
+    if (!otpExpiry || new Date() > otpExpiry) {
+      setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
+    }
+  }, [otpExpiry]);
+
+  // Step 1: Send OTP
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
@@ -102,14 +131,12 @@ const Auth = () => {
       return;
     }
 
-    if (isOtpRequestBlocked) {
-      setStep('code');
-      if (!otpExpiry || new Date() > otpExpiry) {
-        setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
-      }
+    // If cooldown active, advance to code step without making API call
+    if (isCooldownActive) {
+      advanceToCodeStep();
       toast({
         title: "Código já solicitado",
-        description: "Vá para a próxima etapa e informe o código recebido no e-mail."
+        description: `Use o código recebido no e-mail. Novo envio disponível em ${cooldownSeconds}s.`
       });
       return;
     }
@@ -118,20 +145,19 @@ const Auth = () => {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          shouldCreateUser: false,
-        }
+        options: { shouldCreateUser: false }
       });
 
       if (error) {
-        if (error.message.includes("rate") || error.message.includes("security") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
-          // Em caso de throttling, segue o fluxo para não travar na tela de e-mail
-          setStep('code');
-          setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
-          setOtpRequestBlockedUntil(new Date(Date.now() + 60 * 1000));
+        const isRateLimit = error.message.includes("rate") || error.message.includes("security") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit';
+
+        if (isRateLimit) {
+          // Apply longer cooldown on 429
+          setPersistedCooldown(email, COOLDOWN_RATE_LIMITED_MS);
+          advanceToCodeStep();
           toast({
-            title: "Código já enviado",
-            description: "Siga para a próxima etapa e informe o código de 6 dígitos."
+            title: "Limite de envio atingido",
+            description: "Use o último código recebido. Verifique também a caixa de spam. Novo envio em 3 minutos."
           });
         } else if (error.message.includes("Signups not allowed") || error.message.includes("not found")) {
           toast({
@@ -147,14 +173,15 @@ const Auth = () => {
           });
         }
       } else {
+        // Successful send — apply normal cooldown
+        setPersistedCooldown(email, COOLDOWN_NORMAL_MS);
         setStep('code');
         setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
-        setOtpRequestBlockedUntil(new Date(Date.now() + 60 * 1000));
         setAttempts(0);
         setOtpCode("");
         toast({
           title: "Código enviado",
-          description: "Verifique seu e-mail para o código de 6 dígitos"
+          description: "Verifique seu e-mail para o código de 6 dígitos. Confira também a caixa de spam."
         });
       }
     } catch {
@@ -220,7 +247,6 @@ const Auth = () => {
           });
         }
       } else {
-        // OTP verified → sign out OTP session → move to password step
         await supabase.auth.signOut();
         setStep('password');
         toast({
@@ -233,6 +259,19 @@ const Auth = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Resend code — respects cooldown
+  const handleResendCode = async () => {
+    if (isCooldownActive) {
+      toast({
+        title: "Aguarde",
+        description: `Novo envio disponível em ${cooldownSeconds}s. Use o último código recebido.`
+      });
+      return;
+    }
+    // Reuse email submit logic (without form event)
+    await handleEmailSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
 
   // Step 3: Sign in with password
@@ -314,13 +353,19 @@ const Auth = () => {
                   autoFocus
                 />
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading || isOtpRequestBlocked}>
-                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando...</> : (
-                  <><Mail className="mr-2 h-4 w-4" /> {isOtpRequestBlocked ? `Aguarde ${otpCooldownSeconds}s` : "Continuar"}</>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                {loading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando...</>
+                ) : isCooldownActive ? (
+                  <><Mail className="mr-2 h-4 w-4" /> Continuar (código já enviado)</>
+                ) : (
+                  <><Mail className="mr-2 h-4 w-4" /> Continuar</>
                 )}
               </Button>
-              {isOtpRequestBlocked && (
-                <p className="text-xs text-center text-muted-foreground">Aguarde alguns segundos para solicitar um novo código.</p>
+              {isCooldownActive && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Novo envio disponível em {cooldownSeconds}s. Clique em Continuar para inserir o código já recebido.
+                </p>
               )}
               <Button type="button" variant="link" className="w-full text-sm" onClick={handleForgotPassword} disabled={loading}>
                 Esqueci minha senha
@@ -350,7 +395,7 @@ const Auth = () => {
                     : `Válido por 5 minutos • ${5 - attempts} tentativa(s) restante(s)`}
                 </p>
                 <p className="text-xs text-center text-muted-foreground">
-                  Insira o código recebido por e-mail ou clique no link enviado.
+                  Insira o código recebido por e-mail. Verifique também a caixa de spam.
                 </p>
               </div>
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading || !!isBlocked || otpCode.length !== 6}>
@@ -362,8 +407,14 @@ const Auth = () => {
                 <Button type="button" variant="ghost" className="flex-1" onClick={() => { setStep('email'); setOtpCode(''); }}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
                 </Button>
-                <Button type="button" variant="ghost" className="flex-1" onClick={handleEmailSubmit} disabled={loading}>
-                  Reenviar código
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="flex-1"
+                  onClick={handleResendCode}
+                  disabled={loading || isCooldownActive}
+                >
+                  {isCooldownActive ? `Reenviar (${cooldownSeconds}s)` : "Reenviar código"}
                 </Button>
               </div>
             </form>
