@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scan, Plus, Keyboard, AlertCircle } from "lucide-react";
+import { Scan, Plus, Keyboard } from "lucide-react";
 import ScannerInstructions from "../scanner/ScannerInstructions";
 
 interface ProductionScannerTabsProps {
@@ -60,12 +60,6 @@ const ProductionScannerTabs = ({
       <TabsContent value="scanner" className="space-y-4">
         <ScannerInstructions />
         
-        {scannerError && (
-          <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-destructive" />
-            <p className="text-sm text-destructive">{scannerError}</p>
-          </div>
-        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
