@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useScannerControls } from './scanner/useScannerControls';
 import { useZXingScanner } from './scanner/useZXingScanner';
 
@@ -13,6 +13,8 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoPlayingRef = useRef<boolean>(false);
   const mountedRef = useRef<boolean>(true);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const initializingRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -23,8 +25,8 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
 
   const {
     isScanning,
-    startScanning,
-    stopScanning,
+    startScanning: startScanningState,
+    stopScanning: stopScanningState,
   } = useScannerControls();
 
   const {
@@ -32,49 +34,109 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
     stopScanning: stopZXingScanning,
   } = useZXingScanner({
     onScan,
-    onError,
-    isActive,
+    onError: (err) => {
+      // Don't surface "Erro ao iniciar o scanner" if it's just a transient init issue
+      console.warn('ZXing error:', err);
+    },
+    isActive: false, // We control start/stop manually
     videoRef,
     videoPlayingRef,
     mountedRef,
   });
 
+  // Start camera + scanner when isActive becomes true (triggered by user gesture)
   useEffect(() => {
-    if (isActive && !isScanning) {
-      startScanning();
-      // ZXing will manage the camera via decodeFromVideoDevice
-      videoPlayingRef.current = true;
+    if (isActive && !initializingRef.current) {
+      initializingRef.current = true;
+      
+      const initCamera = async () => {
+        try {
+          console.log('Requesting camera access from user gesture...');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            }
+          });
+
+          if (!mountedRef.current) {
+            stream.getTracks().forEach(t => t.stop());
+            return;
+          }
+
+          setHasPermission(true);
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            await videoRef.current.play();
+            videoPlayingRef.current = true;
+            console.log('Camera video playing, starting ZXing scanner...');
+            startScanningState();
+            // Small delay to ensure video is fully ready
+            setTimeout(() => {
+              if (mountedRef.current) {
+                startZXingScanning();
+              }
+            }, 300);
+          }
+        } catch (error) {
+          console.error('Camera access error:', error);
+          if (mountedRef.current) {
+            setHasPermission(false);
+            onError?.('Erro ao acessar câmera. Verifique as permissões.');
+          }
+        } finally {
+          initializingRef.current = false;
+        }
+      };
+
+      initCamera();
     } else if (!isActive) {
-      stopScanning();
+      initializingRef.current = false;
+      stopScanningState();
       stopZXingScanning();
       videoPlayingRef.current = false;
-    }
 
-    return () => {
-      if (!isActive) {
-        stopScanning();
-        stopZXingScanning();
+      // Stop camera tracks
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(t => {
+          t.stop();
+          console.log('Camera track stopped');
+        });
+        videoRef.current.srcObject = null;
       }
-    };
-  }, [isActive, isScanning, startScanning, stopScanning, stopZXingScanning]);
+      setHasPermission(null);
+    }
+  }, [isActive]);
 
   const forceCleanup = useCallback(() => {
     console.log('Force cleanup called...');
-    stopScanning();
+    stopScanningState();
     stopZXingScanning();
     videoPlayingRef.current = false;
-  }, [stopScanning, stopZXingScanning]);
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(t => t.stop());
+      videoRef.current.srcObject = null;
+    }
+  }, [stopScanningState, stopZXingScanning]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      forceCleanup();
+    };
+  }, [forceCleanup]);
 
   const handleRetryPermission = useCallback(() => {
-    if (isActive && mountedRef.current) {
-      stopZXingScanning();
-      setTimeout(() => startZXingScanning(), 200);
-    }
-  }, [isActive, startZXingScanning, stopZXingScanning]);
+    setHasPermission(null);
+  }, []);
 
   return {
     videoRef,
-    hasPermission: isActive ? true : null,
+    hasPermission,
     isScanning,
     handleRetryPermission,
     forceCleanup,

@@ -1,12 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Scan, Plus, Keyboard, AlertCircle } from "lucide-react";
 import BarcodeScanner from "../BarcodeScanner";
-import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 
 interface ProductionScannerTabsProps {
   imei: string;
@@ -44,18 +43,6 @@ const ProductionScannerTabs = ({
   onRegisterForceCleanup,
 }: ProductionScannerTabsProps) => {
   const [activeTab, setActiveTab] = useState("scanner");
-
-  const { forceCleanup } = useBarcodeScanner({
-    onScan: onScanResult,
-    onError: onScanError,
-    isActive: scannerActive,
-  });
-
-  useEffect(() => {
-    if (forceCleanup) {
-      onRegisterForceCleanup(forceCleanup);
-    }
-  }, [forceCleanup, onRegisterForceCleanup]);
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
