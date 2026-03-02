@@ -297,6 +297,9 @@ const Auth = () => {
                   <><Mail className="mr-2 h-4 w-4" /> Continuar</>
                 )}
               </Button>
+              <Button type="button" variant="link" className="w-full text-sm" onClick={handleForgotPassword} disabled={loading}>
+                Esqueci minha senha
+              </Button>
             </form>
           )}
 
@@ -362,9 +365,6 @@ const Auth = () => {
               </Button>
               <Button type="button" variant="ghost" className="w-full" onClick={() => { setStep('email'); setPassword(''); setOtpCode(''); }}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar ao início
-              </Button>
-              <Button type="button" variant="link" className="w-full text-sm" onClick={handleForgotPassword} disabled={loading}>
-                Esqueci minha senha
               </Button>
             </form>
           )}
