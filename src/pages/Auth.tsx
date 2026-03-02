@@ -101,9 +101,13 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("rate") || error.message.includes("security") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
+          // Se já enviou recentemente, seguimos para a etapa do código
+          // para não travar o usuário na tela de e-mail
+          setStep('code');
+          setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
           toast({
             title: "Código já enviado",
-            description: "Verifique seu e-mail. Um novo código pode ser solicitado em alguns segundos."
+            description: "Verifique seu e-mail e informe o código de 6 dígitos."
           });
         } else if (error.message.includes("Signups not allowed") || error.message.includes("not found")) {
           toast({
