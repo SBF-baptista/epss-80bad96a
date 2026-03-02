@@ -202,7 +202,7 @@ const Kickoff = () => {
           {historyLoading ? (
             <Skeleton className="h-64 rounded-xl" />
           ) : (
-            <KickoffHistoryTable history={kickoffHistory || []} />
+            <KickoffHistoryTable history={kickoffHistory || []} onRefresh={refetchHistory} />
           )}
         </TabsContent>
       </Tabs>

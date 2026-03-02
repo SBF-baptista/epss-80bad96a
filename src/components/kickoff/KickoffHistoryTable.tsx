@@ -11,19 +11,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronDown, ChevronRight, Eye, Search, Calendar } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, Search, Calendar, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { KickoffHistoryRecord } from "@/services/kickoffHistoryService";
 import { KickoffHistoryDetailsModal } from "./KickoffHistoryDetailsModal";
+import { KickoffHistoryEditModal } from "./KickoffHistoryEditModal";
 
 interface KickoffHistoryTableProps {
   history: KickoffHistoryRecord[];
+  onRefresh?: () => void;
 }
 
-export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
+export const KickoffHistoryTable = ({ history, onRefresh }: KickoffHistoryTableProps) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedRecord, setSelectedRecord] = useState<KickoffHistoryRecord | null>(null);
+  const [editRecord, setEditRecord] = useState<KickoffHistoryRecord | null>(null);
   const [searchName, setSearchName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -214,14 +217,24 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
                           </Badge>
                         </TableCell>
                         <TableCell colSpan={2}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedRecord(record)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalhes
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedRecord(record)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditRecord(record)}
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Editar
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -238,6 +251,18 @@ export const KickoffHistoryTable = ({ history }: KickoffHistoryTableProps) => {
           open={!!selectedRecord}
           onOpenChange={(open) => !open && setSelectedRecord(null)}
           record={selectedRecord}
+        />
+      )}
+
+      {editRecord && (
+        <KickoffHistoryEditModal
+          open={!!editRecord}
+          onOpenChange={(open) => !open && setEditRecord(null)}
+          record={editRecord}
+          onSuccess={() => {
+            setEditRecord(null);
+            onRefresh?.();
+          }}
         />
       )}
     </>

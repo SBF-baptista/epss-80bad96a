@@ -317,11 +317,23 @@ export const KickoffHistoryDetailsModal = ({ open, onOpenChange, record }: Kicko
                 <MapPin className="h-4 w-4" />
                 Locais de Instalação
               </h3>
-              <div className="flex gap-2 flex-wrap">
+              <div className="space-y-2">
                 {record.installation_locations.map((loc: any, idx: number) => (
-                  <Badge key={idx} variant="outline" className="text-sm py-1 px-3">
-                    {[loc.cep, loc.state, loc.city, loc.neighborhood, loc.street].filter(Boolean).join(", ")}
-                  </Badge>
+                  <div key={idx} className="p-3 border rounded-lg space-y-2">
+                    <Badge variant="outline" className="text-sm py-1 px-3">
+                      {[loc.cep, loc.state, loc.city, loc.neighborhood, loc.street].filter(Boolean).join(", ")}
+                    </Badge>
+                    {Array.isArray(loc.plates) && loc.plates.length > 0 && (
+                      <div className="flex gap-1 flex-wrap mt-1">
+                        <span className="text-xs text-muted-foreground mr-1">Placas:</span>
+                        {loc.plates.map((plate: string, pIdx: number) => (
+                          <Badge key={pIdx} variant="secondary" className="text-xs">
+                            {plate}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
