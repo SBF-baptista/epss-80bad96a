@@ -23,6 +23,8 @@ const Auth = () => {
   const [attempts, setAttempts] = useState(0);
   const [blockedUntil, setBlockedUntil] = useState<Date | null>(null);
   const [otpExpiry, setOtpExpiry] = useState<Date | null>(null);
+  const [otpRequestBlockedUntil, setOtpRequestBlockedUntil] = useState<Date | null>(null);
+  const [now, setNow] = useState(Date.now());
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -49,7 +51,17 @@ const Auth = () => {
     }
   }, []);
 
+  // Re-render a cada segundo para countdowns de bloqueio/cooldown
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const isBlocked = blockedUntil && new Date() < blockedUntil;
+  const otpCooldownSeconds = otpRequestBlockedUntil
+    ? Math.max(0, Math.ceil((otpRequestBlockedUntil.getTime() - now) / 1000))
+    : 0;
+  const isOtpRequestBlocked = otpCooldownSeconds > 0;
 
   // Forgot password
   const handleForgotPassword = async () => {
@@ -90,6 +102,14 @@ const Auth = () => {
       return;
     }
 
+    if (isOtpRequestBlocked) {
+      toast({
+        title: "Aguarde",
+        description: `Aguarde ${otpCooldownSeconds}s para solicitar um novo código.`
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
@@ -101,14 +121,21 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("rate") || error.message.includes("security") || error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
-          // Se já enviou recentemente, seguimos para a etapa do código
-          // para não travar o usuário na tela de e-mail
-          setStep('code');
-          setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
-          toast({
-            title: "Código já enviado",
-            description: "Verifique seu e-mail e informe o código de 6 dígitos."
-          });
+          // Supabase throttling: não avançar automaticamente sem garantia de envio novo
+          setOtpRequestBlockedUntil(new Date(Date.now() + 60 * 1000));
+
+          if (otpExpiry && new Date() < otpExpiry) {
+            setStep('code');
+            toast({
+              title: "Use o código já enviado",
+              description: "Por segurança, aguarde alguns segundos para solicitar outro."
+            });
+          } else {
+            toast({
+              title: "Aguarde",
+              description: "Você solicitou códigos em sequência. Tente novamente em instantes."
+            });
+          }
         } else if (error.message.includes("Signups not allowed") || error.message.includes("not found")) {
           toast({
             title: "Erro",
@@ -125,6 +152,7 @@ const Auth = () => {
       } else {
         setStep('code');
         setOtpExpiry(new Date(Date.now() + 5 * 60 * 1000));
+        setOtpRequestBlockedUntil(new Date(Date.now() + 60 * 1000));
         setAttempts(0);
         setOtpCode("");
         toast({
@@ -289,11 +317,14 @@ const Auth = () => {
                   autoFocus
                 />
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading || isOtpRequestBlocked}>
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando...</> : (
-                  <><Mail className="mr-2 h-4 w-4" /> Continuar</>
+                  <><Mail className="mr-2 h-4 w-4" /> {isOtpRequestBlocked ? `Aguarde ${otpCooldownSeconds}s` : "Continuar"}</>
                 )}
               </Button>
+              {isOtpRequestBlocked && (
+                <p className="text-xs text-center text-muted-foreground">Aguarde alguns segundos para solicitar um novo código.</p>
+              )}
               <Button type="button" variant="link" className="w-full text-sm" onClick={handleForgotPassword} disabled={loading}>
                 Esqueci minha senha
               </Button>
