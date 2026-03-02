@@ -19,18 +19,17 @@ export const useZXingScanner = ({
   videoPlayingRef,
   mountedRef,
 }: UseZXingScannerProps) => {
-  const [reader, setReader] = useState<BrowserMultiFormatReader | null>(null);
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const scanningRef = useRef<boolean>(false);
   const readerControlsRef = useRef<any>(null);
 
   useEffect(() => {
-    const codeReader = new BrowserMultiFormatReader();
-    setReader(codeReader);
+    readerRef.current = new BrowserMultiFormatReader();
 
     return () => {
-      if (codeReader) {
+      if (readerRef.current) {
         try {
-          codeReader.reset();
+          readerRef.current.reset();
         } catch (error) {
           console.warn('Error resetting reader:', error);
         }
@@ -38,7 +37,8 @@ export const useZXingScanner = ({
     };
   }, []);
 
-  const startZXingScan = useCallback(() => {
+  const startZXingScan = useCallback(async () => {
+    const reader = readerRef.current;
     if (!scanningRef.current || !reader || !videoRef.current || !mountedRef.current) {
       console.log('Cannot start ZXing scan - conditions not met');
       return;
@@ -47,29 +47,34 @@ export const useZXingScanner = ({
     console.log('Starting ZXing continuous scan...');
     
     try {
-      const controls = reader.decodeFromVideoDevice(undefined, videoRef.current, (result, error) => {
-        if (result && scanningRef.current && mountedRef.current) {
-          const scannedText = result.getText();
-          console.log('Barcode detected successfully:', scannedText);
-          onScan(scannedText);
-        }
-        
-        if (error && error.name && 
-            error.name !== 'NotFoundException' && 
-            error.name !== 'ChecksumException' && 
-            error.name !== 'FormatException' &&
-            error.name !== 'ReaderException') {
-          console.warn('Scanning error:', error.name, error.message);
+      const controls = await reader.decodeFromVideoDevice(
+        undefined, 
+        videoRef.current, 
+        (result, error) => {
+          if (result && scanningRef.current && mountedRef.current) {
+            const scannedText = result.getText();
+            console.log('Barcode detected successfully:', scannedText);
+            onScan(scannedText);
+          }
           
-          if (error.name === 'NotSupportedError' || error.name === 'InvalidStateError') {
-            if (mountedRef.current) {
-              onError?.(`Erro do scanner: ${error.message}`);
+          if (error && error.name && 
+              error.name !== 'NotFoundException' && 
+              error.name !== 'ChecksumException' && 
+              error.name !== 'FormatException' &&
+              error.name !== 'ReaderException') {
+            console.warn('Scanning error:', error.name, error.message);
+            
+            if (error.name === 'NotSupportedError' || error.name === 'InvalidStateError') {
+              if (mountedRef.current) {
+                onError?.(`Erro do scanner: ${error.message}`);
+              }
             }
           }
         }
-      });
+      );
       
       readerControlsRef.current = controls;
+      console.log('ZXing scanner started successfully');
       
     } catch (error) {
       console.error('Error starting ZXing scan:', error);
@@ -77,9 +82,10 @@ export const useZXingScanner = ({
         onError?.('Erro ao iniciar o scanner.');
       }
     }
-  }, [reader, onScan, onError, videoRef, mountedRef]);
+  }, [onScan, onError, videoRef, mountedRef]);
 
   const startScanning = useCallback(async () => {
+    const reader = readerRef.current;
     if (!reader || !videoRef.current || scanningRef.current || !mountedRef.current) {
       console.log('Cannot start scanning - conditions not met');
       return;
@@ -87,13 +93,9 @@ export const useZXingScanner = ({
 
     scanningRef.current = true;
     
-    // Start scanning with the ZXing library's built-in method
-    setTimeout(() => {
-      if (scanningRef.current && mountedRef.current && videoPlayingRef.current) {
-        startZXingScan();
-      }
-    }, 500);
-  }, [reader, videoRef, mountedRef, videoPlayingRef, startZXingScan]);
+    // Start scanning directly - ZXing will manage the camera stream
+    await startZXingScan();
+  }, [videoRef, mountedRef, startZXingScan]);
 
   const stopScanning = useCallback(() => {
     console.log('Stopping ZXing scanner...');
@@ -101,24 +103,26 @@ export const useZXingScanner = ({
     
     if (readerControlsRef.current) {
       try {
-        readerControlsRef.current.stop();
+        if (typeof readerControlsRef.current.stop === 'function') {
+          readerControlsRef.current.stop();
+        }
         readerControlsRef.current = null;
       } catch (error) {
         console.warn('Error stopping ZXing controls:', error);
       }
     }
     
-    if (reader) {
+    if (readerRef.current) {
       try {
-        reader.reset();
+        readerRef.current.reset();
       } catch (error) {
         console.warn('Error resetting reader:', error);
       }
     }
-  }, [reader]);
+  }, []);
 
   useEffect(() => {
-    if (isActive && reader && videoRef.current && videoPlayingRef.current && !scanningRef.current) {
+    if (isActive && readerRef.current && !scanningRef.current) {
       startScanning();
     } else if (!isActive) {
       stopScanning();
@@ -129,10 +133,10 @@ export const useZXingScanner = ({
         stopScanning();
       }
     };
-  }, [isActive, reader, startScanning, stopScanning, videoRef, videoPlayingRef]);
+  }, [isActive, startScanning, stopScanning]);
 
   return {
-    reader,
+    reader: readerRef.current,
     scanningRef,
     startScanning,
     stopScanning,
