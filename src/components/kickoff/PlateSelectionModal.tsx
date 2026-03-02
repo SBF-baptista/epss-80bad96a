@@ -32,13 +32,13 @@ export const PlateSelectionModal = ({
   onConfirm,
 }: PlateSelectionModalProps) => {
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set(initialSelected));
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   
 
   // Reset state when modal opens
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      setSelected(new Set(initialSelected));
+      setSelected(new Set());
       setSearch("");
     }
     onOpenChange(isOpen);
