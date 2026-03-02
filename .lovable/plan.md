@@ -1,39 +1,71 @@
 
+Objetivo
+Corrigir imediatamente o fluxo de login para que ele siga sempre a sequência esperada (e-mail → código → senha) sem travar na primeira tela, e reduzir o problema de “código não chega” causado por bloqueio de envio no Supabase.
 
-## Problema Identificado
+Diagnóstico já confirmado
+- O front está usando a rota correta (`/auth`) e o fluxo está implementado em `src/pages/Auth.tsx`.
+- O problema principal não é renderização: os logs do Supabase Auth mostram erro real de envio:
+  - `POST /otp`
+  - `status 429`
+  - `error_code: over_email_send_rate_limit`
+  - `msg: 429: email rate limit exceeded`
+- Isso significa que, em várias tentativas seguidas, o provedor de auth bloqueia novos e-mails temporariamente.
+- Há um segundo risco funcional: o fluxo pede código de 6 dígitos, então o template de e-mail de Magic Link precisa conter `{{ .Token }}`; sem isso, pode chegar link sem código.
 
-Os blocos **Cameras Extras**, **Venda Cameras Extras** e **Venda de Acessorios** nao estao aparecendo no popup do pedido de instalacao porque os dados do kickoff nao estao sendo encontrados no banco de dados.
+Plano de correção (implementação)
+1) Ajustar o comportamento da etapa de e-mail para nunca “prender” o usuário
+- Arquivo: `src/pages/Auth.tsx`
+- Manter avanço para etapa `code` ao clicar em “Continuar” mesmo quando houver throttling (429), como você pediu.
+- Separar mensagens de UX por cenário:
+  - envio aceito: “Código enviado”
+  - rate limit: “Use o último código enviado e aguarde para novo envio”
+- Garantir que `otpExpiry` só seja renovado de forma consistente (evitar reset indevido em toda tentativa).
 
-### Causa Raiz
+2) Implementar bloqueio anti-spam mais forte e persistente (evita 429 recorrente)
+- Arquivo: `src/pages/Auth.tsx`
+- Hoje o cooldown é curto e só em memória; ao recarregar a página, perde estado.
+- Vou implementar cooldown persistido em `localStorage` por e-mail (chave por endereço) para:
+  - bloquear novos envios por janela mínima (ex.: 60s) após sucesso;
+  - aplicar janela maior após 429 (ex.: 3–5 min), com countdown visível;
+  - impedir spam de “Reenviar código” mesmo após refresh.
+- Resultado esperado: menos chamadas ao `/otp`, menos bloqueio e mais chance de entrega real.
 
-O fluxo atual busca dados assim:
+3) Tornar “Reenviar código” seguro e previsível
+- Arquivo: `src/pages/Auth.tsx`
+- Reenviar deve respeitar o mesmo cooldown do botão principal.
+- Quando bloqueado, botão desabilitado + texto do tempo restante.
+- Isso evita que o usuário fique tentando sem efeito e agrave o rate limit.
 
-```text
-schedule.customer_id -> customers.sale_summary_id -> kickoff_history
-```
+4) Revisar template de e-mail no Supabase para código de 6 dígitos
+- Ação de configuração (dashboard Supabase Auth, não no código do front):
+  - Template “Magic Link” deve incluir `{{ .Token }}`.
+- Sem isso, o usuário pode não visualizar o código manual mesmo quando o e-mail chega.
 
-O cliente "PEDRO ALBUQUERQUE" na tabela `customers` tem `sale_summary_id: 263`, mas o kickoff do COBALT foi registrado com `sale_summary_id: 367`. Como os IDs nao coincidem, a consulta retorna vazio e os blocos nao aparecem.
+5) Melhorar mensagens para clareza operacional
+- Arquivo: `src/pages/Auth.tsx`
+- Em vez de mensagem genérica, mostrar instruções objetivas:
+  - “Verifique caixa de spam”
+  - “Aguarde Xs para novo envio”
+  - “Use o último código recebido”
+- Isso reduz confusão e retrabalho no login.
 
-Isso acontece porque o mesmo cliente pode ter multiplas vendas (sale_summary_ids diferentes) ao longo do tempo, e o registro do customer fica vinculado a um ID antigo.
+Critérios de aceite
+- Clicar “Continuar” sempre leva para a etapa do código.
+- Se houver 429, usuário não fica travado; recebe orientação clara e cooldown aplicado.
+- “Reenviar código” não dispara chamadas durante cooldown.
+- Após refresh da página, cooldown continua válido.
+- Com limite liberado, novo e-mail volta a ser enviado normalmente.
+- Fluxo completo funciona: e-mail → código válido → senha → acesso.
 
-### Correcao
+Validação end-to-end (após implementar)
+1. Solicitar código uma vez e confirmar avanço para etapa 2.
+2. Tentar reenviar antes do tempo e confirmar bloqueio com countdown.
+3. Aguardar término do cooldown e reenviar.
+4. Confirmar chegada do e-mail e entrada do código.
+5. Concluir senha e login.
+6. Repetir com refresh entre etapas para validar persistência do cooldown.
 
-Alterar a logica de busca dos dados de kickoff no `OrderModal.tsx` para usar uma estrategia de fallback mais robusta:
-
-1. **Tentativa 1**: Buscar pelo `sale_summary_id` do customer (logica atual)
-2. **Tentativa 2 (fallback)**: Se nao encontrar, buscar o `sale_summary_id` diretamente do `incoming_vehicles` que corresponde ao veiculo do schedule (marca/modelo), e entao buscar o kickoff_history com esse ID
-3. **Tentativa 3 (fallback)**: Se ainda nao encontrar, buscar o kickoff_history pelo `company_name` do pedido
-
-A mesma correcao sera aplicada ao fetch de **Cameras Extras** (que tambem depende do `sale_summary_id` do customer).
-
-### Detalhes Tecnicos
-
-**Arquivo**: `src/components/OrderModal.tsx`
-
-- Refatorar os dois `useEffect` de fetch (`fetchCameraExtras` e `fetchKickoffSalesData`) para compartilhar uma funcao auxiliar `findSaleSummaryId` que implementa a logica de fallback:
-  1. Busca `sale_summary_id` do `customers` pelo `customer_id`
-  2. Se nao encontrar dados no kickoff_history com esse ID, busca o `incoming_vehicle` mais recente que corresponde ao veiculo do schedule e usa o `sale_summary_id` dele
-  3. Como ultimo recurso, busca pelo `company_name` na `kickoff_history`
-
-- Isso garante que mesmo quando o `sale_summary_id` do customer esta desatualizado, os dados do kickoff ainda aparecem corretamente no popup
-
+Observações importantes
+- O 429 é limitação real do Supabase Auth; não dá para “desligar” só no frontend.
+- O frontend pode e deve evitar gerar rajadas de envio.
+- A correção combina UX + proteção de fluxo + configuração correta do template para estabilizar de vez.
