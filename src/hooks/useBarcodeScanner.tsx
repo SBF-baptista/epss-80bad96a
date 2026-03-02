@@ -1,6 +1,5 @@
 
-import { useEffect } from 'react';
-import { useVideoStream } from './scanner/useVideoStream';
+import { useEffect, useRef, useCallback } from 'react';
 import { useScannerControls } from './scanner/useScannerControls';
 import { useZXingScanner } from './scanner/useZXingScanner';
 
@@ -11,16 +10,16 @@ interface UseBarcodeScannerProps {
 }
 
 export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScannerProps) => {
-  const {
-    videoRef,
-    hasPermission,
-    videoPlayingRef,
-    mountedRef,
-    startVideoStream,
-    cleanup,
-    forceCleanup,
-    handleRetryPermission,
-  } = useVideoStream({ isActive, onError });
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoPlayingRef = useRef<boolean>(false);
+  const mountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const {
     isScanning,
@@ -42,52 +41,40 @@ export const useBarcodeScanner = ({ onScan, onError, isActive }: UseBarcodeScann
 
   useEffect(() => {
     if (isActive && !isScanning) {
-      const initializeScanner = async () => {
-        startScanning();
-        const videoStarted = await startVideoStream();
-        if (videoStarted) {
-          // Wait for video to be ready then start ZXing scanning
-          setTimeout(() => {
-            if (videoPlayingRef.current && mountedRef.current) {
-              startZXingScanning();
-            }
-          }, 1000);
-        } else {
-          stopScanning();
-        }
-      };
-      
-      initializeScanner();
+      startScanning();
+      // ZXing will manage the camera via decodeFromVideoDevice
+      videoPlayingRef.current = true;
     } else if (!isActive) {
-      console.log('Scanner not active - stopping all scanning operations...');
       stopScanning();
       stopZXingScanning();
+      videoPlayingRef.current = false;
     }
 
     return () => {
       if (!isActive) {
-        console.log('Scanner cleanup - stopping scanning operations...');
         stopScanning();
         stopZXingScanning();
       }
     };
-  }, [isActive, isScanning, startVideoStream, startScanning, stopScanning, startZXingScanning, stopZXingScanning, videoPlayingRef, mountedRef]);
+  }, [isActive, isScanning, startScanning, stopScanning, stopZXingScanning]);
 
-  // Force cleanup when component unmounts or isActive changes to false
-  useEffect(() => {
-    if (!isActive) {
-      console.log('Scanner deactivated - running force cleanup...');
-      forceCleanup();
+  const forceCleanup = useCallback(() => {
+    console.log('Force cleanup called...');
+    stopScanning();
+    stopZXingScanning();
+    videoPlayingRef.current = false;
+  }, [stopScanning, stopZXingScanning]);
+
+  const handleRetryPermission = useCallback(() => {
+    if (isActive && mountedRef.current) {
+      stopZXingScanning();
+      setTimeout(() => startZXingScanning(), 200);
     }
-  }, [isActive, forceCleanup]);
-
-  useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
+  }, [isActive, startZXingScanning, stopZXingScanning]);
 
   return {
     videoRef,
-    hasPermission,
+    hasPermission: isActive ? true : null,
     isScanning,
     handleRetryPermission,
     forceCleanup,
