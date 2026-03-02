@@ -169,9 +169,15 @@ const Auth = () => {
               options: { emailRedirectTo: `${window.location.origin}/reset-password` }
             });
             if (signUpError) {
-              // If user already exists but OTP failed for other reason
-              if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
-                // User exists, just send password reset
+              const isSignUpRateLimit = signUpError.message.includes("rate") || signUpError.message.includes("security") || (signUpError as any).status === 429 || (signUpError as any).code === 'over_email_send_rate_limit';
+              
+              if (isSignUpRateLimit) {
+                setPersistedCooldown(email, COOLDOWN_RATE_LIMITED_MS);
+                toast({
+                  title: "Limite de envio atingido",
+                  description: "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+                });
+              } else if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
                 await supabase.auth.resetPasswordForEmail(email, {
                   redirectTo: `${window.location.origin}/reset-password`
                 });
@@ -182,7 +188,7 @@ const Auth = () => {
               } else {
                 toast({
                   title: "Erro",
-                  description: "Não foi possível criar sua conta. Tente novamente.",
+                  description: "Não foi possível criar sua conta: " + signUpError.message,
                   variant: "destructive"
                 });
               }
