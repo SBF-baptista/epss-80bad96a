@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Scan, Plus, Keyboard, AlertCircle } from "lucide-react";
-import BarcodeScanner from "../BarcodeScanner";
+import ScannerInstructions from "../scanner/ScannerInstructions";
 
 interface ProductionScannerTabsProps {
   imei: string;
@@ -58,17 +58,12 @@ const ProductionScannerTabs = ({
       </TabsList>
 
       <TabsContent value="scanner" className="space-y-4">
-        <BarcodeScanner
-          onScan={onScanResult}
-          onError={onScanError}
-          isActive={scannerActive}
-          onToggle={onScannerToggle}
-        />
+        <ScannerInstructions />
         
         {scannerError && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <p className="text-sm text-red-700">{scannerError}</p>
+          <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <p className="text-sm text-destructive">{scannerError}</p>
           </div>
         )}
         
