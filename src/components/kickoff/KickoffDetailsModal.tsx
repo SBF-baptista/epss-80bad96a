@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X } from "lucide-react";
+import { PlateSelectionModal } from "./PlateSelectionModal";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
@@ -44,6 +45,215 @@ interface Contact {
   email: string;
   phone: string;
 }
+
+// --- Installation Locations Section (refactored) ---
+interface InstallationLocationsSectionProps {
+  installationLocations: InstallationLocation[];
+  allPlates: string[];
+  onAddLocation: () => void;
+  onRemoveLocation: (index: number) => void;
+  onUpdateLocation: (index: number, field: keyof InstallationLocation, value: any) => void;
+  onUpdateLocationMultiple: (index: number, fields: Partial<InstallationLocation>) => void;
+  onSetPlatesForLocation: (locIndex: number, plates: string[]) => void;
+  cepLoading: Map<number, boolean>;
+  onFetchCEP: (index: number, cep: string) => void;
+}
+
+const InstallationLocationsSection = ({
+  installationLocations,
+  allPlates,
+  onAddLocation,
+  onRemoveLocation,
+  onUpdateLocation,
+  onUpdateLocationMultiple,
+  onSetPlatesForLocation,
+  cepLoading,
+  onFetchCEP,
+}: InstallationLocationsSectionProps) => {
+  const [plateModalOpen, setPlateModalOpen] = useState(false);
+  const [activeLocationIndex, setActiveLocationIndex] = useState(0);
+
+  const plateAssignments = useMemo(() => {
+    const map = new Map<string, number>();
+    installationLocations.forEach((loc, idx) => {
+      (loc.plates || []).forEach((plate) => {
+        if (!map.has(plate)) map.set(plate, idx);
+      });
+    });
+    return map;
+  }, [installationLocations]);
+
+  const getLocationAddress = (loc: InstallationLocation) => {
+    const parts = [loc.street, loc.neighborhood, loc.city, loc.state].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "";
+  };
+
+  const removePlateFromLocation = (locIndex: number, plate: string) => {
+    const currentPlates = installationLocations[locIndex].plates || [];
+    onSetPlatesForLocation(locIndex, currentPlates.filter((p) => p !== plate));
+  };
+
+  const openPlateModal = (locIndex: number) => {
+    setActiveLocationIndex(locIndex);
+    setPlateModalOpen(true);
+  };
+
+  const handleConfirmPlates = (plates: string[]) => {
+    installationLocations.forEach((loc, idx) => {
+      if (idx !== activeLocationIndex) {
+        const filtered = (loc.plates || []).filter((p) => !plates.includes(p));
+        if (filtered.length !== (loc.plates || []).length) {
+          onSetPlatesForLocation(idx, filtered);
+        }
+      }
+    });
+    onSetPlatesForLocation(activeLocationIndex, plates);
+  };
+
+  return (
+    <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-primary" />
+          <h3 className="font-bold text-lg">Locais de Instalação</h3>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={onAddLocation}>
+          <Plus className="h-4 w-4 mr-1" />
+          Adicionar Local
+        </Button>
+      </div>
+
+      {installationLocations.map((location, index) => {
+        const selectedPlates = location.plates || [];
+        return (
+          <div key={index} className="border rounded-lg p-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">Local {index + 1}</span>
+              </div>
+              {installationLocations.length > 1 && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => onRemoveLocation(index)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div>
+                <Label className="text-sm">CEP</Label>
+                <div className="relative">
+                  <Input
+                    value={location.cep || ""}
+                    onChange={(e) => {
+                      const formatted = formatCEP(e.target.value);
+                      onUpdateLocation(index, "cep", formatted);
+                      if (isValidCEP(formatted)) {
+                        onFetchCEP(index, formatted);
+                      }
+                    }}
+                    placeholder="00000-000"
+                    maxLength={9}
+                    className="mt-1"
+                  />
+                  {cepLoading.get(index) && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground mt-0.5" />
+                  )}
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm">UF (Estado)</Label>
+                <Input
+                  value={location.state}
+                  onChange={(e) => onUpdateLocation(index, "state", e.target.value)}
+                  placeholder="UF"
+                  maxLength={2}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Cidade</Label>
+                <Input
+                  value={location.city}
+                  onChange={(e) => onUpdateLocation(index, "city", e.target.value)}
+                  placeholder="Cidade"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Bairro</Label>
+                <Input
+                  value={location.neighborhood || ""}
+                  onChange={(e) => onUpdateLocation(index, "neighborhood", e.target.value)}
+                  placeholder="Bairro"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Logradouro/Nome</Label>
+                <Input
+                  value={location.street || ""}
+                  onChange={(e) => onUpdateLocation(index, "street", e.target.value)}
+                  placeholder="Rua, Avenida..."
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            {allPlates.length > 0 && (
+              <div className="space-y-3 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">📌 Placas vinculadas:</span>
+                    <Badge variant="secondary" className="font-mono">
+                      {selectedPlates.length}
+                    </Badge>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => openPlateModal(index)}>
+                    Gerenciar placas
+                  </Button>
+                </div>
+
+                {selectedPlates.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPlates.map((plate) => (
+                      <Badge key={plate} variant="secondary" className="font-mono text-xs px-2 py-1 flex items-center gap-1">
+                        {plate}
+                        <button
+                          type="button"
+                          onClick={() => removePlateFromLocation(index, plate)}
+                          className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">
+                    Nenhuma placa vinculada. Clique em "Gerenciar placas" para selecionar.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <PlateSelectionModal
+        open={plateModalOpen}
+        onOpenChange={setPlateModalOpen}
+        locationIndex={activeLocationIndex}
+        locationLabel={`Local ${activeLocationIndex + 1}`}
+        locationAddress={getLocationAddress(installationLocations[activeLocationIndex] || ({ state: "", city: "" } as InstallationLocation))}
+        allPlates={allPlates}
+        selectedPlates={installationLocations[activeLocationIndex]?.plates || []}
+        plateAssignments={plateAssignments}
+        onConfirm={handleConfirmPlates}
+      />
+    </div>
+  );
+};
 
 export const KickoffDetailsModal = ({
   open,
@@ -1154,132 +1364,23 @@ export const KickoffDetailsModal = ({
             </div>
 
             {/* Locais de Instalação */}
-            <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-lg">Locais de Instalação</h3>
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={addLocation}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Adicionar Local
-                </Button>
-              </div>
-              {installationLocations.map((location, index) => {
-                const selectedPlates = location.plates || [];
-                const allSelected = allPlates.length > 0 && selectedPlates.length === allPlates.length;
-
-                return (
-                <div key={index} className="border rounded-lg p-3 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Local {index + 1}</span>
-                    {installationLocations.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeLocation(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Plate selection */}
-                  {allPlates.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Placas neste local</Label>
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <div className="flex items-center gap-2 mr-3 border-r pr-3">
-                          <Checkbox
-                            id={`all-plates-loc-${index}`}
-                            checked={allSelected}
-                            onCheckedChange={() => toggleAllPlatesForLocation(index)}
-                          />
-                          <Label htmlFor={`all-plates-loc-${index}`} className="text-xs cursor-pointer font-medium">
-                            Todas
-                          </Label>
-                        </div>
-                        {allPlates.map((plate) => (
-                          <div key={plate} className="flex items-center gap-1.5">
-                            <Checkbox
-                              id={`plate-loc-${index}-${plate}`}
-                              checked={selectedPlates.includes(plate)}
-                              onCheckedChange={() => togglePlateForLocation(index, plate)}
-                            />
-                            <Label
-                              htmlFor={`plate-loc-${index}-${plate}`}
-                              className={`text-xs cursor-pointer ${
-                                selectedPlates.includes(plate) ? "text-primary font-medium" : "text-muted-foreground"
-                              }`}
-                            >
-                              {plate}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    <div>
-                      <Label className="text-sm">CEP</Label>
-                      <div className="relative">
-                        <Input
-                          value={location.cep || ""}
-                          onChange={(e) => {
-                            const formatted = formatCEP(e.target.value);
-                            updateLocation(index, "cep", formatted);
-                            if (isValidCEP(formatted)) {
-                              fetchAndFillCEP(index, formatted);
-                            }
-                          }}
-                          placeholder="00000-000"
-                          maxLength={9}
-                          className="mt-1"
-                        />
-                        {cepLoading.get(index) && (
-                          <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground mt-0.5" />
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm">UF (Estado)</Label>
-                      <Input
-                        value={location.state}
-                        onChange={(e) => updateLocation(index, "state", e.target.value)}
-                        placeholder="UF"
-                        maxLength={2}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm">Cidade</Label>
-                      <Input
-                        value={location.city}
-                        onChange={(e) => updateLocation(index, "city", e.target.value)}
-                        placeholder="Cidade"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm">Bairro</Label>
-                      <Input
-                        value={location.neighborhood || ""}
-                        onChange={(e) => updateLocation(index, "neighborhood", e.target.value)}
-                        placeholder="Bairro"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm">Logradouro/Nome</Label>
-                      <Input
-                        value={location.street || ""}
-                        onChange={(e) => updateLocation(index, "street", e.target.value)}
-                        placeholder="Rua, Avenida..."
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-                );
-              })}
-            </div>
+            <InstallationLocationsSection
+              installationLocations={installationLocations}
+              allPlates={allPlates}
+              onAddLocation={addLocation}
+              onRemoveLocation={removeLocation}
+              onUpdateLocation={updateLocation}
+              onUpdateLocationMultiple={updateLocationMultiple}
+              onSetPlatesForLocation={(locIndex, plates) => {
+                setInstallationLocations((prev) => {
+                  const updated = [...prev];
+                  updated[locIndex] = { ...updated[locIndex], plates };
+                  return updated;
+                });
+              }}
+              cepLoading={cepLoading}
+              onFetchCEP={fetchAndFillCEP}
+            />
 
             {/* Particularidade de Instalação */}
             <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
