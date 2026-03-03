@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,8 @@ import {
 import { getTechnicians, Technician } from "@/services/technicianService";
 import { KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { useToast } from "@/hooks/use-toast";
-import { LocationSelector, AddressForm } from "./index";
+import { AddressForm } from "./index";
+import { UserCheck, MapPin, Truck, CheckCircle, Package } from "lucide-react";
 
 interface ShipmentFormEmbeddedProps {
   order: Order;
@@ -31,6 +32,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [trackingCode, setTrackingCode] = useState<string>("");
   const [azulCargoTrackingCode, setAzulCargoTrackingCode] = useState<string>("");
+  const [selectedCarrier, setSelectedCarrier] = useState<string>("correios");
   const [address, setAddress] = useState<ShipmentAddress>({
     street: "",
     number: "",
@@ -42,19 +44,15 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
   });
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Fetch technicians
   const { data: technicians = [] } = useQuery({
     queryKey: ["technicians"],
     queryFn: getTechnicians,
   });
 
-  // Handle technician selection
   const handleTechnicianChange = (technicianId: string) => {
     setSelectedTechnicianId(technicianId);
-    
     const technician = technicians.find((t: Technician) => t.id === technicianId);
     if (technician) {
-      // Fill address fields with technician's address
       setSelectedUF(technician.address_state || "");
       setSelectedCity(technician.address_city || "");
       setAddress({
@@ -69,7 +67,6 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
     }
   };
 
-  // Use schedule.id if available, otherwise fall back to order.id
   const scheduleId = schedule?.id || order.id;
 
   const updateShipmentMutation = useMutation({
@@ -83,12 +80,11 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       installation_address_complement?: string;
       tracking_code?: string;
     }) => {
-      // Save shipment data - status is automatically set to 'shipped' by the service if tracking_code is provided
       await updateKitScheduleShipment(scheduleId, data);
     },
     onSuccess: () => {
       toast({
-        title: "Envio preparado",
+        title: "✅ Envio salvo com sucesso",
         description: "Informações de envio salvas e pedido movido para Enviado.",
       });
       queryClient.invalidateQueries({ queryKey: ["kit-schedules"] });
@@ -105,7 +101,6 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
     },
   });
 
-  // Load tracking code if available from schedule or order
   useEffect(() => {
     if (schedule?.tracking_code) {
       setTrackingCode(schedule.tracking_code);
@@ -114,17 +109,13 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
     }
   }, [order, schedule]);
 
-  // Pre-fill technician from schedule when technicians are loaded
   useEffect(() => {
     if (hasInitialized || technicians.length === 0) return;
-    
-    // Check if there's a technician from the schedule
     const scheduleTechnicianId = schedule?.technician_id;
     if (scheduleTechnicianId) {
       const technician = technicians.find((t: Technician) => t.id === scheduleTechnicianId);
       if (technician) {
         setSelectedTechnicianId(scheduleTechnicianId);
-        // Fill address fields with technician's address
         setSelectedUF(technician.address_state || "");
         setSelectedCity(technician.address_city || "");
         setAddress({
@@ -141,25 +132,15 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
     }
   }, [technicians, schedule, hasInitialized]);
 
-  // Handle UF change
   const handleUFChange = (value: string) => {
     setSelectedUF(value);
     setSelectedCity("");
-    setAddress((prev) => ({
-      ...prev,
-      state: value,
-      city: "",
-    }));
+    setAddress((prev) => ({ ...prev, state: value, city: "" }));
   };
 
-  // Handle City change
   const handleCityChange = (value: string) => {
     setSelectedCity(value);
-    setAddress((prev) => ({
-      ...prev,
-      city: value,
-      state: selectedUF,
-    }));
+    setAddress((prev) => ({ ...prev, city: value, state: selectedUF }));
   };
 
   const handleAddressChange = (field: keyof ShipmentAddress, value: string) => {
@@ -167,6 +148,7 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
   };
 
   const handleSave = async () => {
+    const activeTrackingCode = selectedCarrier === "correios" ? trackingCode : azulCargoTrackingCode;
     await updateShipmentMutation.mutateAsync({
       installation_address_street: address.street,
       installation_address_number: address.number,
@@ -175,98 +157,141 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       installation_address_state: address.state,
       installation_address_postal_code: address.postal_code,
       installation_address_complement: address.complement || undefined,
-      tracking_code: trackingCode || undefined,
+      tracking_code: activeTrackingCode || undefined,
     });
   };
 
-  const isFormValid = () => {
-    const hasLocation = selectedUF && selectedCity;
-    const hasAddress =
-      address.street &&
-      address.number &&
-      address.neighborhood &&
-      address.city &&
-      address.state &&
-      address.postal_code;
-    const hasTrackingCode = trackingCode && trackingCode.trim() !== '';
+  const activeTrackingCode = selectedCarrier === "correios" ? trackingCode : azulCargoTrackingCode;
+  const isAddressComplete = address.street && address.number && address.neighborhood && address.city && address.state && address.postal_code;
+  const hasTrackingCode = activeTrackingCode && activeTrackingCode.trim() !== '';
+  const isFormValid = Boolean(isAddressComplete && hasTrackingCode);
 
-    return Boolean(hasLocation && hasAddress && hasTrackingCode);
-  };
+  const technicianName = technicians.find((t: Technician) => t.id === selectedTechnicianId)?.name;
+
+  // Tracking code validation patterns
+  const isCorreiosValid = trackingCode && /^[A-Z]{2}\d{9}[A-Z]{2}$/.test(trackingCode.toUpperCase());
+  const isAzulValid = azulCargoTrackingCode && azulCargoTrackingCode.trim().length >= 5;
 
   return (
-    <div className="space-y-5">
-      {/* Technician Selection */}
-      <Card className="border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/50 shadow-md">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-bold text-blue-800 dark:text-blue-300">
-            📦 Técnico Responsável
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <Label htmlFor="technician" className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-              Selecione o técnico
-            </Label>
-            <Select value={selectedTechnicianId} onValueChange={handleTechnicianChange} disabled>
-              <SelectTrigger className="bg-muted border-2 border-blue-400 dark:border-blue-600 font-medium text-foreground cursor-not-allowed opacity-70">
-                <SelectValue placeholder="Selecione um técnico" />
-              </SelectTrigger>
-              <SelectContent>
-                {technicians.map((technician: Technician) => (
-                  <SelectItem key={technician.id} value={technician.id!}>
-                    {technician.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground font-medium">
-              O técnico é definido no agendamento e não pode ser alterado aqui
-            </p>
+    <div className="space-y-6">
+      {/* Section 1: Technician Info */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <UserCheck className="h-4 w-4 text-muted-foreground" />
+          <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Técnico Responsável</h4>
+        </div>
+        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-4 py-3 border border-border/50">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+            <UserCheck className="h-4 w-4 text-primary" />
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
+              {technicianName || "Nenhum técnico atribuído"}
+            </p>
+            <p className="text-xs text-muted-foreground">Definido no agendamento</p>
+          </div>
+          <Badge variant="secondary" className="text-xs shrink-0">
+            Agendamento
+          </Badge>
+        </div>
+      </div>
 
-      {/* Address Section */}
-      <Card className="border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/50 shadow-md">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-bold text-blue-800 dark:text-blue-300">
-            📍 Endereço de Entrega
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Separator */}
+      <div className="border-t border-border/40" />
+
+      {/* Section 2: Delivery Address */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Endereço de Entrega</h4>
+          </div>
+          {isAddressComplete && (
+            <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-xs">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Completo
+            </Badge>
+          )}
+        </div>
+        <div className="rounded-lg border border-border/50 bg-card p-4 shadow-sm">
           <AddressForm
             address={address}
             onAddressChange={handleAddressChange}
             isReadOnly={false}
             allowManualEntry
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Tracking Code Section */}
-      <Card className="border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 shadow-md">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-bold text-emerald-800 dark:text-emerald-300">
-            🚚 Código de Rastreio
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+      {/* Separator */}
+      <div className="border-t border-border/40" />
+
+      {/* Section 3: Tracking Code */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-muted-foreground" />
+          <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Código de Rastreio</h4>
+        </div>
+
+        {/* Carrier Selector */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedCarrier("correios")}
+            className={`flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${
+              selectedCarrier === "correios"
+                ? "border-primary bg-primary/5 text-primary shadow-sm"
+                : "border-border/50 bg-card text-muted-foreground hover:border-border hover:bg-muted/30"
+            }`}
+          >
+            📦 Correios
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedCarrier("azul")}
+            className={`flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${
+              selectedCarrier === "azul"
+                ? "border-primary bg-primary/5 text-primary shadow-sm"
+                : "border-border/50 bg-card text-muted-foreground hover:border-border hover:bg-muted/30"
+            }`}
+          >
+            ✈️ Azul Cargo
+          </button>
+        </div>
+
+        {/* Tracking Input */}
+        <div className="rounded-lg border border-border/50 bg-card p-4 shadow-sm">
+          {selectedCarrier === "correios" ? (
             <div className="space-y-2">
-              <Label htmlFor="tracking_code" className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+              <Label htmlFor="tracking_code" className="text-xs font-medium text-muted-foreground">
                 Código de Rastreio dos Correios
               </Label>
               <Input
                 id="tracking_code"
                 value={trackingCode}
-                onChange={(e) => setTrackingCode(e.target.value)}
+                onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
                 placeholder="Ex: AA123456789BR"
-                className="bg-white dark:bg-background border-2 border-emerald-400 dark:border-emerald-600 font-mono text-lg font-semibold tracking-wider"
+                className={`font-mono text-base tracking-wider transition-colors ${
+                  trackingCode
+                    ? isCorreiosValid
+                      ? "border-emerald-400 focus-visible:ring-emerald-500/30"
+                      : "border-amber-400 focus-visible:ring-amber-500/30"
+                    : ""
+                }`}
               />
+              {trackingCode && (
+                <p className={`text-xs flex items-center gap-1 ${isCorreiosValid ? "text-emerald-600" : "text-amber-600"}`}>
+                  {isCorreiosValid ? (
+                    <><CheckCircle className="h-3 w-3" /> Formato válido</>
+                  ) : (
+                    <>⚠️ Formato esperado: AA123456789BR</>
+                  )}
+                </p>
+              )}
             </div>
-            
+          ) : (
             <div className="space-y-2">
-              <Label htmlFor="azul_cargo_tracking_code" className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+              <Label htmlFor="azul_cargo_tracking_code" className="text-xs font-medium text-muted-foreground">
                 Código Rastreio Azul Cargo
               </Label>
               <Input
@@ -274,22 +299,47 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
                 value={azulCargoTrackingCode}
                 onChange={(e) => setAzulCargoTrackingCode(e.target.value)}
                 placeholder="Ex: AZL123456789"
-                className="bg-white dark:bg-background border-2 border-blue-400 dark:border-blue-600 font-mono text-lg font-semibold tracking-wider"
+                className={`font-mono text-base tracking-wider transition-colors ${
+                  azulCargoTrackingCode
+                    ? isAzulValid
+                      ? "border-emerald-400 focus-visible:ring-emerald-500/30"
+                      : "border-amber-400 focus-visible:ring-amber-500/30"
+                    : ""
+                }`}
               />
+              {azulCargoTrackingCode && (
+                <p className={`text-xs flex items-center gap-1 ${isAzulValid ? "text-emerald-600" : "text-amber-600"}`}>
+                  {isAzulValid ? (
+                    <><CheckCircle className="h-3 w-3" /> Código informado</>
+                  ) : (
+                    <>⚠️ Informe o código de rastreio</>
+                  )}
+                </p>
+              )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
 
-      {/* Action Button */}
-      <div className="flex justify-end pt-2">
-        <Button 
-          onClick={handleSave} 
-          disabled={!isFormValid() || updateShipmentMutation.isPending} 
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base px-6 py-3 shadow-lg"
+      {/* Save Button */}
+      <div className="pt-2">
+        <Button
+          onClick={handleSave}
+          disabled={!isFormValid || updateShipmentMutation.isPending}
+          className="w-full h-12 text-base font-semibold shadow-md transition-all gap-2"
           size="lg"
         >
-          {updateShipmentMutation.isPending ? "Salvando..." : "✅ Salvar Informações de Envio"}
+          {updateShipmentMutation.isPending ? (
+            <>
+              <Package className="h-5 w-5 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-5 w-5" />
+              Salvar Informações de Envio
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -297,4 +347,3 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
 };
 
 export default ShipmentFormEmbedded;
-
