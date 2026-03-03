@@ -112,7 +112,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Marca *
             </label>
-            <Popover open={openBrand} onOpenChange={setOpenBrand}>
+            <Popover open={openBrand} onOpenChange={setOpenBrand} modal={true}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -125,7 +125,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100] max-h-[300px] overflow-auto" align="start" onWheel={(e) => e.stopPropagation()}>
                 <Command shouldFilter={false}>
                   <CommandInput 
                     placeholder="Pesquisar ou criar marca..." 
@@ -187,7 +187,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Modelo *
             </label>
-            <Popover open={openModel} onOpenChange={setOpenModel}>
+            <Popover open={openModel} onOpenChange={setOpenModel} modal={true}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -203,7 +203,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100] max-h-[300px] overflow-auto" align="start" onWheel={(e) => e.stopPropagation()}>
                 <Command shouldFilter={false}>
                   <CommandInput 
                     placeholder="Pesquisar ou criar modelo..." 
@@ -263,7 +263,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ano
             </label>
-            <Popover open={openYear} onOpenChange={setOpenYear}>
+            <Popover open={openYear} onOpenChange={setOpenYear} modal={true}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -279,7 +279,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100] max-h-[300px] overflow-auto" align="start" onWheel={(e) => e.stopPropagation()}>
                 <Command shouldFilter={false}>
                   <CommandInput 
                     placeholder="Pesquisar ou criar ano..." 
