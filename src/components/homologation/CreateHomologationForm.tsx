@@ -125,7 +125,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100] max-h-[300px] overflow-auto" align="start" onWheel={(e) => e.stopPropagation()}>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100]" align="start" onWheel={(e) => e.stopPropagation()}>
                 <Command shouldFilter={false}>
                   <CommandInput 
                     placeholder="Pesquisar ou criar marca..." 
@@ -203,7 +203,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100] max-h-[300px] overflow-auto" align="start" onWheel={(e) => e.stopPropagation()}>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100]" align="start" onWheel={(e) => e.stopPropagation()}>
                 <Command shouldFilter={false}>
                   <CommandInput 
                     placeholder="Pesquisar ou criar modelo..." 
@@ -279,7 +279,7 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100] max-h-[300px] overflow-auto" align="start" onWheel={(e) => e.stopPropagation()}>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100]" align="start" onWheel={(e) => e.stopPropagation()}>
                 <Command shouldFilter={false}>
                   <CommandInput 
                     placeholder="Pesquisar ou criar ano..." 
