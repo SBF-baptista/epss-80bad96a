@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -487,10 +488,10 @@ const OrderModal = ({
     toast.success("Endereço copiado!");
   };
 
-  const SectionHeader = ({ icon: Icon, title, badge }: { icon: any; title: string; badge?: React.ReactNode }) => (
-    <div className="flex items-center gap-2.5 mb-3">
-      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
-        <Icon className="h-4 w-4 text-primary" />
+  const SectionHeader = ({ icon: Icon, title, badge, compact }: { icon: any; title: string; badge?: React.ReactNode; compact?: boolean }) => (
+    <div className={`flex items-center gap-2 ${compact ? 'mb-1.5' : 'mb-3'}`}>
+      <div className="flex items-center justify-center w-6 h-6 rounded-md bg-primary/10">
+        <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
       <h3 className="font-semibold text-sm tracking-tight text-foreground">{title}</h3>
       {badge}
@@ -498,9 +499,16 @@ const OrderModal = ({
   );
 
   const InfoField = ({ label, value, mono }: { label: string; value: string; mono?: boolean }) => (
-    <div className="space-y-1">
-      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
-      <p className={`text-sm font-medium text-foreground ${mono ? "font-mono" : ""}`}>{value || "—"}</p>
+    <div className="space-y-0.5">
+      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+      <p className={`text-sm font-medium text-foreground leading-tight ${mono ? "font-mono" : ""}`}>{value || "—"}</p>
+    </div>
+  );
+
+  const CompactChip = ({ label, count }: { label: string; count: number }) => (
+    <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/40 rounded-md border border-border/50 text-xs">
+      <span className="font-medium text-foreground truncate">{label}</span>
+      <span className="bg-primary/10 text-primary font-semibold rounded px-1.5 py-0.5 text-[10px] min-w-[18px] text-center">{count}</span>
     </div>
   );
 
@@ -549,184 +557,173 @@ const OrderModal = ({
             {/* ═══════════════════════════════════════════ */}
             {(viewMode === "details" || order.status === "novos") && (
               <>
-                {/* ── Two-column: Cliente + Agendamento ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Client Card */}
-                  <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                    <SectionHeader icon={Building2} title="Dados do Cliente" />
-                    <div className="space-y-2.5">
-                      <p className="font-semibold text-foreground">{order.company_name}</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                        {schedule?.customer_document_number && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <FileText className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span>{schedule.customer_document_number}</span>
-                          </div>
-                        )}
-                        {schedule?.customer_phone && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span>{schedule.customer_phone}</span>
-                          </div>
-                        )}
-                      </div>
-                      {schedule?.customer_email && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span>{schedule.customer_email}</span>
-                        </div>
-                      )}
-                    </div>
+                {/* ── Resumo Geral - Ficha Técnica ── */}
+                <div className="bg-card rounded-xl border shadow-sm p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <ClipboardList className="h-4 w-4 text-primary" />
+                    <h3 className="font-bold text-sm text-foreground">Resumo do Pedido</h3>
                   </div>
-
-                  {/* Scheduling Card */}
-                  <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                    <SectionHeader icon={Calendar} title="Agendamento" />
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                      {schedule?.scheduled_date && (
-                        <InfoField
-                          label="Data Prevista"
-                          value={`${formatDate(schedule.scheduled_date)}${schedule.installation_time ? ` às ${schedule.installation_time.slice(0, 5)}` : ""}`}
-                        />
-                      )}
-                      {schedule?.technician?.name && <InfoField label="Técnico" value={schedule.technician.name} />}
-                      {(schedule?.vehicle_brand || schedule?.vehicle_model) && (
-                        <InfoField
-                          label="Veículo"
-                          value={`${schedule.vehicle_brand || ""} ${schedule.vehicle_model || ""}${schedule.vehicle_year ? ` (${schedule.vehicle_year})` : ""}`}
-                        />
-                      )}
-                      {schedule?.vehicle_plate && schedule.vehicle_plate !== "Placa pendente" && (
-                        <InfoField label="Placa" value={schedule.vehicle_plate} mono />
-                      )}
-                      {(schedule as any)?.configuration && (
-                        <div className="col-span-2">
-                          <InfoField label="Configuração" value={(schedule as any).configuration} />
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* Compact two-row summary */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+                    <InfoField label="Cliente" value={order.company_name || "—"} />
+                    {schedule?.technician?.name && <InfoField label="Técnico" value={schedule.technician.name} />}
+                    {schedule?.scheduled_date && (
+                      <InfoField
+                        label="Data Prevista"
+                        value={`${formatDate(schedule.scheduled_date)}${schedule.installation_time ? ` ${schedule.installation_time.slice(0, 5)}` : ""}`}
+                      />
+                    )}
+                    {(schedule?.vehicle_brand || schedule?.vehicle_model) && (
+                      <InfoField
+                        label="Veículo"
+                        value={`${schedule.vehicle_brand || ""} ${schedule.vehicle_model || ""}${schedule.vehicle_year ? ` (${schedule.vehicle_year})` : ""}`}
+                      />
+                    )}
                   </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+                    {schedule?.vehicle_plate && schedule.vehicle_plate !== "Placa pendente" && (
+                      <InfoField label="Placa" value={schedule.vehicle_plate} mono />
+                    )}
+                    {(schedule as any)?.configuration && (
+                      <InfoField label="Configuração" value={(schedule as any).configuration} />
+                    )}
+                    {schedule?.customer_document_number && (
+                      <InfoField label="Documento" value={schedule.customer_document_number} />
+                    )}
+                    {schedule?.customer_phone && (
+                      <InfoField label="Telefone" value={schedule.customer_phone} />
+                    )}
+                  </div>
+                  
+                  {schedule?.customer_email && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Mail className="h-3 w-3" />
+                      <span>{schedule.customer_email}</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* ── Installation Address ── */}
-                {schedule && (schedule.installation_address_street || schedule.installation_address_city) && (
-                  <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                    <div className="flex items-center justify-between">
-                      <SectionHeader icon={MapPin} title="Endereço de Instalação" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
-                        onClick={() => copyAddress(schedule)}
-                      >
-                        <Copy className="h-3 w-3" />
-                        Copiar
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
-                      <div className="col-span-2">
-                        <InfoField label="Logradouro" value={schedule.installation_address_street || ""} />
-                      </div>
-                      <InfoField label="Número" value={schedule.installation_address_number || ""} />
-                      <InfoField label="Complemento" value={schedule.installation_address_complement || ""} />
-                      <InfoField label="Bairro" value={schedule.installation_address_neighborhood || ""} />
-                      <InfoField label="Cidade" value={schedule.installation_address_city || ""} />
-                      <InfoField label="UF" value={schedule.installation_address_state || ""} />
-                      <InfoField label="CEP" value={schedule.installation_address_postal_code || ""} />
-                    </div>
-                    {/* Address completeness check */}
-                    {(!schedule.installation_address_street ||
-                      !schedule.installation_address_city ||
-                      !schedule.installation_address_state) && (
-                      <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/20 rounded-lg px-3 py-2 border border-amber-200 dark:border-amber-800">
-                        <span>⚠</span>
-                        <span>Endereço incompleto — verifique os campos obrigatórios</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Câmeras Extras (technical) ── */}
-                {cameraExtras.length > 0 && (
-                  <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                    <SectionHeader icon={Camera} title="Localização Câmeras Extras" />
-                    <p className="text-xs text-muted-foreground -mt-1">
-                      Quantidade e localização das câmeras extras por veículo.
-                    </p>
-                    <div className="space-y-2">
-                      {cameraExtras.map((cam, idx) => (
-                        <div key={idx} className="bg-card border rounded-lg p-3">
-                          <p className="font-medium text-sm text-foreground mb-2">{cam.vehicleName}</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <InfoField label="Quantidade" value={String(cam.quantity)} />
-                            <InfoField label="Localização" value={cam.locations} />
+                {/* ── Accordion sections for secondary info ── */}
+                <Accordion type="multiple" defaultValue={["address"]} className="space-y-2">
+                  {/* Address */}
+                  {schedule && (schedule.installation_address_street || schedule.installation_address_city) && (
+                    <AccordionItem value="address" className="bg-card rounded-xl border shadow-sm overflow-hidden">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/20 [&[data-state=open]]:border-b">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-primary" />
+                          <span className="font-semibold text-sm">Endereço de Instalação</span>
+                          {schedule.installation_address_street && schedule.installation_address_city && schedule.installation_address_state ? (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
+                              Completo
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                              Incompleto
+                            </Badge>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-3 pt-3">
+                        <div className="flex items-center justify-end mb-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1"
+                            onClick={() => copyAddress(schedule)}
+                          >
+                            <Copy className="h-3 w-3" /> Copiar
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-2">
+                          <div className="col-span-3">
+                            <InfoField label="Logradouro" value={schedule.installation_address_street || ""} />
                           </div>
+                          <InfoField label="Número" value={schedule.installation_address_number || ""} />
+                          <div className="col-span-2">
+                            <InfoField label="Complemento" value={schedule.installation_address_complement || ""} />
+                          </div>
+                          <div className="col-span-2">
+                            <InfoField label="Bairro" value={schedule.installation_address_neighborhood || ""} />
+                          </div>
+                          <InfoField label="Cidade" value={schedule.installation_address_city || ""} />
+                          <InfoField label="UF" value={schedule.installation_address_state || ""} />
+                          <InfoField label="CEP" value={schedule.installation_address_postal_code || ""} />
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
 
-                {/* ── Two-column: Venda Câmeras Extras + Venda Acessórios ── */}
-                {(kickoffSalesData.cameraExtraSale || kickoffSalesData.accessoriesSale.length > 0) && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Venda Câmeras Extras */}
-                    {kickoffSalesData.cameraExtraSale && (
-                      <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                        <SectionHeader icon={Camera} title="Câmeras Extras" />
-                        <div className="grid grid-cols-3 gap-3">
-                          <InfoField
-                            label="Quantidade"
-                            value={String(kickoffSalesData.cameraExtraSale.quantity || 0)}
-                          />
-                          <InfoField
-                            label="Valor Unitário"
-                            value={`R$ ${(kickoffSalesData.cameraExtraSale.unitPrice || 0).toFixed(2).replace(".", ",")}`}
-                          />
-                          <InfoField
-                            label="Total"
-                            value={`R$ ${(kickoffSalesData.cameraExtraSale.total || 0).toFixed(2).replace(".", ",")}`}
-                          />
+                  {/* Camera Extras */}
+                  {cameraExtras.length > 0 && (
+                    <AccordionItem value="cameras" className="bg-card rounded-xl border shadow-sm overflow-hidden">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/20 [&[data-state=open]]:border-b">
+                        <div className="flex items-center gap-2">
+                          <Camera className="h-3.5 w-3.5 text-primary" />
+                          <span className="font-semibold text-sm">Câmeras Extras</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{cameraExtras.length}</Badge>
                         </div>
-                      </div>
-                    )}
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-3 pt-3 space-y-2">
+                        {cameraExtras.map((cam, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 bg-muted/20 rounded-lg text-sm">
+                            <span className="font-medium text-foreground">{cam.vehicleName}</span>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>{cam.quantity}x</span>
+                              <span>📍 {cam.locations}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
 
-                    {/* Venda de Acessórios */}
-                    {kickoffSalesData.accessoriesSale.length > 0 && (
-                      <div
-                        className={`bg-muted/20 p-4 rounded-xl border space-y-3 ${!kickoffSalesData.cameraExtraSale ? "lg:col-span-2" : ""}`}
-                      >
-                        <SectionHeader icon={Package} title="Venda de Acessórios" />
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider border-b">
-                                <th className="text-left pb-2">Descrição</th>
-                                <th className="text-center pb-2 w-16">Qtd</th>
-                                <th className="text-right pb-2 w-24">Valor unit.</th>
-                                <th className="text-right pb-2 w-24">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/50">
-                              {kickoffSalesData.accessoriesSale.map((acc, idx) => (
-                                <tr key={idx}>
-                                  <td className="py-2 font-medium text-foreground">{acc.description}</td>
-                                  <td className="py-2 text-center text-muted-foreground">{acc.quantity}</td>
-                                  <td className="py-2 text-right text-muted-foreground">
-                                    R$ {(acc.unitPrice || 0).toFixed(2).replace(".", ",")}
-                                  </td>
-                                  <td className="py-2 text-right font-semibold text-foreground">
-                                    R$ {(acc.total || 0).toFixed(2).replace(".", ",")}
-                                  </td>
+                  {/* Kickoff Sales (compact) */}
+                  {(kickoffSalesData.cameraExtraSale || kickoffSalesData.accessoriesSale.length > 0) && (
+                    <AccordionItem value="sales" className="bg-card rounded-xl border shadow-sm overflow-hidden">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/20 [&[data-state=open]]:border-b">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-3.5 w-3.5 text-primary" />
+                          <span className="font-semibold text-sm">Venda de Acessórios</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-3 pt-3 space-y-3">
+                        {kickoffSalesData.cameraExtraSale && (
+                          <div className="grid grid-cols-3 gap-3">
+                            <InfoField label="Câmeras Extras" value={String(kickoffSalesData.cameraExtraSale.quantity || 0)} />
+                            <InfoField label="Valor Unit." value={`R$ ${(kickoffSalesData.cameraExtraSale.unitPrice || 0).toFixed(2).replace(".", ",")}`} />
+                            <InfoField label="Total" value={`R$ ${(kickoffSalesData.cameraExtraSale.total || 0).toFixed(2).replace(".", ",")}`} />
+                          </div>
+                        )}
+                        {kickoffSalesData.accessoriesSale.length > 0 && (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider border-b">
+                                  <th className="text-left pb-1.5">Descrição</th>
+                                  <th className="text-center pb-1.5 w-12">Qtd</th>
+                                  <th className="text-right pb-1.5 w-20">Unit.</th>
+                                  <th className="text-right pb-1.5 w-20">Total</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                              </thead>
+                              <tbody className="divide-y divide-border/30">
+                                {kickoffSalesData.accessoriesSale.map((acc, idx) => (
+                                  <tr key={idx}>
+                                    <td className="py-1.5 font-medium text-foreground">{acc.description}</td>
+                                    <td className="py-1.5 text-center text-muted-foreground">{acc.quantity}</td>
+                                    <td className="py-1.5 text-right text-muted-foreground">R$ {(acc.unitPrice || 0).toFixed(2).replace(".", ",")}</td>
+                                    <td className="py-1.5 text-right font-semibold text-foreground">R$ {(acc.total || 0).toFixed(2).replace(".", ",")}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                </Accordion>
               </>
             )}
 
@@ -924,27 +921,24 @@ const OrderModal = ({
               !(order.status === "enviado" && viewMode === "scanner") && (
                 <>
                   {/* Scanned IMEIs */}
-                  {productionItems.length > 0 && (
-                    <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                      <SectionHeader icon={Scan} title={`IMEIs Escaneados (${productionItems.length})`} />
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                   {productionItems.length > 0 && (
+                    <div className="bg-card p-3 rounded-xl border shadow-sm space-y-2">
+                      <SectionHeader icon={Scan} title={`IMEIs Escaneados (${productionItems.length})`} compact />
+                      <div className="space-y-1 max-h-36 overflow-y-auto">
                         {productionItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex justify-between items-center text-sm bg-card p-2.5 rounded-lg border"
-                          >
+                          <div key={item.id} className="flex justify-between items-center text-xs bg-muted/20 p-2 rounded-lg">
                             <span className="font-mono text-foreground">{item.imei}</span>
-                            <span className="text-muted-foreground text-xs">Linha: {item.production_line_code}</span>
+                            <span className="text-muted-foreground">Linha: {item.production_line_code}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* ── Totais Consolidados ── */}
+                  {/* ── Totais Consolidados (compact chips) ── */}
                   {allSchedules.length > 0 && (
-                    <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                      <SectionHeader icon={ClipboardList} title="Totais Consolidados" />
+                    <div className="bg-card p-3 rounded-xl border shadow-sm space-y-2">
+                      <SectionHeader icon={ClipboardList} title="Totais Consolidados" compact />
                       {(() => {
                         const totals: Record<string, number> = {};
                         allSchedules.forEach((sched) => {
@@ -973,30 +967,22 @@ const OrderModal = ({
                         });
                         const sortedItems = Object.entries(totals).sort(([a], [b]) => a.localeCompare(b));
                         return sortedItems.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          <div className="flex flex-wrap gap-1.5">
                             {sortedItems.map(([itemName, quantity]) => (
-                              <div
-                                key={itemName}
-                                className="flex items-center justify-between p-2.5 bg-card border rounded-lg"
-                              >
-                                <span className="font-medium text-sm text-foreground">{itemName}</span>
-                                <Badge variant="secondary" className="ml-2">
-                                  {quantity}
-                                </Badge>
-                              </div>
+                              <CompactChip key={itemName} label={itemName} count={quantity} />
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground">Nenhum item encontrado</p>
+                          <p className="text-xs text-muted-foreground">Nenhum item encontrado</p>
                         );
                       })()}
                     </div>
                   )}
 
-                  {/* ── Detalhamento por Técnico ── */}
+                  {/* ── Detalhamento por Técnico (compact) ── */}
                   {allSchedules.length > 0 && (
-                    <div className="space-y-3">
-                      <SectionHeader icon={User} title="Detalhamento por Técnico" />
+                    <div className="space-y-2">
+                      <SectionHeader icon={User} title="Detalhamento por Técnico" compact />
                       {(() => {
                         const byTechnician: Record<string, typeof allSchedules> = {};
                         allSchedules.forEach((sched) => {
@@ -1036,12 +1022,12 @@ const OrderModal = ({
                           const sortedTechItems = Object.entries(techTotals).sort(([a], [b]) => a.localeCompare(b));
 
                           return (
-                            <div key={techName} className="bg-muted/20 p-4 rounded-xl border space-y-3">
+                            <div key={techName} className="bg-card p-3 rounded-xl border shadow-sm space-y-2">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-primary" />
-                                  <span className="font-semibold text-sm text-foreground">{techName}</span>
-                                  <Badge variant="outline" className="text-xs">
+                                  <User className="h-3.5 w-3.5 text-primary" />
+                                  <span className="font-semibold text-xs text-foreground">{techName}</span>
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                     {schedules.length} {schedules.length === 1 ? "placa" : "placas"}
                                   </Badge>
                                 </div>
@@ -1049,22 +1035,15 @@ const OrderModal = ({
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setSelectedTechnician({ name: techName, schedules })}
-                                  className="h-7 px-2 gap-1.5 text-xs"
+                                  className="h-6 px-2 gap-1 text-[10px]"
                                 >
-                                  <Eye className="h-3.5 w-3.5" />
-                                  Detalhes
+                                  <Eye className="h-3 w-3" /> Detalhes
                                 </Button>
                               </div>
                               {sortedTechItems.length > 0 && (
-                                <div className="pl-6 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                                <div className="flex flex-wrap gap-1.5 pl-5">
                                   {sortedTechItems.map(([itemName, quantity]) => (
-                                    <div key={itemName} className="flex items-center gap-2 text-sm">
-                                      <span className="text-muted-foreground">•</span>
-                                      <span className="text-foreground">{cleanItemName(itemName)}</span>
-                                      <Badge variant="secondary" className="text-xs">
-                                        {quantity}x
-                                      </Badge>
-                                    </div>
+                                    <CompactChip key={itemName} label={cleanItemName(itemName)} count={quantity} />
                                   ))}
                                 </div>
                               )}
