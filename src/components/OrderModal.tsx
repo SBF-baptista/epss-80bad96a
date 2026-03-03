@@ -796,12 +796,44 @@ const OrderModal = ({
               </>
             )}
 
-            {/* "Aguardando envio": Shipment Form */}
+            {/* "Aguardando envio": Scanner + Shipment Form */}
             {order.status === "aguardando" && viewMode === "scanner" && (
-              <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                <SectionHeader icon={Truck} title="Preparar Envio" />
-                <ShipmentFormEmbedded order={order} onUpdate={onUpdate} onClose={onClose} schedule={schedule} />
-              </div>
+              <>
+                <div className="bg-muted/20 p-4 rounded-xl border">
+                  <ProductionForm
+                    order={order}
+                    productionItems={productionItems}
+                    isScanning={isScanning}
+                    imei={imei}
+                    serialNumber={serialNumber}
+                    productionLineCode={productionLineCode}
+                    scannerActive={scannerActive}
+                    scannerError={scannerError}
+                    onImeiChange={setImei}
+                    onSerialNumberChange={setSerialNumber}
+                    onProductionLineCodeChange={setProductionLineCode}
+                    onScannerToggle={() => setScannerActive(!scannerActive)}
+                    onScanResult={handleScanResult}
+                    onScanError={handleScanError}
+                    onScanItem={onScanItemClick}
+                    onKeyPress={onKeyPress}
+                    onStartProduction={onStartProduction}
+                    onCompleteProduction={onCompleteProduction}
+                    onRegisterForceCleanup={registerForceCleanup}
+                  />
+                </div>
+                <div className="bg-muted/20 p-4 rounded-xl border">
+                  <ProductionItemsList
+                    productionItems={productionItems}
+                    totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
+                    isLoading={productionLoading}
+                  />
+                </div>
+                <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
+                  <SectionHeader icon={Truck} title="Preparar Envio" />
+                  <ShipmentFormEmbedded order={order} onUpdate={onUpdate} onClose={onClose} schedule={schedule} />
+                </div>
+              </>
             )}
 
             {/* "Enviado": Shipped vehicles */}
