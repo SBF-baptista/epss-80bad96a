@@ -45,6 +45,7 @@ import { cleanItemName, normalizeItemName } from "@/utils/itemNormalization";
 import ProductionForm from "./production/ProductionForm";
 import ProductionStatus from "./production/ProductionStatus";
 import ProductionItemsList from "./production/ProductionItemsList";
+import TrocarBemTestPanel from "./production/TrocarBemTestPanel";
 import { useProductionItems } from "@/hooks/useProductionItems";
 import { useProductionScannerModal } from "@/hooks/useProductionScannerModal";
 import { ShipmentFormEmbedded } from "./shipment";
@@ -834,6 +835,7 @@ const OrderModal = ({
                       totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
                       isLoading={productionLoading}
                     />
+                    <TrocarBemTestPanel />
                   </div>
                 </div>
 
