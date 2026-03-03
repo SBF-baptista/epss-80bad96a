@@ -100,9 +100,6 @@ const KanbanColumn = ({
             {orders.length}
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground/70 pl-6 md:pl-7">
-          {groupedOrders.length} empresa{groupedOrders.length !== 1 ? 's' : ''}
-        </p>
       </div>
       
       <Card 
