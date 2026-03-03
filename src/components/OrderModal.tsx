@@ -46,6 +46,7 @@ import ProductionForm from "./production/ProductionForm";
 import ProductionStatus from "./production/ProductionStatus";
 import ProductionItemsList from "./production/ProductionItemsList";
 import TrocarBemTestPanel from "./production/TrocarBemTestPanel";
+import UpdateBemTestPanel from "./production/UpdateBemTestPanel";
 import { useProductionItems } from "@/hooks/useProductionItems";
 import { useProductionScannerModal } from "@/hooks/useProductionScannerModal";
 import { ShipmentFormEmbedded } from "./shipment";
@@ -836,6 +837,7 @@ const OrderModal = ({
                       isLoading={productionLoading}
                     />
                     <TrocarBemTestPanel />
+                    <UpdateBemTestPanel />
                   </div>
                 </div>
 
