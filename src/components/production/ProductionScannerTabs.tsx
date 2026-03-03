@@ -11,12 +11,14 @@ interface ProductionScannerTabsProps {
   imei: string;
   serialNumber: string;
   productionLineCode: string;
+  localBem?: string;
   scannerActive: boolean;
   scannerError: string;
   isScanning: boolean;
   onImeiChange: (value: string) => void;
   onSerialNumberChange: (value: string) => void;
   onProductionLineCodeChange: (value: string) => void;
+  onLocalBemChange?: (value: string) => void;
   onScannerToggle: () => void;
   onScanResult: (result: string) => void;
   onScanError: (error: string) => void;
@@ -29,12 +31,14 @@ const ProductionScannerTabs = ({
   imei,
   serialNumber,
   productionLineCode,
+  localBem,
   scannerActive,
   scannerError,
   isScanning,
   onImeiChange,
   onSerialNumberChange,
   onProductionLineCodeChange,
+  onLocalBemChange,
   onScannerToggle,
   onScanResult,
   onScanError,
@@ -92,6 +96,18 @@ const ProductionScannerTabs = ({
               onKeyPress={onKeyPress}
             />
           </div>
+          {onLocalBemChange && (
+            <div className="space-y-2">
+              <Label htmlFor="localBem">Local Bem</Label>
+              <Input
+                id="localBem"
+                value={localBem || ""}
+                onChange={(e) => onLocalBemChange(e.target.value)}
+                placeholder="Ex: 1001, 2002"
+                onKeyPress={onKeyPress}
+              />
+            </div>
+          )}
           <div className="flex items-end">
             <Button 
               onClick={onScanItem} 
@@ -138,6 +154,18 @@ const ProductionScannerTabs = ({
               onKeyPress={onKeyPress}
             />
           </div>
+          {onLocalBemChange && (
+            <div className="space-y-2">
+              <Label htmlFor="manual-localBem">Local Bem</Label>
+              <Input
+                id="manual-localBem"
+                value={localBem || ""}
+                onChange={(e) => onLocalBemChange(e.target.value)}
+                placeholder="Ex: 1001, 2002"
+                onKeyPress={onKeyPress}
+              />
+            </div>
+          )}
           <div className="flex items-end">
             <Button 
               onClick={onScanItem} 

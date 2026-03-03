@@ -15,15 +15,18 @@ import { KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { useToast } from "@/hooks/use-toast";
 import { AddressForm } from "./index";
 import { UserCheck, MapPin, Truck, CheckCircle, Package } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ShipmentFormEmbeddedProps {
   order: Order;
   onUpdate?: () => void;
   onClose?: () => void;
   schedule?: KitScheduleWithDetails;
+  localBem?: string;
+  scannedImeis?: string[];
 }
 
-const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFormEmbeddedProps) => {
+const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule, localBem, scannedImeis }: ShipmentFormEmbeddedProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -159,6 +162,47 @@ const ShipmentFormEmbedded = ({ order, onUpdate, onClose, schedule }: ShipmentFo
       installation_address_complement: address.complement || undefined,
       tracking_code: activeTrackingCode || undefined,
     });
+
+    // Call trocar-bem if localBem and scannedImeis are provided
+    if (localBem && scannedImeis && scannedImeis.length > 0) {
+      try {
+        const { data, error } = await supabase.functions.invoke('trocar-bem', {
+          body: {
+            codLocal: localBem,
+            codigosTombamento: scannedImeis,
+          },
+        });
+
+        if (error) {
+          console.error('Erro ao chamar trocar-bem:', error);
+          toast({
+            title: "⚠️ Envio salvo, mas erro ao trocar local do bem",
+            description: error.message || "Erro na API trocarLocalBemList",
+            variant: "destructive",
+          });
+        } else if (data && !data.success) {
+          console.warn('trocar-bem retornou erro:', data);
+          toast({
+            title: "⚠️ Envio salvo, mas erro ao trocar local do bem",
+            description: `Status ${data.status}: ${JSON.stringify(data.data)}`,
+            variant: "destructive",
+          });
+        } else {
+          console.log('✅ trocar-bem chamado com sucesso:', data);
+          toast({
+            title: "✅ Local dos bens atualizado",
+            description: `${scannedImeis.length} item(ns) movido(s) para local ${localBem}`,
+          });
+        }
+      } catch (err: any) {
+        console.error('Erro inesperado ao chamar trocar-bem:', err);
+        toast({
+          title: "⚠️ Erro ao trocar local do bem",
+          description: err.message || "Erro inesperado",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const activeTrackingCode = selectedCarrier === "correios" ? trackingCode : azulCargoTrackingCode;
