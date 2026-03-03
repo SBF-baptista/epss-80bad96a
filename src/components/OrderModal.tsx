@@ -94,6 +94,7 @@ const OrderModal = ({
     cameraExtraSale: { quantity: number; unitPrice: number; total: number } | null;
     accessoriesSale: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
   }>({ cameraExtraSale: null, accessoriesSale: [] });
+  const [localBem, setLocalBem] = useState("");
 
   // Production scanner hooks
   const {
@@ -812,11 +813,13 @@ const OrderModal = ({
                       imei={imei}
                       serialNumber={serialNumber}
                       productionLineCode={productionLineCode}
+                      localBem={localBem}
                       scannerActive={scannerActive}
                       scannerError={scannerError}
                       onImeiChange={setImei}
                       onSerialNumberChange={setSerialNumber}
                       onProductionLineCodeChange={setProductionLineCode}
+                      onLocalBemChange={setLocalBem}
                       onScannerToggle={() => setScannerActive(!scannerActive)}
                       onScanResult={handleScanResult}
                       onScanError={handleScanError}
@@ -840,7 +843,14 @@ const OrderModal = ({
                     <SectionHeader icon={Truck} title="Envio Logístico" />
                   </div>
                   <div className="p-4">
-                    <ShipmentFormEmbedded order={order} onUpdate={onUpdate} onClose={onClose} schedule={schedule} />
+                    <ShipmentFormEmbedded
+                      order={order}
+                      onUpdate={onUpdate}
+                      onClose={onClose}
+                      schedule={schedule}
+                      localBem={localBem}
+                      scannedImeis={productionItems.map(item => item.imei)}
+                    />
                   </div>
                 </div>
               </>
