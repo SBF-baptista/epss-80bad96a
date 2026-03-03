@@ -799,39 +799,49 @@ const OrderModal = ({
             {/* "Aguardando envio": Scanner + Shipment Form */}
             {order.status === "aguardando" && viewMode === "scanner" && (
               <>
-                <div className="bg-muted/20 p-4 rounded-xl border">
-                  <ProductionForm
-                    order={order}
-                    productionItems={productionItems}
-                    isScanning={isScanning}
-                    imei={imei}
-                    serialNumber={serialNumber}
-                    productionLineCode={productionLineCode}
-                    scannerActive={scannerActive}
-                    scannerError={scannerError}
-                    onImeiChange={setImei}
-                    onSerialNumberChange={setSerialNumber}
-                    onProductionLineCodeChange={setProductionLineCode}
-                    onScannerToggle={() => setScannerActive(!scannerActive)}
-                    onScanResult={handleScanResult}
-                    onScanError={handleScanError}
-                    onScanItem={onScanItemClick}
-                    onKeyPress={onKeyPress}
-                    onStartProduction={onStartProduction}
-                    onCompleteProduction={onCompleteProduction}
-                    onRegisterForceCleanup={registerForceCleanup}
-                  />
+                {/* Section 1: Escaneamento */}
+                <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border/30 bg-muted/20">
+                    <SectionHeader icon={Package} title="Escaneamento / Itens" />
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <ProductionForm
+                      order={order}
+                      productionItems={productionItems}
+                      isScanning={isScanning}
+                      imei={imei}
+                      serialNumber={serialNumber}
+                      productionLineCode={productionLineCode}
+                      scannerActive={scannerActive}
+                      scannerError={scannerError}
+                      onImeiChange={setImei}
+                      onSerialNumberChange={setSerialNumber}
+                      onProductionLineCodeChange={setProductionLineCode}
+                      onScannerToggle={() => setScannerActive(!scannerActive)}
+                      onScanResult={handleScanResult}
+                      onScanError={handleScanError}
+                      onScanItem={onScanItemClick}
+                      onKeyPress={onKeyPress}
+                      onStartProduction={onStartProduction}
+                      onCompleteProduction={onCompleteProduction}
+                      onRegisterForceCleanup={registerForceCleanup}
+                    />
+                    <ProductionItemsList
+                      productionItems={productionItems}
+                      totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
+                      isLoading={productionLoading}
+                    />
+                  </div>
                 </div>
-                <div className="bg-muted/20 p-4 rounded-xl border">
-                  <ProductionItemsList
-                    productionItems={productionItems}
-                    totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
-                    isLoading={productionLoading}
-                  />
-                </div>
-                <div className="bg-muted/20 p-4 rounded-xl border space-y-3">
-                  <SectionHeader icon={Truck} title="Preparar Envio" />
-                  <ShipmentFormEmbedded order={order} onUpdate={onUpdate} onClose={onClose} schedule={schedule} />
+
+                {/* Section 2: Envio Logístico */}
+                <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border/30 bg-muted/20">
+                    <SectionHeader icon={Truck} title="Envio Logístico" />
+                  </div>
+                  <div className="p-4">
+                    <ShipmentFormEmbedded order={order} onUpdate={onUpdate} onClose={onClose} schedule={schedule} />
+                  </div>
                 </div>
               </>
             )}
