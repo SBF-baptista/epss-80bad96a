@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Order } from "@/services/orderService";
 import { KitScheduleWithDetails, getSchedulesByCustomer } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
@@ -38,6 +39,7 @@ import {
   Truck,
   Hash,
   Building2,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -749,50 +751,300 @@ const OrderModal = ({
               </div>
             )}
 
-            {/* "Em produção" (scanner): Scanner + Items */}
+            {/* "Em produção" (scanner): Compact redesign */}
             {order.status === "producao" && viewMode === "scanner" && (
               <>
-                <div className="bg-muted/20 p-4 rounded-xl border">
-                  <ProductionForm
-                    order={order}
-                    productionItems={productionItems}
-                    isScanning={isScanning}
-                    imei={imei}
-                    serialNumber={serialNumber}
-                    productionLineCode={productionLineCode}
-                    scannerActive={scannerActive}
-                    scannerError={scannerError}
-                    onImeiChange={setImei}
-                    onSerialNumberChange={setSerialNumber}
-                    onProductionLineCodeChange={setProductionLineCode}
-                    onScannerToggle={() => setScannerActive(!scannerActive)}
-                    onScanResult={handleScanResult}
-                    onScanError={handleScanError}
-                    onScanItem={onScanItemClick}
-                    onKeyPress={onKeyPress}
-                    onStartProduction={onStartProduction}
-                    onCompleteProduction={onCompleteProduction}
-                    onRegisterForceCleanup={registerForceCleanup}
-                  />
-                </div>
-                <div className="bg-muted/20 p-4 rounded-xl border">
-                  <ProductionItemsList
-                    productionItems={productionItems}
-                    totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
-                    isLoading={productionLoading}
-                  />
-                </div>
-                {(order.status === "producao" || order.status === "in_progress") && (
-                  <div className="flex justify-end">
-                    <Button
-                      onClick={onCompleteProduction}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      Concluir Produção
-                    </Button>
+                {/* ── Block 1: Resumo Geral (compact summary strip) ── */}
+                <div className="rounded-xl border border-border/60 bg-card shadow-sm p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <h3 className="font-bold text-sm text-foreground tracking-tight">Resumo do Pedido</h3>
                   </div>
-                )}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+                    <div>
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Cliente</span>
+                      <p className="text-sm font-semibold text-foreground truncate">{order.company_name}</p>
+                    </div>
+                    {schedule?.technician?.name && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Técnico</span>
+                        <p className="text-sm text-foreground truncate">{schedule.technician.name}</p>
+                      </div>
+                    )}
+                    {(schedule?.vehicle_brand || schedule?.vehicle_model) && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Veículo</span>
+                        <p className="text-sm text-foreground truncate">
+                          {[schedule?.vehicle_brand, schedule?.vehicle_model].filter(Boolean).join(" ")}
+                          {schedule?.vehicle_year ? ` (${schedule.vehicle_year})` : ""}
+                        </p>
+                      </div>
+                    )}
+                    {schedule?.vehicle_plate && schedule.vehicle_plate !== "Placa pendente" && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Placa</span>
+                        <p className="text-sm font-mono font-semibold text-foreground">{schedule.vehicle_plate}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Compact inline chips: config + kits */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                    {(schedule as any)?.configuration && (
+                      <Badge variant="outline" className="text-[10px] font-medium px-2 py-0.5 bg-muted/40">
+                        <Settings className="h-3 w-3 mr-1" />
+                        {(schedule as any).configuration}
+                      </Badge>
+                    )}
+                    {(() => {
+                      const s = schedule as any;
+                      const hasKits = s?.selected_kit_ids?.length > 0;
+                      if (hasKits) {
+                        return s.selected_kit_ids.map((kitId: string, i: number) => (
+                          <Badge key={i} variant="secondary" className="text-[10px] px-2 py-0.5">
+                            {kitNamesMap[kitId] || `Kit ${kitId}`}
+                          </Badge>
+                        ));
+                      }
+                      if (schedule?.kit?.name) {
+                        return (
+                          <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                            {schedule.kit.name}
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                </div>
+
+                {/* ── Block 2: Escaneamento + Itens Processados ── */}
+                <div className="rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border/30 bg-muted/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Scan className="h-4 w-4 text-primary" />
+                      <h3 className="font-bold text-sm text-foreground tracking-tight">Escaneamento</h3>
+                    </div>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {productionItems.length} / {order.trackers.reduce((sum, t) => sum + t.quantity, 0)}
+                    </Badge>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <ProductionForm
+                      order={order}
+                      productionItems={productionItems}
+                      isScanning={isScanning}
+                      imei={imei}
+                      serialNumber={serialNumber}
+                      productionLineCode={productionLineCode}
+                      scannerActive={scannerActive}
+                      scannerError={scannerError}
+                      onImeiChange={setImei}
+                      onSerialNumberChange={setSerialNumber}
+                      onProductionLineCodeChange={setProductionLineCode}
+                      onScannerToggle={() => setScannerActive(!scannerActive)}
+                      onScanResult={handleScanResult}
+                      onScanError={handleScanError}
+                      onScanItem={onScanItemClick}
+                      onKeyPress={onKeyPress}
+                      onStartProduction={onStartProduction}
+                      onCompleteProduction={onCompleteProduction}
+                      onRegisterForceCleanup={registerForceCleanup}
+                    />
+
+                    {/* Inline processed items (compact) */}
+                    {productionItems.length > 0 && (
+                      <div className="space-y-1.5">
+                        <Separator className="my-2" />
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Itens Processados</span>
+                        <div className="space-y-1 max-h-40 overflow-y-auto">
+                          {productionItems.map((item, index) => (
+                            <div key={item.id} className="flex items-center justify-between px-3 py-2 bg-muted/20 rounded-lg text-sm">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[10px] font-bold text-muted-foreground w-5 text-center">#{index + 1}</span>
+                                <span className="font-mono text-foreground text-xs truncate">{item.imei}</span>
+                                {item.serial_number && (
+                                  <span className="text-[10px] text-muted-foreground hidden sm:inline">SN: {item.serial_number}</span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
+                                {new Date(item.scanned_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Block 3: Informações Técnicas (accordion) ── */}
+                <div className="rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border/30 bg-muted/10">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-primary" />
+                      <h3 className="font-bold text-sm text-foreground tracking-tight">Informações Técnicas</h3>
+                    </div>
+                  </div>
+                  <Accordion type="multiple" className="px-4">
+                    {/* Address */}
+                    {schedule && (schedule.installation_address_street || schedule.installation_address_city) && (
+                      <AccordionItem value="address" className="border-border/30">
+                        <AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Endereço de Instalação</span>
+                            {schedule.installation_address_city && (
+                              <span className="text-xs text-muted-foreground font-normal">
+                                — {schedule.installation_address_city}, {schedule.installation_address_state}
+                              </span>
+                            )}
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 pb-2">
+                            <div className="col-span-2">
+                              <InfoField label="Logradouro" value={schedule.installation_address_street || ""} />
+                            </div>
+                            <InfoField label="Número" value={schedule.installation_address_number || ""} />
+                            <InfoField label="Complemento" value={schedule.installation_address_complement || ""} />
+                            <InfoField label="Bairro" value={schedule.installation_address_neighborhood || ""} />
+                            <InfoField label="Cidade" value={schedule.installation_address_city || ""} />
+                            <InfoField label="UF" value={schedule.installation_address_state || ""} />
+                            <InfoField label="CEP" value={schedule.installation_address_postal_code || ""} />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {/* Equipment grouped by category */}
+                    {schedule?.kit && (
+                      <AccordionItem value="equipment" className="border-border/30">
+                        <AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Equipamentos &amp; Insumos</span>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">
+                              {(schedule.kit.equipment?.length || 0) + (schedule.supplies?.length || 0)} itens
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 pb-2">
+                            {/* Rastreadores */}
+                            {schedule.kit.equipment && schedule.kit.equipment.length > 0 && (
+                              <div>
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Rastreadores</span>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  {schedule.kit.equipment.map((item: any, i: number) => (
+                                    <Badge key={i} variant="outline" className="text-xs font-medium gap-1 bg-muted/20">
+                                      {cleanItemName(item.item_name)}
+                                      <span className="text-muted-foreground">{item.quantity}x</span>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Acessórios */}
+                            {Array.isArray(schedule.accessories) && schedule.accessories.length > 0 && (
+                              <div>
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Acessórios</span>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  {schedule.accessories.map((acc: string, i: number) => {
+                                    const match = acc.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                                    const name = match ? match[1].trim() : acc.trim();
+                                    const qty = match ? parseInt(match[2], 10) : 1;
+                                    return (
+                                      <Badge key={i} variant="outline" className="text-xs font-medium gap-1 bg-muted/20">
+                                        {cleanItemName(name)}
+                                        {qty > 1 && <span className="text-muted-foreground">{qty}x</span>}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Insumos */}
+                            {Array.isArray(schedule.supplies) && schedule.supplies.length > 0 && (
+                              <div>
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Insumos</span>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  {schedule.supplies.map((sup: string, i: number) => {
+                                    const match = sup.match(/^(.+?)\s*\(qty:\s*(\d+)\)$/i);
+                                    const name = match ? match[1].trim() : sup.trim();
+                                    return (
+                                      <Badge key={i} variant="outline" className="text-xs font-medium gap-1 bg-muted/20">
+                                        {cleanItemName(name)}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {/* Camera Extras */}
+                    {cameraExtras.length > 0 && (
+                      <AccordionItem value="cameras" className="border-border/30">
+                        <AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Camera className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Câmeras Extras</span>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">
+                              {cameraExtras.reduce((s, c) => s + c.quantity, 0)}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2 pb-2">
+                            {cameraExtras.map((cam, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-sm px-2 py-1.5 bg-muted/20 rounded-lg">
+                                <span className="text-foreground">{cam.vehicleName}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">{cam.locations}</span>
+                                  <Badge variant="secondary" className="text-[10px]">{cam.quantity}x</Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {/* Notes */}
+                    {schedule?.notes && (
+                      <AccordionItem value="notes" className="border-border/30">
+                        <AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Observações</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-sm text-muted-foreground pb-2">{schedule.notes}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+                  </Accordion>
+                </div>
+
+                {/* ── Action: Concluir Produção ── */}
+                <div className="flex justify-end">
+                  <Button
+                    onClick={onCompleteProduction}
+                    className="gap-2 shadow-md"
+                    variant="default"
+                    size="lg"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Concluir Produção
+                  </Button>
+                </div>
               </>
             )}
 
