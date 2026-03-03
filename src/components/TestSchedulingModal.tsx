@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, MapPin, User } from "lucide-react";
+import { Calendar, MapPin, User, Check, ChevronsUpDown, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { scheduleTest, HomologationCard } from "@/services/homologationService";
-import { getTechnicians, Technician } from "@/services/technicianService";
+import { getTechnicians, createTechnician, Technician } from "@/services/technicianService";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface TestSchedulingModalProps {
   card: HomologationCard;
@@ -22,6 +24,8 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }:
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [technicianSearch, setTechnicianSearch] = useState("");
+  const [technicianPopoverOpen, setTechnicianPopoverOpen] = useState(false);
   const [formData, setFormData] = useState({
     testDate: card.test_scheduled_date?.slice(0, 16) || '',
     location: card.test_location || '',
@@ -41,6 +45,33 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }:
       fetchTechnicians();
     }
   }, [isOpen]);
+
+  const filteredTechnicians = technicians.filter(tech =>
+    tech.name.toLowerCase().includes(technicianSearch.toLowerCase())
+  );
+
+  const handleSelectTechnician = (name: string) => {
+    setFormData({ ...formData, technician: name });
+    setTechnicianPopoverOpen(false);
+    setTechnicianSearch("");
+  };
+
+  const handleCreateTechnician = async (name: string) => {
+    try {
+      const newTech = await createTechnician({ name: name.trim(), postal_code: "" });
+      setTechnicians(prev => [newTech, ...prev]);
+      setFormData({ ...formData, technician: newTech.name });
+      setTechnicianPopoverOpen(false);
+      setTechnicianSearch("");
+      toast({ title: "Técnico criado", description: `${newTech.name} foi adicionado à lista de técnicos.` });
+    } catch (error) {
+      console.error('Error creating technician:', error);
+      toast({ title: "Erro", description: "Erro ao criar técnico", variant: "destructive" });
+    }
+  };
+
+  const showCreateOption = technicianSearch.trim() !== "" &&
+    !technicians.some(t => t.name.toLowerCase() === technicianSearch.trim().toLowerCase());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,9 +117,9 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }:
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="font-medium text-gray-900">{card.brand} {card.model}</p>
-            {card.year && <p className="text-sm text-gray-600">Ano: {card.year}</p>}
+          <div className="bg-muted p-3 rounded-lg">
+            <p className="font-medium">{card.brand} {card.model}</p>
+            {card.year && <p className="text-sm text-muted-foreground">Ano: {card.year}</p>}
           </div>
 
           <div className="space-y-2">
@@ -120,25 +151,60 @@ const TestSchedulingModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }:
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="technician" className="flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Técnico Responsável *
             </Label>
-            <Select
-              value={formData.technician}
-              onValueChange={(value) => setFormData({ ...formData, technician: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um técnico" />
-              </SelectTrigger>
-              <SelectContent>
-                {technicians.map((tech) => (
-                  <SelectItem key={tech.id} value={tech.name}>
-                    {tech.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={technicianPopoverOpen} onOpenChange={setTechnicianPopoverOpen} modal={true}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={technicianPopoverOpen}
+                  className="w-full justify-between font-normal"
+                  type="button"
+                >
+                  {formData.technician || "Selecione ou digite um técnico"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100]" align="start" onWheel={(e) => e.stopPropagation()}>
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Pesquisar ou criar técnico..."
+                    value={technicianSearch}
+                    onValueChange={setTechnicianSearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {technicianSearch.trim() ? "Nenhum técnico encontrado." : "Digite para pesquisar..."}
+                    </CommandEmpty>
+                    {showCreateOption && (
+                      <CommandGroup heading="Criar novo">
+                        <CommandItem onSelect={() => handleCreateTechnician(technicianSearch)}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Criar "{technicianSearch.trim()}"
+                        </CommandItem>
+                      </CommandGroup>
+                    )}
+                    {filteredTechnicians.length > 0 && (
+                      <CommandGroup heading="Técnicos cadastrados">
+                        {filteredTechnicians.map((tech) => (
+                          <CommandItem
+                            key={tech.id}
+                            value={tech.name}
+                            onSelect={() => handleSelectTechnician(tech.name)}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", formData.technician === tech.name ? "opacity-100" : "opacity-0")} />
+                            {tech.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="flex gap-2 pt-4">
