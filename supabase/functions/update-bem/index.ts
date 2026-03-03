@@ -54,9 +54,16 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: response.ok,
         status: response.status,
+        upstreamStatus: response.status,
+        upstreamOk: response.ok,
         data: responseData,
       }),
-      { status: response.ok ? 200 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        // Não propaga 5xx do serviço externo como erro técnico da Edge Function
+        // para evitar "Edge function returned 502" no frontend em erros de negócio.
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     )
   } catch (error) {
     console.error('❌ updateBem error:', error.message)
