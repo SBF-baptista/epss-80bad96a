@@ -71,7 +71,7 @@ const UpdateBemTestPanel = () => {
           <Input
             value={numbem}
             onChange={(e) => setNumbem(e.target.value)}
-            placeholder="Ex: 12345"
+            placeholder="Ex: 66646"
             className="mt-1 font-mono text-sm"
           />
         </div>

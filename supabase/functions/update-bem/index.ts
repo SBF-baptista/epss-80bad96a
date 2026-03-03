@@ -29,7 +29,16 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`📡 Calling updateBem - numbem: ${numbem}, codtombamento: ${codtombamento}`)
+    // API expects numbem as number, codtombamento as string
+    const numbemInt = typeof numbem === 'string' ? parseInt(numbem, 10) : numbem
+    if (isNaN(numbemInt)) {
+      return new Response(
+        JSON.stringify({ error: 'numbem must be a valid number' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`📡 Calling updateBem - numbem: ${numbemInt} (number), codtombamento: ${codtombamento}`)
 
     const response = await fetch('https://ws-sale-teste.segsat.com/segsale/tombamento/updateBem', {
       method: 'POST',
@@ -37,7 +46,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
         'Token': token,
       },
-      body: JSON.stringify({ numbem, codtombamento }),
+      body: JSON.stringify({ numbem: numbemInt, codtombamento: String(codtombamento) }),
     })
 
     const responseText = await response.text()
