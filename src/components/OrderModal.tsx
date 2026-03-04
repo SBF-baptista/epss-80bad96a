@@ -47,6 +47,7 @@ import ProductionStatus from "./production/ProductionStatus";
 import ProductionItemsList from "./production/ProductionItemsList";
 import TrocarBemTestPanel from "./production/TrocarBemTestPanel";
 import UpdateBemTestPanel from "./production/UpdateBemTestPanel";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useProductionItems } from "@/hooks/useProductionItems";
 import { useProductionScannerModal } from "@/hooks/useProductionScannerModal";
 import { ShipmentFormEmbedded } from "./shipment";
@@ -97,6 +98,7 @@ const OrderModal = ({
     accessoriesSale: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
   }>({ cameraExtraSale: null, accessoriesSale: [] });
   const [localBem, setLocalBem] = useState("");
+  const { isAdmin } = useUserRole();
 
   // Production scanner hooks
   const {
@@ -836,8 +838,12 @@ const OrderModal = ({
                       totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
                       isLoading={productionLoading}
                     />
-                    <TrocarBemTestPanel />
-                    <UpdateBemTestPanel />
+                    {isAdmin() && (
+                      <>
+                        <TrocarBemTestPanel />
+                        <UpdateBemTestPanel />
+                      </>
+                    )}
                   </div>
                 </div>
 
