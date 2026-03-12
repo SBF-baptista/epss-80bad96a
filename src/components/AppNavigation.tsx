@@ -379,7 +379,24 @@ export function AppNavigation() {
                 </SidebarMenuItem>
               )}
 
-              {/* Acompanhamento de Clientes - After Agendamento */}
+              {/* Instalação - After Agendamento */}
+              {canSeeInstallation && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(installationItem.to)}
+                    tooltip={isCollapsed ? installationItem.label : undefined}
+                    className="touch-manipulation tap-target"
+                  >
+                    <NavLink to={installationItem.to} className="flex items-center gap-3 px-2 py-2">
+                      <installationItem.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium text-sm truncate">{installationItem.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* Acompanhamento de Clientes - After Instalação */}
               {visibleAdditionalItems.map((item) => {
                 const Icon = item.icon;
                 return (
