@@ -39,6 +39,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [incomingVehicleData, setIncomingVehicleData] = useState<IncomingVehicleData | null>(null);
   const [homologationData, setHomologationData] = useState<HomologationData | null>(null);
   const [tomticketProtocol, setTomticketProtocol] = useState<string | null>(null);
+  const [installationConfirmation, setInstallationConfirmation] = useState<InstallationConfirmation | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
