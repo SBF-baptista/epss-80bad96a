@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-api-key",
+    "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req) => {
@@ -19,21 +19,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate API Key
-    const apiKey = req.headers.get("x-api-key");
-    const expectedKey = Deno.env.get("INSTALLATION_API_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    if (!expectedKey) {
-      console.error("INSTALLATION_API_KEY not configured");
+    // Validate JWT token (same pattern as create-homologation)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "Server misconfigured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!apiKey || apiKey !== expectedKey) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -48,15 +52,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Insert confirmation record
+    const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
     const { data: confirmation, error: insertError } = await supabase
       .from("installation_confirmations")
       .insert({
-        plate: plate.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+        plate: normalizedPlate,
         imei: imei.trim(),
         source: "instala",
         raw_payload: body,
@@ -73,7 +74,6 @@ Deno.serve(async (req) => {
     }
 
     // Try to match with kit_schedules by vehicle_plate
-    const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
     const { data: schedules } = await supabase
       .from("kit_schedules")
       .select("id, status")
@@ -89,13 +89,11 @@ Deno.serve(async (req) => {
       scheduleId = schedules[0].id;
       matchedSchedule = true;
 
-      // Update confirmation with matched schedule
       await supabase
         .from("installation_confirmations")
         .update({ matched_schedule_id: scheduleId })
         .eq("id", confirmation.id);
 
-      // Update schedule status to completed
       await supabase
         .from("kit_schedules")
         .update({ status: "completed" })
