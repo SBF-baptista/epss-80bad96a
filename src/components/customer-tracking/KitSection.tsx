@@ -6,6 +6,7 @@ import { KitStatusTimeline } from "./KitStatusTimeline";
 import { RescheduleModal } from "./RescheduleModal";
 import { ProcessHistoryModal } from "./ProcessHistoryModal";
 import { supabase } from "@/integrations/supabase/client";
+import { InstallationConfirmation } from "@/services/installationConfirmationService";
 
 import { CustomerKitData } from "@/pages/CustomerTracking";
 
