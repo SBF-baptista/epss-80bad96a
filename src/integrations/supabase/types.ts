@@ -834,6 +834,44 @@ export type Database = {
         }
         Relationships: []
       }
+      installation_confirmations: {
+        Row: {
+          created_at: string | null
+          id: string
+          imei: string
+          matched_schedule_id: string | null
+          plate: string
+          raw_payload: Json | null
+          source: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          imei: string
+          matched_schedule_id?: string | null
+          plate: string
+          raw_payload?: Json | null
+          source?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          imei?: string
+          matched_schedule_id?: string | null
+          plate?: string
+          raw_payload?: Json | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_confirmations_matched_schedule_id_fkey"
+            columns: ["matched_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "kit_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installation_schedules: {
         Row: {
           address: string
