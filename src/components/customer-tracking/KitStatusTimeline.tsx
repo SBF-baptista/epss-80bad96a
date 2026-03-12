@@ -1,5 +1,13 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { CheckCircle, Clock, FileCheck, Truck, Calendar, Wrench } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+
+interface InstallationConfirmationInfo {
+  plate: string;
+  imei: string;
+  confirmedAt: string;
+}
 
 interface KitStatusTimelineProps {
   kickoffCompleted?: boolean;
@@ -15,6 +23,7 @@ interface KitStatusTimelineProps {
   scheduleDate?: string | null;
   installationCompleted?: boolean;
   installationDate?: string | null;
+  installationConfirmation?: InstallationConfirmationInfo;
 }
 
 export const KitStatusTimeline = ({ 
@@ -30,7 +39,8 @@ export const KitStatusTimeline = ({
   hasInstallationSchedule,
   scheduleDate,
   installationCompleted,
-  installationDate
+  installationDate,
+  installationConfirmation
 }: KitStatusTimelineProps) => {
   
   const formatDate = (dateString?: string | null) => {
@@ -51,6 +61,24 @@ export const KitStatusTimeline = ({
     try {
       return new Date(dateString).toLocaleTimeString('pt-BR', { 
         hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const formatFullDate = (dateString?: string | null) => {
+    if (!dateString) return null;
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'America/Sao_Paulo'
+      }) + ' às ' + new Date(dateString).toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
         minute: '2-digit',
         timeZone: 'America/Sao_Paulo'
       });
@@ -252,13 +280,74 @@ export const KitStatusTimeline = ({
   const getLineColor = (currentIndex: number) => {
     const currentStep = steps[currentIndex];
     
-    // Line is green if the current step is completed (meaning the process passed through this point)
     if (isCompleted(currentStep)) {
       return "bg-green-500";
     }
     
-    // Line is gray if the process hasn't reached/completed this step yet
     return "bg-muted-foreground/30";
+  };
+
+  const renderStepIcon = (step: typeof steps[0], index: number) => {
+    const styles = getStepStyles(step, index);
+    const Icon = step.icon;
+
+    const iconElement = (
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card ${styles.circle} ${
+          step.id === "installation" && installationCompleted ? "cursor-pointer hover:scale-110" : ""
+        }`}
+      >
+        <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
+      </div>
+    );
+
+    // If installation is completed, wrap in popover
+    if (step.id === "installation" && installationCompleted && installationConfirmation) {
+      return (
+        <Popover>
+          <PopoverTrigger asChild>
+            {iconElement}
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-0" align="center" side="top">
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-green-500/15 flex items-center justify-center">
+                  <Wrench className="h-3.5 w-3.5 text-green-600" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Instalação Confirmada</h4>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Placa</span>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {installationConfirmation.plate}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">IMEI</span>
+                  <span className="font-mono text-xs text-foreground">{installationConfirmation.imei}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Confirmação</span>
+                  <span className="text-xs text-foreground">
+                    {formatFullDate(installationConfirmation.confirmedAt)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-1 border-t border-border">
+                <p className="text-[10px] text-muted-foreground/60">
+                  Dados enviados pela aplicação INSTALA
+                </p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      );
+    }
+
+    return iconElement;
   };
 
   return (
@@ -266,18 +355,13 @@ export const KitStatusTimeline = ({
       <div className="flex items-start w-full">
         {steps.map((step, index) => {
           const styles = getStepStyles(step, index);
-          const Icon = step.icon;
           const isLastStep = index === steps.length - 1;
 
           return (
             <Fragment key={step.id}>
               {/* Step */}
               <div className="flex flex-col items-center min-w-[72px]">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card ${styles.circle}`}
-                >
-                  <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
-                </div>
+                {renderStepIcon(step, index)}
 
                 <div className="text-center mt-1.5 min-w-0">
                   <div className={`text-[10px] leading-tight ${styles.name}`}>{step.name}</div>

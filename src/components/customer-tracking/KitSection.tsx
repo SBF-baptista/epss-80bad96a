@@ -6,6 +6,7 @@ import { KitStatusTimeline } from "./KitStatusTimeline";
 import { RescheduleModal } from "./RescheduleModal";
 import { ProcessHistoryModal } from "./ProcessHistoryModal";
 import { supabase } from "@/integrations/supabase/client";
+import { InstallationConfirmation } from "@/services/installationConfirmationService";
 
 import { CustomerKitData } from "@/pages/CustomerTracking";
 
@@ -38,6 +39,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
   const [incomingVehicleData, setIncomingVehicleData] = useState<IncomingVehicleData | null>(null);
   const [homologationData, setHomologationData] = useState<HomologationData | null>(null);
   const [tomticketProtocol, setTomticketProtocol] = useState<string | null>(null);
+  const [installationConfirmation, setInstallationConfirmation] = useState<InstallationConfirmation | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -88,8 +90,22 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
         }
       }
 
-      // Fetch TomTicket protocol if vehicle has a plate
+      // Fetch TomTicket protocol and installation confirmation if vehicle has a plate
       if (kitData.vehicle_plate) {
+        const normalizedPlate = kitData.vehicle_plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        
+        // Fetch installation confirmation
+        const { data: confirmationData } = await supabase
+          .from('installation_confirmations')
+          .select('*')
+          .eq('plate', normalizedPlate)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (confirmationData && confirmationData.length > 0) {
+          setInstallationConfirmation(confirmationData[0]);
+        }
+
         try {
           const { data: tomticketData, error: tomticketError } = await supabase.functions.invoke('search-tomticket', {
             body: { searchTerm: kitData.vehicle_plate, maxPages: 20 }
@@ -228,8 +244,13 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             trackingCode={kitData.tracking_code}
             hasInstallationSchedule={!!installationSchedule}
             scheduleDate={installationSchedule?.created_at}
-            installationCompleted={false}
-            installationDate={null}
+            installationCompleted={!!installationConfirmation}
+            installationDate={installationConfirmation?.created_at ?? null}
+            installationConfirmation={installationConfirmation ? {
+              plate: installationConfirmation.plate,
+              imei: installationConfirmation.imei,
+              confirmedAt: installationConfirmation.created_at
+            } : undefined}
           />
 
           {/* Histórico completo do processo */}
