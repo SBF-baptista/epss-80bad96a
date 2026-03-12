@@ -189,6 +189,7 @@ export function AppNavigation() {
   const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
   const canSeePlanning = canAccessItem(planningItem);
   const canSeeScheduling = canAccessItem(schedulingItem);
+  const canSeeInstallation = canAccessItem(installationItem);
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
 
   return (
