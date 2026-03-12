@@ -250,6 +250,34 @@ export const fetchProcessHistory = async (
       });
     }
 
+    // 8. Fetch installation confirmation (if vehicle has a plate)
+    const vehiclePlate = schedule?.vehicle_plate;
+    if (vehiclePlate) {
+      const normalizedPlate = vehiclePlate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const { data: confirmationData } = await supabase
+        .from('installation_confirmations')
+        .select('*')
+        .eq('plate', normalizedPlate)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (confirmationData && confirmationData.length > 0) {
+        const confirmation = confirmationData[0];
+        events.push({
+          id: `installation-confirmed-${confirmation.id}`,
+          type: 'schedule_status_change',
+          title: 'Instalação Confirmada',
+          description: `Instalação confirmada para placa ${confirmation.plate} com IMEI ${confirmation.imei}`,
+          timestamp: confirmation.created_at,
+          formattedDate: format(new Date(confirmation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
+          timeAgo: formatDistanceToNow(new Date(confirmation.created_at), { addSuffix: true, locale: ptBR }),
+          status: 'Instalação Confirmada',
+          module: 'Instalação',
+          icon: '✅'
+        });
+      }
+    }
+
     // Sort events by timestamp
     events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
