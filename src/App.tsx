@@ -31,6 +31,7 @@ import History from "./pages/History";
 import EditRequests from "./pages/EditRequests";
 import WhatsAppMessageControl from "./pages/WhatsAppMessageControl";
 import ModuleSelection from "./pages/ModuleSelection";
+import Installation from "./pages/Installation";
 
 
 const queryClient = new QueryClient({
@@ -234,6 +235,17 @@ function AppContent() {
                   <RoleProtectedRoute requiredModule="scheduling">
                     <Layout>
                       <WhatsAppMessageControl />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Installation - requires scheduling module access */}
+              <Route path="/installation" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="scheduling">
+                    <Layout>
+                      <Installation />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
