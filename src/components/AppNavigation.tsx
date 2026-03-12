@@ -18,7 +18,8 @@ import {
   Clock,
   FileEdit,
   Home,
-  MessageSquare
+  MessageSquare,
+  Wrench
 } from "lucide-react";
 import {
   Sidebar,

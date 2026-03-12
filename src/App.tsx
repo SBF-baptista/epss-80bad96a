@@ -240,6 +240,17 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
+              {/* Installation - requires scheduling module access */}
+              <Route path="/installation" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="scheduling">
+                    <Layout>
+                      <Installation />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
               {/* Module Selection - no special permissions needed */}
               <Route path="/modules" element={
                 <ProtectedRoute>
