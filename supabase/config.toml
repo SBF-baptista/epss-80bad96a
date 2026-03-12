@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.trocar-bem]
 verify_jwt = false
+
+[functions.confirm-installation]
+verify_jwt = false
