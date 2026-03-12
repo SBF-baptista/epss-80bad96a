@@ -244,8 +244,13 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
             trackingCode={kitData.tracking_code}
             hasInstallationSchedule={!!installationSchedule}
             scheduleDate={installationSchedule?.created_at}
-            installationCompleted={false}
-            installationDate={null}
+            installationCompleted={!!installationConfirmation}
+            installationDate={installationConfirmation?.created_at ?? null}
+            installationConfirmation={installationConfirmation ? {
+              plate: installationConfirmation.plate,
+              imei: installationConfirmation.imei,
+              confirmedAt: installationConfirmation.created_at
+            } : undefined}
           />
 
           {/* Histórico completo do processo */}
