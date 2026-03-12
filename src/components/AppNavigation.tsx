@@ -101,7 +101,10 @@ const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Ca
 // Single item - Agendamento (after Logística)
 const schedulingItem: NavItem = { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" };
 
-// Additional single items after Agendamento
+// Single item - Instalação (after Agendamento)
+const installationItem: NavItem = { to: "/installation", label: "Instalação", icon: Wrench, module: "scheduling" };
+
+// Additional single items after Instalação
 const additionalSingleItems: NavItem[] = [
   { to: "/customer-tracking", label: "Acompanhamento de Clientes", icon: UserCheck, module: "customer_tracking" },
 ];
