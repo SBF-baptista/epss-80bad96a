@@ -15,12 +15,13 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   MoreHorizontal, Key, UserCog, Eye, Ban, Unlock, Trash2,
-  UserCheck, Clock, AlertTriangle
+  UserCheck, Clock, AlertTriangle, Shield
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { userManagementService, type User } from '@/services/userManagementService'
 import { EditUserModal } from './EditUserModal'
+import { EditAccessProfileModal } from './EditAccessProfileModal'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { getRoleLabel, getRoleBadgeVariant } from '@/services/permissionsService'
 import { supabase } from '@/integrations/supabase/client'
@@ -38,6 +39,7 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
   const [isResettingPassword, setIsResettingPassword] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
+  const [profileEditUser, setProfileEditUser] = useState<User | null>(null)
   const [bulkAction, setBulkAction] = useState<{ action: 'ban' | 'unban' | 'delete'; count: number } | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const { toast } = useToast()
@@ -295,6 +297,9 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                         <DropdownMenuItem onClick={() => setEditingUser(user)}>
                           <UserCog className="mr-2 h-4 w-4" />Editar permissões
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setProfileEditUser(user)}>
+                          <Shield className="mr-2 h-4 w-4" />Editar perfil de acesso
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleResetPassword(user.id)}
@@ -406,6 +411,15 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
           open={!!editingUser}
           onOpenChange={(open) => !open && setEditingUser(null)}
           onUserUpdated={() => { onUserUpdated(); setEditingUser(null) }}
+        />
+      )}
+
+      {profileEditUser && (
+        <EditAccessProfileModal
+          user={{ id: profileEditUser.id, email: profileEditUser.email, roles: profileEditUser.roles }}
+          open={!!profileEditUser}
+          onOpenChange={(open) => !open && setProfileEditUser(null)}
+          onUserUpdated={() => { onUserUpdated(); setProfileEditUser(null) }}
         />
       )}
 
