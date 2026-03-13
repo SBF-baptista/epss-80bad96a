@@ -414,6 +414,15 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
         />
       )}
 
+      {profileEditUser && (
+        <EditAccessProfileModal
+          user={{ id: profileEditUser.id, email: profileEditUser.email, roles: profileEditUser.roles }}
+          open={!!profileEditUser}
+          onOpenChange={(open) => !open && setProfileEditUser(null)}
+          onUserUpdated={() => { onUserUpdated(); setProfileEditUser(null) }}
+        />
+      )}
+
       <UserDetailDrawer
         user={viewingUser}
         open={!!viewingUser}
