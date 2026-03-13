@@ -26,6 +26,7 @@ import { UserDetailDrawer } from './UserDetailDrawer'
 import { getRoleLabel, getRoleBadgeVariant } from '@/services/permissionsService'
 import { supabase } from '@/integrations/supabase/client'
 import { type UserFilterState } from './UserFilters'
+import { useEffect } from 'react'
 
 interface UserListProps {
   users: User[]
