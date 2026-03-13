@@ -825,7 +825,7 @@ const EditRequests = () => {
       </Dialog>
 
       {/* ====== CONFIRM APPROVE DIALOG ====== */}
-      <AlertDialog open={confirmAction === 'approve' && !!selectedRequest} onOpenChange={(open) => !open && setConfirmAction(null)}>
+      <AlertDialog open={confirmAction === 'approve' && !!selectedRequest} onOpenChange={(open) => { if (!open && !processingId) setConfirmAction(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Aprovação</AlertDialogTitle>
@@ -834,20 +834,20 @@ const EditRequests = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-emerald-600 hover:bg-emerald-700"
+            <AlertDialogCancel disabled={!!processingId}>Cancelar</AlertDialogCancel>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={() => selectedRequest && handleApprove(selectedRequest)}
               disabled={processingId === selectedRequest?.id}
             >
-              Confirmar Aprovação
-            </AlertDialogAction>
+              {processingId === selectedRequest?.id ? 'Aprovando...' : 'Confirmar Aprovação'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* ====== CONFIRM REJECT DIALOG ====== */}
-      <AlertDialog open={confirmAction === 'reject' && !!selectedRequest} onOpenChange={(open) => !open && setConfirmAction(null)}>
+      <AlertDialog open={confirmAction === 'reject' && !!selectedRequest} onOpenChange={(open) => { if (!open && !processingId) setConfirmAction(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Rejeitar Solicitação</AlertDialogTitle>
@@ -864,14 +864,14 @@ const EditRequests = () => {
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90"
+            <AlertDialogCancel disabled={!!processingId}>Cancelar</AlertDialogCancel>
+            <Button
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               onClick={() => selectedRequest && handleReject(selectedRequest)}
               disabled={!reviewNotes.trim() || processingId === selectedRequest?.id}
             >
-              Confirmar Rejeição
-            </AlertDialogAction>
+              {processingId === selectedRequest?.id ? 'Rejeitando...' : 'Confirmar Rejeição'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -299,12 +299,11 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
-                      {user.roles.length > 0 ? (
-                        user.roles.map((role) => (
-                          <Badge key={role} variant={getRoleBadgeVariant(role as any) as any} className="text-xs">
-                            {getRoleLabel(role as any)}
-                          </Badge>
-                        ))
+                      {userProfileNames[user.id] ? (
+                        <Badge variant="secondary" className="text-xs">
+                          <Shield className="h-3 w-3 mr-1" />
+                          {userProfileNames[user.id]}
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs opacity-60">Sem perfil</Badge>
                       )}
