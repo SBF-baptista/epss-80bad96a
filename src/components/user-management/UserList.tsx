@@ -26,6 +26,7 @@ import { UserDetailDrawer } from './UserDetailDrawer'
 import { getRoleLabel, getRoleBadgeVariant } from '@/services/permissionsService'
 import { supabase } from '@/integrations/supabase/client'
 import { type UserFilterState } from './UserFilters'
+import { useEffect } from 'react'
 
 interface UserListProps {
   users: User[]
@@ -42,8 +43,43 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
   const [profileEditUser, setProfileEditUser] = useState<User | null>(null)
   const [bulkAction, setBulkAction] = useState<{ action: 'ban' | 'unban' | 'delete'; count: number } | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [userProfileNames, setUserProfileNames] = useState<Record<string, string>>({})
   const { toast } = useToast()
   const { user: currentUser } = useAuth()
+
+  useEffect(() => {
+    const fetchProfileNames = async () => {
+      try {
+        const { data: userRoles } = await supabase
+          .from('user_roles')
+          .select('user_id, access_profile_id')
+
+        if (!userRoles) return
+
+        const profileIds = [...new Set(userRoles.filter(r => r.access_profile_id).map(r => r.access_profile_id!))]
+        if (profileIds.length === 0) return
+
+        const { data: profiles } = await supabase
+          .from('access_profiles')
+          .select('id, name')
+          .in('id', profileIds)
+
+        if (!profiles) return
+
+        const profileMap = new Map(profiles.map(p => [p.id, p.name]))
+        const nameMap: Record<string, string> = {}
+        userRoles.forEach(r => {
+          if (r.access_profile_id && profileMap.has(r.access_profile_id)) {
+            nameMap[r.user_id] = profileMap.get(r.access_profile_id)!
+          }
+        })
+        setUserProfileNames(nameMap)
+      } catch (error) {
+        console.error('Error fetching profile names:', error)
+      }
+    }
+    fetchProfileNames()
+  }, [users])
 
   const filteredUsers = users.filter(user => {
     if (filters.search && !user.email?.toLowerCase().includes(filters.search.toLowerCase())) return false
@@ -263,12 +299,11 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
-                      {user.roles.length > 0 ? (
-                        user.roles.map((role) => (
-                          <Badge key={role} variant={getRoleBadgeVariant(role as any) as any} className="text-xs">
-                            {getRoleLabel(role as any)}
-                          </Badge>
-                        ))
+                      {userProfileNames[user.id] ? (
+                        <Badge variant="secondary" className="text-xs">
+                          <Shield className="h-3 w-3 mr-1" />
+                          {userProfileNames[user.id]}
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs opacity-60">Sem perfil</Badge>
                       )}
