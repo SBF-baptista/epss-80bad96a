@@ -297,6 +297,9 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                         <DropdownMenuItem onClick={() => setEditingUser(user)}>
                           <UserCog className="mr-2 h-4 w-4" />Editar permissões
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setProfileEditUser(user)}>
+                          <Shield className="mr-2 h-4 w-4" />Editar perfil de acesso
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleResetPassword(user.id)}
