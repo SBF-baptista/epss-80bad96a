@@ -44,6 +44,7 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
   const [passwordResetInfo, setPasswordResetInfo] = useState<PasswordResetInfo | null>(null)
   const [copied, setCopied] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showResetAccessDialog, setShowResetAccessDialog] = useState(false)
   const { user: currentUser } = useAuth()
   const { toast } = useToast()
 
