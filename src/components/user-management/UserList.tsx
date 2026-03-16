@@ -409,6 +409,53 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Reset access dialog */}
+      <AlertDialog open={!!resetAccessTarget} onOpenChange={() => setResetAccessTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-500" />
+              Resetar Acesso
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Tem certeza que deseja resetar o acesso de <strong>{resetAccessTarget?.email}</strong>?</p>
+              <ul className="text-xs list-disc pl-4 space-y-1 mt-2">
+                <li>A senha atual será invalidada</li>
+                <li>O usuário precisará usar "Primeiro acesso" para definir uma nova senha</li>
+                <li>Permissões e perfil de acesso serão mantidos</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!resetAccessTarget) return
+                setIsProcessing(true)
+                try {
+                  const response = await userManagementService.resetAccess(resetAccessTarget.id)
+                  if (response.success) {
+                    toast({ title: 'Acesso resetado', description: response.message || 'O usuário precisará definir uma nova senha no próximo login.' })
+                    onUserUpdated()
+                  } else {
+                    toast({ title: 'Erro', description: response.error || 'Falha ao resetar acesso', variant: 'destructive' })
+                  }
+                } catch (error: any) {
+                  toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+                } finally {
+                  setResetAccessTarget(null)
+                  setIsProcessing(false)
+                }
+              }}
+              disabled={isProcessing}
+              className="bg-orange-500 text-white hover:bg-orange-600"
+            >
+              {isProcessing ? 'Resetando...' : 'Resetar Acesso'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Bulk action dialog */}
       <AlertDialog open={!!bulkAction} onOpenChange={() => setBulkAction(null)}>
         <AlertDialogContent>

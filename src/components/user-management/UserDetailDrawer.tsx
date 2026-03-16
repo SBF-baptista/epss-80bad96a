@@ -67,6 +67,18 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
         } else {
           throw new Error(response.error || 'Erro ao redefinir senha')
         }
+      } else if (action === 'reset-access') {
+        const response = await userManagementService.resetAccess(user.id)
+        if (response.success) {
+          toast({
+            title: 'Acesso resetado',
+            description: response.message || 'O usuário precisará definir uma nova senha no próximo login.'
+          })
+          onUserUpdated()
+        } else {
+          throw new Error(response.error || 'Erro ao resetar acesso')
+        }
+        setShowResetAccessDialog(false)
       } else if (action === 'ban' || action === 'unban') {
         const { data, error } = await supabase.functions.invoke('manage-users', {
           body: { action: action === 'ban' ? 'ban-user' : 'unban-user', userId: user.id }
