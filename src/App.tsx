@@ -240,10 +240,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Installation - requires scheduling module access */}
+              {/* Installation - admin only */}
               <Route path="/installation" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModule="scheduling">
+                  <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <Installation />
                     </Layout>
