@@ -352,6 +352,12 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                           )}
                         </DropdownMenuItem>
                         {!isSelf(user.id) && (
+                          <DropdownMenuItem onClick={() => setResetAccessTarget(user)}>
+                            <RotateCcw className="mr-2 h-4 w-4 text-orange-500" />
+                            <span className="text-orange-600">Resetar acesso</span>
+                          </DropdownMenuItem>
+                        )}
+                        {!isSelf(user.id) && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
