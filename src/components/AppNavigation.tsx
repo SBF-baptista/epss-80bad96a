@@ -50,6 +50,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   module: AppModule;
   showBadge?: boolean;
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -90,13 +91,13 @@ const navigationGroups: NavGroup[] = [
       { to: "/technicians", label: "Técnicos", icon: Users, module: "technicians" },
       { to: "/users", label: "Usuários", icon: UserCog, module: "users" },
       { to: "/history", label: "Histórico", icon: Clock, module: "users" },
-      { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling" },
+      { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling", adminOnly: true },
     ]
   },
 ];
 
 // Single item - Gestão de Configurações (after scheduling)
-const configItem: NavItem = { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling" };
+const configItem: NavItem = { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling", adminOnly: true };
 
 // Single item - Planejamento (before Logística)
 const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" };
@@ -148,6 +149,7 @@ export function AppNavigation() {
   // Filter items based on module permissions
   const canAccessItem = (item: NavItem) => {
     if (role === 'admin') return true;
+    if (item.adminOnly) return false;
     return canViewModule(item.module);
   };
 
