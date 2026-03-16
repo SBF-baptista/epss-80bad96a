@@ -36,7 +36,6 @@ export interface UserManagementResponse {
   message?: string
   user?: any
   users?: User[]
-  temporaryPassword?: string
   error?: string
 }
 
