@@ -15,7 +15,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   MoreHorizontal, Key, UserCog, Eye, Ban, Unlock, Trash2,
-  UserCheck, Clock, AlertTriangle, Shield
+  UserCheck, Clock, AlertTriangle, Shield, RotateCcw
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
