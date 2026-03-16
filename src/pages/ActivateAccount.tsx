@@ -22,24 +22,33 @@ const ActivateAccount = () => {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
+  const [isFirstLoginFlow, setIsFirstLoginFlow] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Wait for Supabase to process the invite/recovery token from the URL hash
     const checkSession = async () => {
       // Give Supabase client time to process the hash
       await new Promise(resolve => setTimeout(resolve, 1500));
       const { data: { session } } = await supabase.auth.getSession();
-      setHasSession(!!session);
+      
+      if (session) {
+        setHasSession(true);
+        // Check if this is a first-login forced password change
+        if (session.user?.user_metadata?.must_change_password) {
+          setIsFirstLoginFlow(true);
+        }
+      }
       setCheckingSession(false);
     };
     checkSession();
 
-    // Also listen for auth state changes (the hash processing triggers this)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY')) {
         setHasSession(true);
+        if (session.user?.user_metadata?.must_change_password) {
+          setIsFirstLoginFlow(true);
+        }
         setCheckingSession(false);
       }
     });
@@ -64,13 +73,24 @@ const ActivateAccount = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      // Update password and clear the must_change_password flag
+      const { error } = await supabase.auth.updateUser({ 
+        password,
+        data: { must_change_password: false }
+      });
       if (error) {
         toast({ title: "Erro", description: error.message, variant: "destructive" });
       } else {
-        await supabase.auth.signOut();
-        toast({ title: "Conta ativada!", description: "Sua senha foi definida com sucesso. Faça login para continuar." });
-        navigate("/auth");
+        if (isFirstLoginFlow) {
+          // For first login, just redirect to the app
+          toast({ title: "Senha definida!", description: "Sua senha foi definida com sucesso." });
+          navigate("/kanban");
+        } else {
+          // For invite activation, sign out and redirect to login
+          await supabase.auth.signOut();
+          toast({ title: "Conta ativada!", description: "Sua senha foi definida com sucesso. Faça login para continuar." });
+          navigate("/auth");
+        }
       }
     } catch {
       toast({ title: "Erro", description: "Erro inesperado", variant: "destructive" });
@@ -119,9 +139,13 @@ const ActivateAccount = () => {
             <FolderKanban className="w-8 h-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-gray-800">Ative sua conta</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-800">
+              {isFirstLoginFlow ? "Defina sua senha" : "Ative sua conta"}
+            </CardTitle>
             <CardDescription className="text-gray-600">
-              Defina sua senha para acessar o OPM - SEGSAT
+              {isFirstLoginFlow 
+                ? "Por segurança, defina uma nova senha para continuar usando o sistema"
+                : "Defina sua senha para acessar o OPM - SEGSAT"}
             </CardDescription>
           </div>
         </CardHeader>
@@ -173,7 +197,7 @@ const ActivateAccount = () => {
               className="w-full bg-blue-600 hover:bg-blue-700"
               disabled={loading || !allRulesPass || !passwordsMatch}
             >
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Ativando...</> : 'Ativar Conta'}
+              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : isFirstLoginFlow ? 'Definir Senha' : 'Ativar Conta'}
             </Button>
           </form>
         </CardContent>

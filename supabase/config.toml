@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.confirm-installation]
 verify_jwt = false
+
+[functions.manage-users]
+verify_jwt = false

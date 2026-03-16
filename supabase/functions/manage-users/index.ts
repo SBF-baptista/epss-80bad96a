@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
 
 const ALL_MODULES = [
@@ -48,6 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
+      console.error('Auth error:', authError?.message);
       return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), { 
         status: 401, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -99,7 +101,10 @@ const handler = async (req: Request): Promise<Response> => {
 
       const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         redirectTo: redirectTo || undefined,
-        data: name ? { display_name: name } : undefined
+        data: { 
+          display_name: name || undefined,
+          must_change_password: true
+        }
       });
 
       if (inviteError) {
@@ -194,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        ban_duration: '876000h' // ~100 years
+        ban_duration: '876000h'
       });
 
       if (banError) {
@@ -247,7 +252,6 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Prevent self-deletion
       if (userId === user.id) {
         return new Response(JSON.stringify({ success: false, error: 'Você não pode excluir sua própria conta' }), {
           status: 400,
@@ -255,7 +259,6 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Clean up related data
       await supabaseAdmin.from('user_module_permissions').delete().eq('user_id', userId);
       await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
       await supabaseAdmin.from('user_last_seen').delete().eq('user_id', userId);
@@ -276,7 +279,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // BULK ACTION (ban, unban, delete)
+    // BULK ACTION
     if (req.method === 'POST' && action === 'bulk-action') {
       const { userIds, bulkAction } = requestData;
       if (!userIds || !Array.isArray(userIds) || userIds.length === 0 || !bulkAction) {
@@ -286,7 +289,6 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Filter out self from bulk actions
       const safeIds = userIds.filter((id: string) => id !== user.id);
       if (safeIds.length === 0) {
         return new Response(JSON.stringify({ success: false, error: 'Nenhum usuário válido para a ação (você não pode aplicar ações em si mesmo)' }), {
@@ -354,7 +356,10 @@ const handler = async (req: Request): Promise<Response> => {
         
         const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
           userId,
-          { password: tempPassword }
+          { 
+            password: tempPassword,
+            user_metadata: { must_change_password: true }
+          }
         );
 
         if (passwordError) {
@@ -380,7 +385,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // LIST USERS - Enhanced with security metadata + real last_seen
+    // LIST USERS
     console.log('Listing users...');
     const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
     
@@ -407,7 +412,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const usersWithRoles = users.users.map(user => {
       const isBanned = !!(user.banned_until && new Date(user.banned_until) > now);
-      // Use real last_seen from our table, fallback to auth last_sign_in_at
       const realLastSeen = lastSeenMap[user.id] || user.last_sign_in_at || null;
       const lastAccess = realLastSeen ? new Date(realLastSeen) : null;
       const isInactive = !lastAccess || lastAccess < thirtyDaysAgo;
