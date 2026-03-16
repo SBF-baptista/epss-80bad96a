@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { AlertCircle, Plus, Copy, Check } from 'lucide-react'
+import { AlertCircle, Plus, Check, Mail } from 'lucide-react'
 import { userManagementService } from '@/services/userManagementService'
 import { accessProfileService, AccessProfile } from '@/services/accessProfileService'
 import { Alert, AlertDescription } from '@/components/ui/alert'

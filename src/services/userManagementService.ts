@@ -52,7 +52,6 @@ class UserManagementService {
         baseRole: userData.baseRole,
         permissions: userData.permissions,
         accessProfileId: userData.accessProfileId,
-        password: userData.password,
       };
 
       const { data, error } = await supabase.functions.invoke('manage-users', {
