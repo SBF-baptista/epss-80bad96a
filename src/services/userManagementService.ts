@@ -21,6 +21,7 @@ export interface CreateUserData {
   baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador'
   permissions?: Record<string, string>
   accessProfileId?: string
+  password?: string
   redirectTo?: string
 }
 
