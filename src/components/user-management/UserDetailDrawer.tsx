@@ -17,7 +17,7 @@ import {
 import {
   Shield, Key, Lock, Unlock, Ban, UserCheck, Clock,
   AlertTriangle, History, RefreshCw, Copy, Check, Mail,
-  ShieldAlert, Timer, Trash2
+  ShieldAlert, Timer, Trash2, RotateCcw
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
