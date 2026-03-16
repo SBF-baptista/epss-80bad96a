@@ -1,42 +1,40 @@
 
 
-# Plan: Fix 4 Issues (Logout, First Login, Edge Function, Users)
+# Plan: Integrar trocarLocalBemList no fluxo de Aguardando Envio
 
-## Root Cause Analysis
+## Resumo
 
-### Issue 1 - Logout button not working
-The auth logs show repeated `session_not_found` errors on `/logout`. The 30-minute inactivity timeout invalidates the session, but `signOut()` in `useAuth.tsx` calls `logLogout()` first (which also needs a valid session). When both fail, the user stays stuck. **Fix**: Make logout resilient -- clear local state and navigate to login regardless of API errors.
+Ao salvar as informações de envio no status "Aguardando Envio", o sistema deve chamar a edge function `trocar-bem` enviando os IMEIs escaneados como `codigosTombamento` e um novo campo "Local Bem" como `codLocal`. O campo "Local Bem" será adicionado ao lado do campo "Código da Linha" no formulário de escaneamento.
 
-### Issue 3 & 4 - Edge function error + Users disappeared (same root cause)
-The `manage-users` edge function has **outdated CORS headers** -- missing the newer Supabase client headers (`x-supabase-client-platform`, etc.). The browser blocks the preflight or the response. Additionally, `manage-users` is not listed in `config.toml`, defaulting to `verify_jwt = true`, which causes failures when the gateway can't validate the token. **Fix**: Update CORS headers and add to config.toml with `verify_jwt = false` (function already does its own auth check).
+## Mudanças
 
-### Issue 2 - First login password setup
-Users invited by admin receive an invite email linking to `/ativar`. However, if a user logs in with a temporary/reset password, there's no mechanism to force password setup. **Fix**: After successful login, check if the user has a flag (e.g., `user_metadata`) indicating they need to set a password, and redirect to `/ativar` or a dedicated screen.
+### 1. Adicionar campo "Local Bem" no ProductionScannerTabs
+**Arquivo:** `src/components/production/ProductionScannerTabs.tsx`
+- Adicionar nova prop `localBem` e `onLocalBemChange`
+- Renderizar um campo de input "Local Bem" ao lado do campo "Código da Linha" nas duas tabs (scanner e manual)
 
-## Changes
+### 2. Propagar prop pelo ProductionForm
+**Arquivo:** `src/components/production/ProductionForm.tsx`
+- Adicionar props `localBem` e `onLocalBemChange` na interface e repassar ao `ProductionScannerTabs`
 
-### 1. Fix logout (`src/hooks/useAuth.tsx`)
-- Wrap `logLogout()` in try-catch so it never blocks signOut
-- After `signOut()`, always clear local state and redirect to `/auth` even if the API returns an error
-- Clear localStorage session data as fallback
+### 3. Adicionar estado e lógica no OrderModal
+**Arquivo:** `src/components/OrderModal.tsx`
+- Criar estado `localBem` / `setLocalBem`
+- Passar `localBem` e `setLocalBem` como props para `ProductionForm`
+- Passar `localBem` e `productionItems` (IMEIs) para `ShipmentFormEmbedded` para que o save possa usá-los
 
-### 2. Fix `manage-users` edge function (`supabase/functions/manage-users/index.ts`)
-- Update CORS headers to include all required Supabase client headers
-- Add `verify_jwt = false` to `supabase/config.toml` for `manage-users`
+### 4. Integrar chamada trocar-bem no ShipmentFormEmbedded
+**Arquivo:** `src/components/shipment/ShipmentFormEmbedded.tsx`
+- Aceitar novas props: `localBem` (string) e `scannedImeis` (string[])
+- Na função `handleSave`, após salvar o envio com sucesso, chamar `supabase.functions.invoke('trocar-bem')` com:
+  - `codLocal`: valor do campo "Local Bem"
+  - `codigosTombamento`: array de IMEIs dos itens escaneados
+- Exibir toast de sucesso/erro para a chamada da API
+- Incluir `localBem` preenchido como requisito de validação do formulário (junto com endereço e rastreio)
 
-### 3. First login password redirect (`src/pages/Auth.tsx` + `src/hooks/useAuth.tsx`)
-- After successful login, check `user.user_metadata.must_change_password` or detect if user was invited (no `confirmed_at` or first login)
-- If first login detected, redirect to `/ativar` to set a proper password
-- In the `manage-users` edge function, set `user_metadata.must_change_password = true` when creating users via invite
-- In `ActivateAccount.tsx`, clear the flag after password is set
-
-### 4. Users list fix
-- This is resolved by fix #2 (CORS + config.toml). Once the edge function responds correctly, users will load again.
-
-## Files Modified
-- `src/hooks/useAuth.tsx` - Resilient logout + first login detection
-- `src/pages/Auth.tsx` - Redirect on first login
-- `supabase/functions/manage-users/index.ts` - CORS headers fix
-- `supabase/config.toml` - Add manage-users entry
-- `src/pages/ActivateAccount.tsx` - Clear must_change_password flag
+### Fluxo resultante
+1. Operador escaneia IMEIs na seção "Escaneamento / Itens"
+2. Operador preenche o campo "Local Bem" ao lado do "Código da Linha"
+3. Operador preenche endereço e código de rastreio na seção "Envio Logístico"
+4. Ao clicar "Salvar Informações de Envio": salva envio no banco E faz POST na API trocarLocalBemList via edge function
 

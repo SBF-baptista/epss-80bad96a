@@ -21,6 +21,12 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
+      // Check if user must change password on first login
+      const mustChange = user.user_metadata?.must_change_password;
+      if (mustChange) {
+        navigate("/ativar");
+        return;
+      }
       navigate("/kanban");
     }
   }, [user, navigate]);
@@ -34,7 +40,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
           toast({ title: "Erro", description: "E-mail ou senha incorretos", variant: "destructive" });
@@ -43,6 +49,14 @@ const Auth = () => {
         }
       } else {
         setTimeout(() => logLogin(), 100);
+        
+        // Check if must change password
+        if (data?.user?.user_metadata?.must_change_password) {
+          toast({ title: "Atenção", description: "Você precisa definir uma nova senha para continuar." });
+          navigate("/ativar");
+          return;
+        }
+        
         toast({ title: "Sucesso", description: "Login realizado com sucesso!" });
         navigate("/kanban");
       }

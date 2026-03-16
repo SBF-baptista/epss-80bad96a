@@ -72,10 +72,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const handleAutoSignOut = async () => {
       try {
         await logLogout()
+      } catch (e) {
+        console.error('Auto sign-out log error (ignored):', e)
+      }
+      try {
         await supabase.auth.signOut()
       } catch (e) {
-        console.error('Auto sign-out error:', e)
+        console.error('Auto sign-out error (clearing local state):', e)
       }
+      // Always clear local state
+      setUser(null)
+      setSession(null)
     }
 
     const resetInactivityTimer = () => {
@@ -112,13 +119,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     })
     
     if (!error) {
-      // Registrar login com sucesso
       setTimeout(() => {
         logLogin();
       }, 100);
@@ -128,11 +134,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signOut = async () => {
-    // Registrar logout antes de sair
-    await logLogout();
+    // Try to log logout, but never let it block sign out
+    try {
+      await logLogout();
+    } catch (e) {
+      console.error('Logout log failed (ignored):', e)
+    }
     
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    // Always attempt sign out and clear local state regardless of errors
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.error('Sign out API error (clearing local state):', e)
+    }
+    
+    // Force clear local state
+    setUser(null)
+    setSession(null)
+    
+    return { error: null }
   }
 
   const value = {
