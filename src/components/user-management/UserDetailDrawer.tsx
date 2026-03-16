@@ -308,6 +308,16 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
                 )}
                 {currentUser?.id !== user.id && (
                   <Button
+                    variant="outline" size="sm" className="justify-start text-orange-600 border-orange-300 hover:bg-orange-50"
+                    onClick={() => setShowResetAccessDialog(true)}
+                    disabled={isLoading === 'reset-access'}
+                  >
+                    <RotateCcw className={`h-4 w-4 mr-2 ${isLoading === 'reset-access' ? 'animate-spin' : ''}`} />
+                    Resetar acesso
+                  </Button>
+                )}
+                {currentUser?.id !== user.id && (
+                  <Button
                     variant="outline" size="sm" className="justify-start text-destructive border-destructive/30 hover:bg-destructive/10"
                     onClick={() => setShowDeleteDialog(true)}
                     disabled={isLoading === 'delete'}
