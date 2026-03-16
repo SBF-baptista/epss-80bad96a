@@ -149,6 +149,7 @@ export function AppNavigation() {
   // Filter items based on module permissions
   const canAccessItem = (item: NavItem) => {
     if (role === 'admin') return true;
+    if (item.adminOnly) return false;
     return canViewModule(item.module);
   };
 
