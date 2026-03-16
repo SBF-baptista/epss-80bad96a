@@ -168,12 +168,9 @@ const Auth = () => {
                 <><Lock className="mr-2 h-4 w-4" /> Entrar</>
               )}
             </Button>
-            <div className="flex justify-between">
+            <div className="flex justify-center">
               <Button type="button" variant="link" className="text-sm p-0" onClick={handleForgotPassword} disabled={loading}>
                 Esqueci minha senha
-              </Button>
-              <Button type="button" variant="link" className="text-sm p-0" onClick={handleSignUp} disabled={loading}>
-                Criar conta
               </Button>
             </div>
           </form>
