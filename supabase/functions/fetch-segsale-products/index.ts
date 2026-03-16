@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
         console.log(`📦 Fetching contract items for pending_contract_id: ${pendingContractId}`)
         
         try {
-          const contractItemsUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/itens-produtos?id=${pendingContractId}`
+          const contractItemsUrl = `https://ws-sale.segsat.com/segsale/relatorios/itens-produtos?id=${pendingContractId}`
           
           const contractResponse = await fetchWithRetry(
             contractItemsUrl,

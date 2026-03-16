@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     console.log(`📡 Calling updateBem - numbem: ${numbemInt} (number), codtombamento: ${codtombamento}`)
 
-    const response = await fetch('https://ws-sale-teste.segsat.com/segsale/tombamento/updateBem', {
+    const response = await fetch('https://ws-sale.segsat.com/segsale/tombamento/updateBem', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
