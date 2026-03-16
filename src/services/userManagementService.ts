@@ -21,6 +21,7 @@ export interface CreateUserData {
   baseRole: 'admin' | 'gestor' | 'operador' | 'visualizador'
   permissions?: Record<string, string>
   accessProfileId?: string
+  password?: string
   redirectTo?: string
 }
 
@@ -52,7 +53,8 @@ class UserManagementService {
         name: userData.name,
         baseRole: userData.baseRole,
         permissions: userData.permissions,
-        redirectTo: userData.redirectTo
+        accessProfileId: userData.accessProfileId,
+        password: userData.password,
       };
 
       const { data, error } = await supabase.functions.invoke('manage-users', {
