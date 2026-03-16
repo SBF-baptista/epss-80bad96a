@@ -50,6 +50,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   module: AppModule;
   showBadge?: boolean;
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
