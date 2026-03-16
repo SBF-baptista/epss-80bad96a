@@ -72,7 +72,6 @@ const navigationGroups: NavGroup[] = [
       { to: "/homologation", label: "Homologação de Veículos", icon: CheckSquare, module: "homologation" },
       { to: "/kits", label: "Kits", icon: Package, module: "kits" },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies" },
-      { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling" },
       { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
     ]
   },
@@ -95,6 +94,9 @@ const navigationGroups: NavGroup[] = [
     ]
   },
 ];
+
+// Single item - Gestão de Configurações (after scheduling)
+const configItem: NavItem = { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling" };
 
 // Single item - Planejamento (before Logística)
 const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" };
