@@ -191,6 +191,7 @@ export function AppNavigation() {
   const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
   const canSeePlanning = canAccessItem(planningItem);
   const canSeeScheduling = canAccessItem(schedulingItem);
+  const canSeeConfig = canAccessItem(configItem);
   const canSeeInstallation = role === 'admin';
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
 
