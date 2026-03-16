@@ -315,6 +315,38 @@ const handler = async (req: Request): Promise<Response> => {
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // RESET ACCESS (force first-access flow again)
+    if (req.method === 'POST' && action === 'reset-access') {
+      const { userId } = requestData;
+      if (!userId) return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (userId === user.id) return new Response(JSON.stringify({ success: false, error: 'Você não pode resetar seu próprio acesso' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+      // Generate random internal password (user will never know this)
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const internalPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 24);
+
+      // Update password to random + set must_change_password flag
+      const { data: targetUser, error: fetchErr } = await supabaseAdmin.auth.admin.getUserById(userId);
+      if (fetchErr || !targetUser?.user) {
+        return new Response(JSON.stringify({ success: false, error: 'Usuário não encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: internalPassword,
+        user_metadata: { ...targetUser.user.user_metadata, must_change_password: true },
+        ban_duration: 'none'
+      });
+
+      if (updateError) {
+        return new Response(JSON.stringify({ success: false, error: updateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: 'Acesso resetado. O usuário precisará definir uma nova senha no próximo login.' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // UPDATE USER (legacy)
     if (req.method === 'POST' && action === 'update') {
       const { userId, role, resetPassword } = requestData;

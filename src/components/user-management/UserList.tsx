@@ -40,6 +40,7 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
   const [isResettingPassword, setIsResettingPassword] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
+  const [resetAccessTarget, setResetAccessTarget] = useState<User | null>(null)
   const [profileEditUser, setProfileEditUser] = useState<User | null>(null)
   const [bulkAction, setBulkAction] = useState<{ action: 'ban' | 'unban' | 'delete'; count: number } | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
