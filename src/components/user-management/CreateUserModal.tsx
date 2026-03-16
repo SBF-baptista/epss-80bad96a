@@ -33,14 +33,12 @@ interface CreateUserModalProps {
 export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalProps) => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [selectedProfileId, setSelectedProfileId] = useState<string>('')
   const [profiles, setProfiles] = useState<AccessProfile[]>([])
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
-  const [createdPassword, setCreatedPassword] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [inviteSent, setInviteSent] = useState(false)
   const { toast } = useToast()
 
   const loadProfiles = () => {
