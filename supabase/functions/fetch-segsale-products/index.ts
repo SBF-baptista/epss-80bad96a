@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     console.log(`📡 Fetching Segsale products for idResumoVenda: ${idResumoVenda}`)
 
     // Call Segsale API with retry and timeout
-    const segsaleUrl = `https://ws-sale-teste.segsat.com/segsale/relatorios/produtos-por-veiculo?idResumoVenda=${idResumoVenda}`
+    const segsaleUrl = `https://ws-sale.segsat.com/segsale/relatorios/produtos-por-veiculo?idResumoVenda=${idResumoVenda}`
 
     let segsaleResponse: Response
     try {
