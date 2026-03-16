@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { AlertCircle, Plus, Copy, Check } from 'lucide-react'
+import { AlertCircle, Plus, Check, Mail } from 'lucide-react'
 import { userManagementService } from '@/services/userManagementService'
 import { accessProfileService, AccessProfile } from '@/services/accessProfileService'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -33,14 +33,12 @@ interface CreateUserModalProps {
 export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalProps) => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [selectedProfileId, setSelectedProfileId] = useState<string>('')
   const [profiles, setProfiles] = useState<AccessProfile[]>([])
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
-  const [createdPassword, setCreatedPassword] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [inviteSent, setInviteSent] = useState(false)
   const { toast } = useToast()
 
   const loadProfiles = () => {
@@ -54,21 +52,12 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
   useEffect(() => {
     if (open) {
       loadProfiles()
-      setCreatedPassword(null)
-      setCopied(false)
+      setInviteSent(false)
     }
   }, [open])
 
   const handleProfileCreated = () => {
     loadProfiles()
-  }
-
-  const handleCopyPassword = () => {
-    if (createdPassword) {
-      navigator.clipboard.writeText(createdPassword)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,21 +88,15 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
         baseRole: selectedProfile.base_role,
         permissions: selectedProfile.permissions,
         accessProfileId: selectedProfileId,
-        password: password || undefined,
       })
 
       if (response.success) {
-        if (response.temporaryPassword) {
-          setCreatedPassword(response.temporaryPassword)
-        }
+        setInviteSent(true)
         toast({
           title: 'Usuário criado',
-          description: 'Usuário criado com sucesso e pronto para acessar o sistema.'
+          description: 'Um e-mail de ativação foi enviado para o usuário.'
         })
         onUserCreated()
-        if (!response.temporaryPassword) {
-          handleClose()
-        }
       } else {
         toast({ title: 'Erro', description: response.error || 'Falha ao criar usuário', variant: 'destructive' })
       }
@@ -128,10 +111,8 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
     onOpenChange(false)
     setEmail('')
     setName('')
-    setPassword('')
     setSelectedProfileId('')
-    setCreatedPassword(null)
-    setCopied(false)
+    setInviteSent(false)
   }
 
   return (
@@ -141,27 +122,18 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
           <DialogHeader>
             <DialogTitle>Criar Novo Usuário</DialogTitle>
             <DialogDescription>
-              Crie um novo usuário para acessar o sistema com o perfil de acesso selecionado.
+              Crie um novo usuário para acessar o sistema. Um e-mail será enviado para que ele defina sua própria senha.
             </DialogDescription>
           </DialogHeader>
           
-          {createdPassword ? (
+          {inviteSent ? (
             <div className="space-y-4">
               <Alert>
-                <Check className="h-4 w-4" />
+                <Mail className="h-4 w-4" />
                 <AlertDescription>
-                  Usuário criado com sucesso! Compartilhe a senha temporária abaixo. O usuário deverá alterá-la no primeiro acesso.
+                  Usuário criado com sucesso! Um e-mail de ativação foi enviado para <strong>{email}</strong>. O usuário deverá clicar no link recebido para definir sua senha e acessar o sistema.
                 </AlertDescription>
               </Alert>
-              <div className="space-y-2">
-                <Label>Senha temporária</Label>
-                <div className="flex gap-2">
-                  <Input value={createdPassword} readOnly className="font-mono" />
-                  <Button type="button" variant="outline" size="icon" onClick={handleCopyPassword}>
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
               <DialogFooter>
                 <Button onClick={handleClose}>Fechar</Button>
               </DialogFooter>
@@ -176,12 +148,6 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@empresa.com" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha (opcional)</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Deixe vazio para gerar automaticamente" />
-                <p className="text-xs text-muted-foreground">Se não informada, uma senha temporária será gerada automaticamente.</p>
               </div>
 
               <div className="space-y-2">
@@ -226,6 +192,13 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
                   </p>
                 )}
               </div>
+
+              <Alert className="bg-muted/50">
+                <Mail className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  O usuário receberá um e-mail com um link para definir sua própria senha no primeiro acesso.
+                </AlertDescription>
+              </Alert>
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>

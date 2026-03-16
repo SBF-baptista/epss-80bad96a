@@ -80,9 +80,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Action:', action);
 
-    // CREATE USER (directly with temporary password)
+    // CREATE USER (invite flow - user sets own password via email link)
     if (req.method === 'POST' && action === 'create') {
-      const { email, baseRole, permissions, name, password, accessProfileId } = requestData;
+      const { email, baseRole, permissions, name, accessProfileId } = requestData;
       
       if (!email || !baseRole) {
         return new Response(JSON.stringify({ error: 'Missing required fields (email, baseRole)' }), {
@@ -99,32 +99,23 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Generate temporary password if not provided
-      let userPassword = password;
-      if (!userPassword) {
-        const array = new Uint8Array(16);
-        crypto.getRandomValues(array);
-        userPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 12);
-      }
-
-      const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: userPassword,
-        email_confirm: true,
-        user_metadata: { 
+      // Use inviteUserByEmail: creates user + sends invite email with link to set password
+      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: { 
           display_name: name || undefined,
           must_change_password: true
-        }
+        },
+        redirectTo: `${req.headers.get('origin') || supabaseUrl?.replace('.supabase.co', '.lovable.app')}/ativar`
       });
 
-      if (createError) {
-        return new Response(JSON.stringify({ error: createError.message }), {
+      if (inviteError) {
+        return new Response(JSON.stringify({ error: inviteError.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      const newUserId = createData.user!.id;
+      const newUserId = inviteData.user!.id;
 
       await supabaseAdmin.from('usuarios').insert({
         id: newUserId,
@@ -156,9 +147,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       return new Response(JSON.stringify({ 
         success: true, 
-        user: createData.user,
-        temporaryPassword: userPassword,
-        message: 'Usuário criado com sucesso!'
+        user: inviteData.user,
+        message: 'Usuário criado com sucesso! Um e-mail de ativação foi enviado.'
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
