@@ -173,6 +173,18 @@ class UserManagementService {
     })
   }
 
+  async resetAccess(userId: string): Promise<UserManagementResponse> {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'reset-access', userId }
+      })
+      if (error) throw error
+      return data
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Failed to reset access' }
+    }
+  }
+
   async deleteUser(userId: string): Promise<UserManagementResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('manage-users', {

@@ -17,7 +17,7 @@ import {
 import {
   Shield, Key, Lock, Unlock, Ban, UserCheck, Clock,
   AlertTriangle, History, RefreshCw, Copy, Check, Mail,
-  ShieldAlert, Timer, Trash2
+  ShieldAlert, Timer, Trash2, RotateCcw
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -44,6 +44,7 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
   const [passwordResetInfo, setPasswordResetInfo] = useState<PasswordResetInfo | null>(null)
   const [copied, setCopied] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showResetAccessDialog, setShowResetAccessDialog] = useState(false)
   const { user: currentUser } = useAuth()
   const { toast } = useToast()
 
@@ -66,6 +67,18 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
         } else {
           throw new Error(response.error || 'Erro ao redefinir senha')
         }
+      } else if (action === 'reset-access') {
+        const response = await userManagementService.resetAccess(user.id)
+        if (response.success) {
+          toast({
+            title: 'Acesso resetado',
+            description: response.message || 'O usuário precisará definir uma nova senha no próximo login.'
+          })
+          onUserUpdated()
+        } else {
+          throw new Error(response.error || 'Erro ao resetar acesso')
+        }
+        setShowResetAccessDialog(false)
       } else if (action === 'ban' || action === 'unban') {
         const { data, error } = await supabase.functions.invoke('manage-users', {
           body: { action: action === 'ban' ? 'ban-user' : 'unban-user', userId: user.id }
@@ -295,6 +308,16 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
                 )}
                 {currentUser?.id !== user.id && (
                   <Button
+                    variant="outline" size="sm" className="justify-start text-orange-600 border-orange-300 hover:bg-orange-50"
+                    onClick={() => setShowResetAccessDialog(true)}
+                    disabled={isLoading === 'reset-access'}
+                  >
+                    <RotateCcw className={`h-4 w-4 mr-2 ${isLoading === 'reset-access' ? 'animate-spin' : ''}`} />
+                    Resetar acesso
+                  </Button>
+                )}
+                {currentUser?.id !== user.id && (
+                  <Button
                     variant="outline" size="sm" className="justify-start text-destructive border-destructive/30 hover:bg-destructive/10"
                     onClick={() => setShowDeleteDialog(true)}
                     disabled={isLoading === 'delete'}
@@ -423,6 +446,36 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isLoading === 'delete' ? 'Excluindo...' : 'Excluir'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Reset access dialog */}
+    <AlertDialog open={showResetAccessDialog} onOpenChange={setShowResetAccessDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <RotateCcw className="h-5 w-5 text-orange-500" />
+            Resetar Acesso
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>Tem certeza que deseja resetar o acesso de <strong>{user.email}</strong>?</p>
+            <ul className="text-xs list-disc pl-4 space-y-1 mt-2">
+              <li>A senha atual será invalidada</li>
+              <li>O usuário precisará usar "Primeiro acesso" para definir uma nova senha</li>
+              <li>Permissões e perfil de acesso serão mantidos</li>
+            </ul>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isLoading === 'reset-access'}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => handleAction('reset-access')}
+            disabled={isLoading === 'reset-access'}
+            className="bg-orange-500 text-white hover:bg-orange-600"
+          >
+            {isLoading === 'reset-access' ? 'Resetando...' : 'Resetar Acesso'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

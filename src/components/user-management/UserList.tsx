@@ -15,7 +15,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   MoreHorizontal, Key, UserCog, Eye, Ban, Unlock, Trash2,
-  UserCheck, Clock, AlertTriangle, Shield
+  UserCheck, Clock, AlertTriangle, Shield, RotateCcw
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
@@ -40,6 +40,7 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
   const [isResettingPassword, setIsResettingPassword] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
+  const [resetAccessTarget, setResetAccessTarget] = useState<User | null>(null)
   const [profileEditUser, setProfileEditUser] = useState<User | null>(null)
   const [bulkAction, setBulkAction] = useState<{ action: 'ban' | 'unban' | 'delete'; count: number } | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -351,6 +352,12 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                           )}
                         </DropdownMenuItem>
                         {!isSelf(user.id) && (
+                          <DropdownMenuItem onClick={() => setResetAccessTarget(user)}>
+                            <RotateCcw className="mr-2 h-4 w-4 text-orange-500" />
+                            <span className="text-orange-600">Resetar acesso</span>
+                          </DropdownMenuItem>
+                        )}
+                        {!isSelf(user.id) && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -397,6 +404,53 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isProcessing ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset access dialog */}
+      <AlertDialog open={!!resetAccessTarget} onOpenChange={() => setResetAccessTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-500" />
+              Resetar Acesso
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Tem certeza que deseja resetar o acesso de <strong>{resetAccessTarget?.email}</strong>?</p>
+              <ul className="text-xs list-disc pl-4 space-y-1 mt-2">
+                <li>A senha atual será invalidada</li>
+                <li>O usuário precisará usar "Primeiro acesso" para definir uma nova senha</li>
+                <li>Permissões e perfil de acesso serão mantidos</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!resetAccessTarget) return
+                setIsProcessing(true)
+                try {
+                  const response = await userManagementService.resetAccess(resetAccessTarget.id)
+                  if (response.success) {
+                    toast({ title: 'Acesso resetado', description: response.message || 'O usuário precisará definir uma nova senha no próximo login.' })
+                    onUserUpdated()
+                  } else {
+                    toast({ title: 'Erro', description: response.error || 'Falha ao resetar acesso', variant: 'destructive' })
+                  }
+                } catch (error: any) {
+                  toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+                } finally {
+                  setResetAccessTarget(null)
+                  setIsProcessing(false)
+                }
+              }}
+              disabled={isProcessing}
+              className="bg-orange-500 text-white hover:bg-orange-600"
+            >
+              {isProcessing ? 'Resetando...' : 'Resetar Acesso'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
