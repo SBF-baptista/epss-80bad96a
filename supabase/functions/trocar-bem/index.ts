@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
     console.log(`📡 Calling trocarLocalBemList - codLocal: ${codLocal}, items: ${codigosTombamento.length}`)
 
-    const response = await fetch('https://ws-sale-teste.segsat.com/segsale/tombamento/trocarLocalBemList', {
+    const response = await fetch('https://ws-sale.segsat.com/segsale/tombamento/trocarLocalBemList', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

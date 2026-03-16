@@ -69,7 +69,7 @@ serve(async (req) => {
       
       console.log('Fetching Segsale products with SEGSALE_PRODUTOSS token');
       
-      const response = await fetchWithRetry('https://ws-sale-teste.segsat.com/segsale/produto/6/itens', {
+      const response = await fetchWithRetry('https://ws-sale.segsat.com/segsale/produto/6/itens', {
         method: 'GET',
         headers: { 'Token': productsToken, 'Content-Type': 'application/json' },
       });
@@ -106,7 +106,7 @@ serve(async (req) => {
     
     console.log(`Fetching Segsale extras for category: ${category || 'all'}`);
 
-    const response = await fetchWithRetry('https://ws-sale-teste.segsat.com/segsale/produto/6/extras', {
+    const response = await fetchWithRetry('https://ws-sale.segsat.com/segsale/produto/6/extras', {
       method: 'GET',
       headers: { 'Token': accessoriesToken, 'Content-Type': 'application/json' },
     });
