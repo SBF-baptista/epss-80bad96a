@@ -52,8 +52,7 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
   useEffect(() => {
     if (open) {
       loadProfiles()
-      setCreatedPassword(null)
-      setCopied(false)
+      setInviteSent(false)
     }
   }, [open])
 
