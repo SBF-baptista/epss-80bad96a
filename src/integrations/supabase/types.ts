@@ -949,6 +949,36 @@ export type Database = {
           },
         ]
       }
+      installation_search_history: {
+        Row: {
+          created_at: string
+          found: boolean
+          id: string
+          result_data: Json | null
+          result_type: string | null
+          searched_by: string | null
+          searched_plate: string
+        }
+        Insert: {
+          created_at?: string
+          found?: boolean
+          id?: string
+          result_data?: Json | null
+          result_type?: string | null
+          searched_by?: string | null
+          searched_plate: string
+        }
+        Update: {
+          created_at?: string
+          found?: boolean
+          id?: string
+          result_data?: Json | null
+          result_type?: string | null
+          searched_by?: string | null
+          searched_plate?: string
+        }
+        Relationships: []
+      }
       integration_state: {
         Row: {
           created_at: string | null
