@@ -72,7 +72,6 @@ const navigationGroups: NavGroup[] = [
       { to: "/homologation", label: "Homologação de Veículos", icon: CheckSquare, module: "homologation" },
       { to: "/kits", label: "Kits", icon: Package, module: "kits" },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies" },
-      { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling" },
       { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
     ]
   },
@@ -95,6 +94,9 @@ const navigationGroups: NavGroup[] = [
     ]
   },
 ];
+
+// Single item - Gestão de Configurações (after scheduling)
+const configItem: NavItem = { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling" };
 
 // Single item - Planejamento (before Logística)
 const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" };
@@ -189,6 +191,7 @@ export function AppNavigation() {
   const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
   const canSeePlanning = canAccessItem(planningItem);
   const canSeeScheduling = canAccessItem(schedulingItem);
+  const canSeeConfig = canAccessItem(configItem);
   const canSeeInstallation = role === 'admin';
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
 
@@ -379,7 +382,24 @@ export function AppNavigation() {
                 </SidebarMenuItem>
               )}
 
-              {/* Instalação - After Agendamento */}
+              {/* Gestão de Configurações - After Agendamento */}
+              {canSeeConfig && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(configItem.to)}
+                    tooltip={isCollapsed ? configItem.label : undefined}
+                    className="touch-manipulation tap-target"
+                  >
+                    <NavLink to={configItem.to} className="flex items-center gap-3 px-2 py-2">
+                      <configItem.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium text-sm truncate">{configItem.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+
               {canSeeInstallation && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
