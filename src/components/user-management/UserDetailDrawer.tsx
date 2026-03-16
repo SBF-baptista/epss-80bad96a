@@ -450,6 +450,36 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {/* Reset access dialog */}
+    <AlertDialog open={showResetAccessDialog} onOpenChange={setShowResetAccessDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <RotateCcw className="h-5 w-5 text-orange-500" />
+            Resetar Acesso
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>Tem certeza que deseja resetar o acesso de <strong>{user.email}</strong>?</p>
+            <ul className="text-xs list-disc pl-4 space-y-1 mt-2">
+              <li>A senha atual será invalidada</li>
+              <li>O usuário precisará usar "Primeiro acesso" para definir uma nova senha</li>
+              <li>Permissões e perfil de acesso serão mantidos</li>
+            </ul>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isLoading === 'reset-access'}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => handleAction('reset-access')}
+            disabled={isLoading === 'reset-access'}
+            className="bg-orange-500 text-white hover:bg-orange-600"
+          >
+            {isLoading === 'reset-access' ? 'Resetando...' : 'Resetar Acesso'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   )
 }
