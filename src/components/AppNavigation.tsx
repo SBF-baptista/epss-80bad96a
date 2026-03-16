@@ -102,8 +102,8 @@ const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Ca
 // Single item - Agendamento (after Logística)
 const schedulingItem: NavItem = { to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" };
 
-// Single item - Instalação (after Agendamento)
-const installationItem: NavItem = { to: "/installation", label: "Instalação", icon: Wrench, module: "scheduling" };
+// Single item - Instalação (after Agendamento) - admin only
+const installationItem: NavItem & { adminOnly?: boolean } = { to: "/installation", label: "Instalação", icon: Wrench, module: "scheduling", adminOnly: true };
 
 // Additional single items after Instalação
 const additionalSingleItems: NavItem[] = [
@@ -189,7 +189,7 @@ export function AppNavigation() {
   const visibleSingleItems = singleNavigationItems.filter(canAccessItem);
   const canSeePlanning = canAccessItem(planningItem);
   const canSeeScheduling = canAccessItem(schedulingItem);
-  const canSeeInstallation = canAccessItem(installationItem);
+  const canSeeInstallation = role === 'admin';
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
 
   return (
