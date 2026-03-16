@@ -838,12 +838,6 @@ const OrderModal = ({
                       totalTrackers={order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0)}
                       isLoading={productionLoading}
                     />
-                    {isAdmin() && (
-                      <>
-                        <TrocarBemTestPanel />
-                        <UpdateBemTestPanel />
-                      </>
-                    )}
                   </div>
                 </div>
 
@@ -863,6 +857,14 @@ const OrderModal = ({
                     />
                   </div>
                 </div>
+
+                {/* Admin Test Panels - After tracking/shipment section */}
+                {isAdmin() && (
+                  <div className="space-y-3">
+                    <TrocarBemTestPanel />
+                    <UpdateBemTestPanel />
+                  </div>
+                )}
               </>
             )}
 
