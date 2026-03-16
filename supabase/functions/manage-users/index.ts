@@ -80,9 +80,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Action:', action);
 
-    // CREATE USER (via invite - no password)
+    // CREATE USER (directly with temporary password)
     if (req.method === 'POST' && action === 'create') {
-      const { email, baseRole, permissions, redirectTo, name } = requestData;
+      const { email, baseRole, permissions, name, password, accessProfileId } = requestData;
       
       if (!email || !baseRole) {
         return new Response(JSON.stringify({ error: 'Missing required fields (email, baseRole)' }), {
@@ -99,32 +99,46 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-        redirectTo: redirectTo || undefined,
-        data: { 
+      // Generate temporary password if not provided
+      let userPassword = password;
+      if (!userPassword) {
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        userPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 12);
+      }
+
+      const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: userPassword,
+        email_confirm: true,
+        user_metadata: { 
           display_name: name || undefined,
           must_change_password: true
         }
       });
 
-      if (inviteError) {
-        return new Response(JSON.stringify({ error: inviteError.message }), {
+      if (createError) {
+        return new Response(JSON.stringify({ error: createError.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      const newUserId = inviteData.user!.id;
+      const newUserId = createData.user!.id;
 
       await supabaseAdmin.from('usuarios').insert({
         id: newUserId,
         email: email
       });
 
-      await supabaseAdmin.from('user_roles').insert({
+      const roleInsert: any = {
         user_id: newUserId,
         role: baseRole
-      });
+      };
+      if (accessProfileId) {
+        roleInsert.access_profile_id = accessProfileId;
+      }
+      await supabaseAdmin.from('user_roles').insert(roleInsert);
 
       if (permissions) {
         const permissionRecords = Object.entries(permissions)
@@ -142,8 +156,9 @@ const handler = async (req: Request): Promise<Response> => {
 
       return new Response(JSON.stringify({ 
         success: true, 
-        user: inviteData.user,
-        message: 'Convite enviado com sucesso! O usuário receberá um e-mail para definir sua senha.'
+        user: createData.user,
+        temporaryPassword: userPassword,
+        message: 'Usuário criado com sucesso!'
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
