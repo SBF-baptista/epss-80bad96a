@@ -100,10 +100,6 @@ const Homologation = () => {
             </Dialog>
           </div>
           
-          <HomologationMetrics
-            cards={filteredCards} 
-            workflowData={workflowData} 
-          />
           
           <PendingItemsAlert />
           
