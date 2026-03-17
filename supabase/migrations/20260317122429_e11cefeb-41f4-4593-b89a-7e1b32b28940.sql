@@ -1,0 +1,20 @@
+
+INSERT INTO public.api_endpoints (name, url, method, system_origin, headers, default_body, is_active, expected_response_time_ms) VALUES
+('Segsale - Buscar Produtos', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products', 'POST', 'Segsale', '{}', null, true, 60000),
+('Segsale - Buscar Extras (Acessórios)', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-extras', 'POST', 'Segsale', '{}', '{"type": "accessories"}', true, 15000),
+('Segsale - Webhook Recebimento', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/segsale-webhook', 'POST', 'Segsale', '{}', null, true, 10000),
+('Tombamento - Atualizar Bem', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/update-bem', 'POST', 'Segsat', '{}', '{"numbem": 0, "codtombamento": ""}', true, 10000),
+('Tombamento - Trocar Bem', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/trocar-bem', 'POST', 'Segsat', '{}', '{"codLocal": "", "codigosTombamento": []}', true, 10000),
+('WhatsApp - Enviar Mensagem', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/send-whatsapp', 'POST', 'WhatsApp API', '{}', null, true, 15000),
+('WhatsApp - Agenda Diária', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/send-daily-agenda', 'POST', 'WhatsApp API', '{}', null, true, 30000),
+('Receber Veículo', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/receive-vehicle', 'POST', 'API Interna', '{}', null, true, 15000),
+('Verificar Veículo', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/verify-vehicle', 'GET', 'API Interna', '{}', null, true, 10000),
+('Confirmar Instalação', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/confirm-installation', 'POST', 'INSTALA', '{}', '{"plate": "", "imei": ""}', true, 10000),
+('Criar Homologação', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/create-homologation', 'POST', 'API Interna', '{}', null, true, 10000),
+('Buscar Dados Homologação', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/get-homologation-data', 'POST', 'API Interna', '{}', null, true, 10000),
+('Buscar Homologações em Lote', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/backfill-homologations', 'POST', 'API Interna', '{}', null, true, 30000),
+('Gerenciar Usuários', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/manage-users', 'POST', 'API Interna', '{}', null, true, 10000),
+('Buscar TomTicket', 'https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/search-tomticket', 'POST', 'TomTicket', '{}', '{"searchTerm": ""}', true, 15000),
+('API FIPE - Marcas', 'https://parallelum.com.br/fipe/api/v1/carros/marcas', 'GET', 'FIPE', '{}', null, true, 5000),
+('API ViaCEP', 'https://viacep.com.br/ws/01001000/json/', 'GET', 'ViaCEP', '{}', null, true, 5000),
+('API IBGE - Estados', 'https://servicodados.ibge.gov.br/api/v1/localidades/estados', 'GET', 'IBGE', '{}', null, true, 5000);
