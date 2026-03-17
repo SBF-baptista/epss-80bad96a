@@ -387,22 +387,8 @@ export function AppNavigation() {
                 </SidebarMenuItem>
               )}
 
-              {/* Gestão de Configurações - After Agendamento */}
-              {canSeeConfig && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(configItem.to)}
-                    tooltip={isCollapsed ? configItem.label : undefined}
-                    className="touch-manipulation tap-target"
-                  >
-                    <NavLink to={configItem.to} className="flex items-center gap-3 px-2 py-2">
-                      <configItem.icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="font-medium text-sm truncate">{configItem.label}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+
+
 
 
               {canSeeInstallation && (
