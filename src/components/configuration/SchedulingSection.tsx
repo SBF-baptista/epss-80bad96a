@@ -222,7 +222,7 @@ export const SchedulingSection = ({
               <div className="space-y-1">
                 <p className="text-xs sm:text-sm text-muted-foreground/70 font-medium">Total de Veículos</p>
                 <p className="text-2xl sm:text-3xl font-bold text-foreground">
-                  {customers.reduce((acc, c) => acc + (c.vehicles?.length || 0), 0)}
+                  {filteredCustomers.reduce((acc, c) => acc + (c.vehicles?.length || 0), 0)}
                 </p>
               </div>
               <div className="p-2.5 rounded-xl bg-primary/10">
