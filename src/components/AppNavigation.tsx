@@ -19,7 +19,8 @@ import {
   FileEdit,
   Home,
   MessageSquare,
-  Wrench
+  Wrench,
+  Activity
 } from "lucide-react";
 import {
   Sidebar,
