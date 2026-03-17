@@ -32,6 +32,7 @@ import EditRequests from "./pages/EditRequests";
 import WhatsAppMessageControl from "./pages/WhatsAppMessageControl";
 import ModuleSelection from "./pages/ModuleSelection";
 import Installation from "./pages/Installation";
+import ApiMonitoring from "./pages/ApiMonitoring";
 
 
 const queryClient = new QueryClient({
