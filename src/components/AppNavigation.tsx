@@ -52,6 +52,7 @@ interface NavItem {
   module: AppModule;
   showBadge?: boolean;
   adminOnly?: boolean;
+  gestorOrAdminOnly?: boolean;
 }
 
 interface NavGroup {
