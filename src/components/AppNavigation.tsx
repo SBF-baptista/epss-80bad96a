@@ -100,8 +100,7 @@ const navigationGroups: NavGroup[] = [
   },
 ];
 
-// Single item - Gestão de Configurações (after scheduling)
-const configItem: NavItem = { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "scheduling", adminOnly: true };
+// configItem removed - now inside Homologação group
 
 // Single item - Planejamento (before Logística)
 const planningItem: NavItem = { to: "/planning", label: "Planejamento", icon: Calendar, module: "planning" };
