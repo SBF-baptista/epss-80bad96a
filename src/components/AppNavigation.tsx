@@ -75,7 +75,8 @@ const navigationGroups: NavGroup[] = [
       { to: "/homologation", label: "Homologação de Veículos", icon: CheckSquare, module: "homologation" },
       { to: "/kits", label: "Kits", icon: Package, module: "kits" },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies" },
-      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
+      { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "homologation", adminOnly: true },
+      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true, gestorOrAdminOnly: true },
     ]
   },
   {
