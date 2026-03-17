@@ -153,6 +153,7 @@ export function AppNavigation() {
   const canAccessItem = (item: NavItem) => {
     if (role === 'admin') return true;
     if (item.adminOnly) return false;
+    if (item.gestorOrAdminOnly) return role === 'gestor';
     return canViewModule(item.module);
   };
 
