@@ -251,6 +251,17 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
+              {/* API Monitoring - admin only */}
+              <Route path="/api-monitoring" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <ApiMonitoring />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
               {/* Module Selection - no special permissions needed */}
               <Route path="/modules" element={
                 <ProtectedRoute>
