@@ -32,6 +32,7 @@ import EditRequests from "./pages/EditRequests";
 import WhatsAppMessageControl from "./pages/WhatsAppMessageControl";
 import ModuleSelection from "./pages/ModuleSelection";
 import Installation from "./pages/Installation";
+import ApiMonitoring from "./pages/ApiMonitoring";
 
 
 const queryClient = new QueryClient({
@@ -246,6 +247,17 @@ function AppContent() {
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <Installation />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* API Monitoring - admin only */}
+              <Route path="/api-monitoring" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <ApiMonitoring />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>

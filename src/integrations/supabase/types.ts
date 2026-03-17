@@ -132,6 +132,98 @@ export type Database = {
           },
         ]
       }
+      api_endpoints: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_body: Json | null
+          expected_response_time_ms: number | null
+          headers: Json | null
+          id: string
+          is_active: boolean
+          method: string
+          name: string
+          system_origin: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_body?: Json | null
+          expected_response_time_ms?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean
+          method?: string
+          name: string
+          system_origin?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_body?: Json | null
+          expected_response_time_ms?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean
+          method?: string
+          name?: string
+          system_origin?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      api_execution_logs: {
+        Row: {
+          endpoint_id: string
+          error_message: string | null
+          executed_at: string
+          executed_by: string | null
+          id: string
+          request_body: Json | null
+          request_headers: Json | null
+          response_body: string | null
+          response_time_ms: number | null
+          status_code: number | null
+        }
+        Insert: {
+          endpoint_id: string
+          error_message?: string | null
+          executed_at?: string
+          executed_by?: string | null
+          id?: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: string | null
+          response_time_ms?: number | null
+          status_code?: number | null
+        }
+        Update: {
+          endpoint_id?: string
+          error_message?: string | null
+          executed_at?: string
+          executed_by?: string | null
+          id?: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: string | null
+          response_time_ms?: number | null
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_execution_logs_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "api_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_logs: {
         Row: {
           action: string

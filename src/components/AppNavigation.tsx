@@ -19,7 +19,8 @@ import {
   FileEdit,
   Home,
   MessageSquare,
-  Wrench
+  Wrench,
+  Activity
 } from "lucide-react";
 import {
   Sidebar,
@@ -92,6 +93,7 @@ const navigationGroups: NavGroup[] = [
       { to: "/users", label: "Usuários", icon: UserCog, module: "users" },
       { to: "/history", label: "Histórico", icon: Clock, module: "users" },
       { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling", adminOnly: true },
+      { to: "/api-monitoring", label: "Monitoramento de APIs", icon: Activity, module: "users", adminOnly: true },
     ]
   },
 ];
