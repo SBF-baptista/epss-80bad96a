@@ -12,8 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cleanItemName } from "@/utils/itemNormalization";
 import { findExistingItem } from "@/services/kitItemOptionsService";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export const PendingSuppliesSection = () => {
+  const { canEditModule } = useUserRole();
   const [isOpen, setIsOpen] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -134,10 +136,12 @@ export const PendingSuppliesSection = () => {
                 <Wrench className="h-5 w-5 text-green-500" />
                 Insumos Pendentes de Homologação
               </CardTitle>
-              <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Insumo
-              </Button>
+              {canEditModule('accessories_supplies') && (
+                <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Insumo
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -227,16 +231,18 @@ export const PendingSuppliesSection = () => {
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
                           Qtd total: {item.quantity}
                         </Badge>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                          onClick={() => handleApprove(item)}
-                          disabled={approvingItems.has(item.item_name)}
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          {approvingItems.has(item.item_name) ? "Homologando..." : "Homologar"}
-                        </Button>
+                        {canEditModule('accessories_supplies') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                            onClick={() => handleApprove(item)}
+                            disabled={approvingItems.has(item.item_name)}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {approvingItems.has(item.item_name) ? "Homologando..." : "Homologar"}
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -290,10 +296,12 @@ export const PendingSuppliesSection = () => {
                   <p>Clique no botão "Homologar" ao lado de cada item ou cadastre um novo insumo.</p>
                 </div>
               </div>
-              <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Insumo
-              </Button>
+              {canEditModule('accessories_supplies') && (
+                <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Insumo
+                </Button>
+              )}
             </div>
           </CardContent>
         </CollapsibleContent>
