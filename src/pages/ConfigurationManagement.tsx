@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { fetchAutomationRules, deleteAutomationRule, AutomationRule } from '@/services/automationRulesService'
 import AutomationRuleModal from '@/components/AutomationRuleModal'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const ConfigurationManagement = () => {
   const [searchTerm, setSearchTerm] = useState('')
