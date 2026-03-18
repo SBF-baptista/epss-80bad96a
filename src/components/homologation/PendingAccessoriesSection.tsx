@@ -133,10 +133,12 @@ export const PendingAccessoriesSection = () => {
                 <Package className="h-5 w-5 text-green-500" />
                 Acessórios Pendentes de Homologação
               </CardTitle>
-              <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Acessório
-              </Button>
+              {canEditModule('accessories_supplies') && (
+                <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Acessório
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
