@@ -86,7 +86,9 @@ export const useUserRole = () => {
           }
         }
 
-        setRole(mapRawRole(roleData?.role))
+        const fallbackRole = mapRawRole(roleData?.role)
+        setRole(fallbackRole)
+        console.log(`[useUserRole] Source: LEGACY (user_module_permissions table), role=${fallbackRole}`)
 
         const { data: permData, error: permError } = await supabase
           .from('user_module_permissions')

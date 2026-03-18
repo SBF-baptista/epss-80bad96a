@@ -116,6 +116,33 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
       }
 
       if (result.success) {
+        // If editing, sync all linked users' permissions
+        if (isEditing && profile) {
+          try {
+            const { data: linkedUsers } = await supabase
+              .from('user_roles')
+              .select('user_id')
+              .eq('access_profile_id', profile.id)
+
+            if (linkedUsers && linkedUsers.length > 0) {
+              console.log(`[AccessProfile] Syncing ${linkedUsers.length} linked users for profile ${profile.id}`)
+              for (const { user_id } of linkedUsers) {
+                await supabase.functions.invoke('manage-users', {
+                  body: {
+                    action: 'update-permissions',
+                    userId: user_id,
+                    baseRole: 'operador',
+                    permissions,
+                    accessProfileId: profile.id
+                  }
+                })
+              }
+            }
+          } catch (syncError) {
+            console.error('[AccessProfile] Error syncing linked users:', syncError)
+          }
+        }
+
         toast({
           title: 'Sucesso',
           description: isEditing ? 'Perfil atualizado com sucesso' : 'Perfil criado com sucesso'
