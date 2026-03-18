@@ -86,20 +86,22 @@ const Homologation = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <HomologationHeader />
             
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
-                  <Plus className="h-4 w-4" />
-                  <span className="font-medium">Criar nova homologação</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Criar Nova Homologação</DialogTitle>
-                </DialogHeader>
-                <CreateHomologationForm onUpdate={handleCreateSuccess} />
-              </DialogContent>
-            </Dialog>
+            {canEditModule('homologation') && (
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
+                    <Plus className="h-4 w-4" />
+                    <span className="font-medium">Criar nova homologação</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Criar Nova Homologação</DialogTitle>
+                  </DialogHeader>
+                  <CreateHomologationForm onUpdate={handleCreateSuccess} />
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
           
           

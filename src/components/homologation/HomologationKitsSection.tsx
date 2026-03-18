@@ -511,7 +511,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
               )}
 
               {/* Add Kit Button */}
-              {!isCreating && (
+              {!isCreating && canEditModule('kits') && (
                 <Button 
                   onClick={() => setIsKitModalOpen(true)} 
                   className="shrink-0 h-10 px-5 font-medium shadow-sm hover:shadow-md transition-all"
