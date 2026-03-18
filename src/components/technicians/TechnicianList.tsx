@@ -28,6 +28,8 @@ interface TechnicianListProps {
 
 export const TechnicianList = ({ onEdit, onAdd, refreshKey }: TechnicianListProps) => {
   const { toast } = useToast();
+  const { canEditModule } = useUserRole();
+  const canEdit = canEditModule('technicians');
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [filteredTechnicians, setFilteredTechnicians] = useState<Technician[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
