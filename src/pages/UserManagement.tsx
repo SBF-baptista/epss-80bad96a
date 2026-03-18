@@ -156,10 +156,12 @@ const UserManagement = () => {
                   <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
                   Atualizar
                 </Button>
-                <Button size="sm" onClick={() => setShowCreateModal(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Novo Usuário
-                </Button>
+                {canEditUsers && (
+                  <Button size="sm" onClick={() => setShowCreateModal(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Novo Usuário
+                  </Button>
+                )}
               </div>
             </div>
 
