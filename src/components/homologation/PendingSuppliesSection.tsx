@@ -136,10 +136,12 @@ export const PendingSuppliesSection = () => {
                 <Wrench className="h-5 w-5 text-green-500" />
                 Insumos Pendentes de Homologação
               </CardTitle>
-              <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Insumo
-              </Button>
+              {canEditModule('accessories_supplies') && (
+                <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Insumo
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
