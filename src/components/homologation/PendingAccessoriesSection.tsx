@@ -14,6 +14,7 @@ import { findExistingItem } from "@/services/kitItemOptionsService";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export const PendingAccessoriesSection = () => {
+  const { canEditModule } = useUserRole();
   const [isOpen, setIsOpen] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const queryClient = useQueryClient();
