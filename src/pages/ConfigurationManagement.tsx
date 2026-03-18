@@ -40,6 +40,8 @@ const ConfigurationManagement = () => {
   const [deleteRuleId, setDeleteRuleId] = useState<number | null>(null)
 
   const { toast } = useToast()
+  const { canEditModule } = useUserRole()
+  const canEditHomologation = canEditModule('homologation')
   const queryClient = useQueryClient()
 
   // Fetch automation rules
