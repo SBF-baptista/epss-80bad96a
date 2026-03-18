@@ -41,6 +41,8 @@ const UserManagement = () => {
   const [deletingProfile, setDeletingProfile] = useState<AccessProfile | null>(null)
   
   const { toast } = useToast()
+  const { canEditModule } = useUserRole()
+  const canEditUsers = canEditModule('users')
 
   const fetchUsers = async () => {
     try {
