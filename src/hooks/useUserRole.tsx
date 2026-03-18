@@ -114,6 +114,7 @@ export const useUserRole = () => {
   }
 
   const canViewModule = (module: AppModule): boolean => {
+    if (loading) return false
     if (role === 'admin') return true
     const level = getModulePermission(module)
     return ['view', 'edit', 'approve', 'admin'].includes(level)
