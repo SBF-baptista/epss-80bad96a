@@ -204,10 +204,12 @@ const UserManagement = () => {
                   <p className="text-muted-foreground text-center mb-4">
                     Crie perfis de acesso para definir as permissões que serão atribuídas aos usuários.
                   </p>
-                  <Button onClick={() => setShowProfileModal(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Primeiro Perfil
-                  </Button>
+                  {canEditUsers && (
+                    <Button onClick={() => setShowProfileModal(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Primeiro Perfil
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
