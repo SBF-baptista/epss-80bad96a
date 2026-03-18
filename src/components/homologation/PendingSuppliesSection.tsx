@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cleanItemName } from "@/utils/itemNormalization";
 import { findExistingItem } from "@/services/kitItemOptionsService";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export const PendingSuppliesSection = () => {
   const [isOpen, setIsOpen] = useState(true);
