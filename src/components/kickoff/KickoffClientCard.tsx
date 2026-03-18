@@ -93,14 +93,16 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff }: Kick
           <div className="flex-1" />
 
           {/* Action button */}
-          <Button
-            size="sm"
-            onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Realizar Kickoff
-          </Button>
+          {canEdit && (
+            <Button
+              size="sm"
+              onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Realizar Kickoff
+            </Button>
+          )}
         </CardContent>
       </Card>
     </motion.div>

@@ -188,10 +188,12 @@ const UserManagement = () => {
                 <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingProfiles ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
-              <Button size="sm" onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Perfil
-              </Button>
+              {canEditUsers && (
+                <Button size="sm" onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Perfil
+                </Button>
+              )}
             </div>
 
             {profiles.length === 0 ? (
