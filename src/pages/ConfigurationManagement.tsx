@@ -134,10 +134,12 @@ const ConfigurationManagement = () => {
               Defina regras de automação para associar modelos de veículos com rastreadores e configurações
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 w-full sm:w-auto">
-            <Plus className="w-4 h-4" />
-            Nova Regra
-          </Button>
+          {canEditHomologation && (
+            <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 w-full sm:w-auto">
+              <Plus className="w-4 h-4" />
+              Nova Regra
+            </Button>
+          )}
         </div>
 
         {/* Stats Cards */}
