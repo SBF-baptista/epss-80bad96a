@@ -60,7 +60,9 @@ export const EditAccessProfileModal = ({ user, open, onOpenChange, onUserUpdated
     setIsLoading(true)
     try {
       const profileValue = selectedProfileId || null
+      const selectedProfile = profiles.find(p => p.id === selectedProfileId)
 
+      // 1. Update the access_profile_id reference
       const { error } = await supabase
         .from('user_roles')
         .update({ access_profile_id: profileValue })
@@ -68,9 +70,27 @@ export const EditAccessProfileModal = ({ user, open, onOpenChange, onUserUpdated
 
       if (error) throw error
 
+      // 2. Sync the profile's permissions to user_module_permissions
+      const permissions = selectedProfile?.permissions || {}
+      const baseRole = selectedProfile?.base_role || 'visualizador'
+
+      const response = await supabase.functions.invoke('manage-users', {
+        body: {
+          action: 'update-permissions',
+          userId: user.id,
+          baseRole,
+          permissions
+        }
+      })
+
+      if (response.error) {
+        console.error('Error syncing permissions:', response.error)
+        throw new Error(response.error.message || 'Falha ao sincronizar permissões')
+      }
+
       toast({
         title: 'Perfil atualizado',
-        description: 'O perfil de acesso do usuário foi atualizado com sucesso.'
+        description: 'O perfil de acesso e as permissões do usuário foram atualizados com sucesso.'
       })
       onUserUpdated()
       onOpenChange(false)
