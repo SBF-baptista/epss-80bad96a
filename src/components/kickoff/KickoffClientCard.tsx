@@ -13,6 +13,8 @@ interface KickoffClientCardProps {
 }
 
 export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff }: KickoffClientCardProps) => {
+  const { canEditModule } = useUserRole();
+  const canEdit = canEditModule('kickoff');
   // Get status styling based on days pending
   const getStatusConfig = () => {
     if (daysInKickoff > 10) {
