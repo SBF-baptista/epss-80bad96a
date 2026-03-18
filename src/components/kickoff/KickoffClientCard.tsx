@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Car, Edit, Shield } from "lucide-react";
 import type { KickoffClient } from "@/services/kickoffService";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface KickoffClientCardProps {
   client: KickoffClient;
