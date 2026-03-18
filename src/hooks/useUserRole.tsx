@@ -24,6 +24,24 @@ export const useUserRole = () => {
   const [permissions, setPermissions] = useState<ModulePermission[]>([])
   const [loading, setLoading] = useState(true)
 
+  const mapRawRole = (rawRole: string | null | undefined): UserRole => {
+    if (rawRole === 'admin') return 'admin'
+    if (rawRole === 'gestor') return 'gestor'
+    if (rawRole === 'operador' || rawRole?.startsWith('operador_')) return 'operador'
+    if (rawRole === 'visualizador') return 'visualizador'
+    return null
+  }
+
+  const mapPermissionEntries = (userId: string, permissionMap: Record<string, string>): ModulePermission[] => {
+    return Object.entries(permissionMap || {})
+      .filter(([, permission]) => typeof permission === 'string' && permission !== 'none')
+      .map(([module, permission]) => ({
+        user_id: userId,
+        module: module as AppModule,
+        permission: permission as PermissionLevel,
+      }))
+  }
+
   useEffect(() => {
     const fetchUserRoleAndPermissions = async () => {
       if (!user) {
@@ -33,36 +51,40 @@ export const useUserRole = () => {
         return
       }
 
+      setLoading(true)
+
       try {
-        // Fetch user role
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
-          .select('role')
+          .select('role, access_profile_id')
           .eq('user_id', user.id)
           .maybeSingle()
 
         if (roleError) {
           console.error('Error fetching user role:', roleError)
           setRole(null)
-        } else {
-          // Map legacy roles to new roles
-          const rawRole = roleData?.role as string | null
-          let mappedRole: UserRole = null
-          
-          if (rawRole === 'admin') {
-            mappedRole = 'admin'
-          } else if (rawRole === 'gestor') {
-            mappedRole = 'gestor'
-          } else if (rawRole === 'operador' || rawRole?.startsWith('operador_')) {
-            mappedRole = 'operador'
-          } else if (rawRole === 'visualizador') {
-            mappedRole = 'visualizador'
-          }
-          
-          setRole(mappedRole)
+          setPermissions([])
+          return
         }
 
-        // Fetch module permissions
+        if (roleData?.access_profile_id) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('access_profiles')
+            .select('base_role, permissions')
+            .eq('id', roleData.access_profile_id)
+            .maybeSingle()
+
+          if (profileError) {
+            console.error('Error fetching access profile permissions:', profileError)
+          } else if (profileData) {
+            setRole(mapRawRole(profileData.base_role))
+            setPermissions(mapPermissionEntries(user.id, (profileData.permissions || {}) as Record<string, string>))
+            return
+          }
+        }
+
+        setRole(mapRawRole(roleData?.role))
+
         const { data: permData, error: permError } = await supabase
           .from('user_module_permissions')
           .select('*')
