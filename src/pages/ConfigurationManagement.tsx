@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { fetchAutomationRules, deleteAutomationRule, AutomationRule } from '@/services/automationRulesService'
 import AutomationRuleModal from '@/components/AutomationRuleModal'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const ConfigurationManagement = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -39,6 +40,8 @@ const ConfigurationManagement = () => {
   const [deleteRuleId, setDeleteRuleId] = useState<number | null>(null)
 
   const { toast } = useToast()
+  const { canEditModule } = useUserRole()
+  const canEditHomologation = canEditModule('homologation')
   const queryClient = useQueryClient()
 
   // Fetch automation rules
@@ -133,10 +136,12 @@ const ConfigurationManagement = () => {
               Defina regras de automação para associar modelos de veículos com rastreadores e configurações
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 w-full sm:w-auto">
-            <Plus className="w-4 h-4" />
-            Nova Regra
-          </Button>
+          {canEditHomologation && (
+            <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 w-full sm:w-auto">
+              <Plus className="w-4 h-4" />
+              Nova Regra
+            </Button>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -265,7 +270,7 @@ const ConfigurationManagement = () => {
                       <TableHead className="min-w-[150px] text-xs sm:text-sm">Configuração</TableHead>
                       <TableHead className="min-w-[120px] text-xs sm:text-sm">Nota (Local de Instalação)</TableHead>
                       <TableHead className="min-w-[100px] text-xs sm:text-sm">Data de Criação</TableHead>
-                      <TableHead className="text-right min-w-[100px] text-xs sm:text-sm">Ações</TableHead>
+                      {canEditHomologation && <TableHead className="text-right min-w-[100px] text-xs sm:text-sm">Ações</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -303,26 +308,28 @@ const ConfigurationManagement = () => {
                         <TableCell className="text-xs sm:text-sm">
                           {new Date(rule.created_at).toLocaleDateString('pt-BR')}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1 sm:gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(rule)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Pencil className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(rule.id)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        {canEditHomologation && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1 sm:gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(rule)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(rule.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

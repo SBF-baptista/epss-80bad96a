@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Car, Edit, Shield } from "lucide-react";
 import type { KickoffClient } from "@/services/kickoffService";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface KickoffClientCardProps {
   client: KickoffClient;
@@ -12,6 +13,8 @@ interface KickoffClientCardProps {
 }
 
 export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff }: KickoffClientCardProps) => {
+  const { canEditModule } = useUserRole();
+  const canEdit = canEditModule('kickoff');
   // Get status styling based on days pending
   const getStatusConfig = () => {
     if (daysInKickoff > 10) {
@@ -90,14 +93,16 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff }: Kick
           <div className="flex-1" />
 
           {/* Action button */}
-          <Button
-            size="sm"
-            onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Realizar Kickoff
-          </Button>
+          {canEdit && (
+            <Button
+              size="sm"
+              onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Realizar Kickoff
+            </Button>
+          )}
         </CardContent>
       </Card>
     </motion.div>

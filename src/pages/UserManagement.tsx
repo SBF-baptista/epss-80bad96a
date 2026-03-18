@@ -14,6 +14,7 @@ import { AccessProfileModal } from '@/components/access-profiles/AccessProfileMo
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BASE_ROLE_LABELS, MODULE_GROUPS, AppModule, PermissionLevel } from '@/types/permissions'
+import { useUserRole } from '@/hooks/useUserRole'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,8 @@ const UserManagement = () => {
   const [deletingProfile, setDeletingProfile] = useState<AccessProfile | null>(null)
   
   const { toast } = useToast()
+  const { canEditModule } = useUserRole()
+  const canEditUsers = canEditModule('users')
 
   const fetchUsers = async () => {
     try {
@@ -153,10 +156,12 @@ const UserManagement = () => {
                   <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
                   Atualizar
                 </Button>
-                <Button size="sm" onClick={() => setShowCreateModal(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Novo Usuário
-                </Button>
+                {canEditUsers && (
+                  <Button size="sm" onClick={() => setShowCreateModal(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Novo Usuário
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -183,10 +188,12 @@ const UserManagement = () => {
                 <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingProfiles ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
-              <Button size="sm" onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Perfil
-              </Button>
+              {canEditUsers && (
+                <Button size="sm" onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Perfil
+                </Button>
+              )}
             </div>
 
             {profiles.length === 0 ? (
@@ -197,10 +204,12 @@ const UserManagement = () => {
                   <p className="text-muted-foreground text-center mb-4">
                     Crie perfis de acesso para definir as permissões que serão atribuídas aos usuários.
                   </p>
-                  <Button onClick={() => setShowProfileModal(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Primeiro Perfil
-                  </Button>
+                  {canEditUsers && (
+                    <Button onClick={() => setShowProfileModal(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Primeiro Perfil
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -247,25 +256,27 @@ const UserManagement = () => {
                           )}
                         </div>
 
-                        <div className="flex gap-2 pt-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => { setEditingProfile(profile); setShowProfileModal(true) }}
-                          >
-                            <Pencil className="h-4 w-4 mr-1" />
-                            Editar
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeletingProfile(profile)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {canEditUsers && (
+                          <div className="flex gap-2 pt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => { setEditingProfile(profile); setShowProfileModal(true) }}
+                            >
+                              <Pencil className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeletingProfile(profile)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

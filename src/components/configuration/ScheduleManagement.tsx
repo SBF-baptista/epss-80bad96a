@@ -144,8 +144,9 @@ export const ScheduleManagement = () => {
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>("all");
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
 
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, canEditModule } = useUserRole();
   const canDispatchAgenda = isAdmin() || isGestor();
+  const canEditScheduling = canEditModule('scheduling');
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
@@ -437,13 +438,15 @@ export const ScheduleManagement = () => {
             )}
 
             {/* Botão Criar Agendamento - Primary action with enhanced styling */}
-            <Button 
-              onClick={() => handleDateSelect(new Date())} 
-              className="gap-2 h-10 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all"
-            >
-              <Plus className="h-4 w-4" />
-              Criar Agendamento
-            </Button>
+            {canEditScheduling && (
+              <Button 
+                onClick={() => handleDateSelect(new Date())} 
+                className="gap-2 h-10 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                Criar Agendamento
+              </Button>
+            )}
 
             {/* Filtro de técnico - improved styling */}
             <div className="flex items-center gap-2">
