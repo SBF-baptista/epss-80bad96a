@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 
 const Homologation = () => {
+  const { canEditModule } = useUserRole();
   const [filters, setFilters] = useState<HomologationFiltersType>({
     brand: "",
     year: "",
