@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getTechnicians, deleteTechnician, type Technician } from "@/services/technicianService";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Plus, Edit, Trash2, User, Phone } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   AlertDialog,
   AlertDialogAction,
