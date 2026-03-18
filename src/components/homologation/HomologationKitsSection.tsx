@@ -47,6 +47,7 @@ import { supabase } from "@/integrations/supabase/client";
 import KitImportModal from "./KitImportModal";
 import { KitCreationModal } from "@/components/configuration/KitCreationModal";
 import { KitEditRequestModal } from "./KitEditRequestModal";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface HomologationKitsSectionProps {
   homologationCardId?: string;
