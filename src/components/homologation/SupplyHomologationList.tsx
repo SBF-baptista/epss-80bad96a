@@ -237,44 +237,46 @@ export const SupplyHomologationList = () => {
                       </p>
                     </div>
 
-                    <div className="flex gap-2 ml-4">
-                      {/* Botão de Solicitação de Edição */}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenEditModal(supply)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Solicitar edição ao gestor</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    {canEditModule('accessories_supplies') && (
+                      <div className="flex gap-2 ml-4">
+                        {/* Botão de Solicitação de Edição */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEditModal(supply)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Solicitar edição ao gestor</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
 
-                      {/* Botão de Solicitação de Exclusão */}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenDeleteModal(supply)}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Solicitar exclusão ao gestor</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                        {/* Botão de Solicitação de Exclusão */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenDeleteModal(supply)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Solicitar exclusão ao gestor</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
