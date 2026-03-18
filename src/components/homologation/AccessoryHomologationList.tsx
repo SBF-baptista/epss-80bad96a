@@ -31,7 +31,7 @@ export const AccessoryHomologationList = () => {
   const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, canEditModule } = useUserRole();
   const [editModalItem, setEditModalItem] = useState<KitItemOption | null>(null);
   const [deleteModalItem, setDeleteModalItem] = useState<KitItemOption | null>(null);
 
