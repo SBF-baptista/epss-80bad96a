@@ -144,8 +144,9 @@ export const ScheduleManagement = () => {
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>("all");
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
 
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, canEditModule } = useUserRole();
   const canDispatchAgenda = isAdmin() || isGestor();
+  const canEditScheduling = canEditModule('scheduling');
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
