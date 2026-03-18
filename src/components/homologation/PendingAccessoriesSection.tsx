@@ -300,10 +300,12 @@ export const PendingAccessoriesSection = () => {
                   <p>Clique no botão "Homologar" ao lado de cada item ou cadastre um novo acessório.</p>
                 </div>
               </div>
-              <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Acessório
-              </Button>
+              {canEditModule('accessories_supplies') && (
+                <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Acessório
+                </Button>
+              )}
             </div>
           </CardContent>
         </CollapsibleContent>
