@@ -14,6 +14,7 @@ import { AccessProfileModal } from '@/components/access-profiles/AccessProfileMo
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BASE_ROLE_LABELS, MODULE_GROUPS, AppModule, PermissionLevel } from '@/types/permissions'
+import { useUserRole } from '@/hooks/useUserRole'
 import {
   AlertDialog,
   AlertDialogAction,
