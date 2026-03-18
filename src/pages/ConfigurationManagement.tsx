@@ -270,7 +270,7 @@ const ConfigurationManagement = () => {
                       <TableHead className="min-w-[150px] text-xs sm:text-sm">Configuração</TableHead>
                       <TableHead className="min-w-[120px] text-xs sm:text-sm">Nota (Local de Instalação)</TableHead>
                       <TableHead className="min-w-[100px] text-xs sm:text-sm">Data de Criação</TableHead>
-                      <TableHead className="text-right min-w-[100px] text-xs sm:text-sm">Ações</TableHead>
+                      {canEditHomologation && <TableHead className="text-right min-w-[100px] text-xs sm:text-sm">Ações</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
