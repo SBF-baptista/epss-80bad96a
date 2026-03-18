@@ -77,13 +77,18 @@ export const useUserRole = () => {
           if (profileError) {
             console.error('Error fetching access profile permissions:', profileError)
           } else if (profileData) {
-            setRole(mapRawRole(profileData.base_role))
-            setPermissions(mapPermissionEntries(user.id, (profileData.permissions || {}) as Record<string, string>))
+            const resolvedRole = mapRawRole(profileData.base_role)
+            const resolvedPerms = mapPermissionEntries(user.id, (profileData.permissions || {}) as Record<string, string>)
+            console.log(`[useUserRole] Source: ACCESS_PROFILE (id=${roleData.access_profile_id}), role=${resolvedRole}, modules=`, resolvedPerms.map(p => `${p.module}=${p.permission}`))
+            setRole(resolvedRole)
+            setPermissions(resolvedPerms)
             return
           }
         }
 
-        setRole(mapRawRole(roleData?.role))
+        const fallbackRole = mapRawRole(roleData?.role)
+        setRole(fallbackRole)
+        console.log(`[useUserRole] Source: LEGACY (user_module_permissions table), role=${fallbackRole}`)
 
         const { data: permData, error: permError } = await supabase
           .from('user_module_permissions')
