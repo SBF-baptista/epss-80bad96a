@@ -230,16 +230,18 @@ export const PendingAccessoriesSection = () => {
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
                           Qtd total: {accessory.quantity}
                         </Badge>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                          onClick={() => handleApprove(accessory)}
-                          disabled={approvingItems.has(accessory.item_name)}
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          {approvingItems.has(accessory.item_name) ? "Homologando..." : "Homologar"}
-                        </Button>
+                        {canEditModule('accessories_supplies') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                            onClick={() => handleApprove(accessory)}
+                            disabled={approvingItems.has(accessory.item_name)}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {approvingItems.has(accessory.item_name) ? "Homologando..." : "Homologar"}
+                          </Button>
+                        )}
                       </div>
                     </div>
 
