@@ -1,40 +1,89 @@
 
 
-# Plan: Integrar trocarLocalBemList no fluxo de Aguardando Envio
+# Plan: Fix Permission Synchronization
 
-## Resumo
+## Problem Summary
+Three interconnected issues cause permissions to not reflect what's configured in the access profile:
 
-Ao salvar as informações de envio no status "Aguardando Envio", o sistema deve chamar a edge function `trocar-bem` enviando os IMEIs escaneados como `codigosTombamento` e um novo campo "Local Bem" como `codLocal`. O campo "Local Bem" será adicionado ao lado do campo "Código da Linha" no formulário de escaneamento.
+1. **Stale legacy data**: `debora.leona@segsat.com` has no `access_profile_id` linked, so the hook falls back to `user_module_permissions` which has old data (kits=approve, accessories_supplies=approve instead of view-only).
 
-## Mudanças
+2. **Profile edit doesn't sync users**: When you edit a profile's permissions in `AccessProfileModal`, only the `access_profiles` table is updated. The `user_module_permissions` table for all users linked to that profile is NOT refreshed.
 
-### 1. Adicionar campo "Local Bem" no ProductionScannerTabs
-**Arquivo:** `src/components/production/ProductionScannerTabs.tsx`
-- Adicionar nova prop `localBem` e `onLocalBemChange`
-- Renderizar um campo de input "Local Bem" ao lado do campo "Código da Linha" nas duas tabs (scanner e manual)
+3. **Multiple users out of sync**: Several users with a linked profile have divergent permissions in `user_module_permissions` vs their profile definition.
 
-### 2. Propagar prop pelo ProductionForm
-**Arquivo:** `src/components/production/ProductionForm.tsx`
-- Adicionar props `localBem` e `onLocalBemChange` na interface e repassar ao `ProductionScannerTabs`
+## Changes
 
-### 3. Adicionar estado e lógica no OrderModal
-**Arquivo:** `src/components/OrderModal.tsx`
-- Criar estado `localBem` / `setLocalBem`
-- Passar `localBem` e `setLocalBem` como props para `ProductionForm`
-- Passar `localBem` e `productionItems` (IMEIs) para `ShipmentFormEmbedded` para que o save possa usá-los
+### 1. Fix `AccessProfileModal` to sync all linked users on profile save
+**File**: `src/components/access-profiles/AccessProfileModal.tsx`
 
-### 4. Integrar chamada trocar-bem no ShipmentFormEmbedded
-**Arquivo:** `src/components/shipment/ShipmentFormEmbedded.tsx`
-- Aceitar novas props: `localBem` (string) e `scannedImeis` (string[])
-- Na função `handleSave`, após salvar o envio com sucesso, chamar `supabase.functions.invoke('trocar-bem')` com:
-  - `codLocal`: valor do campo "Local Bem"
-  - `codigosTombamento`: array de IMEIs dos itens escaneados
-- Exibir toast de sucesso/erro para a chamada da API
-- Incluir `localBem` preenchido como requisito de validação do formulário (junto com endereço e rastreio)
+After saving the profile, query all users linked to that profile and call the `manage-users` Edge Function `update-permissions` action for each one. This ensures that editing a profile immediately propagates permissions to all assigned users.
 
-### Fluxo resultante
-1. Operador escaneia IMEIs na seção "Escaneamento / Itens"
-2. Operador preenche o campo "Local Bem" ao lado do "Código da Linha"
-3. Operador preenche endereço e código de rastreio na seção "Envio Logístico"
-4. Ao clicar "Salvar Informações de Envio": salva envio no banco E faz POST na API trocarLocalBemList via edge function
+### 2. Run a one-time data fix migration
+**Migration SQL**: Resync `user_module_permissions` for ALL users that have a linked `access_profile_id`. This will:
+- For each user with an `access_profile_id`, delete their old `user_module_permissions` and insert fresh ones from the profile's JSON.
+- Fix `debora.leona@segsat.com` specifically by either linking her to the correct profile or clearing her stale permissions.
+
+### 3. Add debug logging to `useUserRole`
+**File**: `src/hooks/useUserRole.tsx`
+
+Add a `console.log` showing the resolved permissions source (profile vs legacy table) so future debugging is easier. This log will show whether the profile path or the fallback path is being used.
+
+## Technical Details
+
+### AccessProfileModal sync logic
+```typescript
+// After saving profile, sync all linked users
+const { data: linkedUsers } = await supabase
+  .from('user_roles')
+  .select('user_id')
+  .eq('access_profile_id', profile.id);
+
+for (const { user_id } of linkedUsers || []) {
+  await supabase.functions.invoke('manage-users', {
+    body: {
+      action: 'update-permissions',
+      userId: user_id,
+      baseRole: 'operador',
+      permissions,
+      accessProfileId: profile.id
+    }
+  });
+}
+```
+
+### Migration to fix current data
+```sql
+-- For each user with access_profile_id, resync permissions
+DO $$
+DECLARE
+  rec RECORD;
+  profile_perms JSONB;
+  mod TEXT;
+  perm TEXT;
+BEGIN
+  FOR rec IN
+    SELECT ur.user_id, ur.access_profile_id, ap.permissions, ap.base_role
+    FROM user_roles ur
+    JOIN access_profiles ap ON ap.id = ur.access_profile_id
+    WHERE ur.access_profile_id IS NOT NULL
+  LOOP
+    -- Clear old permissions
+    DELETE FROM user_module_permissions WHERE user_id = rec.user_id;
+    
+    -- Insert from profile
+    FOR mod, perm IN SELECT * FROM jsonb_each_text(rec.permissions)
+    LOOP
+      IF perm != 'none' THEN
+        INSERT INTO user_module_permissions (user_id, module, permission)
+        VALUES (rec.user_id, mod::app_module, perm::permission_level);
+      END IF;
+    END LOOP;
+    
+    -- Ensure role matches
+    UPDATE user_roles SET role = rec.base_role WHERE user_id = rec.user_id;
+  END LOOP;
+END $$;
+```
+
+This also clears stale permissions for users like `debora.leona` who have no profile linked but have old data in `user_module_permissions`.
 
