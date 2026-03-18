@@ -2,12 +2,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   AppModule, 
   PermissionLevel, 
   MODULE_GROUPS,
-  PERMISSION_LABELS
+  PERMISSION_LABELS,
+  ModuleConfig
 } from '@/types/permissions';
+import { Info } from 'lucide-react';
 
 interface PermissionMatrixProps {
   permissions: Record<AppModule, PermissionLevel>;
@@ -31,10 +34,8 @@ export const PermissionMatrix = ({
     const newPermissions = { ...permissions };
     
     if (checked) {
-      // Setting a level also requires all levels below it
       newPermissions[module] = level;
     } else {
-      // Unchecking a level drops to the level below it
       const idx = getLevelIndex(level);
       newPermissions[module] = idx > 0 ? LEVEL_ORDER[idx - 1] : 'none';
     }
@@ -48,12 +49,10 @@ export const PermissionMatrix = ({
     return moduleLevel >= checkLevel;
   };
 
-  // A level is disabled if the previous required level is not checked
   const isLevelDisabled = (module: AppModule, level: PermissionLevel): boolean => {
     if (disabled) return true;
     const idx = getLevelIndex(level);
-    if (idx <= 1) return false; // 'view' is always available
-    // Check that the previous level is active
+    if (idx <= 1) return false;
     const prevLevel = LEVEL_ORDER[idx - 1];
     return !isChecked(module, prevLevel);
   };
@@ -67,6 +66,11 @@ export const PermissionMatrix = ({
     }
   };
 
+  const getLevelDescription = (module: ModuleConfig, level: PermissionLevel): string => {
+    if (level === 'none') return 'Sem acesso ao módulo';
+    return module.levelDescriptions[level] || '';
+  };
+
   const groupEntries = Object.entries(MODULE_GROUPS);
   const firstGroupKey = groupEntries[0]?.[0] || 'kickoff';
 
@@ -74,57 +78,76 @@ export const PermissionMatrix = ({
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue={firstGroupKey} className="w-full">
-        <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
-          {groupEntries.map(([groupKey, group]) => (
-            <TabsTrigger 
-              key={groupKey} 
-              value={groupKey}
-              className="flex-1 min-w-[100px] text-xs sm:text-sm"
-            >
-              {group.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <TooltipProvider delayDuration={200}>
+        <Tabs defaultValue={firstGroupKey} className="w-full">
+          <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
+            {groupEntries.map(([groupKey, group]) => (
+              <TabsTrigger 
+                key={groupKey} 
+                value={groupKey}
+                className="flex-1 min-w-[100px] text-xs sm:text-sm"
+              >
+                {group.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {groupEntries.map(([groupKey, group]) => (
-          <TabsContent key={groupKey} value={groupKey} className="mt-4">
-            <div className="space-y-4 border rounded-lg p-4">
-              {/* Header row */}
-              <div className="grid grid-cols-5 gap-2 text-xs font-medium text-muted-foreground border-b pb-2">
-                <div>Módulo</div>
-                {PERMISSION_LEVELS.map(level => (
-                  <div key={level} className="text-center">
-                    {PERMISSION_LABELS[level]}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Module rows */}
-              {group.modules.map(module => (
-                <div key={module.key} className="grid grid-cols-5 gap-2 items-center">
-                  <div>
-                    <Label className="text-sm font-medium">{module.label}</Label>
-                    <p className="text-xs text-muted-foreground">{module.description}</p>
-                  </div>
+          {groupEntries.map(([groupKey, group]) => (
+            <TabsContent key={groupKey} value={groupKey} className="mt-4">
+              <div className="space-y-4 border rounded-lg p-4">
+                {/* Header row */}
+                <div className="grid grid-cols-5 gap-2 text-xs font-medium text-muted-foreground border-b pb-2">
+                  <div>Módulo</div>
                   {PERMISSION_LEVELS.map(level => (
-                    <div key={level} className="flex justify-center">
-                      <Checkbox
-                        checked={isChecked(module.key, level)}
-                        onCheckedChange={(checked) => 
-                          handlePermissionChange(module.key, level, checked as boolean)
-                        }
-                        disabled={isLevelDisabled(module.key, level)}
-                        className="h-5 w-5"
-                      />
+                    <div key={level} className="text-center">
+                      {PERMISSION_LABELS[level]}
                     </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+                
+                {/* Module rows */}
+                {group.modules.map(module => (
+                  <div key={module.key} className="space-y-1">
+                    <div className="grid grid-cols-5 gap-2 items-center">
+                      <div>
+                        <Label className="text-sm font-medium">{module.label}</Label>
+                        <p className="text-xs text-muted-foreground">{module.description}</p>
+                      </div>
+                      {PERMISSION_LEVELS.map(level => (
+                        <div key={level} className="flex justify-center items-center gap-1">
+                          <Checkbox
+                            checked={isChecked(module.key, level)}
+                            onCheckedChange={(checked) => 
+                              handlePermissionChange(module.key, level, checked as boolean)
+                            }
+                            disabled={isLevelDisabled(module.key, level)}
+                            className="h-5 w-5"
+                          />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-3 w-3 text-muted-foreground/50 cursor-help flex-shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[250px]">
+                              <p className="text-xs font-medium mb-0.5">{PERMISSION_LABELS[level]}</p>
+                              <p className="text-xs text-muted-foreground">{getLevelDescription(module, level)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Show active level description */}
+                    {permissions[module.key] && permissions[module.key] !== 'none' && (
+                      <p className="text-[11px] text-primary/70 ml-1 italic">
+                        ✓ {getLevelDescription(module, permissions[module.key])}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </TooltipProvider>
 
       {/* Summary */}
       <div className="border rounded-lg p-4">
