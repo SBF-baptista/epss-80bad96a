@@ -29,6 +29,7 @@ import {
   PermissionLevel, 
   ALL_MODULES
 } from '@/types/permissions'
+import { supabase } from '@/integrations/supabase/client'
 
 const getEmptyPermissions = (): Record<AppModule, PermissionLevel> => {
   const permissions = {} as Record<AppModule, PermissionLevel>;
