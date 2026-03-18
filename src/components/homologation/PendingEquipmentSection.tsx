@@ -29,9 +29,18 @@ export const PendingEquipmentSection = () => {
     setApprovingItems((prev) => new Set(prev).add(itemKey));
 
     try {
+      // Get current user ID for RLS policy
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+
       const { error } = await supabase.from("kit_item_options").insert({
         item_name: item.item_name,
         item_type: "equipment",
+        created_by: user.id,
       });
 
       if (error) throw error;
