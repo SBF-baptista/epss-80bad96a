@@ -256,25 +256,27 @@ const UserManagement = () => {
                           )}
                         </div>
 
-                        <div className="flex gap-2 pt-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => { setEditingProfile(profile); setShowProfileModal(true) }}
-                          >
-                            <Pencil className="h-4 w-4 mr-1" />
-                            Editar
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeletingProfile(profile)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {canEditUsers && (
+                          <div className="flex gap-2 pt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => { setEditingProfile(profile); setShowProfileModal(true) }}
+                            >
+                              <Pencil className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeletingProfile(profile)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
