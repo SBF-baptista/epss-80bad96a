@@ -120,12 +120,14 @@ export const useUserRole = () => {
   }
 
   const canEditModule = (module: AppModule): boolean => {
+    if (loading) return false
     if (role === 'admin') return true
     const level = getModulePermission(module)
     return ['edit', 'approve', 'admin'].includes(level)
   }
 
   const canApproveModule = (module: AppModule): boolean => {
+    if (loading) return false
     if (role === 'admin') return true
     const level = getModulePermission(module)
     return ['approve', 'admin'].includes(level)
