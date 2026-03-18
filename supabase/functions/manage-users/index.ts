@@ -7,6 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
 
+function jsonResponse(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -17,9 +24,8 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+      return jsonResponse({ error: 'Server configuration error' }, 500);
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -32,145 +38,115 @@ const handler = async (req: Request): Promise<Response> => {
     if (req.method === 'POST') {
       const rawBody = await req.text();
       if (rawBody) {
-        requestData = JSON.parse(rawBody);
+        try {
+          requestData = JSON.parse(rawBody);
+        } catch (parseErr) {
+          console.error('Failed to parse request body:', parseErr);
+          return jsonResponse({ error: 'Invalid JSON body' }, 400);
+        }
         action = requestData.action || 'create';
       }
     }
+
+    console.log(`manage-users action: ${action}`);
 
     // ===== PUBLIC ACTIONS (no auth required) =====
 
     // CHECK-EMAIL: verify if email exists and needs password setup
     if (req.method === 'POST' && action === 'check-email') {
       const { email } = requestData;
-      if (!email) {
-        return new Response(JSON.stringify({ error: 'Missing email' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!email) return jsonResponse({ error: 'Missing email' }, 400);
 
-      // List users filtered by email
       const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
       if (error) {
-        return new Response(JSON.stringify({ exists: false }), {
-          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        console.error('Error listing users for check-email:', error);
+        return jsonResponse({ exists: false });
       }
 
       const foundUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-      if (!foundUser) {
-        return new Response(JSON.stringify({ exists: false }), {
-          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!foundUser) return jsonResponse({ exists: false });
 
       const needsPasswordSetup = foundUser.user_metadata?.must_change_password === true;
-      
-      return new Response(JSON.stringify({ 
-        exists: true, 
-        needsPasswordSetup 
-      }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return jsonResponse({ exists: true, needsPasswordSetup });
     }
 
     // SETUP-PASSWORD: set password for first-time user (public, no auth)
     if (req.method === 'POST' && action === 'setup-password') {
       const { email, password } = requestData;
-      if (!email || !password) {
-        return new Response(JSON.stringify({ error: 'Missing email or password' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!email || !password) return jsonResponse({ error: 'Missing email or password' }, 400);
+      if (password.length < 8) return jsonResponse({ error: 'A senha deve ter no mínimo 8 caracteres' }, 400);
 
-      if (password.length < 8) {
-        return new Response(JSON.stringify({ error: 'A senha deve ter no mínimo 8 caracteres' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      // Find the user
       const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
       if (listError) {
-        return new Response(JSON.stringify({ error: 'Erro ao buscar usuário' }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        console.error('Error listing users for setup-password:', listError);
+        return jsonResponse({ error: 'Erro ao buscar usuário' }, 500);
       }
 
       const foundUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-      if (!foundUser) {
-        return new Response(JSON.stringify({ error: 'E-mail não encontrado no sistema' }), {
-          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!foundUser) return jsonResponse({ error: 'E-mail não encontrado no sistema' }, 404);
 
-      // Only allow if must_change_password is true
       if (foundUser.user_metadata?.must_change_password !== true) {
-        return new Response(JSON.stringify({ error: 'Este usuário já possui senha definida. Use o login normal.' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return jsonResponse({ error: 'Este usuário já possui senha definida. Use o login normal.' }, 400);
       }
 
-      // Set the password and clear the flag
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(foundUser.id, {
         password,
         user_metadata: { ...foundUser.user_metadata, must_change_password: false }
       });
 
       if (updateError) {
-        return new Response(JSON.stringify({ error: updateError.message }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        console.error('Error setting password:', updateError);
+        return jsonResponse({ error: updateError.message }, 500);
       }
 
-      return new Response(JSON.stringify({ success: true, message: 'Senha definida com sucesso!' }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return jsonResponse({ success: true, message: 'Senha definida com sucesso!' });
     }
 
     // ===== AUTHENTICATED ACTIONS =====
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing authorization' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      console.error('Missing or invalid Authorization header');
+      return jsonResponse({ success: false, error: 'Missing authorization' }, 401);
     }
 
     const token = authHeader.replace('Bearer ', '');
+    
+    // Validate token
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), { 
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+      console.error('Auth validation failed:', authError?.message || 'No user returned');
+      return jsonResponse({ success: false, error: 'Invalid token' }, 401);
     }
     
-    const { data: userRole } = await supabaseAdmin.rpc('get_user_role', { _user_id: user.id });
+    console.log(`Authenticated user: ${user.email} (${user.id})`);
+    
+    // Check admin role
+    const { data: userRole, error: roleError } = await supabaseAdmin.rpc('get_user_role', { _user_id: user.id });
+    
+    if (roleError) {
+      console.error('Error fetching user role:', roleError);
+      return jsonResponse({ success: false, error: 'Failed to verify permissions' }, 500);
+    }
+    
+    console.log(`User role: ${userRole}`);
     
     if (userRole !== 'admin') {
-      return new Response(JSON.stringify({ success: false, error: 'Admin role required' }), { 
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+      console.error(`Access denied: user ${user.email} has role '${userRole}', admin required`);
+      return jsonResponse({ success: false, error: 'Admin role required' }, 403);
     }
 
-    // CREATE USER (admin creates with random internal password, user sets own later)
+    // CREATE USER
     if (req.method === 'POST' && action === 'create') {
       const { email, baseRole, permissions, name, accessProfileId } = requestData;
       
-      if (!email || !baseRole) {
-        return new Response(JSON.stringify({ error: 'Missing required fields (email, baseRole)' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!email || !baseRole) return jsonResponse({ error: 'Missing required fields (email, baseRole)' }, 400);
       
       const validRoles = ['admin', 'gestor', 'operador', 'visualizador'];
-      if (!validRoles.includes(baseRole)) {
-        return new Response(JSON.stringify({ error: 'Invalid role' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!validRoles.includes(baseRole)) return jsonResponse({ error: 'Invalid role' }, 400);
 
-      // Generate random internal password (user will never see this)
+      // Generate random internal password
       const array = new Uint8Array(32);
       crypto.getRandomValues(array);
       const internalPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 24);
@@ -186,104 +162,177 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       if (createError) {
-        return new Response(JSON.stringify({ error: createError.message }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        console.error('Error creating user:', createError);
+        return jsonResponse({ error: createError.message }, 400);
       }
 
       const newUserId = createData.user!.id;
+      console.log(`Created auth user: ${newUserId}`);
 
-      await supabaseAdmin.from('usuarios').insert({ id: newUserId, email });
+      const { error: usuarioErr } = await supabaseAdmin.from('usuarios').insert({ id: newUserId, email });
+      if (usuarioErr) console.error('Error inserting into usuarios:', usuarioErr);
 
       const roleInsert: any = { user_id: newUserId, role: baseRole };
       if (accessProfileId) roleInsert.access_profile_id = accessProfileId;
-      await supabaseAdmin.from('user_roles').insert(roleInsert);
+      const { error: roleInsertErr } = await supabaseAdmin.from('user_roles').insert(roleInsert);
+      if (roleInsertErr) console.error('Error inserting role:', roleInsertErr);
 
       if (permissions) {
         const permissionRecords = Object.entries(permissions)
           .filter(([_, level]) => level !== 'none')
           .map(([module, level]) => ({ user_id: newUserId, module, permission: level }));
         if (permissionRecords.length > 0) {
-          await supabaseAdmin.from('user_module_permissions').insert(permissionRecords);
+          const { error: permErr } = await supabaseAdmin.from('user_module_permissions').insert(permissionRecords);
+          if (permErr) console.error('Error inserting permissions:', permErr);
         }
       }
 
-      return new Response(JSON.stringify({ 
-        success: true, 
-        user: createData.user,
-        message: 'Usuário criado com sucesso!'
-      }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return jsonResponse({ success: true, user: createData.user, message: 'Usuário criado com sucesso!' });
     }
 
-    // UPDATE USER PERMISSIONS
+    // UPDATE USER PERMISSIONS - Made atomic and safe
     if (req.method === 'POST' && action === 'update-permissions') {
-      const { userId, baseRole, permissions } = requestData;
-      if (!userId) {
-        return new Response(JSON.stringify({ error: 'Missing userId' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      const { userId, baseRole, permissions, accessProfileId } = requestData;
+      if (!userId) return jsonResponse({ error: 'Missing userId' }, 400);
+
+      console.log(`update-permissions: userId=${userId}, baseRole=${baseRole}, callerUserId=${user.id}`);
+
+      // Update role using upsert pattern (safe - no gap without role)
       if (baseRole) {
-        await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
-        await supabaseAdmin.from('user_roles').insert({ user_id: userId, role: baseRole });
+        // First try to update existing row
+        const { data: existingRole, error: checkErr } = await supabaseAdmin
+          .from('user_roles')
+          .select('id, role, access_profile_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (checkErr) {
+          console.error('Error checking existing role:', checkErr);
+          return jsonResponse({ error: 'Failed to check existing role' }, 500);
+        }
+
+        if (existingRole) {
+          // Update existing role - preserving access_profile_id if not provided
+          const updateData: any = { role: baseRole };
+          if (accessProfileId !== undefined) {
+            updateData.access_profile_id = accessProfileId;
+          }
+          
+          const { error: updateErr } = await supabaseAdmin
+            .from('user_roles')
+            .update(updateData)
+            .eq('user_id', userId);
+
+          if (updateErr) {
+            console.error('Error updating role:', updateErr);
+            return jsonResponse({ error: 'Failed to update role: ' + updateErr.message }, 500);
+          }
+          console.log(`Updated role for ${userId}: ${existingRole.role} -> ${baseRole}`);
+        } else {
+          // Insert new role
+          const insertData: any = { user_id: userId, role: baseRole };
+          if (accessProfileId) insertData.access_profile_id = accessProfileId;
+          
+          const { error: insertErr } = await supabaseAdmin
+            .from('user_roles')
+            .insert(insertData);
+
+          if (insertErr) {
+            console.error('Error inserting role:', insertErr);
+            return jsonResponse({ error: 'Failed to insert role: ' + insertErr.message }, 500);
+          }
+          console.log(`Inserted new role for ${userId}: ${baseRole}`);
+        }
       }
+
+      // Update module permissions
       if (permissions) {
-        await supabaseAdmin.from('user_module_permissions').delete().eq('user_id', userId);
+        // Delete old permissions
+        const { error: delErr } = await supabaseAdmin
+          .from('user_module_permissions')
+          .delete()
+          .eq('user_id', userId);
+
+        if (delErr) {
+          console.error('Error deleting old permissions:', delErr);
+          return jsonResponse({ error: 'Failed to clear old permissions: ' + delErr.message }, 500);
+        }
+
+        // Insert new permissions
         const permissionRecords = Object.entries(permissions)
           .filter(([_, level]) => level !== 'none')
           .map(([module, level]) => ({ user_id: userId, module, permission: level }));
+        
         if (permissionRecords.length > 0) {
-          await supabaseAdmin.from('user_module_permissions').insert(permissionRecords);
+          const { error: insErr } = await supabaseAdmin
+            .from('user_module_permissions')
+            .insert(permissionRecords);
+
+          if (insErr) {
+            console.error('Error inserting new permissions:', insErr);
+            return jsonResponse({ error: 'Failed to insert permissions: ' + insErr.message }, 500);
+          }
         }
+        
+        console.log(`Updated ${permissionRecords.length} permissions for ${userId}`);
       }
-      return new Response(JSON.stringify({ success: true, message: 'Permissions updated' }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+
+      return jsonResponse({ success: true, message: 'Permissions updated' });
     }
 
     // BAN USER
     if (req.method === 'POST' && action === 'ban-user') {
       const { userId } = requestData;
-      if (!userId) return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!userId) return jsonResponse({ error: 'Missing userId' }, 400);
+      if (userId === user.id) return jsonResponse({ success: false, error: 'Você não pode banir a si mesmo' }, 400);
       const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: '876000h' });
-      if (banError) return new Response(JSON.stringify({ success: false, error: banError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      return new Response(JSON.stringify({ success: true, message: 'User banned' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (banError) {
+        console.error('Error banning user:', banError);
+        return jsonResponse({ success: false, error: banError.message }, 500);
+      }
+      return jsonResponse({ success: true, message: 'User banned' });
     }
 
     // UNBAN USER
     if (req.method === 'POST' && action === 'unban-user') {
       const { userId } = requestData;
-      if (!userId) return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!userId) return jsonResponse({ error: 'Missing userId' }, 400);
       const { error: unbanError } = await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: 'none' });
-      if (unbanError) return new Response(JSON.stringify({ success: false, error: unbanError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      return new Response(JSON.stringify({ success: true, message: 'User unbanned' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (unbanError) {
+        console.error('Error unbanning user:', unbanError);
+        return jsonResponse({ success: false, error: unbanError.message }, 500);
+      }
+      return jsonResponse({ success: true, message: 'User unbanned' });
     }
 
     // DELETE USER
     if (req.method === 'POST' && action === 'delete-user') {
       const { userId } = requestData;
-      if (!userId) return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      if (userId === user.id) return new Response(JSON.stringify({ success: false, error: 'Você não pode excluir sua própria conta' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!userId) return jsonResponse({ error: 'Missing userId' }, 400);
+      if (userId === user.id) return jsonResponse({ success: false, error: 'Você não pode excluir sua própria conta' }, 400);
+      
+      console.log(`Deleting user: ${userId}`);
       await supabaseAdmin.from('user_module_permissions').delete().eq('user_id', userId);
       await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
       await supabaseAdmin.from('user_last_seen').delete().eq('user_id', userId);
       await supabaseAdmin.from('usuarios').delete().eq('id', userId);
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      if (deleteError) return new Response(JSON.stringify({ success: false, error: deleteError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      return new Response(JSON.stringify({ success: true, message: 'User deleted' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (deleteError) {
+        console.error('Error deleting user:', deleteError);
+        return jsonResponse({ success: false, error: deleteError.message }, 500);
+      }
+      return jsonResponse({ success: true, message: 'User deleted' });
     }
 
     // BULK ACTION
     if (req.method === 'POST' && action === 'bulk-action') {
       const { userIds, bulkAction } = requestData;
       if (!userIds || !Array.isArray(userIds) || userIds.length === 0 || !bulkAction) {
-        return new Response(JSON.stringify({ error: 'Missing userIds or bulkAction' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return jsonResponse({ error: 'Missing userIds or bulkAction' }, 400);
       }
       const safeIds = userIds.filter((id: string) => id !== user.id);
       if (safeIds.length === 0) {
-        return new Response(JSON.stringify({ success: false, error: 'Nenhum usuário válido para a ação' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return jsonResponse({ success: false, error: 'Nenhum usuário válido para a ação' }, 400);
       }
       const results: { id: string; success: boolean; error?: string }[] = [];
       for (const uid of safeIds) {
@@ -308,28 +357,27 @@ const handler = async (req: Request): Promise<Response> => {
       }
       const successCount = results.filter(r => r.success).length;
       const failCount = results.filter(r => !r.success).length;
-      return new Response(JSON.stringify({ 
+      return jsonResponse({ 
         success: true, 
         message: `${successCount} usuário(s) processado(s)${failCount > 0 ? `, ${failCount} falha(s)` : ''}`,
         results 
-      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      });
     }
 
-    // RESET ACCESS (force first-access flow again)
+    // RESET ACCESS
     if (req.method === 'POST' && action === 'reset-access') {
       const { userId } = requestData;
-      if (!userId) return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      if (userId === user.id) return new Response(JSON.stringify({ success: false, error: 'Você não pode resetar seu próprio acesso' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!userId) return jsonResponse({ error: 'Missing userId' }, 400);
+      if (userId === user.id) return jsonResponse({ success: false, error: 'Você não pode resetar seu próprio acesso' }, 400);
 
-      // Generate random internal password (user will never know this)
       const array = new Uint8Array(32);
       crypto.getRandomValues(array);
       const internalPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 24);
 
-      // Update password to random + set must_change_password flag
       const { data: targetUser, error: fetchErr } = await supabaseAdmin.auth.admin.getUserById(userId);
       if (fetchErr || !targetUser?.user) {
-        return new Response(JSON.stringify({ success: false, error: 'Usuário não encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('Error fetching user for reset:', fetchErr);
+        return jsonResponse({ success: false, error: 'Usuário não encontrado' }, 404);
       }
 
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
@@ -339,22 +387,40 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       if (updateError) {
-        return new Response(JSON.stringify({ success: false, error: updateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error('Error resetting access:', updateError);
+        return jsonResponse({ success: false, error: updateError.message }, 500);
       }
 
-      return new Response(JSON.stringify({ success: true, message: 'Acesso resetado. O usuário precisará definir uma nova senha no próximo login.' }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return jsonResponse({ success: true, message: 'Acesso resetado. O usuário precisará definir uma nova senha no próximo login.' });
     }
 
     // UPDATE USER (legacy)
     if (req.method === 'POST' && action === 'update') {
       const { userId, role, resetPassword } = requestData;
-      if (!userId) return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!userId) return jsonResponse({ error: 'Missing userId' }, 400);
+      
       if (role) {
-        await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
-        await supabaseAdmin.from('user_roles').insert({ user_id: userId, role });
+        // Use safe update pattern instead of delete+insert
+        const { data: existing } = await supabaseAdmin
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (existing) {
+          const { error: updateErr } = await supabaseAdmin
+            .from('user_roles')
+            .update({ role })
+            .eq('user_id', userId);
+          if (updateErr) console.error('Error updating role:', updateErr);
+        } else {
+          const { error: insertErr } = await supabaseAdmin
+            .from('user_roles')
+            .insert({ user_id: userId, role });
+          if (insertErr) console.error('Error inserting role:', insertErr);
+        }
       }
+      
       if (resetPassword) {
         const array = new Uint8Array(16);
         crypto.getRandomValues(array);
@@ -363,19 +429,31 @@ const handler = async (req: Request): Promise<Response> => {
           password: tempPassword,
           user_metadata: { must_change_password: true }
         });
-        if (passwordError) return new Response(JSON.stringify({ error: 'Failed to reset password' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        return new Response(JSON.stringify({ success: true, temporaryPassword: tempPassword, message: 'Password reset successfully' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        if (passwordError) {
+          console.error('Error resetting password:', passwordError);
+          return jsonResponse({ error: 'Failed to reset password' }, 500);
+        }
+        return jsonResponse({ success: true, temporaryPassword: tempPassword, message: 'Password reset successfully' });
       }
-      return new Response(JSON.stringify({ success: true, message: 'User updated' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return jsonResponse({ success: true, message: 'User updated' });
     }
 
-    // LIST USERS
+    // LIST USERS (default action for GET or POST without specific action)
+    console.log('Listing users...');
     const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
-    if (usersError) return new Response(JSON.stringify({ error: 'Failed to fetch users' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (usersError) {
+      console.error('Error listing users:', usersError);
+      return jsonResponse({ error: 'Failed to fetch users' }, 500);
+    }
 
-    const { data: roles } = await supabaseAdmin.from('user_roles').select('user_id, role');
-    const { data: allPermissions } = await supabaseAdmin.from('user_module_permissions').select('*');
-    const { data: lastSeenData } = await supabaseAdmin.from('user_last_seen').select('user_id, last_seen_at');
+    const { data: roles, error: rolesErr } = await supabaseAdmin.from('user_roles').select('user_id, role, access_profile_id');
+    if (rolesErr) console.error('Error fetching roles:', rolesErr);
+    
+    const { data: allPermissions, error: permsErr } = await supabaseAdmin.from('user_module_permissions').select('*');
+    if (permsErr) console.error('Error fetching permissions:', permsErr);
+    
+    const { data: lastSeenData, error: lastSeenErr } = await supabaseAdmin.from('user_last_seen').select('user_id, last_seen_at');
+    if (lastSeenErr) console.error('Error fetching last_seen:', lastSeenErr);
 
     const lastSeenMap: Record<string, string> = {};
     if (lastSeenData) {
@@ -412,15 +490,15 @@ const handler = async (req: Request): Promise<Response> => {
       };
     });
 
-    return new Response(JSON.stringify({ success: true, users: usersWithRoles }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.log(`Listed ${usersWithRoles.length} users`);
+    return jsonResponse({ success: true, users: usersWithRoles });
 
   } catch (error) {
-    console.error('Error in manage-users function:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error', details: (error as any)?.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error('Unhandled error in manage-users function:', error);
+    return jsonResponse({ 
+      error: 'Internal server error', 
+      details: (error as any)?.message || 'Unknown error'
+    }, 500);
   }
 };
 

@@ -59,34 +59,46 @@ export const EditAccessProfileModal = ({ user, open, onOpenChange, onUserUpdated
   const handleSave = async () => {
     setIsLoading(true)
     try {
-      const profileValue = selectedProfileId || null
       const selectedProfile = profiles.find(p => p.id === selectedProfileId)
-
-      // 1. Update the access_profile_id reference
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ access_profile_id: profileValue })
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      // 2. Sync the profile's permissions to user_module_permissions
       const permissions = selectedProfile?.permissions || {}
       const baseRole = selectedProfile?.base_role || 'visualizador'
+      const profileValue = selectedProfileId || null
 
+      // Single call to edge function - updates role, permissions, and profile atomically
       const response = await supabase.functions.invoke('manage-users', {
         body: {
           action: 'update-permissions',
           userId: user.id,
           baseRole,
-          permissions
+          permissions,
+          accessProfileId: profileValue
         }
       })
 
       if (response.error) {
+        // Try to extract detailed error message
+        let errorMsg = 'Falha ao sincronizar permissões'
+        try {
+          const errorData = typeof response.error === 'object' && response.error.message 
+            ? response.error.message 
+            : JSON.stringify(response.error)
+          errorMsg = errorData
+        } catch {}
+        
         console.error('Error syncing permissions:', response.error)
-        throw new Error(response.error.message || 'Falha ao sincronizar permissões')
+        throw new Error(errorMsg)
       }
+
+      // Check response data for errors
+      if (response.data && !response.data.success) {
+        throw new Error(response.data.error || 'Falha ao atualizar permissões')
+      }
+
+      // Also update the access_profile_id reference directly (backup)
+      await supabase
+        .from('user_roles')
+        .update({ access_profile_id: profileValue })
+        .eq('user_id', user.id)
 
       toast({
         title: 'Perfil atualizado',
@@ -95,9 +107,10 @@ export const EditAccessProfileModal = ({ user, open, onOpenChange, onUserUpdated
       onUserUpdated()
       onOpenChange(false)
     } catch (error: any) {
+      console.error('EditAccessProfileModal error:', error)
       toast({
-        title: 'Erro',
-        description: error.message || 'Falha ao atualizar perfil',
+        title: 'Erro ao atualizar perfil',
+        description: error.message || 'Falha ao atualizar perfil. Tente novamente.',
         variant: 'destructive'
       })
     } finally {
