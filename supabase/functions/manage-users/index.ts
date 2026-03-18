@@ -137,14 +137,63 @@ const handler = async (req: Request): Promise<Response> => {
       return jsonResponse({ success: false, error: 'Admin role required' }, 403);
     }
 
+    const validRoles = ['admin', 'gestor', 'operador', 'visualizador'];
+
+    const resolveAccessPayload = async (
+      payloadBaseRole?: string,
+      payloadPermissions?: Record<string, string>,
+      payloadAccessProfileId?: string | null,
+    ) => {
+      const normalizedAccessProfileId = payloadAccessProfileId && payloadAccessProfileId !== 'none'
+        ? payloadAccessProfileId
+        : null;
+
+      let resolvedBaseRole = payloadBaseRole;
+      let resolvedPermissions = payloadPermissions || {};
+
+      if (normalizedAccessProfileId) {
+        const { data: profile, error: profileError } = await supabaseAdmin
+          .from('access_profiles')
+          .select('id, base_role, permissions')
+          .eq('id', normalizedAccessProfileId)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error('Error fetching access profile:', profileError);
+          return { error: 'Failed to load access profile: ' + profileError.message };
+        }
+
+        if (!profile) {
+          return { error: 'Access profile not found' };
+        }
+
+        resolvedBaseRole = profile.base_role;
+        resolvedPermissions = (profile.permissions as Record<string, string>) || {};
+      }
+
+      if (!resolvedBaseRole || !validRoles.includes(resolvedBaseRole)) {
+        return { error: 'Invalid role' };
+      }
+
+      return {
+        accessProfileId: normalizedAccessProfileId,
+        baseRole: resolvedBaseRole,
+        permissions: resolvedPermissions,
+      };
+    };
+
     // CREATE USER
     if (req.method === 'POST' && action === 'create') {
       const { email, baseRole, permissions, name, accessProfileId } = requestData;
-      
-      if (!email || !baseRole) return jsonResponse({ error: 'Missing required fields (email, baseRole)' }, 400);
-      
-      const validRoles = ['admin', 'gestor', 'operador', 'visualizador'];
-      if (!validRoles.includes(baseRole)) return jsonResponse({ error: 'Invalid role' }, 400);
+
+      if (!email) return jsonResponse({ error: 'Missing required field (email)' }, 400);
+
+      const resolvedPayload = await resolveAccessPayload(baseRole, permissions, accessProfileId);
+      if ('error' in resolvedPayload) {
+        return jsonResponse({ error: resolvedPayload.error }, 400);
+      }
+
+      const { baseRole: resolvedBaseRole, permissions: resolvedPermissions, accessProfileId: resolvedAccessProfileId } = resolvedPayload;
 
       // Generate random internal password
       const array = new Uint8Array(32);
@@ -155,7 +204,7 @@ const handler = async (req: Request): Promise<Response> => {
         email,
         password: internalPassword,
         email_confirm: true,
-        user_metadata: { 
+        user_metadata: {
           display_name: name || undefined,
           must_change_password: true
         }
@@ -172,111 +221,106 @@ const handler = async (req: Request): Promise<Response> => {
       const { error: usuarioErr } = await supabaseAdmin.from('usuarios').insert({ id: newUserId, email });
       if (usuarioErr) console.error('Error inserting into usuarios:', usuarioErr);
 
-      const roleInsert: any = { user_id: newUserId, role: baseRole };
-      if (accessProfileId) roleInsert.access_profile_id = accessProfileId;
+      const roleInsert: any = { user_id: newUserId, role: resolvedBaseRole };
+      if (resolvedAccessProfileId) roleInsert.access_profile_id = resolvedAccessProfileId;
       const { error: roleInsertErr } = await supabaseAdmin.from('user_roles').insert(roleInsert);
       if (roleInsertErr) console.error('Error inserting role:', roleInsertErr);
 
-      if (permissions) {
-        const permissionRecords = Object.entries(permissions)
-          .filter(([_, level]) => level !== 'none')
-          .map(([module, level]) => ({ user_id: newUserId, module, permission: level }));
-        if (permissionRecords.length > 0) {
-          const { error: permErr } = await supabaseAdmin.from('user_module_permissions').insert(permissionRecords);
-          if (permErr) console.error('Error inserting permissions:', permErr);
-        }
+      const permissionRecords = Object.entries(resolvedPermissions)
+        .filter(([_, level]) => level !== 'none')
+        .map(([module, level]) => ({ user_id: newUserId, module, permission: level }));
+
+      if (permissionRecords.length > 0) {
+        const { error: permErr } = await supabaseAdmin.from('user_module_permissions').insert(permissionRecords);
+        if (permErr) console.error('Error inserting permissions:', permErr);
       }
 
       return jsonResponse({ success: true, user: createData.user, message: 'Usuário criado com sucesso!' });
     }
 
-    // UPDATE USER PERMISSIONS - Made atomic and safe
+    // UPDATE USER PERMISSIONS - profile is the source of truth when linked
     if (req.method === 'POST' && action === 'update-permissions') {
       const { userId, baseRole, permissions, accessProfileId } = requestData;
       if (!userId) return jsonResponse({ error: 'Missing userId' }, 400);
 
-      console.log(`update-permissions: userId=${userId}, baseRole=${baseRole}, callerUserId=${user.id}`);
-
-      // Update role using upsert pattern (safe - no gap without role)
-      if (baseRole) {
-        // First try to update existing row
-        const { data: existingRole, error: checkErr } = await supabaseAdmin
-          .from('user_roles')
-          .select('id, role, access_profile_id')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (checkErr) {
-          console.error('Error checking existing role:', checkErr);
-          return jsonResponse({ error: 'Failed to check existing role' }, 500);
-        }
-
-        if (existingRole) {
-          // Update existing role - preserving access_profile_id if not provided
-          const updateData: any = { role: baseRole };
-          if (accessProfileId !== undefined) {
-            updateData.access_profile_id = accessProfileId;
-          }
-          
-          const { error: updateErr } = await supabaseAdmin
-            .from('user_roles')
-            .update(updateData)
-            .eq('user_id', userId);
-
-          if (updateErr) {
-            console.error('Error updating role:', updateErr);
-            return jsonResponse({ error: 'Failed to update role: ' + updateErr.message }, 500);
-          }
-          console.log(`Updated role for ${userId}: ${existingRole.role} -> ${baseRole}`);
-        } else {
-          // Insert new role
-          const insertData: any = { user_id: userId, role: baseRole };
-          if (accessProfileId) insertData.access_profile_id = accessProfileId;
-          
-          const { error: insertErr } = await supabaseAdmin
-            .from('user_roles')
-            .insert(insertData);
-
-          if (insertErr) {
-            console.error('Error inserting role:', insertErr);
-            return jsonResponse({ error: 'Failed to insert role: ' + insertErr.message }, 500);
-          }
-          console.log(`Inserted new role for ${userId}: ${baseRole}`);
-        }
+      const resolvedPayload = await resolveAccessPayload(baseRole, permissions, accessProfileId);
+      if ('error' in resolvedPayload) {
+        return jsonResponse({ error: resolvedPayload.error }, 400);
       }
 
-      // Update module permissions
-      if (permissions) {
-        // Delete old permissions
-        const { error: delErr } = await supabaseAdmin
-          .from('user_module_permissions')
-          .delete()
+      const {
+        baseRole: resolvedBaseRole,
+        permissions: resolvedPermissions,
+        accessProfileId: resolvedAccessProfileId,
+      } = resolvedPayload;
+
+      console.log(`update-permissions: userId=${userId}, resolvedBaseRole=${resolvedBaseRole}, accessProfileId=${resolvedAccessProfileId}, callerUserId=${user.id}`);
+
+      const { data: existingRole, error: checkErr } = await supabaseAdmin
+        .from('user_roles')
+        .select('id, role, access_profile_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (checkErr) {
+        console.error('Error checking existing role:', checkErr);
+        return jsonResponse({ error: 'Failed to check existing role' }, 500);
+      }
+
+      if (existingRole) {
+        const { error: updateErr } = await supabaseAdmin
+          .from('user_roles')
+          .update({
+            role: resolvedBaseRole,
+            access_profile_id: resolvedAccessProfileId,
+          })
           .eq('user_id', userId);
 
-        if (delErr) {
-          console.error('Error deleting old permissions:', delErr);
-          return jsonResponse({ error: 'Failed to clear old permissions: ' + delErr.message }, 500);
+        if (updateErr) {
+          console.error('Error updating role:', updateErr);
+          return jsonResponse({ error: 'Failed to update role: ' + updateErr.message }, 500);
         }
+      } else {
+        const { error: insertErr } = await supabaseAdmin
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: resolvedBaseRole,
+            access_profile_id: resolvedAccessProfileId,
+          });
 
-        // Insert new permissions
-        const permissionRecords = Object.entries(permissions)
-          .filter(([_, level]) => level !== 'none')
-          .map(([module, level]) => ({ user_id: userId, module, permission: level }));
-        
-        if (permissionRecords.length > 0) {
-          const { error: insErr } = await supabaseAdmin
-            .from('user_module_permissions')
-            .insert(permissionRecords);
-
-          if (insErr) {
-            console.error('Error inserting new permissions:', insErr);
-            return jsonResponse({ error: 'Failed to insert permissions: ' + insErr.message }, 500);
-          }
+        if (insertErr) {
+          console.error('Error inserting role:', insertErr);
+          return jsonResponse({ error: 'Failed to insert role: ' + insertErr.message }, 500);
         }
-        
-        console.log(`Updated ${permissionRecords.length} permissions for ${userId}`);
       }
 
+      const { error: delErr } = await supabaseAdmin
+        .from('user_module_permissions')
+        .delete()
+        .eq('user_id', userId);
+
+      if (delErr) {
+        console.error('Error deleting old permissions:', delErr);
+        return jsonResponse({ error: 'Failed to clear old permissions: ' + delErr.message }, 500);
+      }
+
+      const permissionRecords = Object.entries(resolvedPermissions)
+        .filter(([_, level]) => level !== 'none')
+        .map(([module, level]) => ({ user_id: userId, module, permission: level }));
+
+      if (permissionRecords.length > 0) {
+        const { error: insErr } = await supabaseAdmin
+          .from('user_module_permissions')
+          .insert(permissionRecords);
+
+        if (insErr) {
+          console.error('Error inserting new permissions:', insErr);
+          return jsonResponse({ error: 'Failed to insert permissions: ' + insErr.message }, 500);
+        }
+      }
+
+      console.log(`Synchronized ${permissionRecords.length} permissions for ${userId}`);
       return jsonResponse({ success: true, message: 'Permissions updated' });
     }
 
