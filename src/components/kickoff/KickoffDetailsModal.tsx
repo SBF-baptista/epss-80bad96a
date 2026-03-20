@@ -1014,7 +1014,7 @@ export const KickoffDetailsModal = ({
               {/* Customer Info Card */}
               {customerInfo && (
                 <div className="bg-muted/50 border rounded-lg p-3 mb-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
                       <p className="font-semibold mt-1">{customerInfo.name}</p>
@@ -1022,10 +1022,6 @@ export const KickoffDetailsModal = ({
                     <div>
                       <Label className="text-xs text-muted-foreground">Cidade</Label>
                       <p className="font-semibold mt-1">{customerInfo.city}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Estado</Label>
-                      <p className="font-semibold mt-1">{customerInfo.state}</p>
                     </div>
                   </div>
                 </div>
