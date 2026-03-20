@@ -14,7 +14,7 @@ import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
-import { useToast } from "@/hooks/use-toast";
+
 import { motion } from "framer-motion";
 
 const Kickoff = () => {
@@ -23,7 +23,6 @@ const Kickoff = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { toast } = useToast();
 
   const {
     data: kickoffData,
@@ -57,21 +56,9 @@ const Kickoff = () => {
     staleTime: 30000,
   });
 
-  const handleRealtimeUpdate = () => {
-    toast({
-      title: "Dados atualizados",
-      description: "Novos dados do Segsale foram recebidos automaticamente.",
-    });
-  };
-
-  useRealtimeSubscription("accessories", ["kickoff-data"], undefined, handleRealtimeUpdate);
-  useRealtimeSubscription("incoming_vehicles", ["kickoff-data"], undefined, handleRealtimeUpdate);
-  useRealtimeSubscription("kickoff_history", ["kickoff-history"], undefined, () => {
-    toast({
-      title: "Histórico atualizado",
-      description: "Novo kickoff foi aprovado.",
-    });
-  });
+  useRealtimeSubscription("accessories", ["kickoff-data"]);
+  useRealtimeSubscription("incoming_vehicles", ["kickoff-data"]);
+  useRealtimeSubscription("kickoff_history", ["kickoff-history"]);
 
   const handleEditKickoff = (saleSummaryId: number, companyName: string) => {
     setSelectedSaleSummaryId(saleSummaryId);
