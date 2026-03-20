@@ -14,7 +14,7 @@ import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
-import { useToast } from "@/hooks/use-toast";
+
 import { motion } from "framer-motion";
 
 const Kickoff = () => {
