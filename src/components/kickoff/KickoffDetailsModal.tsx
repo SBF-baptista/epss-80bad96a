@@ -262,8 +262,14 @@ export const KickoffDetailsModal = ({
   const [customerInfo, setCustomerInfo] = useState<{
     name: string;
     services: string[];
+    cnpj: string;
+    phone: string;
+    street: string;
+    number: string;
+    neighborhood: string;
     city: string;
     state: string;
+    cep: string;
   } | null>(null);
 
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -447,17 +453,35 @@ export const KickoffDetailsModal = ({
 
         // Load customer info from customers table
         const modules = Array.isArray(customerData.modules) ? customerData.modules : [];
+        
+        // Try to get UF from CEP if state is missing
+        let resolvedState = customerData.address_state || "";
+        if (!resolvedState && customerData.address_postal_code) {
+          try {
+            const cepData = await fetchAddressByCEP(customerData.address_postal_code);
+            if (cepData) resolvedState = cepData.uf;
+          } catch (e) {
+            console.warn("Could not resolve UF from CEP:", e);
+          }
+        }
+        
         setCustomerInfo({
           name: customerData.company_name || customerData.name || companyName || "Cliente não identificado",
           services: modules,
+          cnpj: customerData.document_number || "Não informado",
+          phone: customerData.phone || "Não informado",
+          street: customerData.address_street || "Não informado",
+          number: customerData.address_number || "S/N",
+          neighborhood: customerData.address_neighborhood || "Não informado",
           city: customerData.address_city || "Não informado",
-          state: customerData.address_state || "Não informado",
+          state: resolvedState || "Não informado",
+          cep: customerData.address_postal_code || "Não informado",
         });
       } else {
         // If no customer data, get from incoming_vehicles
         const { data: vehicleData } = await supabase
           .from("incoming_vehicles")
-          .select("company_name, address_city, received_at")
+          .select("company_name, cpf, phone, address_city, address_district, address_street, address_number, address_zip_code, received_at")
           .eq("sale_summary_id", saleSummaryId)
           .order("received_at", { ascending: true })
           .limit(1)
@@ -466,19 +490,42 @@ export const KickoffDetailsModal = ({
         if (vehicleData) {
           setKickoffCreatedAt(new Date(vehicleData.received_at));
 
+          // Resolve UF from CEP
+          let resolvedState = "";
+          if (vehicleData.address_zip_code) {
+            try {
+              const cepData = await fetchAddressByCEP(vehicleData.address_zip_code);
+              if (cepData) resolvedState = cepData.uf;
+            } catch (e) {
+              console.warn("Could not resolve UF from CEP:", e);
+            }
+          }
+
           setCustomerInfo({
             name: vehicleData.company_name || companyName || "Cliente não identificado",
             services: [],
+            cnpj: vehicleData.cpf || "Não informado",
+            phone: vehicleData.phone || "Não informado",
+            street: vehicleData.address_street || "Não informado",
+            number: vehicleData.address_number || "S/N",
+            neighborhood: vehicleData.address_district || "Não informado",
             city: vehicleData.address_city || "Não informado",
-            state: "SP",
+            state: resolvedState || "Não informado",
+            cep: vehicleData.address_zip_code || "Não informado",
           });
         } else {
           // Final fallback
           setCustomerInfo({
             name: companyName || "Cliente não identificado",
             services: [],
+            cnpj: "Não informado",
+            phone: "Não informado",
+            street: "Não informado",
+            number: "S/N",
+            neighborhood: "Não informado",
             city: "Não informado",
             state: "Não informado",
+            cep: "Não informado",
           });
         }
       }
@@ -499,12 +546,17 @@ export const KickoffDetailsModal = ({
       }
     } catch (error) {
       console.error("Error loading customer data:", error);
-      // Set basic info from props as fallback
       setCustomerInfo({
         name: companyName || "Cliente não identificado",
         services: [],
+        cnpj: "Não informado",
+        phone: "Não informado",
+        street: "Não informado",
+        number: "S/N",
+        neighborhood: "Não informado",
         city: "Não informado",
         state: "Não informado",
+        cep: "Não informado",
       });
     }
   };
@@ -1013,15 +1065,47 @@ export const KickoffDetailsModal = ({
 
               {/* Customer Info Card */}
               {customerInfo && (
-                <div className="bg-muted/50 border rounded-lg p-3 mb-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-muted/50 border rounded-lg p-4 mb-4 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
                     <div>
                       <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
-                      <p className="font-semibold mt-1">{customerInfo.name}</p>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.name}</p>
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Cidade</Label>
-                      <p className="font-semibold mt-1">{customerInfo.city}</p>
+                      <Label className="text-xs text-muted-foreground">CNPJ/CPF</Label>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.cnpj}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Telefone</Label>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.phone}</p>
+                    </div>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2">
+                      <div className="col-span-2">
+                        <Label className="text-xs text-muted-foreground">Rua</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.street}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Número</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.number}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Bairro</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.neighborhood}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Cidade</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.city}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">UF</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.state}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <Label className="text-xs text-muted-foreground">CEP</Label>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.cep}</p>
                     </div>
                   </div>
                 </div>
