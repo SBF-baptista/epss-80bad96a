@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info, Phone, Clock, Copy, Check } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlateSelectionModal } from "./PlateSelectionModal";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
@@ -1056,133 +1056,99 @@ export const KickoffDetailsModal = ({
               </div>
 
               {/* Customer Info Card - Executive Summary */}
-              {customerInfo && (() => {
-                const days = calculateDaysSinceKickoff();
-                const daysNum = days;
-                const statusColor = daysNum > 10
-                  ? "border-red-300 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
-                  : daysNum >= 6
-                    ? "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
-                    : "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800";
-
-                return (
-                <div className="rounded-xl bg-card shadow-[0_1px_3px_0_hsl(var(--foreground)/0.06),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] mb-5 overflow-hidden">
-                  {/* Header */}
-                  <div className="px-6 pt-5 pb-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <h4 className="text-xl font-bold text-foreground leading-snug tracking-tight">{customerInfo.name}</h4>
-                        {customerInfo.cnpj !== "Não informado" && (
-                          <p className="text-sm text-muted-foreground font-mono tracking-wide">{customerInfo.cnpj}</p>
-                        )}
-                      </div>
-                      {kickoffCreatedAt && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge variant="outline" className={`shrink-0 text-xs font-semibold gap-1.5 py-1 px-2.5 ${statusColor}`}>
-                                <Clock className="h-3 w-3" />
-                                {days} dias
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Kickoff em andamento há {days} dias</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+              {customerInfo && (
+                <div className="rounded-xl border bg-card shadow-sm mb-4 overflow-hidden">
+                  {/* Header: Client name + Status badge */}
+                  <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Cliente</p>
+                      <h4 className="text-lg font-bold text-foreground leading-tight truncate">{customerInfo.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">{customerInfo.cnpj !== "Não informado" ? `CNPJ/CPF: ${customerInfo.cnpj}` : ""}</p>
                     </div>
+                    {kickoffCreatedAt && (
+                      <Badge variant="outline" className="shrink-0 text-xs font-medium border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800">
+                        Em andamento há {calculateDaysSinceKickoff()} dias
+                      </Badge>
+                    )}
                   </div>
 
-                  {/* Content */}
-                  <div className="grid grid-cols-1 md:grid-cols-5 bg-muted/30">
-                    {/* Contact - narrower */}
-                    <div className="md:col-span-2 px-6 py-4">
+                  {/* Content: Two grouped sections */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-0 border-t">
+                    {/* Contact Section */}
+                    <div className="px-5 py-4 md:border-r">
                       <div className="flex items-center gap-1.5 mb-3">
-                        <Phone className="h-3.5 w-3.5 text-primary/70" />
-                        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Contato</p>
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contato</p>
                       </div>
-                      <div className="space-y-3">
-                        {customerInfo.phone !== "Não informado" && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="flex items-center gap-2.5 group cursor-pointer hover:bg-background/60 -mx-2 px-2 py-1 rounded-md transition-colors w-full text-left"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(customerInfo.phone);
-                                    toast.success("Telefone copiado!");
-                                  }}
-                                >
-                                  <span className="text-sm font-semibold text-foreground">{customerInfo.phone}</span>
-                                  <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Clique para copiar</p></TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        {customerInfo.phone === "Não informado" && (
-                          <p className="text-sm text-muted-foreground italic">Telefone não informado</p>
-                        )}
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2 group">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-xs text-muted-foreground w-20 shrink-0">Telefone</span>
+                            <span className="text-sm font-medium text-foreground truncate">{customerInfo.phone}</span>
+                          </div>
+                          {customerInfo.phone !== "Não informado" && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                              onClick={() => {
+                                navigator.clipboard.writeText(customerInfo.phone);
+                                toast.success("Telefone copiado!");
+                              }}
+                            >
+                              <FileText className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-20 shrink-0">CNPJ/CPF</span>
+                          <span className="text-sm font-medium text-foreground truncate">{customerInfo.cnpj}</span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Address - wider */}
-                    <div className="md:col-span-3 px-6 py-4 border-t md:border-t-0 md:border-l border-border/40">
+                    {/* Address Section */}
+                    <div className="px-5 py-4 border-t md:border-t-0">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 text-primary/70" />
-                          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Endereço</p>
+                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Endereço</p>
                         </div>
                         {customerInfo.street !== "Não informado" && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 text-xs px-2.5 gap-1.5 text-muted-foreground hover:text-foreground"
-                                  onClick={() => {
-                                    const fullAddress = `${customerInfo.street}, ${customerInfo.number} - ${customerInfo.neighborhood}, ${customerInfo.city}/${customerInfo.state} - CEP ${customerInfo.cep}`;
-                                    navigator.clipboard.writeText(fullAddress);
-                                    toast.success("Endereço copiado!");
-                                  }}
-                                >
-                                  <Copy className="h-3 w-3" />
-                                  Copiar
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Copiar endereço completo</p></TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs px-2 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              const fullAddress = `${customerInfo.street}, ${customerInfo.number} - ${customerInfo.neighborhood}, ${customerInfo.city}/${customerInfo.state} - CEP ${customerInfo.cep}`;
+                              navigator.clipboard.writeText(fullAddress);
+                              toast.success("Endereço copiado!");
+                            }}
+                          >
+                            Copiar endereço
+                          </Button>
                         )}
                       </div>
-                      {customerInfo.street !== "Não informado" ? (
-                        <div className="space-y-0.5">
-                          <p className="text-sm font-semibold text-foreground leading-relaxed">
-                            {customerInfo.street}{customerInfo.number !== "S/N" ? `, ${customerInfo.number}` : ""}
-                          </p>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {customerInfo.neighborhood}
-                          </p>
-                          <p className="text-sm font-medium text-foreground/80 leading-relaxed">
-                            {customerInfo.city}{customerInfo.state !== "Não informado" ? ` / ${customerInfo.state}` : ""}
-                          </p>
-                          <p className="text-xs text-muted-foreground/70 mt-1 font-mono tracking-wide">
-                            CEP {customerInfo.cep}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Endereço não informado</p>
-                      )}
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-medium text-foreground">
+                          {customerInfo.street}{customerInfo.number !== "S/N" ? `, ${customerInfo.number}` : ""}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {customerInfo.neighborhood}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {customerInfo.city}{customerInfo.state !== "Não informado" ? ` / ${customerInfo.state}` : ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          CEP: {customerInfo.cep}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-                );
-              })()}
+              )}
 
               <KickoffVehiclesTable
                 vehicles={vehicles}
