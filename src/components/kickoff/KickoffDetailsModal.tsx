@@ -1065,15 +1065,47 @@ export const KickoffDetailsModal = ({
 
               {/* Customer Info Card */}
               {customerInfo && (
-                <div className="bg-muted/50 border rounded-lg p-3 mb-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-muted/50 border rounded-lg p-4 mb-4 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
                     <div>
                       <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
-                      <p className="font-semibold mt-1">{customerInfo.name}</p>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.name}</p>
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Cidade</Label>
-                      <p className="font-semibold mt-1">{customerInfo.city}</p>
+                      <Label className="text-xs text-muted-foreground">CNPJ/CPF</Label>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.cnpj}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Telefone</Label>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.phone}</p>
+                    </div>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2">
+                      <div className="col-span-2">
+                        <Label className="text-xs text-muted-foreground">Rua</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.street}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Número</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.number}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Bairro</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.neighborhood}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Cidade</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.city}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">UF</Label>
+                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.state}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <Label className="text-xs text-muted-foreground">CEP</Label>
+                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.cep}</p>
                     </div>
                   </div>
                 </div>
