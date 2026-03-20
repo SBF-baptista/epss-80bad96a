@@ -1050,17 +1050,9 @@ export const KickoffDetailsModal = ({
           <form id="kickoff-form" onSubmit={handleSubmit} className="space-y-6 py-4">
             {/* Vehicles Section */}
             <div className="space-y-4 border rounded-lg p-4 shadow-sm bg-card">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-3">
                   <Truck className="h-5 w-5 text-primary" />
                   <h3 className="font-bold text-lg">Validação de Frota</h3>
-                </div>
-                {kickoffCreatedAt && (
-                  <div className="text-sm text-muted-foreground">
-                    Kickoff em andamento há{" "}
-                    <span className="font-semibold text-foreground">{calculateDaysSinceKickoff()}</span> dias
-                  </div>
-                )}
               </div>
 
               {/* Customer Info Card - Executive Summary */}
