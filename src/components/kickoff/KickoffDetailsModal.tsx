@@ -262,8 +262,14 @@ export const KickoffDetailsModal = ({
   const [customerInfo, setCustomerInfo] = useState<{
     name: string;
     services: string[];
+    cnpj: string;
+    phone: string;
+    street: string;
+    number: string;
+    neighborhood: string;
     city: string;
     state: string;
+    cep: string;
   } | null>(null);
 
   const [contacts, setContacts] = useState<Contact[]>([]);
