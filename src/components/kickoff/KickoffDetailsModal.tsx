@@ -453,11 +453,29 @@ export const KickoffDetailsModal = ({
 
         // Load customer info from customers table
         const modules = Array.isArray(customerData.modules) ? customerData.modules : [];
+        
+        // Try to get UF from CEP if state is missing
+        let resolvedState = customerData.address_state || "";
+        if (!resolvedState && customerData.address_postal_code) {
+          try {
+            const cepData = await fetchAddressByCEP(customerData.address_postal_code);
+            if (cepData) resolvedState = cepData.uf;
+          } catch (e) {
+            console.warn("Could not resolve UF from CEP:", e);
+          }
+        }
+        
         setCustomerInfo({
           name: customerData.company_name || customerData.name || companyName || "Cliente não identificado",
           services: modules,
+          cnpj: customerData.document_number || "Não informado",
+          phone: customerData.phone || "Não informado",
+          street: customerData.address_street || "Não informado",
+          number: customerData.address_number || "S/N",
+          neighborhood: customerData.address_neighborhood || "Não informado",
           city: customerData.address_city || "Não informado",
-          state: customerData.address_state || "Não informado",
+          state: resolvedState || "Não informado",
+          cep: customerData.address_postal_code || "Não informado",
         });
       } else {
         // If no customer data, get from incoming_vehicles
