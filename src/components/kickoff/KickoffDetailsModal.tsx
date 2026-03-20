@@ -481,7 +481,7 @@ export const KickoffDetailsModal = ({
         // If no customer data, get from incoming_vehicles
         const { data: vehicleData } = await supabase
           .from("incoming_vehicles")
-          .select("company_name, address_city, received_at")
+          .select("company_name, cpf, phone, address_city, address_district, address_street, address_number, address_zip_code, received_at")
           .eq("sale_summary_id", saleSummaryId)
           .order("received_at", { ascending: true })
           .limit(1)
@@ -490,19 +490,42 @@ export const KickoffDetailsModal = ({
         if (vehicleData) {
           setKickoffCreatedAt(new Date(vehicleData.received_at));
 
+          // Resolve UF from CEP
+          let resolvedState = "";
+          if (vehicleData.address_zip_code) {
+            try {
+              const cepData = await fetchAddressByCEP(vehicleData.address_zip_code);
+              if (cepData) resolvedState = cepData.uf;
+            } catch (e) {
+              console.warn("Could not resolve UF from CEP:", e);
+            }
+          }
+
           setCustomerInfo({
             name: vehicleData.company_name || companyName || "Cliente não identificado",
             services: [],
+            cnpj: vehicleData.cpf || "Não informado",
+            phone: vehicleData.phone || "Não informado",
+            street: vehicleData.address_street || "Não informado",
+            number: vehicleData.address_number || "S/N",
+            neighborhood: vehicleData.address_district || "Não informado",
             city: vehicleData.address_city || "Não informado",
-            state: "SP",
+            state: resolvedState || "Não informado",
+            cep: vehicleData.address_zip_code || "Não informado",
           });
         } else {
           // Final fallback
           setCustomerInfo({
             name: companyName || "Cliente não identificado",
             services: [],
+            cnpj: "Não informado",
+            phone: "Não informado",
+            street: "Não informado",
+            number: "S/N",
+            neighborhood: "Não informado",
             city: "Não informado",
             state: "Não informado",
+            cep: "Não informado",
           });
         }
       }
