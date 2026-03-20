@@ -23,7 +23,6 @@ const Kickoff = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { toast } = useToast();
 
   const {
     data: kickoffData,
