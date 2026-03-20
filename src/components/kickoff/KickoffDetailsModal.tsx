@@ -1063,49 +1063,96 @@ export const KickoffDetailsModal = ({
                 )}
               </div>
 
-              {/* Customer Info Card */}
+              {/* Customer Info Card - Executive Summary */}
               {customerInfo && (
-                <div className="bg-muted/50 border rounded-lg p-4 mb-4 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
-                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.name}</p>
+                <div className="rounded-xl border bg-card shadow-sm mb-4 overflow-hidden">
+                  {/* Header: Client name + Status badge */}
+                  <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Cliente</p>
+                      <h4 className="text-lg font-bold text-foreground leading-tight truncate">{customerInfo.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">{customerInfo.cnpj !== "Não informado" ? `CNPJ/CPF: ${customerInfo.cnpj}` : ""}</p>
                     </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">CNPJ/CPF</Label>
-                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.cnpj}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Telefone</Label>
-                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.phone}</p>
-                    </div>
+                    {kickoffCreatedAt && (
+                      <Badge variant="outline" className="shrink-0 text-xs font-medium border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800">
+                        Em andamento há {calculateDaysSinceKickoff()} dias
+                      </Badge>
+                    )}
                   </div>
-                  <div className="border-t pt-2">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2">
-                      <div className="col-span-2">
-                        <Label className="text-xs text-muted-foreground">Rua</Label>
-                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.street}</p>
+
+                  {/* Content: Two grouped sections */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-0 border-t">
+                    {/* Contact Section */}
+                    <div className="px-5 py-4 md:border-r">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contato</p>
                       </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Número</Label>
-                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.number}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Bairro</Label>
-                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.neighborhood}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Cidade</Label>
-                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.city}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">UF</Label>
-                        <p className="font-semibold mt-0.5 text-sm">{customerInfo.state}</p>
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2 group">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-xs text-muted-foreground w-20 shrink-0">Telefone</span>
+                            <span className="text-sm font-medium text-foreground truncate">{customerInfo.phone}</span>
+                          </div>
+                          {customerInfo.phone !== "Não informado" && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                              onClick={() => {
+                                navigator.clipboard.writeText(customerInfo.phone);
+                                toast.success("Telefone copiado!");
+                              }}
+                            >
+                              <FileText className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-20 shrink-0">CNPJ/CPF</span>
+                          <span className="text-sm font-medium text-foreground truncate">{customerInfo.cnpj}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <Label className="text-xs text-muted-foreground">CEP</Label>
-                      <p className="font-semibold mt-0.5 text-sm">{customerInfo.cep}</p>
+
+                    {/* Address Section */}
+                    <div className="px-5 py-4 border-t md:border-t-0">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Endereço</p>
+                        </div>
+                        {customerInfo.street !== "Não informado" && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs px-2 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              const fullAddress = `${customerInfo.street}, ${customerInfo.number} - ${customerInfo.neighborhood}, ${customerInfo.city}/${customerInfo.state} - CEP ${customerInfo.cep}`;
+                              navigator.clipboard.writeText(fullAddress);
+                              toast.success("Endereço copiado!");
+                            }}
+                          >
+                            Copiar endereço
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-medium text-foreground">
+                          {customerInfo.street}{customerInfo.number !== "S/N" ? `, ${customerInfo.number}` : ""}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {customerInfo.neighborhood}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {customerInfo.city}{customerInfo.state !== "Não informado" ? ` / ${customerInfo.state}` : ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          CEP: {customerInfo.cep}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
