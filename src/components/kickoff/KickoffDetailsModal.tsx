@@ -1058,7 +1058,7 @@ export const KickoffDetailsModal = ({
               {/* Customer Info Card - Executive Summary */}
               {customerInfo && (() => {
                 const days = calculateDaysSinceKickoff();
-                const daysNum = parseInt(days) || 0;
+                const daysNum = days;
                 const statusColor = daysNum > 10
                   ? "border-red-300 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
                   : daysNum >= 6
