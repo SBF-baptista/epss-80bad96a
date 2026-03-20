@@ -57,21 +57,9 @@ const Kickoff = () => {
     staleTime: 30000,
   });
 
-  const handleRealtimeUpdate = () => {
-    toast({
-      title: "Dados atualizados",
-      description: "Novos dados do Segsale foram recebidos automaticamente.",
-    });
-  };
-
-  useRealtimeSubscription("accessories", ["kickoff-data"], undefined, handleRealtimeUpdate);
-  useRealtimeSubscription("incoming_vehicles", ["kickoff-data"], undefined, handleRealtimeUpdate);
-  useRealtimeSubscription("kickoff_history", ["kickoff-history"], undefined, () => {
-    toast({
-      title: "Histórico atualizado",
-      description: "Novo kickoff foi aprovado.",
-    });
-  });
+  useRealtimeSubscription("accessories", ["kickoff-data"]);
+  useRealtimeSubscription("incoming_vehicles", ["kickoff-data"]);
+  useRealtimeSubscription("kickoff_history", ["kickoff-history"]);
 
   const handleEditKickoff = (saleSummaryId: number, companyName: string) => {
     setSelectedSaleSummaryId(saleSummaryId);
