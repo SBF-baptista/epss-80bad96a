@@ -546,12 +546,17 @@ export const KickoffDetailsModal = ({
       }
     } catch (error) {
       console.error("Error loading customer data:", error);
-      // Set basic info from props as fallback
       setCustomerInfo({
         name: companyName || "Cliente não identificado",
         services: [],
+        cnpj: "Não informado",
+        phone: "Não informado",
+        street: "Não informado",
+        number: "S/N",
+        neighborhood: "Não informado",
         city: "Não informado",
         state: "Não informado",
+        cep: "Não informado",
       });
     }
   };
