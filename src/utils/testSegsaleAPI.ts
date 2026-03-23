@@ -23,7 +23,4 @@ export const testSegsaleAPI = async () => {
   }
 };
 
-// Auto-execute on import
-testSegsaleAPI().then(result => {
-  console.log('📊 Resultado final:', result);
-});
+// Call testSegsaleAPI() manually when needed - removed auto-execute to prevent unnecessary API calls

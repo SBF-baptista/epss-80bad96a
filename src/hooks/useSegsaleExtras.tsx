@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchSegsaleAccessories, fetchSegsaleModules, fetchSegsaleProducts, SegsaleExtra, SegsaleProduct } from '@/services/segsaleExtrasService';
-import { useToast } from '@/hooks/use-toast';
+
+const FOUR_HOURS = 4 * 60 * 60 * 1000;
 
 interface UseSegsaleExtrasResult {
   accessories: SegsaleExtra[];
@@ -12,44 +13,53 @@ interface UseSegsaleExtrasResult {
 }
 
 export const useSegsaleExtras = (): UseSegsaleExtrasResult => {
-  const [accessories, setAccessories] = useState<SegsaleExtra[]>([]);
-  const [modules, setModules] = useState<SegsaleExtra[]>([]);
-  const [products, setProducts] = useState<SegsaleProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const accessoriesQuery = useQuery({
+    queryKey: ['segsale-accessories'],
+    queryFn: fetchSegsaleAccessories,
+    staleTime: FOUR_HOURS,
+    gcTime: FOUR_HOURS,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const [accessoriesData, modulesData, productsData] = await Promise.all([
-        fetchSegsaleAccessories(),
-        fetchSegsaleModules(),
-        fetchSegsaleProducts()
-      ]);
+  const modulesQuery = useQuery({
+    queryKey: ['segsale-modules'],
+    queryFn: fetchSegsaleModules,
+    staleTime: FOUR_HOURS,
+    gcTime: FOUR_HOURS,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
+  });
 
-      setAccessories(accessoriesData);
-      setModules(modulesData);
-      setProducts(productsData);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados do Segsale';
-      setError(errorMessage);
-      console.error('Error fetching Segsale extras:', err);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar dados do Segsale.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+  const productsQuery = useQuery({
+    queryKey: ['segsale-products'],
+    queryFn: fetchSegsaleProducts,
+    staleTime: FOUR_HOURS,
+    gcTime: FOUR_HOURS,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
+  });
+
+  const loading = accessoriesQuery.isLoading || modulesQuery.isLoading || productsQuery.isLoading;
+  const error = accessoriesQuery.error?.message || modulesQuery.error?.message || productsQuery.error?.message || null;
+
+  const refetch = async () => {
+    await Promise.all([
+      accessoriesQuery.refetch(),
+      modulesQuery.refetch(),
+      productsQuery.refetch(),
+    ]);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  return { accessories, modules, products, loading, error, refetch: fetchData };
+  return {
+    accessories: accessoriesQuery.data ?? [],
+    modules: modulesQuery.data ?? [],
+    products: productsQuery.data ?? [],
+    loading,
+    error,
+    refetch,
+  };
 };
