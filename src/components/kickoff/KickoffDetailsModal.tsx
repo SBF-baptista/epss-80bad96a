@@ -377,10 +377,10 @@ export const KickoffDetailsModal = ({
   }, [vehicles]);
 
   // Load existing customer data when modal opens
+  // Segsale import is manual-only to avoid unintended Edge Function executions.
   useEffect(() => {
     if (open && saleSummaryId) {
       loadCustomerData();
-      checkAndBackfillAccessories();
     }
   }, [open, saleSummaryId]);
 

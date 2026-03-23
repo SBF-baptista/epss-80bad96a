@@ -26,17 +26,20 @@ export interface SegsaleFetchResponse {
 export const fetchSegsaleProductsDirect = async (idResumoVenda: number): Promise<SegsaleFetchResponse> => {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
-  
+
+  if (!token) {
+    throw new Error("Usuário não autenticado para acessar o Segsale.");
+  }
+
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  
   const url = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
-  
+
   const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token || anonKey}`,
+      'Authorization': `Bearer ${token}`,
       'apikey': anonKey,
     }
   });
