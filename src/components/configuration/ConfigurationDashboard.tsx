@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -8,6 +8,9 @@ import { fetchHomologationKits, type HomologationKit } from '@/services/homologa
 import { getKitSchedules, type KitScheduleWithDetails } from '@/services/kitScheduleService';
 import { SchedulingSection } from './SchedulingSection';
 import { supabase } from '@/integrations/supabase/client';
+import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCentralRealtime } from '@/hooks/useCentralRealtime';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
