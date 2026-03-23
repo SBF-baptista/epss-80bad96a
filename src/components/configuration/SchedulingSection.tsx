@@ -14,6 +14,7 @@ import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
 import { ScheduleHistoryModal } from './ScheduleHistoryModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useCentralRealtime } from '@/hooks/useCentralRealtime';
 
 interface SchedulingSectionProps {
   kits: HomologationKit[];
