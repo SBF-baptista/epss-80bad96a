@@ -96,36 +96,12 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     loadData();
   }, []);
 
-  // Debounced real-time subscription for kit_item_options and accessories changes
-  useEffect(() => {
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const debouncedReload = () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        loadData();
-      }, 1000);
-    };
-
-    const channel = supabase
-      .channel('planning-kit-sync')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'kit_item_options' },
-        debouncedReload
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'accessories' },
-        debouncedReload
-      )
-      .subscribe();
-
-    return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      supabase.removeChannel(channel);
-    };
+  const debouncedReload = useCallback(() => {
+    loadData();
   }, []);
+
+  useCentralRealtime('kit_item_options', debouncedReload);
+  useCentralRealtime('accessories', debouncedReload);
 
   // Filter data based on search
   const filteredKits = kits.filter(kit => 

@@ -89,25 +89,15 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
     }
   };
 
+  const stableFetch = useCallback(() => {
+    fetchPendingSchedules();
+  }, []);
+
   useEffect(() => {
     fetchPendingSchedules();
-
-    // Subscribe to realtime updates on kit_schedules
-    const channel = supabase
-      .channel('pending-schedules-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'kit_schedules' },
-        () => {
-          fetchPendingSchedules();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
+
+  useCentralRealtime('kit_schedules', stableFetch);
 
   const handleScheduleClick = (schedule: PendingSchedule) => {
     // Build address string

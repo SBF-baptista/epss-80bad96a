@@ -85,25 +85,15 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
     }
   };
 
+  const stableFetch = useCallback(() => {
+    fetchPendingSchedules();
+  }, []);
+
   useEffect(() => {
     fetchPendingSchedules();
-
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('customer-schedules-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'kit_schedules' },
-        () => {
-          fetchPendingSchedules();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
+
+  useCentralRealtime('kit_schedules', stableFetch);
 
   // Group vehicles by customer
   const customerGroups = useMemo((): CustomerGroup[] => {
