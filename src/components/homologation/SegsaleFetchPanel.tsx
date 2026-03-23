@@ -22,16 +22,7 @@ export const SegsaleFetchPanel = () => {
 
     setLoading(true);
     try {
-      // Construct URL with query parameter
-      const url = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
-      const response = await fetch(url);
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        const details = result?.error || `HTTP ${response.status}`;
-        throw new Error(details);
-      }
+      const result = await fetchSegsaleProductsDirect(Number(idResumoVenda));
 
       console.log('📦 Resposta Segsale completa:', result);
 
