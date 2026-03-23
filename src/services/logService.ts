@@ -166,13 +166,8 @@ export const logAction = async (logData: LogAction): Promise<void> => {
  * Obtém o IP do cliente (melhor esforço)
  */
 export const getClientIP = async (): Promise<string | null> => {
-  try {
-    const response = await fetch("https://api.ipify.org?format=json");
-    const data = await response.json();
-    return data.ip;
-  } catch {
-    return null;
-  }
+  // Disabled to avoid blocking auth flow with external network calls
+  return null;
 };
 
 /**

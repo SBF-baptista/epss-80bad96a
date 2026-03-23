@@ -56,9 +56,8 @@ const Kickoff = () => {
     staleTime: 1000 * 60,
   });
 
-  useRealtimeSubscription("accessories", ["kickoff-data"]);
-  useRealtimeSubscription("incoming_vehicles", ["kickoff-data"]);
-  useRealtimeSubscription("kickoff_history", ["kickoff-history"]);
+  // Consolidated: single subscription for all kickoff-related tables
+  useRealtimeSubscription("incoming_vehicles", ["kickoff-data", "kickoff-history", "kickoff-integrity", "kickoff-dates"]);
 
   const handleEditKickoff = (saleSummaryId: number, companyName: string) => {
     setSelectedSaleSummaryId(saleSummaryId);

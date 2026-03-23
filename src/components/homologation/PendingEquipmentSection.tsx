@@ -19,7 +19,7 @@ export const PendingEquipmentSection = () => {
   const { data: pendingItems, isLoading } = useQuery({
     queryKey: ["pending-homologation-items"],
     queryFn: fetchPendingHomologationItems,
-    refetchInterval: 30000, // Refetch every 30 seconds to stay updated
+    staleTime: 1000 * 60 * 2,
   });
 
   const equipment = pendingItems?.equipment || [];

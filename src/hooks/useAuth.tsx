@@ -81,8 +81,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     )
 
-    // Get initial session
+    // Get initial session with timeout to prevent infinite loading
+    const sessionTimeout = setTimeout(() => {
+      console.warn('Session fetch timed out after 5s, proceeding as unauthenticated')
+      setLoading(false)
+    }, 5000)
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(sessionTimeout)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -90,6 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user?.id) {
         updateLastSeen(session.user.id)
       }
+    }).catch(() => {
+      clearTimeout(sessionTimeout)
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
@@ -160,21 +169,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })
     
     if (!error) {
-      setTimeout(() => {
-        logLogin();
-      }, 100);
+      // Fire-and-forget: never block login on logging
+      logLogin().catch(() => {});
     }
     
     return { error }
   }
 
   const signOut = async () => {
-    // Try to log logout, but never let it block sign out
-    try {
-      await logLogout();
-    } catch (e) {
-      console.error('Logout log failed (ignored):', e)
-    }
+    // Fire-and-forget: never block sign out on logging
+    logLogout().catch(() => {});
     
     // Always attempt sign out and clear local state regardless of errors
     try {
