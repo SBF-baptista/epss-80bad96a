@@ -1,70 +1,55 @@
 
 
-# Diagnóstico Completo: `fetch-segsale-products`
+# Plano: Execução Automática de `fetch-segsale-products` a cada 5 horas
 
-## Bug Crítico #1: Variáveis Indefinidas (causa de erro 500)
+## Situação Atual
 
-Na **linha 296** do `fetch-segsale-products/index.ts`:
-```typescript
-processing: { forwarded: !!(apiKey && vehicleGroups.length > 0), async: true },
-```
+A função `fetch-segsale-products` requer um `idResumoVenda` específico como parâmetro. Não existe um mecanismo de polling automático — as chamadas dependem de ação manual (SegsaleFetchPanel) ou do webhook do Segsale. O loop de 1/segundo que existia antes foi causado por bots/crawlers e foi corrigido.
 
-As variáveis `apiKey` e `vehicleGroups` **não existem** no código. Foram removidas em edições anteriores quando eliminamos o forward para `receive-vehicle`, mas a referência na resposta final permaneceu. Isso causa um **ReferenceError** que mata a função após todo o processamento ter sido feito com sucesso — ou seja, a API Segsale responde, o cache é escrito, os contract items são buscados, mas o retorno final explode com erro 500.
+## Abordagem
 
-## Bug #2: `SegsaleTest.tsx` executa automaticamente no mount
+Criar uma **Edge Function cron** (`sync-segsale-auto`) que roda a cada 5 horas via `pg_cron`. Ela busca os `sale_summary_id` ativos na tabela `incoming_vehicles` (veículos que ainda não foram processados completamente) e chama `fetch-segsale-products` para cada um, com intervalo entre chamadas para não sobrecarregar.
 
-A página `/segsale-test` tem um `useEffect` sem condição que chama `fetch-segsale-products?idResumoVenda=107` toda vez que é montada. Se essa rota for carregada por qualquer motivo (prefetch, crawler, navegação acidental), gera chamadas desnecessárias.
+### 1. Criar Edge Function `sync-segsale-auto`
+**Arquivo**: `supabase/functions/sync-segsale-auto/index.ts`
 
-## Bug #3: Chamadas sem autenticação
+- Consulta `incoming_vehicles` para listar `sale_summary_id` distintos com `homologation_status != 'homologado'` (pendentes de processamento)
+- Para cada `sale_summary_id`, chama `fetch-segsale-products` internamente (reutilizando a lógica de fetch)
+- Limite de no máximo 10 IDs por execução para evitar timeout
+- Intervalo de 2s entre chamadas para não sobrecarregar a API Segsale
+- Log de cada execução para auditoria
 
-Todos os pontos que chamam `fetch-segsale-products` no frontend (SegsaleFetchPanel, SegsaleTest, KickoffDetailsModal, displaySegsaleData) fazem `fetch()` direto sem nenhum header de autenticação. A Edge Function não exige auth, ficando aberta para qualquer chamada externa.
-
-## Arquivos redundantes (geram carga desnecessária)
-
-| Arquivo | Problema |
-|---------|----------|
-| `src/utils/displaySegsaleData.ts` | Hardcoded para ID 107, nunca usado em produção |
-| `src/utils/testSegsaleAPI.ts` | Utilitário de debug, não deveria existir em produção |
-| `src/pages/SegsaleTest.tsx` | Página de teste com auto-fetch no mount |
-| Rota `/segsale-test` em `App.tsx` | Expõe a página de teste |
-
-## Plano de Correção
-
-### 1. Corrigir o ReferenceError na Edge Function (URGENTE)
+### 2. Aumentar o TTL do cache para 5 horas
 **Arquivo**: `supabase/functions/fetch-segsale-products/index.ts`
 
-Substituir a linha 296:
-```typescript
-// DE:
-processing: { forwarded: !!(apiKey && vehicleGroups.length > 0), async: true },
-// PARA:
-processing: { forwarded: false, message: 'Processing handled separately' },
+Mudar `CACHE_TTL_MS` de 5 minutos para 5 horas (18.000.000ms). Como a atualização será automática a cada 5h, o cache curto de 5 minutos não faz mais sentido — chamadas intermediárias retornarão o cache sem bater na API.
+
+### 3. Configurar `pg_cron` para rodar a cada 5 horas
+Executar SQL via migration tool para criar o cron job:
+
+```sql
+SELECT cron.schedule(
+  'sync-segsale-every-5h',
+  '0 */5 * * *',  -- a cada 5 horas
+  $$
+  SELECT net.http_post(
+    url:='https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/sync-segsale-auto',
+    headers:='{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
+    body:='{"source":"pg_cron"}'::jsonb
+  ) as request_id;
+  $$
+);
 ```
 
-Redesplegar imediatamente.
-
-### 2. Remover arquivos de teste/debug
-- Deletar `src/utils/displaySegsaleData.ts`
-- Deletar `src/utils/testSegsaleAPI.ts`
-- Deletar `src/pages/SegsaleTest.tsx`
-- Remover rota `/segsale-test` e import lazy de `App.tsx`
-
-### 3. Proteger o endpoint com autenticação básica
-**Arquivo**: `supabase/functions/fetch-segsale-products/index.ts`
-
-Adicionar verificação de header `Authorization` (apikey do Supabase) ou `Token` para evitar chamadas de fontes externas não autorizadas. As chamadas do frontend passarão a usar `supabase.functions.invoke()` que inclui automaticamente o header correto.
-
-### 4. Atualizar chamadas no frontend para usar `supabase.functions.invoke`
-**Arquivos**:
-- `src/services/segsaleService.ts` — trocar `fetch()` direto por `supabase.functions.invoke()`
-- `src/components/homologation/SegsaleFetchPanel.tsx` — mesma mudança
-
-Isso garante que todas as chamadas passem pelo cliente autenticado do Supabase.
+### 4. Manter chamada condicional no KickoffDetailsModal
+O `KickoffDetailsModal` continuará chamando `fetch-segsale-products` apenas quando `existingAccessories.length === 0` (backfill on-demand). Isso é saudável — acontece no máximo 1 vez por venda.
 
 ## Resultado Esperado
 
-- Edge Function para de retornar erro 500 por variáveis indefinidas
-- Chamadas de teste/debug eliminadas
-- Endpoint protegido contra acesso externo não autorizado
-- Todas as chamadas do frontend passam pelo cliente Supabase autenticado
+```text
+Antes:  Chamadas dependiam de ação manual ou webhook externo
+Depois: Polling automático a cada 5h dos sale_summary_ids pendentes
+        Cache de 5h impede chamadas duplicadas
+        Máximo ~10 chamadas por ciclo (50/dia no pior caso)
+```
 
