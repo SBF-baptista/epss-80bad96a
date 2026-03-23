@@ -305,7 +305,9 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <AuthProvider>
-            <AppContent />
+            <UserRoleProvider>
+              <AppContent />
+            </UserRoleProvider>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
