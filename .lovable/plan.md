@@ -1,53 +1,143 @@
 
+Diagnóstico verificado agora:
 
-# Plano: Manter ambas as funções públicas sem loop
+## O que confirmei no código
 
-## Por que o loop acontecia
-
-O loop **não era causado por uma chamar a outra em círculo**. Era causado por **bots/crawlers externos** que descobriram a URL pública do `fetch-segsale-products` e ficavam acessando repetidamente. Cada acesso gerava uma chamada real à API Segsale + queries ao banco.
-
-O cache de 5 minutos já existe e protege contra chamadas duplicadas (retorna cache sem tocar na API externa). Porém, **mesmo retornando cache**, cada chamada ainda consome uma invocação de Edge Function e uma query ao banco para ler o cache — com bots batendo a cada segundo, isso gera ~86.400 invocações/dia.
-
-## Solução: Rate-limiting por IP + proteção anti-bot na `fetch-segsale-products`
-
-Adicionar uma camada de proteção **dentro da função** que:
-
-1. **Rejeita chamadas sem `idResumoVenda` válido** (bots geralmente acessam a URL base sem parâmetros) — já existe
-2. **Rejeita métodos que não sejam GET/POST** — já existe via CORS
-3. **Adiciona um rate-limit em memória por IP** — se o mesmo IP chamar mais de 5 vezes em 1 minuto, retorna 429 (Too Many Requests) sem fazer nenhuma query ao banco
-4. **Adiciona header de proteção anti-crawler** — retorna `X-Robots-Tag: noindex` para que crawlers não indexem a URL
-
-### Mudanças
-
-**Arquivo**: `supabase/functions/fetch-segsale-products/index.ts`
-
-- Adicionar um `Map<string, { count: number, resetAt: number }>` no escopo do módulo para rate-limiting em memória
-- Antes de qualquer lógica, verificar se o IP excedeu 5 chamadas/minuto → retornar 429
-- Adicionar header `X-Robots-Tag: noindex` em todas as respostas
-- Manter o cache de 5 minutos como segunda camada
-
-**Arquivo**: `supabase/config.toml`
-
-- Mudar `fetch-segsale-products` para `verify_jwt = false`
-
-**Arquivo**: `supabase/functions/segsale-webhook/index.ts`
-
-- Nenhuma mudança necessária (já é público e já tem autenticação própria via `x-webhook-key`/`Token`)
-
-**Arquivo**: `src/services/segsaleService.ts`
-
-- Nenhuma mudança necessária (continuará enviando auth headers por segurança, mas não será obrigatório)
-
-## Resultado
-
-```text
-Cenário                    │ Antes (público)     │ Depois (público + rate-limit)
-───────────────────────────┼─────────────────────┼──────────────────────────────
-Bot batendo 1x/segundo     │ 86.400 inv/dia      │ 5 inv/min → 429 bloqueado
-Usuário legítimo           │ Funciona             │ Funciona (<<5 req/min)
-Webhook Segsale            │ Funciona             │ Funciona
-Cache hit                  │ Retorna cache        │ Retorna cache (se passar rate-limit)
+### 1. `fetch-segsale-products` está privada
+No arquivo `supabase/config.toml`:
+```toml
+[functions.fetch-segsale-products]
+verify_jwt = true
 ```
 
-Ambas as funções ficam públicas, o webhook continua com sua autenticação própria, e o rate-limit impede que bots gerem carga excessiva.
+E dentro da própria função (`supabase/functions/fetch-segsale-products/index.ts`) ela ainda exige:
+- header `Authorization: Bearer ...`
+- validação real com `auth.getClaims()`
 
+Ou seja: hoje ela **não está pública**.
+
+### 2. O frontend atual não está disparando essa API automaticamente
+Encontrei apenas este uso no frontend:
+- `src/components/homologation/SegsaleFetchPanel.tsx`
+
+E ele só chama a função no clique do botão:
+```ts
+const result = await fetchSegsaleProductsDirect(Number(idResumoVenda));
+```
+
+Além disso, o service (`src/services/segsaleService.ts`) também bloqueia chamadas sem sessão:
+```ts
+if (!token) {
+  throw new Error("Usuário não autenticado para acessar o Segsale.");
+}
+```
+
+Então, pelo código atual, **o browser não deveria estar chamando `fetch-segsale-products` sozinho**.
+
+### 3. O problema real está no `segsale-webhook`
+O `segsale-webhook` continua público:
+```toml
+[functions.segsale-webhook]
+verify_jwt = false
+```
+
+E ele ainda chama internamente:
+```ts
+https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=...
+```
+
+Mas faz isso **sem enviar Authorization**:
+```ts
+const fetchResponse = await fetch(fetchUrl, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+```
+
+## Causa raiz
+
+Hoje o cenário mais provável é este:
+
+```text
+alguém/sistema externo chama segsale-webhook
+→ o webhook aceita porque é público + usa x-webhook-key / Token
+→ o webhook tenta chamar fetch-segsale-products
+→ fetch-segsale-products rejeita por falta de Bearer token
+→ isso continua aparecendo no Supabase como tentativa/chamada
+```
+
+Ou seja:
+
+- a `fetch-segsale-products` **está privada**
+- mas **ainda está sendo tentada**
+- e quem mais provavelmente provoca isso é o `segsale-webhook`, não o frontend
+
+## Por que no Supabase “ainda aparece rodando”?
+
+Porque “privada” não significa “invisível” ou “URL inexistente”.
+
+Significa:
+- a URL ainda existe
+- qualquer cliente ainda pode tentar bater nela
+- mas sem JWT válido a função é barrada
+
+Então no painel do Supabase você ainda pode ver:
+- tentativas
+- 401 / 403
+- chamadas negadas
+
+Isso **não prova que a função continua pública**. Prova que **alguém ainda está tentando chamá-la**.
+
+## Evidências adicionais da verificação
+
+### Não achei evidência de chamada atual vinda da preview
+- snapshot de network do preview: sem requests para `fetch-segsale-products`
+- busca no código: sem auto-fetch no Kickoff para essa função
+
+### Há outro ruído no frontend, mas é separado
+Os logs mostram recriação frequente de subscriptions realtime:
+- `item_edit_requests`
+- `incoming_vehicles`
+
+Isso explica re-render/reconexão no app, mas **não explica chamadas da `fetch-segsale-products`**, porque não existe mais um hook automático ligando isso à API Segsale.
+
+## Conclusão objetiva
+
+O diagnóstico correto agora é:
+
+1. `fetch-segsale-products` **não está pública**
+2. o frontend atual **não está chamando ela em loop**
+3. quem ainda pode estar gerando tentativas é o **`segsale-webhook` público**
+4. o `segsale-webhook` está **quebrado na integração interna**, porque chama a função privada **sem autenticação**
+5. por isso o Supabase pode continuar mostrando atividade/tentativas mesmo após privatizar a função
+
+## Solução recomendada
+
+### Correção principal
+Ajustar `segsale-webhook` para chamar `fetch-segsale-products` com autenticação válida:
+- usar `SUPABASE_SERVICE_ROLE_KEY` no header `Authorization`
+- ou parar de chamar por HTTP e reutilizar a lógica internamente
+
+### Correção de contenção
+Se você quer parar imediatamente qualquer nova tentativa indireta:
+- remover temporariamente a chamada do `segsale-webhook` para `fetch-segsale-products`
+- ou fazer o webhook retornar antes dessa chamada até a integração ser corrigida
+
+### Endurecimento extra
+Para reduzir tráfego indevido:
+- aceitar apenas `POST` no `segsale-webhook`
+- manter rejeição imediata para `GET`
+- logar origem/IP/user-agent do webhook para identificar quem está insistindo
+- revisar se algum sistema externo ainda está retryando esse endpoint
+
+## O que eu implementaria no próximo passo
+
+1. Corrigir o `segsale-webhook` para autenticar corretamente a chamada interna
+2. Opcionalmente bloquear `GET` de vez no webhook
+3. Adicionar logs claros de origem no webhook para distinguir:
+   - chamada legítima da Segsale
+   - retry externo
+   - bot/crawler
+4. Revisar o churn de realtime no Kickoff separadamente, porque isso está gerando ruído no app, embora não seja a causa da API Segsale
