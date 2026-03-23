@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import { Layout } from "@/components/Layout";
 import SmartRedirect from "@/components/SmartRedirect";
+import { UserRoleProvider } from "@/hooks/useUserRole";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Kanban = lazy(() => import("./pages/Kanban"));
 const Homologation = lazy(() => import("./pages/Homologation"));
@@ -304,7 +305,9 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <AuthProvider>
-            <AppContent />
+            <UserRoleProvider>
+              <AppContent />
+            </UserRoleProvider>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
