@@ -232,8 +232,8 @@ Deno.serve(async (req) => {
                 'Content-Type': 'application/json'
               }
             },
-            2, // fewer retries for secondary calls
-            20000 // 20 second timeout
+            1, // no retry - skip if slow
+            10000 // 10s timeout
           )
 
           if (contractResponse.ok) {
