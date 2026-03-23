@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { CustomerTrackingFilters } from "@/components/customer-tracking/CustomerTrackingFilters";
 import { CustomerCard } from "@/components/customer-tracking/CustomerCard";
 import { getCustomers, Customer } from "@/services/customerService";
