@@ -108,14 +108,8 @@ export const logActionExtended = async (logData: ExtendedLogAction): Promise<str
     });
 
     if (error) {
-      console.error("Erro ao registrar log estendido via RPC:", error);
-      // Fallback para log simples
-      await logAction({
-        action: logData.action,
-        module: logData.module,
-        details: logData.details,
-        ip_address: logData.ip_address,
-      });
+      console.warn("Erro ao registrar log estendido via RPC:", error.message);
+      // No fallback - fail silently to avoid cascading queries during high load
       return null;
     }
 
@@ -141,21 +135,8 @@ export const logAction = async (logData: LogAction): Promise<void> => {
     });
 
     if (error) {
-      console.error("Erro ao registrar log via RPC:", error);
-      
-      // Fallback: tentar inserir diretamente
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error: insertError } = await supabase.from("app_logs").insert({
-        user_id: user?.id || null,
-        action: logData.action,
-        module: logData.module,
-        details: logData.details || null,
-        ip_address: logData.ip_address || null,
-      });
-      
-      if (insertError) {
-        console.error("Erro ao registrar log (fallback):", insertError);
-      }
+      console.warn("Erro ao registrar log via RPC:", error.message);
+      // No fallback - fail silently to avoid cascading queries during high load
     }
   } catch (error) {
     console.error("Erro ao registrar log:", error);

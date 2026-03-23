@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -84,12 +84,8 @@ const History = () => {
     enabled: role === "admin",
   });
 
-  // Real-time subscription for new logs
-  useRealtimeSubscription(
-    "app_logs",
-    ["app-logs", filters.moduleFilter, filters.actionFilter, filters.startDate, filters.endDate],
-    { event: "*" }
-  );
+  // Realtime removed from app_logs - high-volume table that causes excessive connections.
+  // Use the "Atualizar" button for manual refresh instead.
 
   // Filtrar logs com base em todos os filtros
   const filteredLogs = useMemo(() => {
