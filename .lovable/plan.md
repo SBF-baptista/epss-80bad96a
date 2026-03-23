@@ -1,55 +1,53 @@
 
 
-# Plano: Execução Automática de `fetch-segsale-products` a cada 5 horas
+# Plano: Manter ambas as funções públicas sem loop
 
-## Situação Atual
+## Por que o loop acontecia
 
-A função `fetch-segsale-products` requer um `idResumoVenda` específico como parâmetro. Não existe um mecanismo de polling automático — as chamadas dependem de ação manual (SegsaleFetchPanel) ou do webhook do Segsale. O loop de 1/segundo que existia antes foi causado por bots/crawlers e foi corrigido.
+O loop **não era causado por uma chamar a outra em círculo**. Era causado por **bots/crawlers externos** que descobriram a URL pública do `fetch-segsale-products` e ficavam acessando repetidamente. Cada acesso gerava uma chamada real à API Segsale + queries ao banco.
 
-## Abordagem
+O cache de 5 minutos já existe e protege contra chamadas duplicadas (retorna cache sem tocar na API externa). Porém, **mesmo retornando cache**, cada chamada ainda consome uma invocação de Edge Function e uma query ao banco para ler o cache — com bots batendo a cada segundo, isso gera ~86.400 invocações/dia.
 
-Criar uma **Edge Function cron** (`sync-segsale-auto`) que roda a cada 5 horas via `pg_cron`. Ela busca os `sale_summary_id` ativos na tabela `incoming_vehicles` (veículos que ainda não foram processados completamente) e chama `fetch-segsale-products` para cada um, com intervalo entre chamadas para não sobrecarregar.
+## Solução: Rate-limiting por IP + proteção anti-bot na `fetch-segsale-products`
 
-### 1. Criar Edge Function `sync-segsale-auto`
-**Arquivo**: `supabase/functions/sync-segsale-auto/index.ts`
+Adicionar uma camada de proteção **dentro da função** que:
 
-- Consulta `incoming_vehicles` para listar `sale_summary_id` distintos com `homologation_status != 'homologado'` (pendentes de processamento)
-- Para cada `sale_summary_id`, chama `fetch-segsale-products` internamente (reutilizando a lógica de fetch)
-- Limite de no máximo 10 IDs por execução para evitar timeout
-- Intervalo de 2s entre chamadas para não sobrecarregar a API Segsale
-- Log de cada execução para auditoria
+1. **Rejeita chamadas sem `idResumoVenda` válido** (bots geralmente acessam a URL base sem parâmetros) — já existe
+2. **Rejeita métodos que não sejam GET/POST** — já existe via CORS
+3. **Adiciona um rate-limit em memória por IP** — se o mesmo IP chamar mais de 5 vezes em 1 minuto, retorna 429 (Too Many Requests) sem fazer nenhuma query ao banco
+4. **Adiciona header de proteção anti-crawler** — retorna `X-Robots-Tag: noindex` para que crawlers não indexem a URL
 
-### 2. Aumentar o TTL do cache para 5 horas
+### Mudanças
+
 **Arquivo**: `supabase/functions/fetch-segsale-products/index.ts`
 
-Mudar `CACHE_TTL_MS` de 5 minutos para 5 horas (18.000.000ms). Como a atualização será automática a cada 5h, o cache curto de 5 minutos não faz mais sentido — chamadas intermediárias retornarão o cache sem bater na API.
+- Adicionar um `Map<string, { count: number, resetAt: number }>` no escopo do módulo para rate-limiting em memória
+- Antes de qualquer lógica, verificar se o IP excedeu 5 chamadas/minuto → retornar 429
+- Adicionar header `X-Robots-Tag: noindex` em todas as respostas
+- Manter o cache de 5 minutos como segunda camada
 
-### 3. Configurar `pg_cron` para rodar a cada 5 horas
-Executar SQL via migration tool para criar o cron job:
+**Arquivo**: `supabase/config.toml`
 
-```sql
-SELECT cron.schedule(
-  'sync-segsale-every-5h',
-  '0 */5 * * *',  -- a cada 5 horas
-  $$
-  SELECT net.http_post(
-    url:='https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/sync-segsale-auto',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
-    body:='{"source":"pg_cron"}'::jsonb
-  ) as request_id;
-  $$
-);
-```
+- Mudar `fetch-segsale-products` para `verify_jwt = false`
 
-### 4. Manter chamada condicional no KickoffDetailsModal
-O `KickoffDetailsModal` continuará chamando `fetch-segsale-products` apenas quando `existingAccessories.length === 0` (backfill on-demand). Isso é saudável — acontece no máximo 1 vez por venda.
+**Arquivo**: `supabase/functions/segsale-webhook/index.ts`
 
-## Resultado Esperado
+- Nenhuma mudança necessária (já é público e já tem autenticação própria via `x-webhook-key`/`Token`)
+
+**Arquivo**: `src/services/segsaleService.ts`
+
+- Nenhuma mudança necessária (continuará enviando auth headers por segurança, mas não será obrigatório)
+
+## Resultado
 
 ```text
-Antes:  Chamadas dependiam de ação manual ou webhook externo
-Depois: Polling automático a cada 5h dos sale_summary_ids pendentes
-        Cache de 5h impede chamadas duplicadas
-        Máximo ~10 chamadas por ciclo (50/dia no pior caso)
+Cenário                    │ Antes (público)     │ Depois (público + rate-limit)
+───────────────────────────┼─────────────────────┼──────────────────────────────
+Bot batendo 1x/segundo     │ 86.400 inv/dia      │ 5 inv/min → 429 bloqueado
+Usuário legítimo           │ Funciona             │ Funciona (<<5 req/min)
+Webhook Segsale            │ Funciona             │ Funciona
+Cache hit                  │ Retorna cache        │ Retorna cache (se passar rate-limit)
 ```
+
+Ambas as funções ficam públicas, o webhook continua com sua autenticação própria, e o rate-limit impede que bots gerem carga excessiva.
 
