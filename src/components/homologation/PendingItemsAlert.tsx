@@ -21,7 +21,7 @@ export const PendingItemsAlert = () => {
   const { data: pendingItems } = useQuery({
     queryKey: ['pending-homologation-items'],
     queryFn: fetchPendingHomologationItems,
-    refetchInterval: 60000, // Refetch every minute
+    staleTime: 1000 * 60 * 2,
   });
 
   // Fetch planning schedules
