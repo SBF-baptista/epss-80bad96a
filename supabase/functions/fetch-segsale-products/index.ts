@@ -153,8 +153,8 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
           },
         },
-        2, // maxRetries
-        25000, // 25s timeout (stay within edge function limits)
+        1, // no retry - API responds fast
+        15000, // 15s timeout
       )
     } catch (fetchError: any) {
       console.error('❌ Segsale fetch failed (timeout/retries exceeded):', fetchError?.message ?? fetchError)
@@ -208,7 +208,10 @@ Deno.serve(async (req) => {
 
     const salesData: SegsaleSale[] = await segsaleResponse.json()
     console.log(`✅ Received ${salesData.length} sales from Segsale`)
-    await writeCachedSegsaleResponse(supabase, idResumoVenda, salesData)
+    // Fire-and-forget cache write — don't block the response
+    writeCachedSegsaleResponse(supabase, idResumoVenda, salesData).catch(e =>
+      console.warn('⚠️ Cache write failed (non-blocking):', e?.message ?? e)
+    )
 
     // Fetch contract items for each sale that has id_contrato_pendente
     const enrichedSalesData = []
@@ -232,8 +235,8 @@ Deno.serve(async (req) => {
                 'Content-Type': 'application/json'
               }
             },
-            2, // fewer retries for secondary calls
-            20000 // 20 second timeout
+            1, // no retry - skip if slow
+            10000 // 10s timeout
           )
 
           if (contractResponse.ok) {
@@ -241,25 +244,9 @@ Deno.serve(async (req) => {
             
             // If API returns null/empty, try to get from database
             if (!contractItems || (Array.isArray(contractItems) && contractItems.length === 0)) {
-              console.log(`⚠️ API returned null/empty for contract ${pendingContractId}, fetching from database...`)
-              
-              const saleSummaryId = (sale as any).sale_summary_id || parseInt(idResumoVenda)
-              const { data: dbAccessories, error: dbError } = await supabase
-                .from('accessories')
-                .select('name, quantity')
-                .eq('company_name', sale.company_name)
-                .order('created_at', { ascending: false })
-              
-              if (dbError) {
-                console.error(`Error fetching accessories from DB for ${sale.company_name}:`, dbError)
-              } else if (dbAccessories && dbAccessories.length > 0) {
-                console.log(`✅ Found ${dbAccessories.length} accessories in DB for ${sale.company_name}`)
-                enrichedSale.contract_items = dbAccessories
-              } else {
-                console.log(`ℹ️ No accessories found in DB for ${sale.company_name}`)
-              }
+              console.log(`⚠️ API returned null/empty for contract ${pendingContractId}, skipping DB fallback to avoid timeout`)
             } else {
-              console.log(`✅ Contract items fetched from API for contract ${pendingContractId}:`, JSON.stringify(contractItems, null, 2))
+              console.log(`✅ Contract items fetched from API for contract ${pendingContractId}: ${contractItems.length} items`)
               enrichedSale.contract_items = contractItems
             }
           } else {
@@ -310,55 +297,31 @@ Deno.serve(async (req) => {
     }))
 
     const apiKey = Deno.env.get('VEHICLE_API_KEY')
-    let processing: any = { forwarded: false }
-
-    // Only forward if we have groups with vehicles
-    if (!apiKey) {
-      console.log('⚠️ Skipping forwarding to receive-vehicle (missing API key)')
-    } else if (vehicleGroups.length === 0) {
-      console.log('ℹ️ Skipping forwarding to receive-vehicle (no vehicle groups to process)')
-      processing = { forwarded: false, message: 'No vehicle groups to process' }
-    } else {
-      console.log(`📤 Forwarding ${vehicleGroups.length} group(s) to receive-vehicle...`)
-      
-      try {
-        // Use direct fetch instead of supabase.functions.invoke to properly send body
-        const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
-        const receiveVehicleResponse = await fetchWithRetry(
-          receiveVehicleUrl,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
-            },
-            body: JSON.stringify(vehicleGroups),
+    // Fire-and-forget: forward to receive-vehicle in background
+    if (apiKey && vehicleGroups.length > 0) {
+      console.log(`📤 Forwarding ${vehicleGroups.length} group(s) to receive-vehicle (fire-and-forget)...`)
+      const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
+      fetchWithRetry(
+        receiveVehicleUrl,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
           },
-          2, // fewer retries for internal calls
-          30000 // 30 second timeout
-        )
-
-        if (!receiveVehicleResponse.ok) {
-          const errorText = await receiveVehicleResponse.text()
-          console.error('Error calling receive-vehicle:', receiveVehicleResponse.status, errorText)
-          processing = { 
-            forwarded: true, 
-            success: false, 
-            error: `HTTP ${receiveVehicleResponse.status}: ${errorText}` 
-          }
+          body: JSON.stringify(vehicleGroups),
+        },
+        1,
+        15000
+      ).then(async (res) => {
+        if (res.ok) {
+          console.log('✅ receive-vehicle processed successfully')
         } else {
-          const rvData = await receiveVehicleResponse.json()
-          console.log('✅ receive-vehicle processed successfully:', rvData)
-          processing = { forwarded: true, success: true, result: rvData }
+          console.error('❌ receive-vehicle error:', res.status, await res.text().catch(() => ''))
         }
-      } catch (forwardError) {
-        console.error('Error forwarding to receive-vehicle:', forwardError.message)
-        processing = { 
-          forwarded: true, 
-          success: false, 
-          error: forwardError.message 
-        }
-      }
+      }).catch((e) => {
+        console.error('❌ receive-vehicle forward failed:', e?.message ?? e)
+      })
     }
 
     return new Response(
@@ -367,7 +330,7 @@ Deno.serve(async (req) => {
         message: `Fetched ${enrichedSalesData.length} sales from Segsale`,
         sale_summary_id: idResumoVenda,
         sales: enrichedSalesData,
-        processing,
+        processing: { forwarded: !!(apiKey && vehicleGroups.length > 0), async: true },
       }),
       { 
         status: 200,
