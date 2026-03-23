@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
         message: `Fetched ${enrichedSalesData.length} sales from Segsale`,
         sale_summary_id: idResumoVenda,
         sales: enrichedSalesData,
-        processing: { forwarded: !!(apiKey && vehicleGroups.length > 0), async: true },
+        processing: { forwarded: false, message: 'Processing handled separately' },
       }),
       { 
         status: 200,

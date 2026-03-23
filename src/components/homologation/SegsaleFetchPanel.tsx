@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -20,16 +20,7 @@ export const SegsaleFetchPanel = () => {
 
     setLoading(true);
     try {
-      // Construct URL with query parameter
-      const url = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
-      const response = await fetch(url);
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        const details = result?.error || `HTTP ${response.status}`;
-        throw new Error(details);
-      }
+      const result: any = await fetchSegsaleProductsDirect(Number(idResumoVenda));
 
       console.log('📦 Resposta Segsale completa:', result);
 

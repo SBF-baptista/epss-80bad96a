@@ -23,35 +23,37 @@ export interface SegsaleFetchResponse {
   stored_count: number;
 }
 
-// DEPRECATED: Use fetchSegsaleProductsDirect instead - this version doesn't pass parameters correctly
-export const fetchSegsaleProducts = async (idResumoVenda: number): Promise<SegsaleFetchResponse> => {
-  console.warn('fetchSegsaleProducts is deprecated. Use fetchSegsaleProductsDirect instead.');
-  return fetchSegsaleProductsDirect(idResumoVenda);
-};
-
-// Alternative method using direct fetch with query params
 export const fetchSegsaleProductsDirect = async (idResumoVenda: number): Promise<SegsaleFetchResponse> => {
-  const url = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  
+  const url = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
   
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token || anonKey}`,
+      'apikey': anonKey,
     }
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     console.warn(`Segsale API returned ${response.status}:`, errorData);
-    // Return a graceful fallback instead of throwing
     return {
       success: false,
       message: errorData.suggestion || errorData.error || `HTTP ${response.status}`,
       id_resumo_venda: String(idResumoVenda),
       sales: [],
       stored_count: 0,
-    } as SegsaleFetchResponse;
+    };
   }
 
   return response.json();
 };
+
+export const fetchSegsaleProducts = fetchSegsaleProductsDirect;
