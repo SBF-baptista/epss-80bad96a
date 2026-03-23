@@ -108,14 +108,8 @@ export const logActionExtended = async (logData: ExtendedLogAction): Promise<str
     });
 
     if (error) {
-      console.error("Erro ao registrar log estendido via RPC:", error);
-      // Fallback para log simples
-      await logAction({
-        action: logData.action,
-        module: logData.module,
-        details: logData.details,
-        ip_address: logData.ip_address,
-      });
+      console.warn("Erro ao registrar log estendido via RPC:", error.message);
+      // No fallback - fail silently to avoid cascading queries during high load
       return null;
     }
 
