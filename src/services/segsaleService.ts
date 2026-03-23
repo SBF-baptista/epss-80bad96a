@@ -24,22 +24,20 @@ export interface SegsaleFetchResponse {
 }
 
 export const fetchSegsaleProductsDirect = async (idResumoVenda: number): Promise<SegsaleFetchResponse> => {
-  const { data, error } = await supabase.functions.invoke('fetch-segsale-products', {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    body: null,
-  });
-
-  // supabase.functions.invoke doesn't support query params natively for GET,
-  // so we fall back to authenticated fetch with the anon key
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  
+  const url = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
   
   const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': `Bearer ${token || anonKey}`,
+      'apikey': anonKey,
     }
   });
 
@@ -52,11 +50,10 @@ export const fetchSegsaleProductsDirect = async (idResumoVenda: number): Promise
       id_resumo_venda: String(idResumoVenda),
       sales: [],
       stored_count: 0,
-    } as SegsaleFetchResponse;
+    };
   }
 
   return response.json();
 };
 
-// Keep backward compat alias
 export const fetchSegsaleProducts = fetchSegsaleProductsDirect;
