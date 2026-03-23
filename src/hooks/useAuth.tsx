@@ -169,9 +169,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })
     
     if (!error) {
-      setTimeout(() => {
-        logLogin();
-      }, 100);
+      // Fire-and-forget: never block login on logging
+      logLogin().catch(() => {});
     }
     
     return { error }
