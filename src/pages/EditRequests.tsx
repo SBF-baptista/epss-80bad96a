@@ -172,12 +172,10 @@ const EditRequests = () => {
 
   useEffect(() => {
     loadRequests();
-    const channel = supabase
-      .channel('edit-requests-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'item_edit_requests' }, () => loadRequests())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Use centralized realtime
+  useCentralRealtime('item_edit_requests', loadRequests);
 
   // --- Business logic (unchanged) ---
   const applyChangesToItem = async (request: EditRequest) => {
