@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-key, token',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
 serve(async (req) => {
@@ -11,32 +11,34 @@ serve(async (req) => {
   const method = req.method;
   const url = new URL(req.url);
   const origin = req.headers.get('origin') || 'Not provided';
+  const userAgent = req.headers.get('user-agent') || 'Not provided';
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('cf-connecting-ip')
+    || 'unknown';
 
   // Handle CORS preflight
   if (method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Block GET requests entirely — only POST is allowed
+  if (method !== 'POST') {
+    console.warn(`🚫 [${timestamp}] Rejected ${method} from IP=${clientIp} UA=${userAgent}`);
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed', message: 'Only POST requests are accepted' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   console.log(`[${timestamp}] 🔔 Segsale webhook called`);
-  console.log(`   Method: ${method}`);
-  console.log(`   Origin: ${origin}`);
-  console.log(`   URL: ${url.toString()}`);
+  console.log(`   Method: ${method}, IP: ${clientIp}, UA: ${userAgent}`);
 
   try {
-    // Extract idResumoVenda from query params (GET) or body (POST)
     let idResumoVenda: number | null = null;
 
-    if (method === 'GET') {
-      const queryParam = url.searchParams.get('idResumoVenda');
-      if (queryParam) {
-        idResumoVenda = parseInt(queryParam, 10);
-        console.log(`📥 GET request - idResumoVenda from query: ${idResumoVenda}`);
-      }
-    } else if (method === 'POST') {
-      const body = await req.json();
-      idResumoVenda = body.idResumoVenda;
-      console.log(`📥 POST request - idResumoVenda from body: ${idResumoVenda}`);
-    }
+    const body = await req.json();
+    idResumoVenda = body.idResumoVenda;
+    console.log(`📥 POST request - idResumoVenda from body: ${idResumoVenda}`);
 
     // Validate idResumoVenda
     if (!idResumoVenda || isNaN(idResumoVenda)) {
@@ -44,7 +46,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Invalid idResumoVenda',
-          message: 'idResumoVenda must be a valid number (query param for GET, JSON body for POST)'
+          message: 'idResumoVenda must be a valid number in the JSON body'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -59,22 +61,16 @@ serve(async (req) => {
     let authMethod = 'none';
     let isAuthenticated = false;
 
-    // Check x-webhook-key first
     if (webhookKey && expectedWebhookKey && webhookKey === expectedWebhookKey) {
       authMethod = 'x-webhook-key';
       isAuthenticated = true;
-    }
-    // Check Token header
-    else if (tokenHeader && expectedToken && tokenHeader === expectedToken) {
+    } else if (tokenHeader && expectedToken && tokenHeader === expectedToken) {
       authMethod = 'Token header';
       isAuthenticated = true;
     }
-    // GET requests without auth are NO LONGER allowed (was causing loop via bots/crawlers)
 
     if (!isAuthenticated) {
-      console.error(`❌ Authentication failed`);
-      console.error(`   x-webhook-key provided: ${!!webhookKey}`);
-      console.error(`   Token provided: ${!!tokenHeader}`);
+      console.error(`❌ Authentication failed from IP=${clientIp}`);
       return new Response(
         JSON.stringify({ 
           error: 'Unauthorized',
@@ -87,14 +83,17 @@ serve(async (req) => {
     console.log(`✅ Authentication successful via: ${authMethod}`);
     console.log(`🔄 Processing idResumoVenda: ${idResumoVenda}`);
 
-    // Call fetch-segsale-products endpoint (which fetches contract_items and forwards to receive-vehicle)
+    // Call fetch-segsale-products with Service Role Key for internal authentication
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const fetchUrl = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
-    console.log(`📞 Calling fetch-segsale-products (includes contract items): ${fetchUrl}`);
+    console.log(`📞 Calling fetch-segsale-products (authenticated): ${fetchUrl}`);
 
     const fetchResponse = await fetch(fetchUrl, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'apikey': serviceRoleKey
       }
     });
 
@@ -115,13 +114,6 @@ serve(async (req) => {
     }
 
     console.log(`✅ Successfully processed idResumoVenda ${idResumoVenda}`);
-    console.log(`📊 Summary:`, JSON.stringify({
-      method,
-      authMethod,
-      idResumoVenda,
-      fetchStatus: fetchResponse.status,
-      storedCount: fetchData.stored_count || 0
-    }, null, 2));
 
     return new Response(
       JSON.stringify({
