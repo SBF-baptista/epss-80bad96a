@@ -1,12 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCentralRealtime } from "@/hooks/useCentralRealtime";
+import { useAuth } from "@/hooks/useAuth";
 
 export const useEditRequestsCount = () => {
+  const { user } = useAuth();
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const loadCount = useCallback(async () => {
+    if (!user) {
+      setCount(0);
+      setLoading(false);
+      return;
+    }
     try {
       const { count: pendingCount, error } = await supabase
         .from('item_edit_requests')
