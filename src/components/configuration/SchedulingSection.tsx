@@ -43,12 +43,22 @@ export const SchedulingSection = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load on mount
   useEffect(() => {
     loadCustomers();
   }, []);
 
+  // Debounced search - 500ms delay
   useEffect(() => {
-    loadCustomers();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      loadCustomers();
+    }, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [searchTerm]);
 
   // Real-time subscription for customers table
