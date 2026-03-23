@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 
 export const useEditRequestsCount = () => {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const loadCount = async () => {
+  const loadCount = useCallback(async () => {
     try {
       const { count: pendingCount, error } = await supabase
         .from('item_edit_requests')
@@ -23,29 +24,13 @@ export const useEditRequestsCount = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadCount();
+  }, [loadCount]);
 
-    // Subscribe to real-time updates
-    const channel = supabase
-      .channel('edit-requests-count')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'item_edit_requests'
-        },
-        () => loadCount()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  useCentralRealtime('item_edit_requests', loadCount);
 
   return { count, loading };
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
@@ -6,10 +6,11 @@ import ProductionScannerModal from "@/components/ProductionScannerModal";
 import ShipmentPreparationModal from "@/components/ShipmentPreparationModal";
 import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 import { Order } from "@/services/orderService";
 
 const Kanban = () => {
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
     brand: "",
     model: "",
@@ -26,7 +27,7 @@ const Kanban = () => {
   } = useQuery({
     queryKey: ["kit-schedules"],
     queryFn: getKitSchedules,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -41,9 +42,16 @@ const Kanban = () => {
     refetchOnReconnect: false,
   });
 
-  // Setup realtime subscription for automatic synchronization
-  useRealtimeSubscription("kit_schedules", "kit-schedules");
-  useRealtimeSubscription("homologation_kits", "homologation-kits");
+  const invalidateKanban = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["kit-schedules"] });
+  }, [queryClient]);
+
+  const invalidateKits = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["homologation-kits"] });
+  }, [queryClient]);
+
+  useCentralRealtime("kit_schedules", invalidateKanban);
+  useCentralRealtime("homologation_kits", invalidateKits);
 
   const filteredSchedules = schedules.filter((schedule) => {
     const matchesBrand = !filters.brand || schedule.vehicle_brand?.toLowerCase().includes(filters.brand.toLowerCase());

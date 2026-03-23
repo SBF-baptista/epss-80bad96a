@@ -38,6 +38,8 @@ export const SupplyHomologationList = () => {
   const { data: supplies = [], isLoading } = useQuery({
     queryKey: ['kit-item-options', 'supply'],
     queryFn: () => fetchKitItemOptions('supply'),
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
   });
 
   const filteredSupplies = useMemo(() => {

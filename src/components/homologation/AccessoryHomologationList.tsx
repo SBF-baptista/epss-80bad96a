@@ -38,6 +38,8 @@ export const AccessoryHomologationList = () => {
   const { data: accessories = [], isLoading } = useQuery({
     queryKey: ['kit-item-options', 'accessory'],
     queryFn: () => fetchKitItemOptions('accessory'),
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
   });
 
   const filteredAccessories = useMemo(() => {

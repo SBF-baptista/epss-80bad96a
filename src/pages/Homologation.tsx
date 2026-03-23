@@ -41,11 +41,15 @@ const Homologation = () => {
   const { data: cards = [], isLoading, refetch } = useQuery({
     queryKey: ['homologation-cards'],
     queryFn: fetchHomologationCards,
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
   });
 
   const { data: workflowData = [] } = useQuery({
     queryKey: ['workflow-chain'],
     queryFn: fetchWorkflowChain,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 
   // Realtime subscription for homologation cards

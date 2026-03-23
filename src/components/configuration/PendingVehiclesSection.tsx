@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { useCentralRealtime } from '@/hooks/useCentralRealtime';
 import { Car, Truck, Calendar, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PendingVehicleData } from './ScheduleFormModal';
@@ -88,25 +89,15 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
     }
   };
 
+  const stableFetch = useCallback(() => {
+    fetchPendingSchedules();
+  }, []);
+
   useEffect(() => {
     fetchPendingSchedules();
-
-    // Subscribe to realtime updates on kit_schedules
-    const channel = supabase
-      .channel('pending-schedules-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'kit_schedules' },
-        () => {
-          fetchPendingSchedules();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
+
+  useCentralRealtime('kit_schedules', stableFetch);
 
   const handleScheduleClick = (schedule: PendingSchedule) => {
     // Build address string

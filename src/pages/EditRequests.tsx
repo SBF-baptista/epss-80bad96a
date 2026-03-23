@@ -56,6 +56,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 import {
   Dialog,
   DialogContent,
@@ -172,12 +173,10 @@ const EditRequests = () => {
 
   useEffect(() => {
     loadRequests();
-    const channel = supabase
-      .channel('edit-requests-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'item_edit_requests' }, () => loadRequests())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Use centralized realtime
+  useCentralRealtime('item_edit_requests', loadRequests);
 
   // --- Business logic (unchanged) ---
   const applyChangesToItem = async (request: EditRequest) => {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
 import { AccessoryHomologationList } from "@/components/homologation";
@@ -6,61 +6,19 @@ import { SupplyHomologationList } from "@/components/homologation/SupplyHomologa
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 
 const AccessorySupplyHomologation = () => {
   const queryClient = useQueryClient();
 
-  // Set up real-time subscription for changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('accessory-homologation-sync')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'kit_item_options'
-        },
-        (payload) => {
-          console.log('Kit item option changed in Accessories:', payload);
-          // Invalidate queries to refetch pending items and homologated lists
-          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
-          queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'homologation_kit_accessories'
-        },
-        (payload) => {
-          console.log('Kit accessory changed in Accessories:', payload);
-          // Invalidate queries when kit items change
-          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'customers'
-        },
-        (payload) => {
-          console.log('Customer changed in Accessories:', payload);
-          // Invalidate queries to refetch pending items when customers change
-          queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+  const invalidateHomologation = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
   }, [queryClient]);
+
+  useCentralRealtime('kit_item_options', invalidateHomologation);
+  useCentralRealtime('homologation_kit_accessories', invalidateHomologation);
+  useCentralRealtime('customers', invalidateHomologation);
 
   return (
     <HomologationErrorBoundary>

@@ -14,6 +14,7 @@ import { getCustomers } from '@/services/customerService';
 import { ScheduleModal } from './ScheduleModal';
 import { ScheduleHistoryModal } from './ScheduleHistoryModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useCentralRealtime } from '@/hooks/useCentralRealtime';
 
 interface SchedulingSectionProps {
   kits: HomologationKit[];
@@ -61,29 +62,12 @@ export const SchedulingSection = ({
     };
   }, [searchTerm]);
 
-  // Real-time subscription for customers table
-  useEffect(() => {
-    const channel = supabase
-      .channel('planning-customers-sync')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'customers',
-          filter: 'show_in_planning=eq.true'
-        },
-        (payload) => {
-          console.log('Customer changed in Planning:', payload);
-          loadCustomers();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+  // Use centralized realtime for customers
+  const reloadCustomers = useCallback(() => {
+    loadCustomers();
   }, []);
+
+  useCentralRealtime('customers', reloadCustomers);
 
   const loadCustomers = async () => {
     try {
