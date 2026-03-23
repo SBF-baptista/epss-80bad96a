@@ -11,8 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCentralRealtime } from '@/hooks/useCentralRealtime';
-import { checkMultipleKitsHomologation, type HomologationStatus } from '@/services/kitHomologationService';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ConfigurationDashboardProps {
   onNavigateToSection?: (section: string) => void;
