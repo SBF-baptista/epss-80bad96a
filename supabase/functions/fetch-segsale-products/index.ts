@@ -149,6 +149,19 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+    // Rate limiting check — before any DB or API call
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('cf-connecting-ip')
+      || 'unknown'
+
+    if (isRateLimited(clientIp)) {
+      console.warn(`🚫 Rate limited IP: ${clientIp}`)
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Try again in 1 minute.', retryAfterSeconds: 60 }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } }
+      )
+    }
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
