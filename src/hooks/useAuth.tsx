@@ -81,8 +81,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     )
 
-    // Get initial session
+    // Get initial session with timeout to prevent infinite loading
+    const sessionTimeout = setTimeout(() => {
+      console.warn('Session fetch timed out after 5s, proceeding as unauthenticated')
+      setLoading(false)
+    }, 5000)
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(sessionTimeout)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -90,6 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user?.id) {
         updateLastSeen(session.user.id)
       }
+    }).catch(() => {
+      clearTimeout(sessionTimeout)
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
