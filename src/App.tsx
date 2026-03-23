@@ -289,7 +289,7 @@ function AppContent() {
               } />
               
               
-              <Route path="/segsale-test" element={<SegsaleTest />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>
