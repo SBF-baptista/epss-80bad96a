@@ -185,59 +185,17 @@ serve(async (req) => {
     }
     console.log(`[${timestamp}][${requestId}] Request body validation passed`)
 
-    // AUTO-FETCH CONTRACT ITEMS: Enrich groups that have pending_contract_id but missing contract_items
+    // AUTO-FETCH CONTRACT ITEMS CHECK - DISABLED to prevent circular loop
+    // (fetch-segsale-products calls receive-vehicle, which was calling fetch-segsale-products again)
+    // Contract items should already be included by fetch-segsale-products before forwarding here
     console.log(`[${timestamp}][${requestId}] ===== AUTO-FETCH CONTRACT ITEMS CHECK =====`)
     for (let i = 0; i < requestBody.length; i++) {
       const group = requestBody[i]
-      
-      // Check if this group needs contract_items to be fetched
       const hasPendingContract = group.pending_contract_id != null
       const hasContractItems = (group as any).contract_items && Array.isArray((group as any).contract_items) && (group as any).contract_items.length > 0
       
-      if (hasPendingContract && !hasContractItems && group.sale_summary_id) {
-        console.log(`[${timestamp}][${requestId}] 🔍 Group ${i + 1} has pending_contract_id (${group.pending_contract_id}) but no contract_items - auto-fetching...`)
-        
-        try {
-          // Call fetch-segsale-products to get contract_items
-          const fetchUrl = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${group.sale_summary_id}`
-          console.log(`[${timestamp}][${requestId}] 📞 Calling fetch-segsale-products: ${fetchUrl}`)
-          
-          const fetchResponse = await fetch(fetchUrl, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          })
-          
-          if (!fetchResponse.ok) {
-            console.error(`[${timestamp}][${requestId}] ❌ Failed to fetch contract items: HTTP ${fetchResponse.status}`)
-            const errorText = await fetchResponse.text()
-            console.error(`[${timestamp}][${requestId}] Error response: ${errorText}`)
-          } else {
-            const fetchData = await fetchResponse.json()
-            console.log(`[${timestamp}][${requestId}] ✅ fetch-segsale-products response received`)
-            
-            // Extract contract_items from the first sale (assuming one sale per idResumoVenda)
-            if (fetchData.sales && Array.isArray(fetchData.sales) && fetchData.sales.length > 0) {
-              const sale = fetchData.sales[0]
-              const contractItems = (sale as any).contract_items
-              
-              if (contractItems && Array.isArray(contractItems) && contractItems.length > 0) {
-                console.log(`[${timestamp}][${requestId}] ✅ Found ${contractItems.length} contract items, enriching group ${i + 1}`)
-                // Add contract_items to the group
-                ;(requestBody[i] as any).contract_items = contractItems
-              } else {
-                console.log(`[${timestamp}][${requestId}] ⚠️ No contract_items found in fetch response`)
-              }
-            } else {
-              console.log(`[${timestamp}][${requestId}] ⚠️ No sales data in fetch response`)
-            }
-          }
-        } catch (fetchError) {
-          console.error(`[${timestamp}][${requestId}] ❌ Exception while auto-fetching contract items:`, (fetchError as any)?.message)
-        }
-      } else if (hasPendingContract && !hasContractItems) {
-        console.log(`[${timestamp}][${requestId}] ⚠️ Group ${i + 1} has pending_contract_id but no sale_summary_id - cannot auto-fetch`)
+      if (hasPendingContract && !hasContractItems) {
+        console.log(`[${timestamp}][${requestId}] ⚠️ Group ${i + 1} has pending_contract_id (${group.pending_contract_id}) but no contract_items - skipping auto-fetch to prevent circular calls`)
       } else if (hasContractItems) {
         console.log(`[${timestamp}][${requestId}] ✅ Group ${i + 1} already has ${(group as any).contract_items.length} contract_items`)
       }
