@@ -1,143 +1,50 @@
 
-Diagnóstico verificado agora:
 
-## O que confirmei no código
+# Diagnóstico: Requisições duplicadas de `user_roles` e `user_module_permissions`
 
-### 1. `fetch-segsale-products` está privada
-No arquivo `supabase/config.toml`:
-```toml
-[functions.fetch-segsale-products]
-verify_jwt = true
-```
+## Causa Raiz
 
-E dentro da própria função (`supabase/functions/fetch-segsale-products/index.ts`) ela ainda exige:
-- header `Authorization: Bearer ...`
-- validação real com `auth.getClaims()`
+O hook `useUserRole()` faz queries diretas ao Supabase **cada vez que é instanciado**. Diferente do `useAuth()` que usa Context (1 fetch, N consumidores), cada componente que chama `useUserRole()` dispara suas próprias queries independentes.
 
-Ou seja: hoje ela **não está pública**.
+Na rota `/kickoff`, estas instâncias estão ativas simultaneamente:
 
-### 2. O frontend atual não está disparando essa API automaticamente
-Encontrei apenas este uso no frontend:
-- `src/components/homologation/SegsaleFetchPanel.tsx`
+| Componente | Hook | Queries geradas |
+|---|---|---|
+| `RoleProtectedRoute` | `useUserRole()` | 1x user_roles + 1x user_module_permissions |
+| `AppNavigation` | `useUserRole()` | 1x user_roles + 1x user_module_permissions |
+| `AppNavigation` | `useEditRequestsCount()` | 1x item_edit_requests HEAD |
+| `KickoffClientCard` (por card) | `useUserRole()` | 1x user_roles + 1x user_module_permissions |
 
-E ele só chama a função no clique do botão:
-```ts
-const result = await fetchSegsaleProductsDirect(Number(idResumoVenda));
-```
+Resultado: **5+ pares de queries idênticas** a cada navegação. E quando o realtime dispara um re-render (channel remove/create visível nos logs), o ciclo se repete.
 
-Além disso, o service (`src/services/segsaleService.ts`) também bloqueia chamadas sem sessão:
-```ts
-if (!token) {
-  throw new Error("Usuário não autenticado para acessar o Segsale.");
-}
-```
+Os logs confirmam: `[useUserRole] Source: LEGACY` aparece **5 vezes** em cada bloco de navegação.
 
-Então, pelo código atual, **o browser não deveria estar chamando `fetch-segsale-products` sozinho**.
+## Solução: Converter `useUserRole` para Context Provider
 
-### 3. O problema real está no `segsale-webhook`
-O `segsale-webhook` continua público:
-```toml
-[functions.segsale-webhook]
-verify_jwt = false
-```
+Mesma arquitetura do `useAuth` — fetch uma vez, compartilhar via Context.
 
-E ele ainda chama internamente:
-```ts
-https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=...
-```
+### 1. Criar `UserRoleProvider` + `useUserRole` via Context
+**Arquivo**: `src/hooks/useUserRole.tsx`
 
-Mas faz isso **sem enviar Authorization**:
-```ts
-const fetchResponse = await fetch(fetchUrl, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-```
+- Criar `UserRoleContext` e `UserRoleProvider`
+- O Provider faz o fetch UMA vez (quando `user` muda)
+- `useUserRole()` passa a consumir o Context sem fazer queries
+- Envolver no `App.tsx` dentro do `AuthProvider`
 
-## Causa raiz
+### 2. Envolver App com o Provider
+**Arquivo**: `src/App.tsx`
 
-Hoje o cenário mais provável é este:
+- Adicionar `<UserRoleProvider>` dentro de `<AuthProvider>`
+
+### 3. Nenhuma mudança nos consumidores
+Todos os 22 arquivos que usam `useUserRole()` continuam funcionando sem alteração — a API do hook permanece idêntica.
+
+## Resultado Esperado
 
 ```text
-alguém/sistema externo chama segsale-webhook
-→ o webhook aceita porque é público + usa x-webhook-key / Token
-→ o webhook tenta chamar fetch-segsale-products
-→ fetch-segsale-products rejeita por falta de Bearer token
-→ isso continua aparecendo no Supabase como tentativa/chamada
+Antes:  5+ queries user_roles + 5+ queries user_module_permissions por navegação
+Depois: 1 query user_roles + 1 query user_module_permissions por sessão/mudança de user
 ```
 
-Ou seja:
+Redução de ~80% nas queries de permissão. O realtime churn do `item_edit_requests` também será avaliado para verificar se o channel remove/create está causando refetches desnecessários.
 
-- a `fetch-segsale-products` **está privada**
-- mas **ainda está sendo tentada**
-- e quem mais provavelmente provoca isso é o `segsale-webhook`, não o frontend
-
-## Por que no Supabase “ainda aparece rodando”?
-
-Porque “privada” não significa “invisível” ou “URL inexistente”.
-
-Significa:
-- a URL ainda existe
-- qualquer cliente ainda pode tentar bater nela
-- mas sem JWT válido a função é barrada
-
-Então no painel do Supabase você ainda pode ver:
-- tentativas
-- 401 / 403
-- chamadas negadas
-
-Isso **não prova que a função continua pública**. Prova que **alguém ainda está tentando chamá-la**.
-
-## Evidências adicionais da verificação
-
-### Não achei evidência de chamada atual vinda da preview
-- snapshot de network do preview: sem requests para `fetch-segsale-products`
-- busca no código: sem auto-fetch no Kickoff para essa função
-
-### Há outro ruído no frontend, mas é separado
-Os logs mostram recriação frequente de subscriptions realtime:
-- `item_edit_requests`
-- `incoming_vehicles`
-
-Isso explica re-render/reconexão no app, mas **não explica chamadas da `fetch-segsale-products`**, porque não existe mais um hook automático ligando isso à API Segsale.
-
-## Conclusão objetiva
-
-O diagnóstico correto agora é:
-
-1. `fetch-segsale-products` **não está pública**
-2. o frontend atual **não está chamando ela em loop**
-3. quem ainda pode estar gerando tentativas é o **`segsale-webhook` público**
-4. o `segsale-webhook` está **quebrado na integração interna**, porque chama a função privada **sem autenticação**
-5. por isso o Supabase pode continuar mostrando atividade/tentativas mesmo após privatizar a função
-
-## Solução recomendada
-
-### Correção principal
-Ajustar `segsale-webhook` para chamar `fetch-segsale-products` com autenticação válida:
-- usar `SUPABASE_SERVICE_ROLE_KEY` no header `Authorization`
-- ou parar de chamar por HTTP e reutilizar a lógica internamente
-
-### Correção de contenção
-Se você quer parar imediatamente qualquer nova tentativa indireta:
-- remover temporariamente a chamada do `segsale-webhook` para `fetch-segsale-products`
-- ou fazer o webhook retornar antes dessa chamada até a integração ser corrigida
-
-### Endurecimento extra
-Para reduzir tráfego indevido:
-- aceitar apenas `POST` no `segsale-webhook`
-- manter rejeição imediata para `GET`
-- logar origem/IP/user-agent do webhook para identificar quem está insistindo
-- revisar se algum sistema externo ainda está retryando esse endpoint
-
-## O que eu implementaria no próximo passo
-
-1. Corrigir o `segsale-webhook` para autenticar corretamente a chamada interna
-2. Opcionalmente bloquear `GET` de vez no webhook
-3. Adicionar logs claros de origem no webhook para distinguir:
-   - chamada legítima da Segsale
-   - retry externo
-   - bot/crawler
-4. Revisar o churn de realtime no Kickoff separadamente, porque isso está gerando ruído no app, embora não seja a causa da API Segsale
