@@ -297,55 +297,31 @@ Deno.serve(async (req) => {
     }))
 
     const apiKey = Deno.env.get('VEHICLE_API_KEY')
-    let processing: any = { forwarded: false }
-
-    // Only forward if we have groups with vehicles
-    if (!apiKey) {
-      console.log('⚠️ Skipping forwarding to receive-vehicle (missing API key)')
-    } else if (vehicleGroups.length === 0) {
-      console.log('ℹ️ Skipping forwarding to receive-vehicle (no vehicle groups to process)')
-      processing = { forwarded: false, message: 'No vehicle groups to process' }
-    } else {
-      console.log(`📤 Forwarding ${vehicleGroups.length} group(s) to receive-vehicle...`)
-      
-      try {
-        // Use direct fetch instead of supabase.functions.invoke to properly send body
-        const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
-        const receiveVehicleResponse = await fetchWithRetry(
-          receiveVehicleUrl,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
-            },
-            body: JSON.stringify(vehicleGroups),
+    // Fire-and-forget: forward to receive-vehicle in background
+    if (apiKey && vehicleGroups.length > 0) {
+      console.log(`📤 Forwarding ${vehicleGroups.length} group(s) to receive-vehicle (fire-and-forget)...`)
+      const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
+      fetchWithRetry(
+        receiveVehicleUrl,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
           },
-          1, // no retry for internal calls
-          15000 // 15s timeout
-        )
-
-        if (!receiveVehicleResponse.ok) {
-          const errorText = await receiveVehicleResponse.text()
-          console.error('Error calling receive-vehicle:', receiveVehicleResponse.status, errorText)
-          processing = { 
-            forwarded: true, 
-            success: false, 
-            error: `HTTP ${receiveVehicleResponse.status}: ${errorText}` 
-          }
+          body: JSON.stringify(vehicleGroups),
+        },
+        1,
+        15000
+      ).then(async (res) => {
+        if (res.ok) {
+          console.log('✅ receive-vehicle processed successfully')
         } else {
-          const rvData = await receiveVehicleResponse.json()
-          console.log('✅ receive-vehicle processed successfully:', rvData)
-          processing = { forwarded: true, success: true, result: rvData }
+          console.error('❌ receive-vehicle error:', res.status, await res.text().catch(() => ''))
         }
-      } catch (forwardError) {
-        console.error('Error forwarding to receive-vehicle:', forwardError.message)
-        processing = { 
-          forwarded: true, 
-          success: false, 
-          error: forwardError.message 
-        }
-      }
+      }).catch((e) => {
+        console.error('❌ receive-vehicle forward failed:', e?.message ?? e)
+      })
     }
 
     return new Response(
@@ -354,7 +330,7 @@ Deno.serve(async (req) => {
         message: `Fetched ${enrichedSalesData.length} sales from Segsale`,
         sale_summary_id: idResumoVenda,
         sales: enrichedSalesData,
-        processing,
+        processing: { forwarded: !!(apiKey && vehicleGroups.length > 0), async: true },
       }),
       { 
         status: 200,
