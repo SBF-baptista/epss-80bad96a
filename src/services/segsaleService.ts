@@ -23,27 +23,29 @@ export interface SegsaleFetchResponse {
   stored_count: number;
 }
 
-// DEPRECATED: Use fetchSegsaleProductsDirect instead - this version doesn't pass parameters correctly
-export const fetchSegsaleProducts = async (idResumoVenda: number): Promise<SegsaleFetchResponse> => {
-  console.warn('fetchSegsaleProducts is deprecated. Use fetchSegsaleProductsDirect instead.');
-  return fetchSegsaleProductsDirect(idResumoVenda);
-};
-
-// Alternative method using direct fetch with query params
 export const fetchSegsaleProductsDirect = async (idResumoVenda: number): Promise<SegsaleFetchResponse> => {
-  const url = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
+  const { data, error } = await supabase.functions.invoke('fetch-segsale-products', {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: null,
+  });
+
+  // supabase.functions.invoke doesn't support query params natively for GET,
+  // so we fall back to authenticated fetch with the anon key
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
   
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     }
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     console.warn(`Segsale API returned ${response.status}:`, errorData);
-    // Return a graceful fallback instead of throwing
     return {
       success: false,
       message: errorData.suggestion || errorData.error || `HTTP ${response.status}`,
@@ -55,3 +57,6 @@ export const fetchSegsaleProductsDirect = async (idResumoVenda: number): Promise
 
   return response.json();
 };
+
+// Keep backward compat alias
+export const fetchSegsaleProducts = fetchSegsaleProductsDirect;
