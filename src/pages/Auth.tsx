@@ -68,6 +68,8 @@ const Auth = () => {
           } else {
             toast({ title: "Erro", description: "E-mail ou senha incorretos", variant: "destructive" });
           }
+        } else if (error.message === 'Failed to fetch') {
+          toast({ title: "Erro de conexão", description: "Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.", variant: "destructive" });
         } else {
           toast({ title: "Erro", description: error.message, variant: "destructive" });
         }
