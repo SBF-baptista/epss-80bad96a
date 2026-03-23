@@ -139,8 +139,8 @@ Deno.serve(async (req) => {
 
     console.log(`📡 Fetching Segsale products for idResumoVenda: ${idResumoVenda}`)
 
-    // Rate-limiting: check cache first (5 hour TTL)
-    const CACHE_TTL_MS = 5 * 60 * 60 * 1000 // 5 hours
+    // Rate-limiting: check cache first (5 min TTL)
+    const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
     const cached = await readCachedSegsaleResponse(supabase, idResumoVenda)
     if (cached) {
       const cacheAge = Date.now() - new Date(cached.updated_at).getTime()
