@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -22,8 +22,13 @@ export const useRealtimeSubscription = (
   onUpdate?: () => void
 ) => {
   const queryClient = useQueryClient();
+  const invalidateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryKeySignature = JSON.stringify(Array.isArray(queryKey) ? queryKey : [queryKey]);
+  const filterSignature = JSON.stringify(filter ?? {});
 
   useEffect(() => {
+    const normalizedQueryKey = Array.isArray(queryKey) ? queryKey : [queryKey];
+    const currentFilter = filter ?? {};
     const channelName = `${tableName}-changes-${Date.now()}`;
     console.log(`Setting up realtime subscription for ${tableName}`);
     
@@ -32,26 +37,35 @@ export const useRealtimeSubscription = (
       .on<RealtimePostgresChangesPayload<any>>(
         'postgres_changes' as any,
         {
-          event: filter?.event || '*',
-          schema: filter?.schema || 'public',
+          event: currentFilter.event || '*',
+          schema: currentFilter.schema || 'public',
           table: tableName
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
           console.log(`Realtime update received for ${tableName}:`, payload.eventType);
-          // Invalidate and refetch when changes occur
-          const key = Array.isArray(queryKey) ? queryKey : [queryKey];
-          queryClient.invalidateQueries({ queryKey: key });
-          // Call optional callback
-          if (onUpdate) {
-            onUpdate();
+
+          if (invalidateTimeoutRef.current) {
+            clearTimeout(invalidateTimeoutRef.current);
           }
+
+          invalidateTimeoutRef.current = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: normalizedQueryKey });
+
+            if (onUpdate) {
+              onUpdate();
+            }
+          }, 400);
         }
       )
       .subscribe();
 
     return () => {
+      if (invalidateTimeoutRef.current) {
+        clearTimeout(invalidateTimeoutRef.current);
+      }
+
       console.log(`Cleaning up realtime subscription for ${tableName}`);
       supabase.removeChannel(channel);
     };
-  }, [tableName, queryKey, queryClient, filter?.event, filter?.schema, onUpdate]);
+  }, [tableName, queryClient, queryKeySignature, filterSignature, onUpdate]);
 };

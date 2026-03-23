@@ -31,9 +31,9 @@ const Kickoff = () => {
   } = useQuery({
     queryKey: ["kickoff-data"],
     queryFn: getKickoffData,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    staleTime: 0,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 30,
   });
 
   const {
@@ -43,17 +43,17 @@ const Kickoff = () => {
   } = useQuery({
     queryKey: ["kickoff-history"],
     queryFn: getKickoffHistory,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    staleTime: 0,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 30,
   });
 
   const { data: integrityCheck, isLoading: integrityLoading } = useQuery({
     queryKey: ["kickoff-integrity"],
     queryFn: checkKickoffIntegrity,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    staleTime: 30000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60,
   });
 
   useRealtimeSubscription("accessories", ["kickoff-data"]);

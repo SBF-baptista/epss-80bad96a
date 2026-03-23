@@ -1,38 +1,38 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import { Layout } from "@/components/Layout";
-import Dashboard from "./pages/Dashboard";
-import Kanban from "./pages/Kanban";
-import Homologation from "./pages/Homologation";
-import KitManagement from "./pages/KitManagement";
-import CustomerTracking from "./pages/CustomerTracking";
-import AccessorySupplyHomologation from "./pages/AccessorySupplyHomologation";
-import TechnicianManagement from "./pages/TechnicianManagement";
-import Planning from "./pages/Planning";
-import Scheduling from "./pages/Scheduling";
-
-import ConfigurationManagement from "./pages/ConfigurationManagement";
-import UserManagement from "./pages/UserManagement";
-import Kickoff from "./pages/Kickoff";
-import Auth from "./pages/Auth";
-import Login from "./pages/Login";
-import ActivateAccount from "./pages/ActivateAccount";
-import ResetPassword from "./pages/ResetPassword";
-import NotFound from "./pages/NotFound";
 import SmartRedirect from "@/components/SmartRedirect";
-import SegsaleTest from "./pages/SegsaleTest";
-import History from "./pages/History";
-import EditRequests from "./pages/EditRequests";
-import WhatsAppMessageControl from "./pages/WhatsAppMessageControl";
-import ModuleSelection from "./pages/ModuleSelection";
-import Installation from "./pages/Installation";
-import ApiMonitoring from "./pages/ApiMonitoring";
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Kanban = lazy(() => import("./pages/Kanban"));
+const Homologation = lazy(() => import("./pages/Homologation"));
+const KitManagement = lazy(() => import("./pages/KitManagement"));
+const CustomerTracking = lazy(() => import("./pages/CustomerTracking"));
+const AccessorySupplyHomologation = lazy(() => import("./pages/AccessorySupplyHomologation"));
+const TechnicianManagement = lazy(() => import("./pages/TechnicianManagement"));
+const Planning = lazy(() => import("./pages/Planning"));
+const Scheduling = lazy(() => import("./pages/Scheduling"));
+const ConfigurationManagement = lazy(() => import("./pages/ConfigurationManagement"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const Kickoff = lazy(() => import("./pages/Kickoff"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Login = lazy(() => import("./pages/Login"));
+const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const SegsaleTest = lazy(() => import("./pages/SegsaleTest"));
+const History = lazy(() => import("./pages/History"));
+const EditRequests = lazy(() => import("./pages/EditRequests"));
+const WhatsAppMessageControl = lazy(() => import("./pages/WhatsAppMessageControl"));
+const ModuleSelection = lazy(() => import("./pages/ModuleSelection"));
+const Installation = lazy(() => import("./pages/Installation"));
+const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 
 
 const queryClient = new QueryClient({
@@ -47,6 +47,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const RouteLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <p className="mt-4 text-muted-foreground">Carregando...</p>
+    </div>
+  </div>
+);
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -64,7 +73,8 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/ativar" element={<ActivateAccount />} />
@@ -276,7 +286,8 @@ function AppContent() {
               <Route path="/segsale-test" element={<SegsaleTest />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
+      </Suspense>
+    </BrowserRouter>
   );
 }
 

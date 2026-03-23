@@ -1,5 +1,5 @@
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
+import { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 import { logLogin, logLogout } from '@/services/logService'
@@ -15,20 +15,55 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const LAST_SEEN_SYNC_INTERVAL_MS = 5 * 60 * 1000
+
+const getLastSeenStorageKey = (userId: string) => `opm:last-seen:${userId}`
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const pendingLastSeenUpdates = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    const updateLastSeen = async (userId: string) => {
+    const shouldSyncLastSeen = (userId: string) => {
       try {
+        const lastSyncedAt = window.localStorage.getItem(getLastSeenStorageKey(userId))
+        if (!lastSyncedAt) return true
+
+        return Date.now() - Number(lastSyncedAt) >= LAST_SEEN_SYNC_INTERVAL_MS
+      } catch {
+        return true
+      }
+    }
+
+    const markLastSeenSynced = (userId: string) => {
+      try {
+        window.localStorage.setItem(getLastSeenStorageKey(userId), String(Date.now()))
+      } catch {
+        // Ignore storage errors and keep auth flow working
+      }
+    }
+
+    const updateLastSeen = async (userId: string) => {
+      if (!shouldSyncLastSeen(userId) || pendingLastSeenUpdates.current.has(userId)) {
+        return
+      }
+
+      pendingLastSeenUpdates.current.add(userId)
+
+      try {
+        const now = new Date().toISOString()
         await supabase.from('user_last_seen').upsert(
-          { user_id: userId, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { user_id: userId, last_seen_at: now, updated_at: now },
           { onConflict: 'user_id' }
         )
+
+        markLastSeenSynced(userId)
       } catch (e) {
         console.error('Failed to update last_seen:', e)
+      } finally {
+        pendingLastSeenUpdates.current.delete(userId)
       }
     }
 
@@ -40,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false)
 
         // Record last seen on any auth event with a valid session
-        if (session?.user?.id && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+        if (session?.user?.id && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
           setTimeout(() => updateLastSeen(session.user.id), 500)
         }
       }
