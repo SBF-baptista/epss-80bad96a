@@ -93,37 +93,33 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
     loadData();
   }, []);
 
-  // Set up real-time subscription for kit_item_options and accessories changes
+  // Debounced real-time subscription for kit_item_options and accessories changes
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const debouncedReload = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        loadData();
+      }, 1000);
+    };
+
     const channel = supabase
       .channel('planning-kit-sync')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'kit_item_options'
-        },
-        () => {
-          console.log('Kit item option changed in Planning, reloading...');
-          loadData();
-        }
+        { event: '*', schema: 'public', table: 'kit_item_options' },
+        debouncedReload
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'accessories'
-        },
-        () => {
-          console.log('Accessories changed, reloading...');
-          loadData();
-        }
+        { event: '*', schema: 'public', table: 'accessories' },
+        debouncedReload
       )
       .subscribe();
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, []);

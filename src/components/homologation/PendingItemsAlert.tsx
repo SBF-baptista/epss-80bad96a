@@ -36,7 +36,7 @@ export const PendingItemsAlert = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 60000,
+    staleTime: 1000 * 60 * 2,
   });
 
 

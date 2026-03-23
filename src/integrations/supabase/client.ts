@@ -5,6 +5,23 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://eeidevcyxpnorbgcskdf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlaWRldmN5eHBub3JiZ2Nza2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNDY4NTIsImV4cCI6MjA2NjcyMjg1Mn0.d_522xNkZuA5upBT0TuqoIW8ylxTCVhYy3YAHp55xdg";
 
+// Resilient fetch with automatic retry for network errors
+const resilientFetch: typeof fetch = async (input, init) => {
+  const MAX_RETRIES = 2;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(input, init);
+      return response;
+    } catch (error) {
+      if (attempt === MAX_RETRIES) throw error;
+      // Wait before retry: 500ms, then 1500ms
+      await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+    }
+  }
+  // Unreachable, but TypeScript needs it
+  throw new Error('Fetch failed after retries');
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -13,5 +30,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
+  global: {
+    fetch: resilientFetch,
+  },
 });

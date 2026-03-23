@@ -64,7 +64,7 @@ const ApiMonitoring = () => {
   const { data: endpoints = [], isLoading, refetch } = useQuery({
     queryKey: ['api-endpoints-stats'],
     queryFn: fetchEndpointWithStats,
-    refetchInterval: 30000,
+    staleTime: 1000 * 60 * 2,
   });
 
   const { data: logs = [] } = useQuery({

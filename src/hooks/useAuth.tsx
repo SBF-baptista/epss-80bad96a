@@ -177,12 +177,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signOut = async () => {
-    // Try to log logout, but never let it block sign out
-    try {
-      await logLogout();
-    } catch (e) {
-      console.error('Logout log failed (ignored):', e)
-    }
+    // Fire-and-forget: never block sign out on logging
+    logLogout().catch(() => {});
     
     // Always attempt sign out and clear local state regardless of errors
     try {
