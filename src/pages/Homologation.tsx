@@ -31,6 +31,7 @@ import {
 
 const Homologation = () => {
   const { canEditModule } = useUserRole();
+  const { user } = useAuth();
   const [filters, setFilters] = useState<HomologationFiltersType>({
     brand: "",
     year: "",
