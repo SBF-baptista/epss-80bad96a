@@ -20,7 +20,7 @@ export const SegsaleFetchPanel = () => {
 
     setLoading(true);
     try {
-      const result = await fetchSegsaleProductsDirect(Number(idResumoVenda));
+      const result: any = await fetchSegsaleProductsDirect(Number(idResumoVenda));
 
       console.log('📦 Resposta Segsale completa:', result);
 
