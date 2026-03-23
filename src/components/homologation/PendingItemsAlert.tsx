@@ -7,6 +7,7 @@ import { fetchPendingHomologationItems } from "@/services/pendingHomologationSer
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cleanItemName } from "@/utils/itemNormalization";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PendingItemWithMetrics {
   item_name: string;
