@@ -21,6 +21,7 @@ import HomologationFilters from "@/components/homologation/HomologationFilters";
 import { PendingItemsAlert } from "@/components/homologation/PendingItemsAlert";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
