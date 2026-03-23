@@ -43,6 +43,7 @@ const loadAccessoriesCounts = async (): Promise<Map<string, number>> => {
 
 export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDashboardProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   
   // Data states
