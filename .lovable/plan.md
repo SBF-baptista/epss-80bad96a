@@ -1,58 +1,70 @@
 
 
-# Diagnóstico: `fetch-segsale-products` sendo chamada a cada segundo
+# Diagnóstico Completo: `fetch-segsale-products`
 
-## Causa Raiz Identificada
+## Bug Crítico #1: Variáveis Indefinidas (causa de erro 500)
 
-Existem **3 problemas simultâneos** causando o loop:
-
-### 1. `segsale-webhook` aceita GET sem autenticação
-Linhas 73-77 do webhook permitem chamadas GET sem nenhum header de autenticação. Qualquer bot, crawler, ou sistema externo que acesse a URL dispara o fluxo completo: `segsale-webhook` → `fetch-segsale-products` → `receive-vehicle`.
-
-### 2. `fetch-segsale-products` chama `receive-vehicle` em fire-and-forget a cada invocação
-Toda vez que `fetch-segsale-products` é chamada, ela automaticamente dispara `receive-vehicle` em background (linhas 301-324). Isso significa que **cada chamada gera 2 Edge Functions** + queries ao banco.
-
-### 3. Banco sobrecarregado gera 522, isolates reiniciam em loop
-Os logs de `receive-vehicle` mostram erros **522 Connection Timed Out** do Cloudflare. Com o banco indisponível, as funções falham e os isolates são reciclados constantemente, gerando os "shutdown" a cada segundo.
-
-```text
-Fluxo atual (a cada chamada):
-Chamada externa (bot/Segsale?) → segsale-webhook (GET sem auth)
-  → fetch-segsale-products (15s timeout Segsale API)
-    → receive-vehicle (fire-and-forget, 15s timeout)
-      → DB queries (522 timeout) → falha → isolate shutdown
+Na **linha 296** do `fetch-segsale-products/index.ts`:
+```typescript
+processing: { forwarded: !!(apiKey && vehicleGroups.length > 0), async: true },
 ```
+
+As variáveis `apiKey` e `vehicleGroups` **não existem** no código. Foram removidas em edições anteriores quando eliminamos o forward para `receive-vehicle`, mas a referência na resposta final permaneceu. Isso causa um **ReferenceError** que mata a função após todo o processamento ter sido feito com sucesso — ou seja, a API Segsale responde, o cache é escrito, os contract items são buscados, mas o retorno final explode com erro 500.
+
+## Bug #2: `SegsaleTest.tsx` executa automaticamente no mount
+
+A página `/segsale-test` tem um `useEffect` sem condição que chama `fetch-segsale-products?idResumoVenda=107` toda vez que é montada. Se essa rota for carregada por qualquer motivo (prefetch, crawler, navegação acidental), gera chamadas desnecessárias.
+
+## Bug #3: Chamadas sem autenticação
+
+Todos os pontos que chamam `fetch-segsale-products` no frontend (SegsaleFetchPanel, SegsaleTest, KickoffDetailsModal, displaySegsaleData) fazem `fetch()` direto sem nenhum header de autenticação. A Edge Function não exige auth, ficando aberta para qualquer chamada externa.
+
+## Arquivos redundantes (geram carga desnecessária)
+
+| Arquivo | Problema |
+|---------|----------|
+| `src/utils/displaySegsaleData.ts` | Hardcoded para ID 107, nunca usado em produção |
+| `src/utils/testSegsaleAPI.ts` | Utilitário de debug, não deveria existir em produção |
+| `src/pages/SegsaleTest.tsx` | Página de teste com auto-fetch no mount |
+| Rota `/segsale-test` em `App.tsx` | Expõe a página de teste |
 
 ## Plano de Correção
 
-### 1. Exigir autenticação no `segsale-webhook` para GET
-**Arquivo**: `supabase/functions/segsale-webhook/index.ts`
-
-Remover o bloco que permite GET sem auth (linhas 73-77). Todas as chamadas devem ter `x-webhook-key` ou `Token` header.
-
-### 2. Remover forward automático para `receive-vehicle` de `fetch-segsale-products`
+### 1. Corrigir o ReferenceError na Edge Function (URGENTE)
 **Arquivo**: `supabase/functions/fetch-segsale-products/index.ts`
 
-Eliminar completamente o bloco fire-and-forget (linhas 299-325) que chama `receive-vehicle`. O `receive-vehicle` só deve ser chamado explicitamente pelo webhook ou manualmente, nunca como efeito colateral de uma consulta de dados.
+Substituir a linha 296:
+```typescript
+// DE:
+processing: { forwarded: !!(apiKey && vehicleGroups.length > 0), async: true },
+// PARA:
+processing: { forwarded: false, message: 'Processing handled separately' },
+```
 
-### 3. Adicionar rate-limiting por cache no `fetch-segsale-products`
+Redesplegar imediatamente.
+
+### 2. Remover arquivos de teste/debug
+- Deletar `src/utils/displaySegsaleData.ts`
+- Deletar `src/utils/testSegsaleAPI.ts`
+- Deletar `src/pages/SegsaleTest.tsx`
+- Remover rota `/segsale-test` e import lazy de `App.tsx`
+
+### 3. Proteger o endpoint com autenticação básica
 **Arquivo**: `supabase/functions/fetch-segsale-products/index.ts`
 
-Antes de chamar a API Segsale, verificar o cache em `integration_state`. Se houver dados com menos de 5 minutos, retornar o cache diretamente sem fazer nenhuma chamada externa. Isso evita que chamadas repetidas gerem carga.
+Adicionar verificação de header `Authorization` (apikey do Supabase) ou `Token` para evitar chamadas de fontes externas não autorizadas. As chamadas do frontend passarão a usar `supabase.functions.invoke()` que inclui automaticamente o header correto.
 
-### 4. Redesplegar ambas as funções
+### 4. Atualizar chamadas no frontend para usar `supabase.functions.invoke`
+**Arquivos**:
+- `src/services/segsaleService.ts` — trocar `fetch()` direto por `supabase.functions.invoke()`
+- `src/components/homologation/SegsaleFetchPanel.tsx` — mesma mudança
 
-Após as mudanças, redesplegar `segsale-webhook`, `fetch-segsale-products` e verificar que os shutdowns pararam.
+Isso garante que todas as chamadas passem pelo cliente autenticado do Supabase.
 
 ## Resultado Esperado
 
-```text
-Antes: ~60 invocações/minuto (3 funções em cascata)
-Depois: 0 invocações automáticas (só manual ou webhook autenticado)
-```
-
-- Chamadas sem auth serão rejeitadas com 401
-- `fetch-segsale-products` não dispara mais `receive-vehicle`
-- Cache de 5 minutos impede chamadas duplicadas mesmo legítimas
-- Banco para de receber carga desnecessária
+- Edge Function para de retornar erro 500 por variáveis indefinidas
+- Chamadas de teste/debug eliminadas
+- Endpoint protegido contra acesso externo não autorizado
+- Todas as chamadas do frontend passam pelo cliente Supabase autenticado
 
