@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
 import { useAuth } from './useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { AppModule, PermissionLevel, ModulePermission } from '@/types/permissions'
@@ -18,29 +18,48 @@ export type LegacyRole =
   | 'operador_agendamento' 
   | 'operador_suprimentos'
 
-export const useUserRole = () => {
+interface UserRoleContextType {
+  role: UserRole
+  permissions: ModulePermission[]
+  loading: boolean
+  hasRole: (requiredRole: UserRole) => boolean
+  hasAnyRole: (requiredRoles: UserRole[]) => boolean
+  getModulePermission: (module: AppModule) => PermissionLevel
+  canViewModule: (module: AppModule) => boolean
+  canEditModule: (module: AppModule) => boolean
+  canApproveModule: (module: AppModule) => boolean
+  isAdmin: () => boolean
+  isGestor: () => boolean
+  isOperador: () => boolean
+  isVisualizador: () => boolean
+  canEdit: () => boolean
+}
+
+const UserRoleContext = createContext<UserRoleContextType | null>(null)
+
+const mapRawRole = (rawRole: string | null | undefined): UserRole => {
+  if (rawRole === 'admin') return 'admin'
+  if (rawRole === 'gestor') return 'gestor'
+  if (rawRole === 'operador' || rawRole?.startsWith('operador_')) return 'operador'
+  if (rawRole === 'visualizador') return 'visualizador'
+  return null
+}
+
+const mapPermissionEntries = (userId: string, permissionMap: Record<string, string>): ModulePermission[] => {
+  return Object.entries(permissionMap || {})
+    .filter(([, permission]) => typeof permission === 'string' && permission !== 'none')
+    .map(([module, permission]) => ({
+      user_id: userId,
+      module: module as AppModule,
+      permission: permission as PermissionLevel,
+    }))
+}
+
+export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
   const [role, setRole] = useState<UserRole>(null)
   const [permissions, setPermissions] = useState<ModulePermission[]>([])
   const [loading, setLoading] = useState(true)
-
-  const mapRawRole = (rawRole: string | null | undefined): UserRole => {
-    if (rawRole === 'admin') return 'admin'
-    if (rawRole === 'gestor') return 'gestor'
-    if (rawRole === 'operador' || rawRole?.startsWith('operador_')) return 'operador'
-    if (rawRole === 'visualizador') return 'visualizador'
-    return null
-  }
-
-  const mapPermissionEntries = (userId: string, permissionMap: Record<string, string>): ModulePermission[] => {
-    return Object.entries(permissionMap || {})
-      .filter(([, permission]) => typeof permission === 'string' && permission !== 'none')
-      .map(([module, permission]) => ({
-        user_id: userId,
-        module: module as AppModule,
-        permission: permission as PermissionLevel,
-      }))
-  }
 
   useEffect(() => {
     const fetchUserRoleAndPermissions = async () => {
@@ -133,9 +152,7 @@ export const useUserRole = () => {
 
   // Check module permissions
   const getModulePermission = (module: AppModule): PermissionLevel => {
-    // Admin always has full access
     if (role === 'admin') return 'admin'
-    
     const perm = permissions.find(p => p.module === module)
     return perm?.permission || 'none'
   }
@@ -161,16 +178,13 @@ export const useUserRole = () => {
     return ['approve', 'admin'].includes(level)
   }
 
-  // Legacy helpers for backwards compatibility
   const isAdmin = (): boolean => role === 'admin'
   const isGestor = (): boolean => role === 'gestor'
   const isOperador = (): boolean => role === 'operador'
   const isVisualizador = (): boolean => role === 'visualizador'
-  
-  // Legacy - check if can edit (not visualizador)
   const canEdit = (): boolean => role !== 'visualizador' && role !== null
 
-  return {
+  const value: UserRoleContextType = {
     role,
     permissions,
     loading,
@@ -186,4 +200,18 @@ export const useUserRole = () => {
     isVisualizador,
     canEdit
   }
+
+  return (
+    <UserRoleContext.Provider value={value}>
+      {children}
+    </UserRoleContext.Provider>
+  )
+}
+
+export const useUserRole = (): UserRoleContextType => {
+  const context = useContext(UserRoleContext)
+  if (!context) {
+    throw new Error('useUserRole must be used within a UserRoleProvider')
+  }
+  return context
 }
