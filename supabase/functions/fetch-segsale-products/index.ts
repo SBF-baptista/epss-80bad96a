@@ -260,69 +260,8 @@ Deno.serve(async (req) => {
       enrichedSalesData.push(enrichedSale)
     }
 
-    // Forward all contract_items to receive-vehicle for centralized vehicle_id linking
-    console.log(`📤 Forwarding ${enrichedSalesData.length} sales to receive-vehicle...`)
-    console.log(`Contract items will be processed by receive-vehicle with proper vehicle_id linking`)
-
-    // After storing, forward data to receive-vehicle for processing
-    const vehicleGroups = (enrichedSalesData as any[]).map((sale) => ({
-      company_name: sale.company_name,
-      cpf: sale.cpf ?? null,
-      phone: sale.phone ?? null,
-      usage_type: sale.usage_type,
-      // Use the English field names from the API
-      sale_summary_id: sale.sale_summary_id ?? parseInt(idResumoVenda),
-      pending_contract_id: sale.pending_contract_id ?? null,
-      vehicles: sale.vehicles.map((v: SegsaleVehicle) => {
-        // Ensure contract_items is always an array
-        const contractItems = Array.isArray(sale.contract_items) ? sale.contract_items : [];
-        
-        return {
-          plate: v.plate,
-          brand: v.brand,
-          vehicle: v.vehicle,
-          year: v.year,
-          // Distribute contract_items into modules and accessories based on categories
-          modules: contractItems
-            .filter((item: any) => item.categories === 'Módulos')
-            .map((item: any) => item.name),
-          accessories: contractItems
-            .filter((item: any) => item.categories === 'Acessórios')
-            .map((item: any) => ({ accessory_name: item.name, quantity: item.quantity || 1 }))
-        };
-      }),
-      accessories: sale.accessories ?? [],
-      contract_items: sale.contract_items ?? null,
-      address: sale.address ?? undefined,
-    }))
-
-    const apiKey = Deno.env.get('VEHICLE_API_KEY')
-    // Fire-and-forget: forward to receive-vehicle in background
-    if (apiKey && vehicleGroups.length > 0) {
-      console.log(`📤 Forwarding ${vehicleGroups.length} group(s) to receive-vehicle (fire-and-forget)...`)
-      const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
-      fetchWithRetry(
-        receiveVehicleUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-          },
-          body: JSON.stringify(vehicleGroups),
-        },
-        1,
-        15000
-      ).then(async (res) => {
-        if (res.ok) {
-          console.log('✅ receive-vehicle processed successfully')
-        } else {
-          console.error('❌ receive-vehicle error:', res.status, await res.text().catch(() => ''))
-        }
-      }).catch((e) => {
-        console.error('❌ receive-vehicle forward failed:', e?.message ?? e)
-      })
-    }
+    // NOTE: receive-vehicle is NO LONGER called from here to prevent circular loops.
+    // It should be called explicitly by the webhook or manually.
 
     return new Response(
       JSON.stringify({
