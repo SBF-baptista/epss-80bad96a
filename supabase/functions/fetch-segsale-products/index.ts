@@ -3,7 +3,37 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'X-Robots-Tag': 'noindex, nofollow',
 }
+
+// In-memory rate limiter per IP: max 5 requests per minute
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return false
+  }
+
+  entry.count++
+  if (entry.count > RATE_LIMIT_MAX) {
+    return true
+  }
+  return false
+}
+
+// Cleanup stale entries every 5 minutes to prevent memory leak
+setInterval(() => {
+  const now = Date.now()
+  for (const [ip, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(ip)
+  }
+}, 5 * 60 * 1000)
 
 interface SegsaleVehicle {
   brand: string
@@ -118,6 +148,19 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
+
+    // Rate limiting check — before any DB or API call
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('cf-connecting-ip')
+      || 'unknown'
+
+    if (isRateLimited(clientIp)) {
+      console.warn(`🚫 Rate limited IP: ${clientIp}`)
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Try again in 1 minute.', retryAfterSeconds: 60 }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } }
+      )
+    }
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
