@@ -4,7 +4,7 @@ project_id = "eeidevcyxpnorbgcskdf"
 verify_jwt = true
 
 [functions.fetch-segsale-products]
-verify_jwt = false
+verify_jwt = true
 
 [functions.get-homologation-data]
 verify_jwt = false
@@ -37,7 +37,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.opm-installation]
-verify_jwt = false
-
-[functions.sync-segsale-auto]
 verify_jwt = false
