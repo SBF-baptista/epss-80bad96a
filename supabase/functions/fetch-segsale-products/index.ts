@@ -153,8 +153,8 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
           },
         },
-        2, // maxRetries
-        25000, // 25s timeout (stay within edge function limits)
+        1, // no retry - API responds fast
+        15000, // 15s timeout
       )
     } catch (fetchError: any) {
       console.error('❌ Segsale fetch failed (timeout/retries exceeded):', fetchError?.message ?? fetchError)
