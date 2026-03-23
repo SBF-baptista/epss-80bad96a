@@ -15,7 +15,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { PlateSelectionModal } from "./PlateSelectionModal";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
-import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
 
 import { logCreate } from "@/services/logService";
