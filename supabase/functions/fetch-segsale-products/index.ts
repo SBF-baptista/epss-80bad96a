@@ -208,7 +208,10 @@ Deno.serve(async (req) => {
 
     const salesData: SegsaleSale[] = await segsaleResponse.json()
     console.log(`✅ Received ${salesData.length} sales from Segsale`)
-    await writeCachedSegsaleResponse(supabase, idResumoVenda, salesData)
+    // Fire-and-forget cache write — don't block the response
+    writeCachedSegsaleResponse(supabase, idResumoVenda, salesData).catch(e =>
+      console.warn('⚠️ Cache write failed (non-blocking):', e?.message ?? e)
+    )
 
     // Fetch contract items for each sale that has id_contrato_pendente
     const enrichedSalesData = []
