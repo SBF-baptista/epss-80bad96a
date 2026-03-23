@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 export const SegsaleFetchPanel = () => {
   const [idResumoVenda, setIdResumoVenda] = useState("");
