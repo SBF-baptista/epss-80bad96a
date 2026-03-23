@@ -14,10 +14,12 @@ import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useAuth } from "@/hooks/useAuth";
 
 import { motion } from "framer-motion";
 
 const Kickoff = () => {
+  const { user } = useAuth();
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
