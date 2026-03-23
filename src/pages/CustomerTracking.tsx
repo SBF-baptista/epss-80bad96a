@@ -103,8 +103,8 @@ const CustomerTracking = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) loadData();
+  }, [user]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);

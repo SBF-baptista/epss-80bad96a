@@ -93,8 +93,8 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) loadData();
+  }, [user]);
 
   const debouncedReload = useCallback(() => {
     loadData();
