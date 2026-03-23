@@ -8,8 +8,10 @@ import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
 import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 import { Order } from "@/services/orderService";
+import { useAuth } from "@/hooks/useAuth";
 
 const Kanban = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
     brand: "",
