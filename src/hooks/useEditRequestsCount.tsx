@@ -31,7 +31,7 @@ export const useEditRequestsCount = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadCount();

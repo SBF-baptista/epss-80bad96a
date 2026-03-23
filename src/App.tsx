@@ -38,7 +38,13 @@ const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // Never retry on auth/permission errors
+        const status = error?.status ?? error?.statusCode ?? error?.code;
+        if (status === 401 || status === 403 || status === 404) return false;
+        // Max 1 retry for other errors
+        return failureCount < 1;
+      },
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,

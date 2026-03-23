@@ -37,8 +37,8 @@ const Dashboard = () => {
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: fetchOrders,
-    staleTime: 30000,
-    retry: 2,
+    enabled: !!user,
+    staleTime: 1000 * 60 * 2,
   });
 
   const filteredOrders = orders.filter(order => {

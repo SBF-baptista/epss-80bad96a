@@ -43,6 +43,7 @@ const Homologation = () => {
   const { data: cards = [], isLoading, refetch } = useQuery({
     queryKey: ['homologation-cards'],
     queryFn: fetchHomologationCards,
+    enabled: !!user,
     staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
   });
@@ -50,6 +51,7 @@ const Homologation = () => {
   const { data: workflowData = [] } = useQuery({
     queryKey: ['workflow-chain'],
     queryFn: fetchWorkflowChain,
+    enabled: !!user,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   });

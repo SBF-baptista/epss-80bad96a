@@ -48,6 +48,7 @@ const ConfigurationManagement = () => {
   const { data: rules = [], isLoading, error } = useQuery({
     queryKey: ['automation-rules'],
     queryFn: fetchAutomationRules,
+    enabled: !!canEditModule,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   })

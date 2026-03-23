@@ -29,6 +29,7 @@ const Kanban = () => {
   } = useQuery({
     queryKey: ["kit-schedules"],
     queryFn: getKitSchedules,
+    enabled: !!user,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
@@ -38,6 +39,7 @@ const Kanban = () => {
   const { data: kits = [] } = useQuery({
     queryKey: ["homologation-kits"],
     queryFn: () => fetchHomologationKits(),
+    enabled: !!user,
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,

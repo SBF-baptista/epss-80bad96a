@@ -33,6 +33,7 @@ const Kickoff = () => {
   } = useQuery({
     queryKey: ["kickoff-data"],
     queryFn: getKickoffData,
+    enabled: !!user,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 30,
@@ -45,6 +46,7 @@ const Kickoff = () => {
   } = useQuery({
     queryKey: ["kickoff-history"],
     queryFn: getKickoffHistory,
+    enabled: !!user,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 30,
@@ -53,6 +55,7 @@ const Kickoff = () => {
   const { data: integrityCheck, isLoading: integrityLoading } = useQuery({
     queryKey: ["kickoff-integrity"],
     queryFn: checkKickoffIntegrity,
+    enabled: !!user,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60,

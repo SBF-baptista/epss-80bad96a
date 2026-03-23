@@ -18,10 +18,13 @@ interface PendingItemWithMetrics {
 }
 
 export const PendingItemsAlert = () => {
+  const { user } = useAuth();
+  
   // Fetch pending items
   const { data: pendingItems } = useQuery({
     queryKey: ['pending-homologation-items'],
     queryFn: fetchPendingHomologationItems,
+    enabled: !!user,
     staleTime: 1000 * 60 * 2,
   });
 
@@ -37,6 +40,7 @@ export const PendingItemsAlert = () => {
       if (error) throw error;
       return data || [];
     },
+    enabled: !!user,
     staleTime: 1000 * 60 * 2,
   });
 
