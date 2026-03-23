@@ -46,6 +46,7 @@ export interface CustomerKitData {
 
 const CustomerTracking = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [kitSchedules, setKitSchedules] = useState<KitScheduleWithDetails[]>([]);
