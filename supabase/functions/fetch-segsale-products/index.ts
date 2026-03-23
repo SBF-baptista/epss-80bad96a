@@ -334,8 +334,8 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify(vehicleGroups),
           },
-          2, // fewer retries for internal calls
-          30000 // 30 second timeout
+          1, // no retry for internal calls
+          15000 // 15s timeout
         )
 
         if (!receiveVehicleResponse.ok) {
