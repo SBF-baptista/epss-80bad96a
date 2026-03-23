@@ -48,6 +48,8 @@ const ConfigurationManagement = () => {
   const { data: rules = [], isLoading, error } = useQuery({
     queryKey: ['automation-rules'],
     queryFn: fetchAutomationRules,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   })
 
   // Delete mutation
