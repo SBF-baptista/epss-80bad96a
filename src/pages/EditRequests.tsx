@@ -56,6 +56,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 import {
   Dialog,
   DialogContent,
