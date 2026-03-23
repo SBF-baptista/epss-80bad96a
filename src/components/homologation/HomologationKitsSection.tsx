@@ -98,31 +98,14 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
     }
   }, [kits]);
 
-  // Set up real-time subscription for kit_item_options changes
-  useEffect(() => {
-    const channel = supabase
-      .channel("kit-homologation-sync")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "kit_item_options",
-        },
-        (payload) => {
-          console.log("Kit item option changed:", payload);
-          // Reload homologation statuses when kit_item_options changes
-          if (kits.length > 0) {
-            loadHomologationStatuses();
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+  // Use centralized realtime for kit_item_options
+  const reloadHomologation = useCallback(() => {
+    if (kits.length > 0) {
+      loadHomologationStatuses();
+    }
   }, [kits]);
+
+  useCentralRealtime('kit_item_options', reloadHomologation);
 
   // Filter kits based on search term
   useEffect(() => {
