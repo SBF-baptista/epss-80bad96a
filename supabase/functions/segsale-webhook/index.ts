@@ -69,12 +69,7 @@ serve(async (req) => {
       authMethod = 'Token header';
       isAuthenticated = true;
     }
-    // For GET requests without authentication headers, allow if configured to be open
-    else if (method === 'GET' && !webhookKey && !tokenHeader) {
-      authMethod = 'open (no auth required for GET)';
-      isAuthenticated = true;
-      console.log(`⚠️  GET request without authentication - allowing (configure SEGSALE_WEBHOOK_KEY or SEGSALE_API_TOKEN for security)`);
-    }
+    // GET requests without auth are NO LONGER allowed (was causing loop via bots/crawlers)
 
     if (!isAuthenticated) {
       console.error(`❌ Authentication failed`);

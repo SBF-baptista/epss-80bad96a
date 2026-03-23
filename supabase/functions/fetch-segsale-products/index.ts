@@ -139,6 +139,30 @@ Deno.serve(async (req) => {
 
     console.log(`📡 Fetching Segsale products for idResumoVenda: ${idResumoVenda}`)
 
+    // Rate-limiting: check cache first (5 min TTL)
+    const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+    const cached = await readCachedSegsaleResponse(supabase, idResumoVenda)
+    if (cached) {
+      const cacheAge = Date.now() - new Date(cached.updated_at).getTime()
+      if (cacheAge < CACHE_TTL_MS) {
+        console.log(`🧠 Cache hit (${Math.round(cacheAge / 1000)}s old) — returning cached data, skipping API call`)
+        return new Response(
+          JSON.stringify({
+            success: true,
+            cached: true,
+            cache_age_seconds: Math.round(cacheAge / 1000),
+            cache_updated_at: cached.updated_at,
+            message: 'Dados retornados do cache (menos de 5 minutos)',
+            sale_summary_id: idResumoVenda,
+            sales: cached.sales,
+            processing: { forwarded: false, message: 'Cache hit — no external calls made' },
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+      console.log(`⏰ Cache expired (${Math.round(cacheAge / 1000)}s old) — fetching fresh data`)
+    }
+
     // Call Segsale API with retry and timeout
     const segsaleUrl = `https://ws-sale.segsat.com/segsale/relatorios/produtos-por-veiculo?idResumoVenda=${idResumoVenda}`
 
@@ -260,69 +284,8 @@ Deno.serve(async (req) => {
       enrichedSalesData.push(enrichedSale)
     }
 
-    // Forward all contract_items to receive-vehicle for centralized vehicle_id linking
-    console.log(`📤 Forwarding ${enrichedSalesData.length} sales to receive-vehicle...`)
-    console.log(`Contract items will be processed by receive-vehicle with proper vehicle_id linking`)
-
-    // After storing, forward data to receive-vehicle for processing
-    const vehicleGroups = (enrichedSalesData as any[]).map((sale) => ({
-      company_name: sale.company_name,
-      cpf: sale.cpf ?? null,
-      phone: sale.phone ?? null,
-      usage_type: sale.usage_type,
-      // Use the English field names from the API
-      sale_summary_id: sale.sale_summary_id ?? parseInt(idResumoVenda),
-      pending_contract_id: sale.pending_contract_id ?? null,
-      vehicles: sale.vehicles.map((v: SegsaleVehicle) => {
-        // Ensure contract_items is always an array
-        const contractItems = Array.isArray(sale.contract_items) ? sale.contract_items : [];
-        
-        return {
-          plate: v.plate,
-          brand: v.brand,
-          vehicle: v.vehicle,
-          year: v.year,
-          // Distribute contract_items into modules and accessories based on categories
-          modules: contractItems
-            .filter((item: any) => item.categories === 'Módulos')
-            .map((item: any) => item.name),
-          accessories: contractItems
-            .filter((item: any) => item.categories === 'Acessórios')
-            .map((item: any) => ({ accessory_name: item.name, quantity: item.quantity || 1 }))
-        };
-      }),
-      accessories: sale.accessories ?? [],
-      contract_items: sale.contract_items ?? null,
-      address: sale.address ?? undefined,
-    }))
-
-    const apiKey = Deno.env.get('VEHICLE_API_KEY')
-    // Fire-and-forget: forward to receive-vehicle in background
-    if (apiKey && vehicleGroups.length > 0) {
-      console.log(`📤 Forwarding ${vehicleGroups.length} group(s) to receive-vehicle (fire-and-forget)...`)
-      const receiveVehicleUrl = `${supabaseUrl}/functions/v1/receive-vehicle`
-      fetchWithRetry(
-        receiveVehicleUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-          },
-          body: JSON.stringify(vehicleGroups),
-        },
-        1,
-        15000
-      ).then(async (res) => {
-        if (res.ok) {
-          console.log('✅ receive-vehicle processed successfully')
-        } else {
-          console.error('❌ receive-vehicle error:', res.status, await res.text().catch(() => ''))
-        }
-      }).catch((e) => {
-        console.error('❌ receive-vehicle forward failed:', e?.message ?? e)
-      })
-    }
+    // NOTE: receive-vehicle is NO LONGER called from here to prevent circular loops.
+    // It should be called explicitly by the webhook or manually.
 
     return new Response(
       JSON.stringify({
