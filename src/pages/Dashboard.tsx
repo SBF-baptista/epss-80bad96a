@@ -19,8 +19,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, BarChart3, AlertCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [dateRange, setDateRange] = useState({
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
@@ -35,8 +37,8 @@ const Dashboard = () => {
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: fetchOrders,
-    staleTime: 30000,
-    retry: 2,
+    enabled: !!user,
+    staleTime: 1000 * 60 * 2,
   });
 
   const filteredOrders = orders.filter(order => {

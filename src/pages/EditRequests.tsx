@@ -172,8 +172,8 @@ const EditRequests = () => {
   };
 
   useEffect(() => {
-    loadRequests();
-  }, []);
+    if (user) loadRequests();
+  }, [user]);
 
   // Use centralized realtime
   useCentralRealtime('item_edit_requests', loadRequests);

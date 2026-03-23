@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +43,7 @@ const loadAccessoriesCounts = async (): Promise<Map<string, number>> => {
 
 export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDashboardProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   
   // Data states
@@ -91,8 +93,8 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) loadData();
+  }, [user]);
 
   const debouncedReload = useCallback(() => {
     loadData();

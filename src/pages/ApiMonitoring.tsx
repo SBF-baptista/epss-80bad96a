@@ -64,6 +64,7 @@ const ApiMonitoring = () => {
   const { data: endpoints = [], isLoading, refetch } = useQuery({
     queryKey: ['api-endpoints-stats'],
     queryFn: fetchEndpointWithStats,
+    enabled: true, // Admin-only page, already behind RoleProtectedRoute
     staleTime: 1000 * 60 * 2,
   });
 

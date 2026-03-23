@@ -21,6 +21,7 @@ import HomologationFilters from "@/components/homologation/HomologationFilters";
 import { PendingItemsAlert } from "@/components/homologation/PendingItemsAlert";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ import {
 
 const Homologation = () => {
   const { canEditModule } = useUserRole();
+  const { user } = useAuth();
   const [filters, setFilters] = useState<HomologationFiltersType>({
     brand: "",
     year: "",
@@ -41,6 +43,7 @@ const Homologation = () => {
   const { data: cards = [], isLoading, refetch } = useQuery({
     queryKey: ['homologation-cards'],
     queryFn: fetchHomologationCards,
+    enabled: !!user,
     staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
   });
@@ -48,6 +51,7 @@ const Homologation = () => {
   const { data: workflowData = [] } = useQuery({
     queryKey: ['workflow-chain'],
     queryFn: fetchWorkflowChain,
+    enabled: !!user,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   });

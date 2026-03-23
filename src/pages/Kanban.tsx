@@ -8,8 +8,10 @@ import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
 import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 import { Order } from "@/services/orderService";
+import { useAuth } from "@/hooks/useAuth";
 
 const Kanban = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
     brand: "",
@@ -27,6 +29,7 @@ const Kanban = () => {
   } = useQuery({
     queryKey: ["kit-schedules"],
     queryFn: getKitSchedules,
+    enabled: !!user,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
@@ -36,6 +39,7 @@ const Kanban = () => {
   const { data: kits = [] } = useQuery({
     queryKey: ["homologation-kits"],
     queryFn: () => fetchHomologationKits(),
+    enabled: !!user,
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,

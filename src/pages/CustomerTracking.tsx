@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { CustomerTrackingFilters } from "@/components/customer-tracking/CustomerTrackingFilters";
 import { CustomerCard } from "@/components/customer-tracking/CustomerCard";
 import { getCustomers, Customer } from "@/services/customerService";
@@ -45,6 +46,7 @@ export interface CustomerKitData {
 
 const CustomerTracking = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [kitSchedules, setKitSchedules] = useState<KitScheduleWithDetails[]>([]);
@@ -101,8 +103,8 @@ const CustomerTracking = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) loadData();
+  }, [user]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);

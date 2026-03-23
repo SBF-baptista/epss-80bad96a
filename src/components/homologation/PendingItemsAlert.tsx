@@ -7,6 +7,7 @@ import { fetchPendingHomologationItems } from "@/services/pendingHomologationSer
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cleanItemName } from "@/utils/itemNormalization";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PendingItemWithMetrics {
   item_name: string;
@@ -17,10 +18,13 @@ interface PendingItemWithMetrics {
 }
 
 export const PendingItemsAlert = () => {
+  const { user } = useAuth();
+  
   // Fetch pending items
   const { data: pendingItems } = useQuery({
     queryKey: ['pending-homologation-items'],
     queryFn: fetchPendingHomologationItems,
+    enabled: !!user,
     staleTime: 1000 * 60 * 2,
   });
 
@@ -36,6 +40,7 @@ export const PendingItemsAlert = () => {
       if (error) throw error;
       return data || [];
     },
+    enabled: !!user,
     staleTime: 1000 * 60 * 2,
   });
 
