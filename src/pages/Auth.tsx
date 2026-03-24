@@ -311,10 +311,11 @@ const Auth = () => {
                 <Button type="button" variant="link" className="text-sm p-0" onClick={handleCheckEmail} disabled={loading}>
                   Primeiro acesso
                 </Button>
-                <Button type="button" variant="link" className="text-sm p-0" onClick={handleForgotPassword} disabled={loading}>
+                <Button type="button" variant="link" className="text-sm p-0" onClick={() => setForgotOpen(true)} disabled={loading}>
                   Esqueci minha senha
                 </Button>
               </div>
+              <ForgotPasswordModal open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
             </form>
           )}
         </CardContent>
