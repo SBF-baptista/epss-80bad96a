@@ -34,6 +34,7 @@ const WhatsAppMessageControl = lazy(() => import("./pages/WhatsAppMessageControl
 const ModuleSelection = lazy(() => import("./pages/ModuleSelection"));
 const Installation = lazy(() => import("./pages/Installation"));
 const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
+const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 
 
 const queryClient = new QueryClient({
