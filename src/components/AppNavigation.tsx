@@ -96,6 +96,7 @@ const navigationGroups: NavGroup[] = [
       { to: "/history", label: "Histórico", icon: Clock, module: "users" },
       { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling", adminOnly: true },
       { to: "/api-monitoring", label: "Monitoramento de APIs", icon: Activity, module: "users", adminOnly: true },
+      { to: "/segsale-sales", label: "Vendas Segsale", icon: Package, module: "scheduling", adminOnly: true },
     ]
   },
 ];
