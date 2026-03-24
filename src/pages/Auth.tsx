@@ -315,9 +315,9 @@ const Auth = () => {
                   Esqueci minha senha
                 </Button>
               </div>
-              <ForgotPasswordModal open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
             </form>
           )}
+          <ForgotPasswordModal open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
         </CardContent>
       </Card>
     </div>
