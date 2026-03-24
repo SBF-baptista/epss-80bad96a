@@ -1,50 +1,60 @@
 
 
-# Diagnóstico: Requisições duplicadas de `user_roles` e `user_module_permissions`
+# Plano: Serviço automático `sync-segsale-auto` com pg_cron a cada 5 horas
 
-## Causa Raiz
-
-O hook `useUserRole()` faz queries diretas ao Supabase **cada vez que é instanciado**. Diferente do `useAuth()` que usa Context (1 fetch, N consumidores), cada componente que chama `useUserRole()` dispara suas próprias queries independentes.
-
-Na rota `/kickoff`, estas instâncias estão ativas simultaneamente:
-
-| Componente | Hook | Queries geradas |
-|---|---|---|
-| `RoleProtectedRoute` | `useUserRole()` | 1x user_roles + 1x user_module_permissions |
-| `AppNavigation` | `useUserRole()` | 1x user_roles + 1x user_module_permissions |
-| `AppNavigation` | `useEditRequestsCount()` | 1x item_edit_requests HEAD |
-| `KickoffClientCard` (por card) | `useUserRole()` | 1x user_roles + 1x user_module_permissions |
-
-Resultado: **5+ pares de queries idênticas** a cada navegação. E quando o realtime dispara um re-render (channel remove/create visível nos logs), o ciclo se repete.
-
-Os logs confirmam: `[useUserRole] Source: LEGACY` aparece **5 vezes** em cada bloco de navegação.
-
-## Solução: Converter `useUserRole` para Context Provider
-
-Mesma arquitetura do `useAuth` — fetch uma vez, compartilhar via Context.
-
-### 1. Criar `UserRoleProvider` + `useUserRole` via Context
-**Arquivo**: `src/hooks/useUserRole.tsx`
-
-- Criar `UserRoleContext` e `UserRoleProvider`
-- O Provider faz o fetch UMA vez (quando `user` muda)
-- `useUserRole()` passa a consumir o Context sem fazer queries
-- Envolver no `App.tsx` dentro do `AuthProvider`
-
-### 2. Envolver App com o Provider
-**Arquivo**: `src/App.tsx`
-
-- Adicionar `<UserRoleProvider>` dentro de `<AuthProvider>`
-
-### 3. Nenhuma mudança nos consumidores
-Todos os 22 arquivos que usam `useUserRole()` continuam funcionando sem alteração — a API do hook permanece idêntica.
-
-## Resultado Esperado
+## Arquitetura
 
 ```text
-Antes:  5+ queries user_roles + 5+ queries user_module_permissions por navegação
-Depois: 1 query user_roles + 1 query user_module_permissions por sessão/mudança de user
+pg_cron (a cada 5h)
+  → POST sync-segsale-auto
+    → SELECT DISTINCT sale_summary_id FROM incoming_vehicles WHERE processed = false
+    → Para cada ID (max 10): GET fetch-segsale-products?idResumoVenda=X
+    → fetch-segsale-products busca na API Segsale e retorna dados
+    → sync-segsale-auto chama receive-vehicle para armazenar novos veículos
 ```
 
-Redução de ~80% nas queries de permissão. O realtime churn do `item_edit_requests` também será avaliado para verificar se o channel remove/create está causando refetches desnecessários.
+## Mudanças
+
+### 1. Criar Edge Function `sync-segsale-auto`
+**Arquivo**: `supabase/functions/sync-segsale-auto/index.ts`
+
+- Consulta `incoming_vehicles` para listar `sale_summary_id` distintos onde `processed = false`
+- Para cada ID (máximo 10 por execução):
+  - Chama `fetch-segsale-products` internamente via HTTP com `SUPABASE_SERVICE_ROLE_KEY`
+  - Se houver dados novos, chama `receive-vehicle` com `VEHICLE_API_KEY`
+  - Intervalo de 2 segundos entre chamadas para não sobrecarregar a API Segsale
+- Loga resultado de cada ciclo
+
+### 2. Registrar no `supabase/config.toml`
+Adicionar:
+```toml
+[functions.sync-segsale-auto]
+verify_jwt = false
+```
+
+### 3. Configurar pg_cron via SQL (insert tool)
+Habilitar extensões `pg_cron` e `pg_net` (se ainda não habilitadas), e criar o cron job:
+```sql
+SELECT cron.schedule(
+  'sync-segsale-every-5h',
+  '0 */5 * * *',
+  $$ SELECT net.http_post(
+    url:='https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/sync-segsale-auto',
+    headers:='{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
+    body:='{"source":"pg_cron"}'::jsonb
+  ) as request_id; $$
+);
+```
+
+### 4. Nenhuma mudança no frontend
+O `SegsaleFetchPanel` continua funcionando para buscas manuais. O sync automático roda em background.
+
+## Resultado
+
+```text
+Antes:  Vendas só aparecem via webhook externo ou busca manual
+Depois: A cada 5h, o sistema busca automaticamente vendas pendentes
+        Máximo 10 sale_summary_ids por ciclo (~50/dia no pior caso)
+        Novos veículos são inseridos automaticamente via receive-vehicle
+```
 
