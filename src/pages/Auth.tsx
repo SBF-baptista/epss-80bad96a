@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FolderKanban, Lock, Loader2, ArrowLeft, Check, X, KeyRound } from "lucide-react";
+import { ForgotPasswordModal } from "@/components/ForgotPasswordModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<AuthStep>('login');
+  const [forgotOpen, setForgotOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -177,26 +179,7 @@ const Auth = () => {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!email) {
-      toast({ title: "Erro", description: "Informe seu e-mail primeiro", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-      toast({
-        title: "E-mail enviado",
-        description: "Se o e-mail estiver cadastrado, você receberá as instruções para redefinir sua senha."
-      });
-    } catch {
-      toast({ title: "Erro", description: "Erro inesperado", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Forgot password is now handled by the modal
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -328,10 +311,11 @@ const Auth = () => {
                 <Button type="button" variant="link" className="text-sm p-0" onClick={handleCheckEmail} disabled={loading}>
                   Primeiro acesso
                 </Button>
-                <Button type="button" variant="link" className="text-sm p-0" onClick={handleForgotPassword} disabled={loading}>
+                <Button type="button" variant="link" className="text-sm p-0" onClick={() => setForgotOpen(true)} disabled={loading}>
                   Esqueci minha senha
                 </Button>
               </div>
+              <ForgotPasswordModal open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
             </form>
           )}
         </CardContent>
