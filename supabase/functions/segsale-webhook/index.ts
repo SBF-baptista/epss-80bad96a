@@ -6,6 +6,76 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
+// Map Segsale usage types to receive-vehicle valid usage types
+function mapUsageType(usageType: string): string {
+  const mapping: Record<string, string> = {
+    'TELEMETRIA GPS': 'TELEMETRIA GPS',
+    'TELEMETRIA CAN': 'TELEMETRIA CAN',
+    'COPILOTO 2 CAMERAS': 'COPILOTO 2 CAMERAS',
+    'COPILOTO 4 CAMERAS': 'COPILOTO 4 CAMERAS',
+    'telemetria_gps': 'TELEMETRIA GPS',
+    'telemetria_can': 'TELEMETRIA CAN',
+    'copiloto_2_cameras': 'COPILOTO 2 CAMERAS',
+    'copiloto_4_cameras': 'COPILOTO 4 CAMERAS',
+    'PARTICULAR': 'particular',
+    'COMERCIAL': 'comercial',
+    'FROTA': 'frota',
+  };
+  return mapping[usageType] || usageType;
+}
+
+// Transform Segsale API response into receive-vehicle format
+function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any[] {
+  const vehicleGroups: any[] = [];
+
+  for (const sale of sales) {
+    const vehicles = sale.vehicles || [];
+    if (vehicles.length === 0) continue;
+
+    const transformedVehicles = vehicles.map((v: any) => {
+      const vehicle: any = {
+        vehicle: v.vehicle || v.modelo || '',
+        brand: v.brand || v.marca || '',
+        year: v.year || v.ano || null,
+        quantity: v.quantity || 1,
+      };
+
+      // Map accessories from Segsale format
+      const accessories: any[] = [];
+      if (Array.isArray(v.accessories)) {
+        v.accessories.forEach((acc: string) => {
+          accessories.push({ accessory_name: acc, quantity: 1 });
+        });
+      }
+      if (Array.isArray(v.modules)) {
+        v.modules.forEach((mod: string) => {
+          accessories.push({ accessory_name: mod, quantity: 1 });
+        });
+      }
+      if (accessories.length > 0) {
+        vehicle.accessories = accessories;
+      }
+
+      return vehicle;
+    });
+
+    const usageType = mapUsageType(sale.usage_type || 'TELEMETRIA GPS');
+
+    vehicleGroups.push({
+      company_name: sale.company_name || 'Não identificado',
+      usage_type: usageType,
+      sale_summary_id: idResumoVenda,
+      pending_contract_id: sale.pending_contract_id || null,
+      cpf: sale.cpf || null,
+      phone: sale.phone || null,
+      vehicles: transformedVehicles,
+      address: sale.address || undefined,
+    });
+  }
+
+  return vehicleGroups;
+}
+
 serve(async (req) => {
   const timestamp = new Date().toISOString();
   const method = req.method;
@@ -83,10 +153,11 @@ serve(async (req) => {
     console.log(`✅ Authentication successful via: ${authMethod}`);
     console.log(`🔄 Processing idResumoVenda: ${idResumoVenda}`);
 
-    // Call fetch-segsale-products with Service Role Key for internal authentication
+    // Step 1: Fetch data from Segsale API via fetch-segsale-products
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const fetchUrl = `https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
-    console.log(`📞 Calling fetch-segsale-products (authenticated): ${fetchUrl}`);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://eeidevcyxpnorbgcskdf.supabase.co';
+    const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
+    console.log(`📞 Step 1: Calling fetch-segsale-products: ${fetchUrl}`);
 
     const fetchResponse = await fetch(fetchUrl, {
       method: 'GET',
@@ -101,7 +172,6 @@ serve(async (req) => {
 
     if (!fetchResponse.ok) {
       console.error(`❌ fetch-segsale-products failed with status ${fetchResponse.status}`);
-      console.error(`   Response:`, JSON.stringify(fetchData, null, 2));
       return new Response(
         JSON.stringify({
           success: false,
@@ -113,18 +183,78 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Successfully processed idResumoVenda ${idResumoVenda}`);
+    const sales = fetchData.sales || [];
+    console.log(`✅ Step 1 complete: Got ${sales.length} sales from Segsale`);
+
+    if (sales.length === 0) {
+      console.log(`⚠️ No sales data to process for idResumoVenda ${idResumoVenda}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `No sales data found for idResumoVenda ${idResumoVenda}`,
+          metadata: { method, authMethod, idResumoVenda, timestamp },
+          data: fetchData
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Step 2: Transform sales into receive-vehicle format and store
+    const vehicleGroups = transformSalesToVehicleGroups(sales, idResumoVenda);
+    console.log(`🔄 Step 2: Sending ${vehicleGroups.length} vehicle groups to receive-vehicle`);
+
+    if (vehicleGroups.length > 0) {
+      const receiveUrl = `${supabaseUrl}/functions/v1/receive-vehicle`;
+      console.log(`📞 Calling receive-vehicle: ${receiveUrl}`);
+
+      const receiveResponse = await fetch(receiveUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'apikey': serviceRoleKey
+        },
+        body: JSON.stringify(vehicleGroups)
+      });
+
+      const receiveData = await receiveResponse.json();
+
+      if (!receiveResponse.ok) {
+        console.error(`❌ receive-vehicle failed with status ${receiveResponse.status}:`, JSON.stringify(receiveData));
+        // Don't fail the entire webhook — the fetch was successful
+        console.log(`⚠️ Data was fetched but storage failed. Returning partial success.`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Fetched ${sales.length} sales but storage had issues`,
+            metadata: { method, authMethod, idResumoVenda, timestamp },
+            fetch_data: fetchData,
+            storage_error: { status: receiveResponse.status, details: receiveData }
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`✅ Step 2 complete: Vehicles stored successfully`);
+      console.log(`   receive-vehicle response:`, JSON.stringify(receiveData).substring(0, 500));
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Successfully processed and stored Segsale sale ${idResumoVenda}`,
+          metadata: { method, authMethod, idResumoVenda, timestamp },
+          fetch_result: { sales_count: sales.length },
+          storage_result: receiveData
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully processed Segsale sale ${idResumoVenda}`,
-        metadata: {
-          method,
-          authMethod,
-          idResumoVenda,
-          timestamp
-        },
+        message: `Fetched data but no vehicle groups to store for ${idResumoVenda}`,
+        metadata: { method, authMethod, idResumoVenda, timestamp },
         data: fetchData
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
