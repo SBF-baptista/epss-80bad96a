@@ -317,6 +317,7 @@ const Auth = () => {
               </div>
             </form>
           )}
+          <ForgotPasswordModal open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
         </CardContent>
       </Card>
     </div>
