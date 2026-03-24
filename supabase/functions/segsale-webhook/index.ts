@@ -7,21 +7,19 @@ const corsHeaders = {
 };
 
 // Map Segsale usage types to receive-vehicle valid usage types
+// Map Segsale usage types to database enum values
 function mapUsageType(usageType: string): string {
+  const normalized = usageType.toUpperCase().trim();
   const mapping: Record<string, string> = {
-    'TELEMETRIA GPS': 'TELEMETRIA GPS',
-    'TELEMETRIA CAN': 'TELEMETRIA CAN',
-    'COPILOTO 2 CAMERAS': 'COPILOTO 2 CAMERAS',
-    'COPILOTO 4 CAMERAS': 'COPILOTO 4 CAMERAS',
-    'telemetria_gps': 'TELEMETRIA GPS',
-    'telemetria_can': 'TELEMETRIA CAN',
-    'copiloto_2_cameras': 'COPILOTO 2 CAMERAS',
-    'copiloto_4_cameras': 'COPILOTO 4 CAMERAS',
+    'TELEMETRIA GPS': 'telemetria_gps',
+    'TELEMETRIA CAN': 'telemetria_can',
+    'COPILOTO 2 CAMERAS': 'copiloto_2_cameras',
+    'COPILOTO 4 CAMERAS': 'copiloto_4_cameras',
     'PARTICULAR': 'particular',
     'COMERCIAL': 'comercial',
     'FROTA': 'frota',
   };
-  return mapping[usageType] || usageType;
+  return mapping[normalized] || usageType.toLowerCase().replace(/\s+/g, '_');
 }
 
 // Transform Segsale API response into receive-vehicle format
