@@ -167,28 +167,7 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const segsaleToken = Deno.env.get('SEGSALE_API_TOKEN')!
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
-
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', message: 'Authentication is required.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    })
-    const token = authHeader.replace('Bearer ', '')
-    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token)
-
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', message: 'Authenticated user session required.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
+    // Public endpoint — no auth required, protected by rate-limiting
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get idResumoVenda from query params or body
