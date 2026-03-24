@@ -179,26 +179,7 @@ const Auth = () => {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!email) {
-      toast({ title: "Erro", description: "Informe seu e-mail primeiro", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-      toast({
-        title: "E-mail enviado",
-        description: "Se o e-mail estiver cadastrado, você receberá as instruções para redefinir sua senha."
-      });
-    } catch {
-      toast({ title: "Erro", description: "Erro inesperado", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Forgot password is now handled by the modal
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
