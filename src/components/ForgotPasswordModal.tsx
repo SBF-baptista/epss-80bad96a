@@ -107,8 +107,12 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = "" }: F
       }
 
       // Always send (Supabase handles non-existing emails silently)
+      const redirectBase = window.location.hostname.includes('lovableproject.com')
+        ? 'https://opmss.lovable.app'
+        : window.location.origin;
+      
       await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${redirectBase}/reset-password`,
       });
 
       setCooldown(COOLDOWN_SUCCESS_MS);
