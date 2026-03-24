@@ -1,60 +1,45 @@
 
 
-# Plano: Serviço automático `sync-segsale-auto` com pg_cron a cada 5 horas
+# Plano: Tela de Vendas Segsale no Módulo de Configuração
 
-## Arquitetura
+## O que será feito
 
-```text
-pg_cron (a cada 5h)
-  → POST sync-segsale-auto
-    → SELECT DISTINCT sale_summary_id FROM incoming_vehicles WHERE processed = false
-    → Para cada ID (max 10): GET fetch-segsale-products?idResumoVenda=X
-    → fetch-segsale-products busca na API Segsale e retorna dados
-    → sync-segsale-auto chama receive-vehicle para armazenar novos veículos
-```
+Criar uma nova página "Vendas Segsale" acessível dentro do grupo "Configuração" na navegação lateral. Essa tela exibirá todas as vendas recebidas do Segsale (tabela `incoming_vehicles`), agrupadas por `sale_summary_id`, mostrando todas as informações disponíveis: empresa, veículos, tipo de uso, placa, data/hora de recebimento, status de processamento, etc.
 
 ## Mudanças
 
-### 1. Criar Edge Function `sync-segsale-auto`
-**Arquivo**: `supabase/functions/sync-segsale-auto/index.ts`
+### 1. Nova página `src/pages/SegsaleSales.tsx`
+- Consulta `incoming_vehicles` ordenado por `received_at DESC`
+- Agrupa por `sale_summary_id` e `company_name`
+- Exibe tabela com colunas: ID Venda, Empresa, Veículo (marca/modelo), Ano, Placa, Tipo de Uso, Quantidade, Status (processado/pendente), Data de Recebimento
+- Filtro por empresa e status (processado/pendente)
+- Busca textual por empresa, veículo ou placa
+- Badge visual para status processado vs pendente
 
-- Consulta `incoming_vehicles` para listar `sale_summary_id` distintos onde `processed = false`
-- Para cada ID (máximo 10 por execução):
-  - Chama `fetch-segsale-products` internamente via HTTP com `SUPABASE_SERVICE_ROLE_KEY`
-  - Se houver dados novos, chama `receive-vehicle` com `VEHICLE_API_KEY`
-  - Intervalo de 2 segundos entre chamadas para não sobrecarregar a API Segsale
-- Loga resultado de cada ciclo
+### 2. Rota em `src/App.tsx`
+- Adicionar rota `/segsale-sales` protegida com `requiredModule="scheduling"` e `adminOnly` (mesma permissão do grupo Configuração)
 
-### 2. Registrar no `supabase/config.toml`
-Adicionar:
-```toml
-[functions.sync-segsale-auto]
-verify_jwt = false
-```
+### 3. Item de navegação em `src/components/AppNavigation.tsx`
+- Adicionar item "Vendas Segsale" no grupo "Configuração" com ícone `Package`
+- Visível apenas para admins (`adminOnly: true`)
 
-### 3. Configurar pg_cron via SQL (insert tool)
-Habilitar extensões `pg_cron` e `pg_net` (se ainda não habilitadas), e criar o cron job:
-```sql
-SELECT cron.schedule(
-  'sync-segsale-every-5h',
-  '0 */5 * * *',
-  $$ SELECT net.http_post(
-    url:='https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/sync-segsale-auto',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
-    body:='{"source":"pg_cron"}'::jsonb
-  ) as request_id; $$
-);
-```
+### Dados exibidos por venda
 
-### 4. Nenhuma mudança no frontend
-O `SegsaleFetchPanel` continua funcionando para buscas manuais. O sync automático roda em background.
+| Coluna | Origem |
+|---|---|
+| ID Resumo Venda | `sale_summary_id` |
+| Empresa | `company_name` |
+| CPF/CNPJ | `cpf` |
+| Veículo | `brand` + `vehicle` |
+| Ano | `year` |
+| Placa | `plate` |
+| Tipo de Uso | `usage_type` |
+| Quantidade | `quantity` |
+| Cidade | `address_city` |
+| Status | `processed` (badge verde/amarelo) |
+| Kickoff | `kickoff_completed` (badge) |
+| Recebido em | `received_at` formatado com data e hora |
 
-## Resultado
-
-```text
-Antes:  Vendas só aparecem via webhook externo ou busca manual
-Depois: A cada 5h, o sistema busca automaticamente vendas pendentes
-        Máximo 10 sale_summary_ids por ciclo (~50/dia no pior caso)
-        Novos veículos são inseridos automaticamente via receive-vehicle
-```
+### Resultado
+Uma tela completa dentro de Configuração que mostra automaticamente todas as vendas do Segsale sem precisar pesquisar por ID, com data/hora de quando foram importadas.
 
