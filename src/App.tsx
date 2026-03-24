@@ -281,6 +281,17 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
+              {/* Segsale Sales - admin only */}
+              <Route path="/segsale-sales" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <SegsaleSales />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
               {/* Module Selection - no special permissions needed */}
               <Route path="/modules" element={
                 <ProtectedRoute>
