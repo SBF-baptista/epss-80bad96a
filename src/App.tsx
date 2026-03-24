@@ -34,6 +34,7 @@ const WhatsAppMessageControl = lazy(() => import("./pages/WhatsAppMessageControl
 const ModuleSelection = lazy(() => import("./pages/ModuleSelection"));
 const Installation = lazy(() => import("./pages/Installation"));
 const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
+const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 
 
 const queryClient = new QueryClient({
@@ -275,6 +276,17 @@ function AppContent() {
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <ApiMonitoring />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Segsale Sales - admin only */}
+              <Route path="/segsale-sales" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <SegsaleSales />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
