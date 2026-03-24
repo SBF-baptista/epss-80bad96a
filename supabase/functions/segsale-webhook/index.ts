@@ -207,10 +207,20 @@ serve(async (req) => {
       const receiveUrl = `${supabaseUrl}/functions/v1/receive-vehicle`;
       console.log(`📞 Calling receive-vehicle: ${receiveUrl}`);
 
+      const vehicleApiKey = Deno.env.get('VEHICLE_API_KEY');
+      if (!vehicleApiKey) {
+        console.error(`❌ VEHICLE_API_KEY not configured`);
+        return new Response(
+          JSON.stringify({ success: false, error: 'VEHICLE_API_KEY not configured' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const receiveResponse = await fetch(receiveUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': vehicleApiKey,
           'Authorization': `Bearer ${serviceRoleKey}`,
           'apikey': serviceRoleKey
         },
