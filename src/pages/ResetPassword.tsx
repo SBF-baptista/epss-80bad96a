@@ -19,31 +19,39 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const hash = window.location.hash;
-      if (hash && hash.includes("type=recovery")) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          setIsValidSession(true);
-        }
-      } else {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          setIsValidSession(true);
-        }
-      }
+    let settled = false;
+
+    const settle = (valid: boolean) => {
+      if (settled) return;
+      settled = true;
+      setIsValidSession(valid);
       setChecking(false);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // Listen for PASSWORD_RECOVERY event (fires when Supabase processes the hash)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
-        setIsValidSession(true);
-        setChecking(false);
+        settle(true);
+      } else if (event === "SIGNED_IN" && session) {
+        // Recovery links also trigger SIGNED_IN with a valid session
+        const hash = window.location.hash;
+        if (hash && hash.includes("type=recovery")) {
+          settle(true);
+        }
       }
     });
 
-    checkSession();
-    return () => subscription.unsubscribe();
+    // Fallback timeout: if no auth event fires within 5s, check session directly
+    const timeout = setTimeout(async () => {
+      if (settled) return;
+      const { data } = await supabase.auth.getSession();
+      settle(!!data.session);
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const validatePassword = (pwd: string): string | null => {
