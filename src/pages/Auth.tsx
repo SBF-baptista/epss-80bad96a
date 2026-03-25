@@ -363,7 +363,7 @@ const Auth = () => {
                     disabled={loading}
                   >
                     <UserPlus className="h-3.5 w-3.5" />
-                    Ativar conta
+                    Primeiro acesso
                   </Button>
 
                   <Tooltip>
