@@ -55,9 +55,21 @@ Deno.serve(async (req) => {
       console.log(`\n--- Processing sale_summary_id: ${idResumoVenda} ---`)
 
       try {
+        // Deduplication check: verify sale_summary_id doesn't already have records
+        const { data: existingSale } = await supabase
+          .from('incoming_vehicles')
+          .select('id')
+          .eq('sale_summary_id', idResumoVenda)
+          .eq('processed', true)
+          .limit(1);
+
+        if (existingSale && existingSale.length > 0) {
+          console.log(`⚠️ sale_summary_id ${idResumoVenda} already has processed records. Skipping.`);
+          results.push({ id: idResumoVenda, status: 'already_processed' });
+          continue;
+        }
+
         // Step 2: Call fetch-segsale-products
-        const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`
-        console.log(`📞 Calling fetch-segsale-products for ${idResumoVenda}`)
 
         const fetchResponse = await fetch(fetchUrl, {
           method: 'GET',
