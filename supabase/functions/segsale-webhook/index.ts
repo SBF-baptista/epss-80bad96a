@@ -152,6 +152,29 @@ serve(async (req) => {
     console.log(`✅ Authentication successful via: ${authMethod}`);
     console.log(`🔄 Processing idResumoVenda: ${idResumoVenda}`);
 
+    // Deduplication check: skip if sale_summary_id already exists in incoming_vehicles
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://eeidevcyxpnorbgcskdf.supabase.co';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: existingSale, error: dedupError } = await supabase
+      .from('incoming_vehicles')
+      .select('id')
+      .eq('sale_summary_id', idResumoVenda)
+      .limit(1);
+
+    if (!dedupError && existingSale && existingSale.length > 0) {
+      console.log(`⚠️ sale_summary_id ${idResumoVenda} already exists in incoming_vehicles (${existingSale.length} records). Skipping duplicate.`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Sale ${idResumoVenda} already imported, skipping duplicate`,
+          metadata: { method, authMethod, idResumoVenda, timestamp, skipped: true }
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Step 1: Fetch data from Segsale API via fetch-segsale-products
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://eeidevcyxpnorbgcskdf.supabase.co';
