@@ -109,8 +109,32 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
       try {
+        // Deduplication check: skip if same sale_summary_id + brand + vehicle already exists
+        if (group.sale_summary_id) {
+          const { data: existingVehicle } = await supabase
+            .from('incoming_vehicles')
+            .select('id, processing_notes')
+            .eq('sale_summary_id', group.sale_summary_id)
+            .eq('brand', brand.trim())
+            .eq('vehicle', vehicle.trim())
+            .limit(1)
+            .maybeSingle();
+
+          if (existingVehicle) {
+            console.log(`[${timestamp}][${requestId}] ⚠️ Vehicle ${brand} ${vehicle} already exists for sale_summary_id ${group.sale_summary_id} (id: ${existingVehicle.id}). Skipping.`);
+            groupResult.vehicles_processed.push({
+              vehicle: `${brand} ${vehicle}`,
+              quantity: quantity || 1,
+              incoming_vehicle_id: existingVehicle.id,
+              status: 'already_exists',
+              processing_notes: 'Duplicate skipped - vehicle already imported for this sale'
+            });
+            totalVehiclesProcessed++;
+            continue;
+          }
+        }
+
         // Store incoming vehicle data
-        console.log(`[${timestamp}][${requestId}] Storing incoming vehicle data...`)
         
         // Normalize usage_type to database enum format
         let normalizedUsageType = group.usage_type.toLowerCase()
