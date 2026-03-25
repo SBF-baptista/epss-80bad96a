@@ -1,45 +1,65 @@
 
 
-# Plano: Tela de Vendas Segsale no Módulo de Configuração
+## Plano: Bloquear reprocessamento de vendas antigas no webhook e sync
 
-## O que será feito
+### Problema
+Quando o Segsale envia um webhook com um `idResumoVenda` antigo (ex: 372), o sistema aceita e insere os veículos na tabela `incoming_vehicles` sem verificar se aquele `sale_summary_id` já foi processado anteriormente. Resultado: vendas antigas aparecem misturadas com as novas.
 
-Criar uma nova página "Vendas Segsale" acessível dentro do grupo "Configuração" na navegação lateral. Essa tela exibirá todas as vendas recebidas do Segsale (tabela `incoming_vehicles`), agrupadas por `sale_summary_id`, mostrando todas as informações disponíveis: empresa, veículos, tipo de uso, placa, data/hora de recebimento, status de processamento, etc.
+### Causa raiz
+Nem o `segsale-webhook` nem o `sync-segsale-auto` verificam se o `sale_summary_id` já existe na tabela `incoming_vehicles` antes de chamar `receive-vehicle`.
 
-## Mudanças
+### Solução
+Adicionar uma verificação de deduplicação em dois pontos:
 
-### 1. Nova página `src/pages/SegsaleSales.tsx`
-- Consulta `incoming_vehicles` ordenado por `received_at DESC`
-- Agrupa por `sale_summary_id` e `company_name`
-- Exibe tabela com colunas: ID Venda, Empresa, Veículo (marca/modelo), Ano, Placa, Tipo de Uso, Quantidade, Status (processado/pendente), Data de Recebimento
-- Filtro por empresa e status (processado/pendente)
-- Busca textual por empresa, veículo ou placa
-- Badge visual para status processado vs pendente
+**1. `supabase/functions/segsale-webhook/index.ts`**
+- Antes de chamar `fetch-segsale-products`, consultar `incoming_vehicles` para verificar se já existem registros com aquele `sale_summary_id`
+- Se já existirem, retornar resposta 200 com mensagem "Sale already processed, skipping" sem reprocessar
+- Logar a tentativa de reprocessamento para auditoria
 
-### 2. Rota em `src/App.tsx`
-- Adicionar rota `/segsale-sales` protegida com `requiredModule="scheduling"` e `adminOnly` (mesma permissão do grupo Configuração)
+**2. `supabase/functions/receive-vehicle/processing.ts`**
+- Antes de inserir cada veículo, verificar se já existe um registro com o mesmo `sale_summary_id` + `brand` + `vehicle`
+- Se existir, pular a inserção e retornar o registro existente com status `already_exists`
 
-### 3. Item de navegação em `src/components/AppNavigation.tsx`
-- Adicionar item "Vendas Segsale" no grupo "Configuração" com ícone `Package`
-- Visível apenas para admins (`adminOnly: true`)
+**3. Limpeza dos dados antigos**
+- Deletar os registros da venda 372 que foram inseridos indevidamente via query na tabela `incoming_vehicles`
 
-### Dados exibidos por venda
+### Detalhes técnicos
 
-| Coluna | Origem |
-|---|---|
-| ID Resumo Venda | `sale_summary_id` |
-| Empresa | `company_name` |
-| CPF/CNPJ | `cpf` |
-| Veículo | `brand` + `vehicle` |
-| Ano | `year` |
-| Placa | `plate` |
-| Tipo de Uso | `usage_type` |
-| Quantidade | `quantity` |
-| Cidade | `address_city` |
-| Status | `processed` (badge verde/amarelo) |
-| Kickoff | `kickoff_completed` (badge) |
-| Recebido em | `received_at` formatado com data e hora |
+No webhook, a verificação será:
+```typescript
+// Check if sale_summary_id already exists
+const { data: existing } = await supabase
+  .from('incoming_vehicles')
+  .select('id')
+  .eq('sale_summary_id', idResumoVenda)
+  .limit(1);
 
-### Resultado
-Uma tela completa dentro de Configuração que mostra automaticamente todas as vendas do Segsale sem precisar pesquisar por ID, com data/hora de quando foram importadas.
+if (existing && existing.length > 0) {
+  return Response({ success: true, message: 'Sale already imported, skipping duplicate' });
+}
+```
+
+No `receive-vehicle/processing.ts`, antes do insert:
+```typescript
+if (group.sale_summary_id) {
+  const { data: existingVehicle } = await supabase
+    .from('incoming_vehicles')
+    .select('id')
+    .eq('sale_summary_id', group.sale_summary_id)
+    .eq('brand', brand.trim())
+    .eq('vehicle', vehicle.trim())
+    .limit(1)
+    .maybeSingle();
+
+  if (existingVehicle) {
+    // Skip, return existing record
+    continue;
+  }
+}
+```
+
+### Arquivos modificados
+- `supabase/functions/segsale-webhook/index.ts` — adicionar guard de deduplicação
+- `supabase/functions/receive-vehicle/processing.ts` — adicionar verificação antes do insert
+- Executar DELETE para remover a venda 372 reprocessada
 
