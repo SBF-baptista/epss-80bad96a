@@ -17,13 +17,13 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff }: Kick
   const canEdit = canEditModule('kickoff');
   // Get status styling based on days pending
   const getStatusConfig = () => {
-    if (daysInKickoff > 10) {
+    if (daysInKickoff > 7) {
       return {
         badgeClass: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-800",
         accentClass: "bg-red-500",
         label: `${daysInKickoff} dias pendente`
       };
-    } else if (daysInKickoff > 5) {
+    } else if (daysInKickoff >= 5) {
       return {
         badgeClass: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800",
         accentClass: "bg-amber-500",
