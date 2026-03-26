@@ -35,7 +35,7 @@ const ModuleSelection = lazy(() => import("./pages/ModuleSelection"));
 const Installation = lazy(() => import("./pages/Installation"));
 const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
-
+const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -287,6 +287,17 @@ function AppContent() {
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <SegsaleSales />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Segsale Search - admin only */}
+              <Route path="/segsale-search" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <SegsaleSearch />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
