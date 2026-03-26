@@ -52,8 +52,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert confirmation record
     const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+    // Verify plate exists in OPM system
+    const { data: incomingVehicle } = await supabase
+      .from("incoming_vehicles")
+      .select("id")
+      .eq("plate", normalizedPlate)
+      .limit(1)
+      .maybeSingle();
+
+    const { data: kitSchedule } = await supabase
+      .from("kit_schedules")
+      .select("id")
+      .eq("vehicle_plate", normalizedPlate)
+      .limit(1)
+      .maybeSingle();
+
+    if (!incomingVehicle && !kitSchedule) {
+      return new Response(
+        JSON.stringify({ error: "Placa não encontrada no sistema OPM" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Insert confirmation record
     const { data: confirmation, error: insertError } = await supabase
       .from("installation_confirmations")
       .insert({

@@ -103,35 +103,52 @@ const Installation = () => {
     setSearched(true);
 
     try {
-      const { data: confirmations } = await supabase
-        .from("installation_confirmations")
-        .select("*")
-        .eq("plate", normalized)
-        .order("created_at", { ascending: false })
-        .limit(1);
+      // Run all queries in parallel
+      const [confirmationsRes, schedulesRes, incomingRes] = await Promise.all([
+        supabase
+          .from("installation_confirmations")
+          .select("*")
+          .eq("plate", normalized)
+          .order("created_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("kit_schedules")
+          .select("id, customer_name, vehicle_model, vehicle_brand, scheduled_date, status, technician_id")
+          .eq("vehicle_plate", normalized)
+          .order("scheduled_date", { ascending: false })
+          .limit(1),
+        supabase
+          .from("incoming_vehicles")
+          .select("id")
+          .eq("plate", normalized)
+          .limit(1),
+      ]);
 
-      const { data: schedules } = await supabase
-        .from("kit_schedules")
-        .select("id, customer_name, vehicle_model, vehicle_brand, scheduled_date, status, technician_id")
-        .eq("vehicle_plate", normalized)
-        .order("scheduled_date", { ascending: false })
-        .limit(1);
+      const confirmation = confirmationsRes.data?.[0] || null;
+      const schedule = schedulesRes.data?.[0] || null;
+      const existsInOPM = !!(incomingRes.data?.length || schedule);
 
-      const confirmation = confirmations?.[0] || null;
-      const schedule = schedules?.[0] || null;
+      // Only count confirmation as valid if plate exists in OPM
+      const validConfirmation = confirmation && existsInOPM ? confirmation : null;
 
       const searchResult: SearchResult = {
-        found: !!confirmation || !!schedule,
-        confirmation: confirmation || undefined,
+        found: !!validConfirmation || !!schedule,
+        confirmation: validConfirmation || undefined,
         schedule: schedule || undefined,
       };
 
       setResult(searchResult);
 
       // Save to history
-      const resultType = confirmation ? "confirmation" : schedule ? "schedule" : "not_found";
-      const resultData = confirmation
-        ? { plate: confirmation.plate, imei: confirmation.imei, source: confirmation.source, created_at: confirmation.created_at }
+      const resultType = validConfirmation
+        ? "confirmation"
+        : schedule
+        ? "schedule"
+        : confirmation && !existsInOPM
+        ? "not_found"
+        : "not_found";
+      const resultData = validConfirmation
+        ? { plate: validConfirmation.plate, imei: validConfirmation.imei, source: validConfirmation.source, created_at: validConfirmation.created_at }
         : schedule
         ? { customer_name: schedule.customer_name, vehicle_brand: schedule.vehicle_brand, vehicle_model: schedule.vehicle_model, scheduled_date: schedule.scheduled_date, status: schedule.status }
         : { plate: normalized };
