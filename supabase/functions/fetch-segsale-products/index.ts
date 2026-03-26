@@ -181,30 +181,35 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`📡 Fetching Segsale products for idResumoVenda: ${idResumoVenda}`)
+    const forceRefresh = url.searchParams.get('forceRefresh') === 'true'
+    console.log(`📡 Fetching Segsale products for idResumoVenda: ${idResumoVenda} (forceRefresh: ${forceRefresh})`)
 
-    // Rate-limiting: check cache first (5 min TTL)
+    // Rate-limiting: check cache first (5 min TTL) — skip if forceRefresh
     const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
-    const cached = await readCachedSegsaleResponse(supabase, idResumoVenda)
-    if (cached) {
-      const cacheAge = Date.now() - new Date(cached.updated_at).getTime()
-      if (cacheAge < CACHE_TTL_MS) {
-        console.log(`🧠 Cache hit (${Math.round(cacheAge / 1000)}s old) — returning cached data, skipping API call`)
-        return new Response(
-          JSON.stringify({
-            success: true,
-            cached: true,
-            cache_age_seconds: Math.round(cacheAge / 1000),
-            cache_updated_at: cached.updated_at,
-            message: 'Dados retornados do cache (menos de 5 minutos)',
-            sale_summary_id: idResumoVenda,
-            sales: cached.sales,
-            processing: { forwarded: false, message: 'Cache hit — no external calls made' },
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+    if (!forceRefresh) {
+      const cached = await readCachedSegsaleResponse(supabase, idResumoVenda)
+      if (cached) {
+        const cacheAge = Date.now() - new Date(cached.updated_at).getTime()
+        if (cacheAge < CACHE_TTL_MS) {
+          console.log(`🧠 Cache hit (${Math.round(cacheAge / 1000)}s old) — returning cached data, skipping API call`)
+          return new Response(
+            JSON.stringify({
+              success: true,
+              cached: true,
+              cache_age_seconds: Math.round(cacheAge / 1000),
+              cache_updated_at: cached.updated_at,
+              message: 'Dados retornados do cache (menos de 5 minutos)',
+              sale_summary_id: idResumoVenda,
+              sales: cached.sales,
+              processing: { forwarded: false, message: 'Cache hit — no external calls made' },
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          )
+        }
+        console.log(`⏰ Cache expired (${Math.round(cacheAge / 1000)}s old) — fetching fresh data`)
       }
-      console.log(`⏰ Cache expired (${Math.round(cacheAge / 1000)}s old) — fetching fresh data`)
+    } else {
+      console.log(`🔄 forceRefresh=true — bypassing cache entirely`)
     }
 
     // Call Segsale API with retry and timeout
