@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     }
 
     // Limit to 10 per execution to avoid overloading
-    const idsToProcess = uniqueIds.slice(0, 10)
+    const idsToProcess = allIds.slice(0, 10)
     console.log(`🔄 Processing ${idsToProcess.length} sale_summary_ids (max 10)`)
 
     const results: any[] = []
