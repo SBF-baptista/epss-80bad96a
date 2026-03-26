@@ -35,7 +35,7 @@ const ModuleSelection = lazy(() => import("./pages/ModuleSelection"));
 const Installation = lazy(() => import("./pages/Installation"));
 const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
-
+const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
