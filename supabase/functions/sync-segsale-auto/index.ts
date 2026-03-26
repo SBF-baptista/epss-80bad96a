@@ -37,13 +37,16 @@ Deno.serve(async (req) => {
     const uniqueIds = [...new Set((pendingVehicles || []).map(v => v.sale_summary_id))].filter(Boolean)
     console.log(`📊 Found ${uniqueIds.length} unique pending sale_summary_ids from incoming_vehicles: ${uniqueIds.join(', ')}`)
 
-    // Also fetch IDs from integration_state that were fetched but never stored in incoming_vehicles
+    // Only retry IDs >= this threshold to avoid re-importing old sales
+    const MIN_SALE_SUMMARY_ID = 10942
+
+    // Also fetch IDs from integration_state that were CREATED recently but never stored in incoming_vehicles
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const { data: integrationRecords, error: retryError } = await supabase
       .from('integration_state')
       .select('integration_name, metadata, last_poll_at')
       .like('integration_name', 'segsale_products_%')
-      .gt('updated_at', sevenDaysAgo)
+      .gt('created_at', sevenDaysAgo)
 
     if (retryError) {
       console.warn('⚠️ Failed to query integration_state for retry:', retryError.message)
