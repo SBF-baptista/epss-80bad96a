@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
         }
 
         // Step 2: Call fetch-segsale-products
-
+        const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`
         const fetchResponse = await fetch(fetchUrl, {
           method: 'GET',
           headers: {
