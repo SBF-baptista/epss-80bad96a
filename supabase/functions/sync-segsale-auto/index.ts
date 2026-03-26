@@ -73,8 +73,8 @@ Deno.serve(async (req) => {
       console.log(`🔄 Found ${retryIds.length} IDs in integration_state not yet in incoming_vehicles: ${retryIds.join(', ')}`)
     }
 
-    // Combine both sources, deduplicated
-    const allIds = [...new Set([...uniqueIds, ...retryIds])]
+    // Combine both sources, deduplicated, sorted by ID descending (newest first)
+    const allIds = [...new Set([...uniqueIds, ...retryIds])].sort((a, b) => b - a)
     console.log(`📊 Total unique IDs to process: ${allIds.length}`)
 
     if (allIds.length === 0) {
