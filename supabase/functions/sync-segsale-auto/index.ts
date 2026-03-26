@@ -223,9 +223,6 @@ function mapUsageType(usageType: string): string {
     'PARTICULAR': 'particular',
     'COMERCIAL': 'comercial',
     'FROTA': 'frota',
-    'PLUS II - GPS': 'telemetria_gps',
-    'PLUS II - CAN': 'telemetria_can',
-    'PLUS I - GPS': 'telemetria_gps',
   }
   return mapping[normalized] || usageType.toLowerCase().replace(/\s+/g, '_')
 }
@@ -242,6 +239,7 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
         vehicle: v.vehicle || v.modelo || '',
         brand: v.brand || v.marca || '',
         year: v.year || v.ano || null,
+        plate: v.plate || null,
         quantity: v.quantity || 1,
       }
 
