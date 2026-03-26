@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
         .in('sale_summary_id', candidateRetryIds)
 
       const existingSet = new Set((existingIncoming || []).map(v => v.sale_summary_id))
-      retryIds = candidateRetryIds.filter(id => !existingSet.has(id))
+      retryIds = candidateRetryIds.filter(id => !existingSet.has(id) && id >= MIN_SALE_SUMMARY_ID)
     }
 
     if (retryIds.length > 0) {
