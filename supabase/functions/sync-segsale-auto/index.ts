@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
     const uniqueIds = [...new Set((pendingVehicles || []).map(v => v.sale_summary_id))].filter(Boolean)
     console.log(`📊 Found ${uniqueIds.length} unique pending sale_summary_ids from incoming_vehicles: ${uniqueIds.join(', ')}`)
 
-    // Also fetch IDs from integration_state that returned empty results (retry within 7 days)
+    // Also fetch IDs from integration_state that were fetched but never stored in incoming_vehicles
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    const { data: emptyResults, error: retryError } = await supabase
+    const { data: integrationRecords, error: retryError } = await supabase
       .from('integration_state')
       .select('integration_name, metadata, last_poll_at')
       .like('integration_name', 'segsale_products_%')
@@ -49,24 +49,32 @@ Deno.serve(async (req) => {
       console.warn('⚠️ Failed to query integration_state for retry:', retryError.message)
     }
 
-    const retryIds = (emptyResults || [])
-      .filter(r => {
-        const meta = r.metadata as any
-        // Retry if sales array was empty or missing
-        return !meta?.sales || (Array.isArray(meta.sales) && meta.sales.length === 0)
-      })
+    // Extract all candidate IDs from integration_state
+    const candidateRetryIds = (integrationRecords || [])
       .map(r => {
         const match = r.integration_name.match(/segsale_products_(\d+)/)
         return match ? parseInt(match[1]) : null
       })
       .filter((id): id is number => id !== null)
 
-    if (retryIds.length > 0) {
-      console.log(`🔄 Found ${retryIds.length} empty-result IDs to retry: ${retryIds.join(', ')}`)
+    // Check which of these IDs are NOT in incoming_vehicles (never stored or empty result)
+    let retryIds: number[] = []
+    if (candidateRetryIds.length > 0) {
+      const { data: existingIncoming } = await supabase
+        .from('incoming_vehicles')
+        .select('sale_summary_id')
+        .in('sale_summary_id', candidateRetryIds)
+
+      const existingSet = new Set((existingIncoming || []).map(v => v.sale_summary_id))
+      retryIds = candidateRetryIds.filter(id => !existingSet.has(id))
     }
 
-    // Combine both sources, deduplicated
-    const allIds = [...new Set([...uniqueIds, ...retryIds])]
+    if (retryIds.length > 0) {
+      console.log(`🔄 Found ${retryIds.length} IDs in integration_state not yet in incoming_vehicles: ${retryIds.join(', ')}`)
+    }
+
+    // Combine both sources, deduplicated, sorted by ID descending (newest first)
+    const allIds = [...new Set([...uniqueIds, ...retryIds])].sort((a, b) => b - a)
     console.log(`📊 Total unique IDs to process: ${allIds.length}`)
 
     if (allIds.length === 0) {
@@ -212,6 +220,9 @@ function mapUsageType(usageType: string): string {
     'PARTICULAR': 'particular',
     'COMERCIAL': 'comercial',
     'FROTA': 'frota',
+    'PLUS II - GPS': 'telemetria_gps',
+    'PLUS II - CAN': 'telemetria_can',
+    'PLUS I - GPS': 'telemetria_gps',
   }
   return mapping[normalized] || usageType.toLowerCase().replace(/\s+/g, '_')
 }
