@@ -109,14 +109,21 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
       try {
-        // Deduplication check: skip if same sale_summary_id + brand + vehicle already exists
+        // Deduplication check: skip if same sale_summary_id + brand + vehicle (+ plate if available) already exists
         if (group.sale_summary_id) {
-          const { data: existingVehicle } = await supabase
+          let dedupQuery = supabase
             .from('incoming_vehicles')
             .select('id, processing_notes')
             .eq('sale_summary_id', group.sale_summary_id)
             .eq('brand', brand.trim())
-            .eq('vehicle', vehicle.trim())
+            .eq('vehicle', vehicle.trim());
+
+          // When plate is available, use it for more precise deduplication
+          if (vehicleData.plate) {
+            dedupQuery = dedupQuery.eq('plate', vehicleData.plate);
+          }
+
+          const { data: existingVehicle } = await dedupQuery
             .limit(1)
             .maybeSingle();
 

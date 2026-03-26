@@ -223,9 +223,6 @@ function mapUsageType(usageType: string): string {
     'PARTICULAR': 'particular',
     'COMERCIAL': 'comercial',
     'FROTA': 'frota',
-    'PLUS II - GPS': 'telemetria_gps',
-    'PLUS II - CAN': 'telemetria_can',
-    'PLUS I - GPS': 'telemetria_gps',
   }
   return mapping[normalized] || usageType.toLowerCase().replace(/\s+/g, '_')
 }
