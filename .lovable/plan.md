@@ -1,80 +1,58 @@
 
 
-## Diagnostico e Correcao: Venda 10945 incompleta + Vendas indevidas 10944/10946/10947
+## Diagnostico e Correcao: Venda 10971 incompleta + Sincronizacao automatica de veiculos faltantes
 
-### Problema 1: Venda 10945 tem 4 registros em vez de 7
+### Problema identificado
 
-A API do Segsale retornou 7 veiculos com placas individuais:
-- 3x MARCOPOLO VOLARE V8L ON (placas QZG4H29, TAC8F87, TSG5A15)
-- 1x MARCOPOLO VOLARE V8L ON (placa QZC3H86) — mesmo modelo, 4o veiculo
-- 1x MARCOPOLO VOLARE W8 ON (placa PHU4E51)
-- 1x VOLKSWAGEM MASCA GRANMICRO E O (placa QZZ8A97)
-- 1x MERCEDES BENZ MASCA GRANMICRO (placa QZJ3J56)
+**A API do Segsale retornou apenas 1 veiculo para a venda 10971** (TOYOTA HILUX SKV7A49), mas o usuario confirma que sao 3 veiculos. Isso acontece porque:
 
-**Causa**: Dois bugs em cascata:
+1. **O Segsale adiciona veiculos progressivamente** — quando o webhook/sync busca a venda pela primeira vez, nem todos os veiculos estao cadastrados ainda. A API retorna somente o que existe naquele momento.
 
-1. `transformSalesToVehicleGroups` (sync-segsale-auto) NAO passa o campo `plate` para o `receive-vehicle`. Linha 240-246 so mapeia `vehicle`, `brand`, `year`, `quantity` — ignora `plate`.
+2. **O sistema nunca re-verifica vendas ja importadas** — uma vez que a venda 10971 tem 1 registro em `incoming_vehicles`, o `sync-segsale-auto` re-busca a API, mas o `receive-vehicle` ve que o veiculo ja existe e pula. Os veiculos novos da API seriam adicionados, MAS a cache de 5 minutos do `fetch-segsale-products` retorna dados antigos.
 
-2. `receive-vehicle/processing.ts` (linha 112-134) deduplica por `sale_summary_id + brand + vehicle`. Como existem 4 veiculos MARCOPOLO + VOLARE V8L ON, so o primeiro e inserido — os outros 3 sao descartados como "duplicados". O resultado sao apenas 4 registros unicos por combinacao marca+modelo.
+3. **A cache impede atualizacao** — o `sync-segsale-auto` chama `fetch-segsale-products` que retorna dados da cache de 5 min. A cache foi gravada quando so havia 1 veiculo. Mesmo apos o TTL expirar, a API pode ter sido chamada manualmente e re-cacheou o resultado antigo.
 
-### Problema 2: Vendas 10944, 10946, 10947 nao deveriam ter sido importadas
-
-Essas 3 vendas tem `usage_type: PLUS II - GPS` no Segsale. Na correcao anterior, eu mapeei `PLUS II - GPS` → `telemetria_gps`, o que fez elas serem importadas automaticamente. O usuario indica que esse tipo de produto NAO e telemetria GPS e nao deveria entrar no sistema.
+4. **O webhook tambem nao passa `plate`** — `segsale-webhook/transformSalesToVehicleGroups` ainda nao inclui o campo `plate` (mesmo bug que foi corrigido no sync-segsale-auto).
 
 ### Solucao
 
-**1. Incluir `plate` na transformacao** (`sync-segsale-auto/index.ts`)
-- Na funcao `transformSalesToVehicleGroups`, adicionar `plate: v.plate || null` ao objeto do veiculo
+**1. Bypass de cache no sync automatico** (`fetch-segsale-products/index.ts`)
+- Adicionar parametro `forceRefresh=true` que ignora a cache e vai direto na API do Segsale
+- O `sync-segsale-auto` usara esse parametro para sempre pegar dados frescos
 
-**2. Corrigir deduplicacao para considerar placa** (`receive-vehicle/processing.ts`)
-- Quando o veiculo tem `plate`, usar `sale_summary_id + brand + vehicle + plate` como chave de deduplicacao
-- Quando NAO tem plate, manter a logica atual `sale_summary_id + brand + vehicle`
+**2. Comparar contagem de veiculos** (`sync-segsale-auto/index.ts`)
+- Apos buscar dados frescos da API, comparar a quantidade de veiculos retornados pela API com a quantidade existente em `incoming_vehicles`
+- Se a API retorna mais veiculos do que existem no DB, enviar todos para `receive-vehicle` (a deduplicacao ja existente vai pular os que ja existem e adicionar os novos)
+- Logar a diferenca para monitoramento
 
-**3. Remover mapeamento de PLUS II** (`sync-segsale-auto/index.ts` e `segsale-webhook/index.ts`)
-- Remover as linhas que mapeiam `PLUS II - GPS`, `PLUS II - CAN`, `PLUS I - GPS` para tipos existentes
-- Esses tipos vao cair no fallback `usageType.toLowerCase().replace(/\s+/g, '_')` → `plus_ii_-_gps` que NAO existe no enum, causando erro na insercao e impedindo a importacao
+**3. Incluir plate no webhook** (`segsale-webhook/index.ts`)
+- Adicionar `plate: v.plate || null` na funcao `transformSalesToVehicleGroups` (mesmo fix ja aplicado no sync)
 
-**4. Limpeza dos dados errados**
-- Deletar os registros de `incoming_vehicles` com `sale_summary_id` IN (10944, 10946, 10947) que foram importados indevidamente
-- Deletar o registro da venda 10945 (4 registros incompletos) para que o re-sync traga os 7 veiculos com placas
+**4. Atualizar cache apos re-fetch** 
+- Quando o sync busca dados frescos e encontra mais veiculos, a cache e atualizada automaticamente (ja acontece no fluxo atual do fetch-segsale-products)
 
 ### Arquivos modificados
-- `supabase/functions/sync-segsale-auto/index.ts` — incluir plate na transformacao + remover mapeamento PLUS II
-- `supabase/functions/segsale-webhook/index.ts` — remover mapeamento PLUS II
-- `supabase/functions/receive-vehicle/processing.ts` — dedup considerar plate
-- Migration SQL — limpar registros errados
 
-### Detalhes tecnicos
+1. **`supabase/functions/fetch-segsale-products/index.ts`** — adicionar suporte a `forceRefresh=true` query param
+2. **`supabase/functions/sync-segsale-auto/index.ts`** — usar `forceRefresh=true` ao chamar fetch; comparar contagem de veiculos API vs DB; logar diferencas
+3. **`supabase/functions/segsale-webhook/index.ts`** — adicionar `plate: v.plate || null` na transformacao de veiculos
 
-```typescript
-// sync-segsale-auto: transformSalesToVehicleGroups — adicionar plate
-const vehicle: any = {
-  vehicle: v.vehicle || v.modelo || '',
-  brand: v.brand || v.marca || '',
-  year: v.year || v.ano || null,
-  plate: v.plate || null,        // ← NOVO
-  quantity: v.quantity || 1,
-}
+### Logica chave
 
-// receive-vehicle/processing.ts — dedup com plate
-let dedupQuery = supabase
-  .from('incoming_vehicles')
-  .select('id, processing_notes')
-  .eq('sale_summary_id', group.sale_summary_id)
-  .eq('brand', brand.trim())
-  .eq('vehicle', vehicle.trim());
-
-if (vehicleData.plate) {
-  dedupQuery = dedupQuery.eq('plate', vehicleData.plate);
-}
-
-// Remover do mapUsageType em ambos os arquivos:
-// 'PLUS II - GPS': 'telemetria_gps',   ← REMOVER
-// 'PLUS II - CAN': 'telemetria_can',   ← REMOVER
-// 'PLUS I - GPS': 'telemetria_gps',    ← REMOVER
+```text
+sync-segsale-auto (a cada 5h):
+  Para cada sale_summary_id pendente:
+    1. Buscar dados FRESCOS da API (forceRefresh=true)
+    2. Contar veiculos retornados pela API
+    3. Contar veiculos existentes em incoming_vehicles
+    4. Se API > DB → enviar para receive-vehicle (dedup cuida do resto)
+    5. Se API == DB → skip (ja esta completo)
+    6. Se API == 0 → registrar como retry para proxima execucao
 ```
 
-Apos a correcao e limpeza, o `sync-segsale-auto` vai:
-- Re-importar a venda 10945 com os 7 veiculos e suas placas
-- Rejeitar vendas PLUS II (10944, 10946, 10947) pois o tipo nao existe no enum
+### Resultado esperado
+
+- Venda 10971: na proxima execucao do sync (ou apos deploy manual), os 2 veiculos faltantes serao detectados e adicionados automaticamente
+- Vendas futuras: qualquer veiculo adicionado ao Segsale apos a importacao inicial sera capturado automaticamente na proxima execucao do cron (5h)
+- O usuario nao precisara mais reportar veiculos faltantes
 
