@@ -20,7 +20,8 @@ import {
   Home,
   MessageSquare,
   Wrench,
-  Activity
+  Activity,
+  Search
 } from "lucide-react";
 import {
   Sidebar,
