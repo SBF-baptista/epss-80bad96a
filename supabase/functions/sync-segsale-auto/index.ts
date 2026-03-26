@@ -98,22 +98,8 @@ Deno.serve(async (req) => {
       console.log(`\n--- Processing sale_summary_id: ${idResumoVenda} ---`)
 
       try {
-        // Deduplication check: verify sale_summary_id doesn't already have records
-        const { data: existingSale } = await supabase
-          .from('incoming_vehicles')
-          .select('id')
-          .eq('sale_summary_id', idResumoVenda)
-          .eq('processed', true)
-          .limit(1);
-
-        if (existingSale && existingSale.length > 0) {
-          console.log(`⚠️ sale_summary_id ${idResumoVenda} already has processed records. Skipping.`);
-          results.push({ id: idResumoVenda, status: 'already_processed' });
-          continue;
-        }
-
-        // Step 2: Call fetch-segsale-products
-        const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`
+        // Step 2: Call fetch-segsale-products with forceRefresh to bypass cache
+        const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}&forceRefresh=true`
         const fetchResponse = await fetch(fetchUrl, {
           method: 'GET',
           headers: {
@@ -139,7 +125,49 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Step 3: Transform and send to receive-vehicle
+        // Count total vehicles returned by API
+        let apiVehicleCount = 0
+        for (const sale of sales) {
+          const vehicles = sale.vehicles || []
+          apiVehicleCount += vehicles.length
+        }
+
+        // Count vehicles already in DB for this sale_summary_id
+        const { count: dbVehicleCount, error: countError } = await supabase
+          .from('incoming_vehicles')
+          .select('*', { count: 'exact', head: true })
+          .eq('sale_summary_id', idResumoVenda)
+
+        if (countError) {
+          console.error(`❌ Failed to count DB vehicles for ${idResumoVenda}:`, countError.message)
+          results.push({ id: idResumoVenda, status: 'count_error', error: countError.message })
+          continue
+        }
+
+        const dbCount = dbVehicleCount || 0
+        console.log(`📊 Vehicle count comparison for ${idResumoVenda}: API=${apiVehicleCount} vs DB=${dbCount}`)
+
+        // Check if all DB records are already processed
+        const { data: processedCheck } = await supabase
+          .from('incoming_vehicles')
+          .select('id')
+          .eq('sale_summary_id', idResumoVenda)
+          .eq('processed', true)
+          .limit(1)
+
+        const hasProcessedRecords = processedCheck && processedCheck.length > 0
+
+        if (apiVehicleCount <= dbCount && hasProcessedRecords) {
+          console.log(`✅ sale_summary_id ${idResumoVenda} is complete (API=${apiVehicleCount}, DB=${dbCount}). Skipping.`)
+          results.push({ id: idResumoVenda, status: 'already_complete', api_count: apiVehicleCount, db_count: dbCount })
+          continue
+        }
+
+        if (apiVehicleCount > dbCount) {
+          console.log(`🆕 Found ${apiVehicleCount - dbCount} NEW vehicles for ${idResumoVenda} (API=${apiVehicleCount}, DB=${dbCount})`)
+        }
+
+        // Step 3: Transform and send to receive-vehicle (dedup in receive-vehicle handles existing records)
         const vehicleGroups = transformSalesToVehicleGroups(sales, idResumoVenda)
         console.log(`📦 ${vehicleGroups.length} vehicle groups to store`)
 
@@ -173,8 +201,8 @@ Deno.serve(async (req) => {
           results.push({ id: idResumoVenda, status: 'storage_failed', error: receiveResponse.status })
         } else {
           const receiveData = await receiveResponse.json()
-          console.log(`✅ Stored vehicles for ${idResumoVenda}`)
-          results.push({ id: idResumoVenda, status: 'success', stored: receiveData })
+          console.log(`✅ Stored vehicles for ${idResumoVenda} (API=${apiVehicleCount}, DB_before=${dbCount})`)
+          results.push({ id: idResumoVenda, status: 'success', stored: receiveData, api_count: apiVehicleCount, db_before: dbCount })
         }
       } catch (itemError: any) {
         console.error(`❌ Error processing ${idResumoVenda}:`, itemError?.message || itemError)
