@@ -36,6 +36,7 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
         vehicle: v.vehicle || v.modelo || '',
         brand: v.brand || v.marca || '',
         year: v.year || v.ano || null,
+        plate: v.plate || null,
         quantity: v.quantity || 1,
       };
 
