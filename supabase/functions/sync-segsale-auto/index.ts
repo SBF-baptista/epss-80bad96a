@@ -35,9 +35,41 @@ Deno.serve(async (req) => {
 
     // Deduplicate sale_summary_ids
     const uniqueIds = [...new Set((pendingVehicles || []).map(v => v.sale_summary_id))].filter(Boolean)
-    console.log(`📊 Found ${uniqueIds.length} unique pending sale_summary_ids: ${uniqueIds.join(', ')}`)
+    console.log(`📊 Found ${uniqueIds.length} unique pending sale_summary_ids from incoming_vehicles: ${uniqueIds.join(', ')}`)
 
-    if (uniqueIds.length === 0) {
+    // Also fetch IDs from integration_state that returned empty results (retry within 7 days)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: emptyResults, error: retryError } = await supabase
+      .from('integration_state')
+      .select('integration_name, metadata, last_poll_at')
+      .like('integration_name', 'segsale_products_%')
+      .gt('updated_at', sevenDaysAgo)
+
+    if (retryError) {
+      console.warn('⚠️ Failed to query integration_state for retry:', retryError.message)
+    }
+
+    const retryIds = (emptyResults || [])
+      .filter(r => {
+        const meta = r.metadata as any
+        // Retry if sales array was empty or missing
+        return !meta?.sales || (Array.isArray(meta.sales) && meta.sales.length === 0)
+      })
+      .map(r => {
+        const match = r.integration_name.match(/segsale_products_(\d+)/)
+        return match ? parseInt(match[1]) : null
+      })
+      .filter((id): id is number => id !== null)
+
+    if (retryIds.length > 0) {
+      console.log(`🔄 Found ${retryIds.length} empty-result IDs to retry: ${retryIds.join(', ')}`)
+    }
+
+    // Combine both sources, deduplicated
+    const allIds = [...new Set([...uniqueIds, ...retryIds])]
+    console.log(`📊 Total unique IDs to process: ${allIds.length}`)
+
+    if (allIds.length === 0) {
       console.log('✅ No pending sales to sync')
       return new Response(
         JSON.stringify({ success: true, message: 'No pending sales to sync', synced: 0, timestamp }),
@@ -46,7 +78,7 @@ Deno.serve(async (req) => {
     }
 
     // Limit to 10 per execution to avoid overloading
-    const idsToProcess = uniqueIds.slice(0, 10)
+    const idsToProcess = allIds.slice(0, 10)
     console.log(`🔄 Processing ${idsToProcess.length} sale_summary_ids (max 10)`)
 
     const results: any[] = []
@@ -70,7 +102,7 @@ Deno.serve(async (req) => {
         }
 
         // Step 2: Call fetch-segsale-products
-
+        const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`
         const fetchResponse = await fetch(fetchUrl, {
           method: 'GET',
           headers: {
