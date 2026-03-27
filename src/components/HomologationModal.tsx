@@ -377,6 +377,11 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           {(card.status === 'execucao_teste' || card.status === 'homologado') && (
             <>
               <Separator />
+              <HomologationFilesSection 
+                cardId={card.id} 
+                onUpdate={onUpdate}
+                readOnly={card.status === 'homologado'}
+              />
               <HomologationPhotos 
                 cardId={card.id} 
                 onUpdate={onUpdate}
