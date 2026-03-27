@@ -678,6 +678,54 @@ export type Database = {
           },
         ]
       }
+      homologation_files: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          homologation_card_id: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          homologation_card_id: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          homologation_card_id?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homologation_files_homologation_card_id_fkey"
+            columns: ["homologation_card_id"]
+            isOneToOne: false
+            referencedRelation: "homologation_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homologation_files_homologation_card_id_fkey"
+            columns: ["homologation_card_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["homologation_id"]
+          },
+        ]
+      }
       homologation_kit_accessories: {
         Row: {
           created_at: string
