@@ -212,7 +212,11 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (createError) {
         console.error('Error creating user:', createError);
-        return jsonResponse({ error: createError.message }, 400);
+        let errorMsg = createError.message;
+        if (errorMsg.includes('already been registered') || errorMsg.includes('already exists')) {
+          errorMsg = 'Este e-mail já está cadastrado no sistema';
+        }
+        return jsonResponse({ success: false, error: errorMsg }, 400);
       }
 
       const newUserId = createData.user!.id;

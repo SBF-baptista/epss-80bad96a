@@ -60,23 +60,32 @@ class UserManagementService {
 
       if (error) {
         console.error('Supabase function error:', error);
-        // Try to extract the actual error message from the response
         let errorMessage = 'Erro ao criar usuário';
         try {
+          // supabase-js wraps non-2xx responses - try to extract body
           if (error.context && typeof error.context === 'object') {
             const responseBody = await (error.context as any)?.json?.();
             if (responseBody?.error) {
               errorMessage = responseBody.error;
             }
+          } else if (error.message) {
+            errorMessage = error.message;
           }
-        } catch {}
+        } catch {
+          if (error.message) errorMessage = error.message;
+        }
         
         // Map known error messages to Portuguese
-        if (errorMessage.includes('already been registered')) {
+        if (errorMessage.includes('already been registered') || errorMessage.includes('already exists')) {
           errorMessage = 'Este e-mail já está cadastrado no sistema';
         }
         
         return { success: false, error: errorMessage };
+      }
+
+      // Handle non-success responses that don't throw (e.g., 400 returned as data)
+      if (data && !data.success && data.error) {
+        return { success: false, error: data.error };
       }
 
       if (data.success && data.user) {
