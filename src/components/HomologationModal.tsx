@@ -9,6 +9,7 @@ import { Calendar, TestTube, Edit, Play } from "lucide-react";
 import { HomologationCard, updateHomologationNotes, updateHomologationStatus } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
 import HomologationPhotos from "./HomologationPhotos";
+import HomologationFilesSection from "./homologation/HomologationFilesSection";
 import TestSchedulingModal from "./TestSchedulingModal";
 import TestExecutionModal from "./TestExecutionModal";
 import KitManagementSection from "./homologation/KitManagementSection";
