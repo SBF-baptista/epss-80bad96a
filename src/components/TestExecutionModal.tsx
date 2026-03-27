@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { updateTestExecution, HomologationCard, uploadHomologationPhoto, fetchAutomationConfigurations, createAutomationRule, updateHomologationConfiguration } from "@/services/homologationService";
 import { useHomologationToast } from "@/hooks/useHomologationToast";
 import HomologationErrorBoundary from "./homologation/HomologationErrorBoundary";
+import HomologationFilesSection from "./homologation/HomologationFilesSection";
 
 interface TestExecutionModalProps {
   card: HomologationCard;
