@@ -668,6 +668,9 @@ const TestExecutionModal = ({ card, isOpen, onClose, onUpdate, onCloseParent }: 
               </CardContent>
             </Card>
 
+            {/* Files Section */}
+            <HomologationFilesSection cardId={card.id} onUpdate={onUpdate} />
+
             {/* Vehicle Information */}
             <Card>
               <CardHeader>
