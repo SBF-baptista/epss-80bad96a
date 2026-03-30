@@ -211,19 +211,28 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       if (createError) {
-        console.error('Error creating user:', createError);
-        let errorMsg = createError.message;
-        if (errorMsg.includes('already been registered') || errorMsg.includes('already exists')) {
-          errorMsg = 'Este e-mail já está cadastrado no sistema';
+        const rawMessage = createError.message || '';
+        const isEmailAlreadyRegistered =
+          (createError as { code?: string }).code === 'email_exists' ||
+          rawMessage.includes('already been registered') ||
+          rawMessage.includes('already exists');
+
+        if (isEmailAlreadyRegistered) {
+          // Business validation (expected): keep HTTP 200 to avoid FunctionsHttpError in the client
+          return jsonResponse({ success: false, error: 'Este e-mail já está cadastrado no sistema' }, 200);
         }
-        return jsonResponse({ success: false, error: errorMsg }, 400);
+
+        console.error('Error creating user:', createError);
+        return jsonResponse({ success: false, error: rawMessage || 'Erro ao criar usuário' }, 400);
       }
 
       const newUserId = createData.user!.id;
       console.log(`Created auth user: ${newUserId}`);
 
-      const { error: usuarioErr } = await supabaseAdmin.from('usuarios').insert({ id: newUserId, email });
-      if (usuarioErr) console.error('Error inserting into usuarios:', usuarioErr);
+      const { error: usuarioErr } = await supabaseAdmin
+        .from('usuarios')
+        .upsert({ id: newUserId, email }, { onConflict: 'id', ignoreDuplicates: true });
+      if (usuarioErr) console.error('Error upserting into usuarios:', usuarioErr);
 
       const roleInsert: any = { user_id: newUserId, role: resolvedBaseRole };
       if (resolvedAccessProfileId) roleInsert.access_profile_id = resolvedAccessProfileId;
