@@ -102,23 +102,22 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
     }
   });
 
-  // Agrupar por company_name (cliente único)
-  const clientsMap = new Map<string, KickoffClient>();
+  // Agrupar por sale_summary_id (cada venda é um card separado)
+  const clientsMap = new Map<number, KickoffClient>();
   let totalVehicles = 0;
 
   vehicles.forEach(vehicle => {
     const quantity = vehicle.quantity || 1;
     totalVehicles += quantity;
     
-    const companyKey = (vehicle.company_name || 'Não identificado').trim().toUpperCase();
     const saleSummaryId = vehicle.sale_summary_id!;
 
-    if (!clientsMap.has(companyKey)) {
+    if (!clientsMap.has(saleSummaryId)) {
       // Buscar customer data - preferir o que tem contatos
       const customer = customerMap.get(saleSummaryId);
       const customerContacts = Array.isArray(customer?.contacts) ? customer.contacts : [];
       
-      clientsMap.set(companyKey, {
+      clientsMap.set(saleSummaryId, {
         sale_summary_id: saleSummaryId,
         company_name: vehicle.company_name || 'Não identificado',
         needs_blocking: customer?.needs_blocking || false,
@@ -132,13 +131,13 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
       });
     } else {
       // Atualizar a data mais antiga se este veículo for mais antigo
-      const client = clientsMap.get(companyKey)!;
+      const client = clientsMap.get(saleSummaryId)!;
       if (vehicle.received_at && (!client.oldest_received_at || vehicle.received_at < client.oldest_received_at)) {
         client.oldest_received_at = vehicle.received_at;
       }
     }
 
-    const client = clientsMap.get(companyKey)!;
+    const client = clientsMap.get(saleSummaryId)!;
     
     // Atualizar informações se encontrar um customer com mais dados
     const customer = customerMap.get(saleSummaryId);
