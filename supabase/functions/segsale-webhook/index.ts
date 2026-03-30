@@ -177,8 +177,6 @@ serve(async (req) => {
     }
 
     // Step 1: Fetch data from Segsale API via fetch-segsale-products
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://eeidevcyxpnorbgcskdf.supabase.co';
     const fetchUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${idResumoVenda}`;
     console.log(`📞 Step 1: Calling fetch-segsale-products: ${fetchUrl}`);
 
