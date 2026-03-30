@@ -186,12 +186,18 @@ export async function processVehicleGroups(
             console.log(`[${timestamp}][${requestId}] Accessories will use UPSERT to prevent duplication`)
             
             // Try to find the existing incoming_vehicle
-            const { data: existingVehicle, error: selectError } = await supabase
+            let fallbackQuery = supabase
               .from('incoming_vehicles')
               .select('*')
               .eq('brand', brand.trim())
               .eq('vehicle', vehicle.trim())
               .eq('sale_summary_id', group.sale_summary_id || null)
+            
+            if (vehicleData.plate) {
+              fallbackQuery = fallbackQuery.eq('plate', vehicleData.plate)
+            }
+            
+            const { data: existingVehicle, error: selectError } = await fallbackQuery
               .order('received_at', { ascending: false })
               .limit(1)
               .single()
