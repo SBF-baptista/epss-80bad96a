@@ -109,21 +109,37 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
       try {
-        // Deduplication check: skip if same sale_summary_id + brand + vehicle (+ plate if available) already exists
-        if (group.sale_summary_id) {
-          let dedupQuery = supabase
+        // Deduplication check 1: Cross-sale plate check (prevent same plate in different sales)
+        if (vehicleData.plate) {
+          const { data: existingByPlate } = await supabase
+            .from('incoming_vehicles')
+            .select('id, sale_summary_id, processing_notes')
+            .eq('plate', vehicleData.plate)
+            .limit(1)
+            .maybeSingle();
+
+          if (existingByPlate) {
+            console.log(`[${timestamp}][${requestId}] ⚠️ Plate ${vehicleData.plate} already exists in sale ${existingByPlate.sale_summary_id} (id: ${existingByPlate.id}). Skipping cross-sale duplicate.`);
+            groupResult.vehicles_processed.push({
+              vehicle: `${brand} ${vehicle}`,
+              quantity: quantity || 1,
+              incoming_vehicle_id: existingByPlate.id,
+              status: 'already_exists',
+              processing_notes: `Duplicate skipped - plate ${vehicleData.plate} already exists in sale ${existingByPlate.sale_summary_id}`
+            });
+            totalVehiclesProcessed++;
+            continue;
+          }
+        }
+
+        // Deduplication check 2: Same sale_summary_id + brand + vehicle (for vehicles without plate)
+        if (group.sale_summary_id && !vehicleData.plate) {
+          const { data: existingVehicle } = await supabase
             .from('incoming_vehicles')
             .select('id, processing_notes')
             .eq('sale_summary_id', group.sale_summary_id)
             .eq('brand', brand.trim())
-            .eq('vehicle', vehicle.trim());
-
-          // When plate is available, use it for more precise deduplication
-          if (vehicleData.plate) {
-            dedupQuery = dedupQuery.eq('plate', vehicleData.plate);
-          }
-
-          const { data: existingVehicle } = await dedupQuery
+            .eq('vehicle', vehicle.trim())
             .limit(1)
             .maybeSingle();
 
