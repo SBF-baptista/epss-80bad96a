@@ -11,6 +11,13 @@ import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModulesToObjec
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Users } from "lucide-react";
 
+export type CustomerTrackingStage = 'kickoff' | 'homologation' | 'planning' | 'scheduled' | 'installed';
+
+export interface CustomerWithStage extends Customer {
+  trackingStage?: CustomerTrackingStage;
+  kickoffVehicleCount?: number;
+}
+
 export interface CustomerKitData {
   id: string;
   kit_id: string;
