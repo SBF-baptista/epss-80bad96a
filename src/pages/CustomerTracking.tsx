@@ -182,7 +182,7 @@ const CustomerTracking = () => {
       );
     }
 
-    // Filter by plate - need to check customer's vehicles in kit schedules
+    // Filter by plate - check kit schedules and also kickoff vehicle plates
     if (plateTerm.trim()) {
       const plateUpper = plateTerm.toUpperCase();
       const customerIdsWithMatchingPlate = kitSchedules
@@ -190,9 +190,15 @@ const CustomerTracking = () => {
         .map(schedule => schedule.customer_id)
         .filter((id): id is string => !!id);
       
-      filtered = filtered.filter(customer => 
-        customerIdsWithMatchingPlate.includes(customer.id!)
-      );
+      filtered = filtered.filter(customer => {
+        // Check kit schedules
+        if (customerIdsWithMatchingPlate.includes(customer.id!)) return true;
+        // Check kickoff vehicles
+        if ((customer as CustomerWithStage).trackingStage === 'kickoff' && customer.vehicles) {
+          return customer.vehicles.some(v => v.plate?.toUpperCase().includes(plateUpper));
+        }
+        return false;
+      });
     }
 
     setFilteredCustomers(filtered);
