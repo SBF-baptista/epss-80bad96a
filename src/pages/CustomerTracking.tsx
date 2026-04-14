@@ -94,26 +94,49 @@ const CustomerTracking = () => {
       const safeKitsData = kitsData || [];
       const kickoffVehicles = kickoffResult.data || [];
 
-      // Group kickoff vehicles by sale_summary_id
-      const kickoffBySale = new Map<number, { company_name: string; vehicles: typeof kickoffVehicles }>();
+      // Group kickoff vehicles by company_name (consolidate same client across sales)
+      const kickoffByCompany = new Map<string, typeof kickoffVehicles>();
       kickoffVehicles.forEach(v => {
-        const saleId = v.sale_summary_id!;
-        if (!kickoffBySale.has(saleId)) {
-          kickoffBySale.set(saleId, { company_name: v.company_name || 'Não identificado', vehicles: [] });
+        const key = (v.company_name || 'Não identificado').trim().toLowerCase();
+        if (!kickoffByCompany.has(key)) {
+          kickoffByCompany.set(key, []);
         }
-        kickoffBySale.get(saleId)!.vehicles.push(v);
+        kickoffByCompany.get(key)!.push(v);
       });
 
       // Track which sale_summary_ids already exist in customers
       const existingSaleIds = new Set(safeCustomersData.filter(c => c.sale_summary_id).map(c => c.sale_summary_id));
 
-      // Create virtual customers for kickoff clients not already in customer tracking
-      kickoffBySale.forEach((data, saleId) => {
-        if (!existingSaleIds.has(saleId)) {
+      // For each company group, check if ALL their sales already exist as customers
+      kickoffByCompany.forEach((vehicles, _companyKey) => {
+        // Filter out vehicles whose sale_summary_id already exists in customers
+        const newVehicles = vehicles.filter(v => !existingSaleIds.has(v.sale_summary_id!));
+        if (newVehicles.length === 0) return;
+
+        const companyName = newVehicles[0].company_name || 'Não identificado';
+        
+        // Check if there's already a virtual kickoff customer for this company (merge)
+        const existingKickoff = safeCustomersData.find(
+          c => c.trackingStage === 'kickoff' && c.name?.trim().toLowerCase() === _companyKey
+        );
+
+        if (existingKickoff) {
+          // Merge vehicles into existing entry
+          const mapped = newVehicles.map(v => ({
+            id: v.id, brand: v.brand, model: v.vehicle,
+            year: v.year, plate: v.plate, received_at: v.received_at,
+          }));
+          existingKickoff.kickoffVehicles = [...(existingKickoff.kickoffVehicles || []), ...mapped];
+          existingKickoff.kickoffVehicleCount = existingKickoff.kickoffVehicles.length;
+          existingKickoff.vehicles = existingKickoff.kickoffVehicles.map(v => ({
+            brand: v.brand, model: v.model, year: v.year || 0, plate: v.plate || 'Pendente',
+          }));
+        } else {
+          const saleIds = [...new Set(newVehicles.map(v => v.sale_summary_id))];
           safeCustomersData.push({
-            id: `kickoff-${saleId}`,
-            name: data.company_name,
-            company_name: data.company_name,
+            id: `kickoff-${saleIds.join('-')}`,
+            name: companyName,
+            company_name: companyName,
             document_number: '',
             document_type: 'cnpj',
             phone: '',
@@ -125,20 +148,13 @@ const CustomerTracking = () => {
             address_state: '-',
             address_postal_code: '-',
             trackingStage: 'kickoff',
-            kickoffVehicleCount: data.vehicles.length,
-            kickoffVehicles: data.vehicles.map(v => ({
-              id: v.id,
-              brand: v.brand,
-              model: v.vehicle,
-              year: v.year,
-              plate: v.plate,
-              received_at: v.received_at,
+            kickoffVehicleCount: newVehicles.length,
+            kickoffVehicles: newVehicles.map(v => ({
+              id: v.id, brand: v.brand, model: v.vehicle,
+              year: v.year, plate: v.plate, received_at: v.received_at,
             })),
-            vehicles: data.vehicles.map(v => ({
-              brand: v.brand,
-              model: v.vehicle,
-              year: v.year || 0,
-              plate: v.plate || 'Pendente',
+            vehicles: newVehicles.map(v => ({
+              brand: v.brand, model: v.vehicle, year: v.year || 0, plate: v.plate || 'Pendente',
             })),
           });
         }
