@@ -49,7 +49,8 @@ export const KitStatusTimeline = ({
   scheduleDate,
   installationCompleted,
   installationDate,
-  installationConfirmation
+  installationConfirmation,
+  kickoffVehicleDetails
 }: KitStatusTimelineProps) => {
   
   const formatDate = (dateString?: string | null) => {
