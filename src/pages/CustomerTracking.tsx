@@ -302,7 +302,7 @@ const CustomerTracking = () => {
                 Acompanhamento de Clientes
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {customersWithKits.length} cliente{customersWithKits.length !== 1 ? 's' : ''} com veículos
+                {customersToShow.length} cliente{customersToShow.length !== 1 ? 's' : ''} com veículos
               </p>
             </div>
           </div>
@@ -321,7 +321,7 @@ const CustomerTracking = () => {
 
       {/* Customer List */}
       <div className="space-y-4">
-        {customersWithKits.length === 0 ? (
+        {customersToShow.length === 0 ? (
           <div className="text-center py-16 bg-muted/10 rounded-xl border border-border/30">
             <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
               <Users className="h-6 w-6 text-muted-foreground/50" />
@@ -331,7 +331,7 @@ const CustomerTracking = () => {
             </p>
           </div>
         ) : (
-          customersWithKits.map((customer) => (
+          customersToShow.map((customer) => (
             <CustomerCard
               key={customer.id}
               customer={customer}
