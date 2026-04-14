@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { CheckCircle, Clock, FileCheck, Truck, Calendar, Wrench } from "lucide-react";
+import { CheckCircle, Clock, FileCheck, Truck, Calendar, Wrench, Car } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 
@@ -7,6 +7,14 @@ interface InstallationConfirmationInfo {
   plate: string;
   imei: string;
   confirmedAt: string;
+}
+
+interface KickoffVehicleDetails {
+  brand: string;
+  model: string;
+  year: number | null;
+  plate: string | null;
+  receivedAt: string;
 }
 
 interface KitStatusTimelineProps {
@@ -24,6 +32,7 @@ interface KitStatusTimelineProps {
   installationCompleted?: boolean;
   installationDate?: string | null;
   installationConfirmation?: InstallationConfirmationInfo;
+  kickoffVehicleDetails?: KickoffVehicleDetails;
 }
 
 export const KitStatusTimeline = ({ 
@@ -40,7 +49,8 @@ export const KitStatusTimeline = ({
   scheduleDate,
   installationCompleted,
   installationDate,
-  installationConfirmation
+  installationConfirmation,
+  kickoffVehicleDetails
 }: KitStatusTimelineProps) => {
   
   const formatDate = (dateString?: string | null) => {
@@ -291,15 +301,74 @@ export const KitStatusTimeline = ({
     const styles = getStepStyles(step, index);
     const Icon = step.icon;
 
+    const hasKickoffPopover = step.id === "kickoff" && kickoffVehicleDetails && !kickoffCompleted;
+    const hasInstallationPopover = step.id === "installation" && installationCompleted;
+
     const iconElement = (
       <div
         className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card ${styles.circle} ${
-          step.id === "installation" && installationCompleted ? "cursor-pointer hover:scale-110" : ""
+          (hasInstallationPopover || hasKickoffPopover) ? "cursor-pointer hover:scale-110" : ""
         }`}
       >
         <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
       </div>
     );
+
+    // If kickoff is pending and has vehicle details, show popover
+    if (hasKickoffPopover && kickoffVehicleDetails) {
+      return (
+        <Popover>
+          <PopoverTrigger asChild>
+            {iconElement}
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-0" align="center" side="top">
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-amber-500/15 flex items-center justify-center">
+                  <Car className="h-3.5 w-3.5 text-amber-600" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Aguardando Kickoff</h4>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Veículo</span>
+                  <span className="text-xs font-medium text-foreground">
+                    {kickoffVehicleDetails.brand} {kickoffVehicleDetails.model}
+                  </span>
+                </div>
+                {kickoffVehicleDetails.year && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Ano</span>
+                    <span className="text-xs text-foreground">{kickoffVehicleDetails.year}</span>
+                  </div>
+                )}
+                {kickoffVehicleDetails.plate && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Placa</span>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {kickoffVehicleDetails.plate}
+                    </Badge>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Recebido em</span>
+                  <span className="text-xs text-foreground">
+                    {formatFullDate(kickoffVehicleDetails.receivedAt)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-1 border-t border-border">
+                <p className="text-[10px] text-muted-foreground/60">
+                  Veículo aguardando aprovação de kickoff
+                </p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      );
+    }
 
     // If installation is completed, wrap in popover
     if (step.id === "installation" && installationCompleted && installationConfirmation) {

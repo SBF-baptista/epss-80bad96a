@@ -13,9 +13,19 @@ import { Loader2, Users } from "lucide-react";
 
 export type CustomerTrackingStage = 'kickoff' | 'homologation' | 'planning' | 'scheduled' | 'installed';
 
+export interface KickoffVehicleInfo {
+  id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  plate: string | null;
+  received_at: string;
+}
+
 export interface CustomerWithStage extends Customer {
   trackingStage?: CustomerTrackingStage;
   kickoffVehicleCount?: number;
+  kickoffVehicles?: KickoffVehicleInfo[];
 }
 
 export interface CustomerKitData {
@@ -116,6 +126,14 @@ const CustomerTracking = () => {
             address_postal_code: '-',
             trackingStage: 'kickoff',
             kickoffVehicleCount: data.vehicles.length,
+            kickoffVehicles: data.vehicles.map(v => ({
+              id: v.id,
+              brand: v.brand,
+              model: v.vehicle,
+              year: v.year,
+              plate: v.plate,
+              received_at: v.received_at,
+            })),
             vehicles: data.vehicles.map(v => ({
               brand: v.brand,
               model: v.vehicle,
