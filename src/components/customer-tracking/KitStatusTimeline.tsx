@@ -301,10 +301,13 @@ export const KitStatusTimeline = ({
     const styles = getStepStyles(step, index);
     const Icon = step.icon;
 
+    const hasKickoffPopover = step.id === "kickoff" && kickoffVehicleDetails && !kickoffCompleted;
+    const hasInstallationPopover = step.id === "installation" && installationCompleted;
+
     const iconElement = (
       <div
         className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 bg-card ${styles.circle} ${
-          step.id === "installation" && installationCompleted ? "cursor-pointer hover:scale-110" : ""
+          (hasInstallationPopover || hasKickoffPopover) ? "cursor-pointer hover:scale-110" : ""
         }`}
       >
         <Icon className={`h-3.5 w-3.5 ${styles.icon}`} />
