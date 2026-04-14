@@ -54,8 +54,8 @@ export interface CustomerKitData {
 const CustomerTracking = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerWithStage[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = useState<CustomerWithStage[]>([]);
   const [kitSchedules, setKitSchedules] = useState<KitScheduleWithDetails[]>([]);
   const [homologationKits, setHomologationKits] = useState<HomologationKit[]>([]);
   const [kitHomologationStatus, setKitHomologationStatus] = useState<Map<string, any>>(new Map());
