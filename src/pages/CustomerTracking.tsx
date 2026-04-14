@@ -67,16 +67,64 @@ const CustomerTracking = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [customersData, schedulesData, kitsData] = await Promise.all([
+      const [customersData, schedulesData, kitsData, kickoffResult] = await Promise.all([
         getCustomers(),
         getKitSchedules(),
-        fetchHomologationKits()
+        fetchHomologationKits(),
+        supabase
+          .from('incoming_vehicles')
+          .select('id, sale_summary_id, company_name, brand, vehicle, year, plate, kickoff_completed, received_at')
+          .not('sale_summary_id', 'is', null)
+          .eq('kickoff_completed', false)
       ]);
 
       // Add safety checks for undefined data
-      const safeCustomersData = customersData || [];
+      const safeCustomersData: CustomerWithStage[] = (customersData || []).map(c => ({ ...c }));
       const safeSchedulesData = schedulesData || [];
       const safeKitsData = kitsData || [];
+      const kickoffVehicles = kickoffResult.data || [];
+
+      // Group kickoff vehicles by sale_summary_id
+      const kickoffBySale = new Map<number, { company_name: string; vehicles: typeof kickoffVehicles }>();
+      kickoffVehicles.forEach(v => {
+        const saleId = v.sale_summary_id!;
+        if (!kickoffBySale.has(saleId)) {
+          kickoffBySale.set(saleId, { company_name: v.company_name || 'Não identificado', vehicles: [] });
+        }
+        kickoffBySale.get(saleId)!.vehicles.push(v);
+      });
+
+      // Track which sale_summary_ids already exist in customers
+      const existingSaleIds = new Set(safeCustomersData.filter(c => c.sale_summary_id).map(c => c.sale_summary_id));
+
+      // Create virtual customers for kickoff clients not already in customer tracking
+      kickoffBySale.forEach((data, saleId) => {
+        if (!existingSaleIds.has(saleId)) {
+          safeCustomersData.push({
+            id: `kickoff-${saleId}`,
+            name: data.company_name,
+            company_name: data.company_name,
+            document_number: '',
+            document_type: 'cnpj',
+            phone: '',
+            email: '',
+            address_street: 'Pendente',
+            address_number: '-',
+            address_neighborhood: '-',
+            address_city: '-',
+            address_state: '-',
+            address_postal_code: '-',
+            trackingStage: 'kickoff',
+            kickoffVehicleCount: data.vehicles.length,
+            vehicles: data.vehicles.map(v => ({
+              brand: v.brand,
+              model: v.vehicle,
+              year: v.year || 0,
+              plate: v.plate || 'Pendente',
+            })),
+          });
+        }
+      });
 
       setCustomers(safeCustomersData);
       setFilteredCustomers(safeCustomersData);
