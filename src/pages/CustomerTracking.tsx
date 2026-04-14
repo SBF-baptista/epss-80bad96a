@@ -263,7 +263,12 @@ const CustomerTracking = () => {
     });
   };
 
-  const customersWithKits = filteredCustomers.filter(customer => getCustomerKits(customer.id!).length > 0);
+  // Include kickoff customers (no kits) AND customers with kits
+  const customersToShow = filteredCustomers.filter(customer => {
+    const cws = customer as CustomerWithStage;
+    if (cws.trackingStage === 'kickoff') return true;
+    return getCustomerKits(customer.id!).length > 0;
+  });
 
   if (isLoading) {
     return (
