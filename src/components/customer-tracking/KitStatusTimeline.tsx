@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { CheckCircle, Clock, FileCheck, Truck, Calendar, Wrench } from "lucide-react";
+import { CheckCircle, Clock, FileCheck, Truck, Calendar, Wrench, Car } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 
@@ -7,6 +7,14 @@ interface InstallationConfirmationInfo {
   plate: string;
   imei: string;
   confirmedAt: string;
+}
+
+interface KickoffVehicleDetails {
+  brand: string;
+  model: string;
+  year: number | null;
+  plate: string | null;
+  receivedAt: string;
 }
 
 interface KitStatusTimelineProps {
@@ -24,6 +32,7 @@ interface KitStatusTimelineProps {
   installationCompleted?: boolean;
   installationDate?: string | null;
   installationConfirmation?: InstallationConfirmationInfo;
+  kickoffVehicleDetails?: KickoffVehicleDetails;
 }
 
 export const KitStatusTimeline = ({ 
