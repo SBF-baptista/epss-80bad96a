@@ -13,9 +13,19 @@ import { Loader2, Users } from "lucide-react";
 
 export type CustomerTrackingStage = 'kickoff' | 'homologation' | 'planning' | 'scheduled' | 'installed';
 
+export interface KickoffVehicleInfo {
+  id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  plate: string | null;
+  received_at: string;
+}
+
 export interface CustomerWithStage extends Customer {
   trackingStage?: CustomerTrackingStage;
   kickoffVehicleCount?: number;
+  kickoffVehicles?: KickoffVehicleInfo[];
 }
 
 export interface CustomerKitData {
