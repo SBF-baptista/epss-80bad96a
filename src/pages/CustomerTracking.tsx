@@ -126,6 +126,14 @@ const CustomerTracking = () => {
             address_postal_code: '-',
             trackingStage: 'kickoff',
             kickoffVehicleCount: data.vehicles.length,
+            kickoffVehicles: data.vehicles.map(v => ({
+              id: v.id,
+              brand: v.brand,
+              model: v.vehicle,
+              year: v.year,
+              plate: v.plate,
+              received_at: v.received_at,
+            })),
             vehicles: data.vehicles.map(v => ({
               brand: v.brand,
               model: v.vehicle,
