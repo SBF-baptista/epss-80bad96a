@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp, MapPin, Clock, Car } from "lucide-react";
-import { Customer } from "@/services/customerService";
 import { KitSection } from "./KitSection";
+import { KickoffVehicleSection } from "./KickoffVehicleSection";
 
 import { CustomerKitData, CustomerWithStage } from "@/pages/CustomerTracking";
 
@@ -13,13 +13,6 @@ interface CustomerCardProps {
   customerKits: CustomerKitData[];
   onUpdate: () => void;
 }
-
-const stageBadgeConfig: Record<string, { label: string; className: string }> = {
-  kickoff: {
-    label: 'Em Kickoff',
-    className: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800'
-  },
-};
 
 export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,9 +30,9 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
                     {customer.name}
                   </CardTitle>
                   {isKickoff && (
-                    <Badge variant="outline" className={`text-xs font-medium shrink-0 ${stageBadgeConfig.kickoff.className}`}>
+                    <Badge variant="outline" className="text-xs font-medium shrink-0 bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">
                       <Clock className="h-3 w-3 mr-1" />
-                      {stageBadgeConfig.kickoff.label}
+                      Em Kickoff
                     </Badge>
                   )}
                 </div>
@@ -80,27 +73,17 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
         <CollapsibleContent>
           <CardContent className="pt-0 px-4 sm:px-5 pb-4 sm:pb-5">
             <div className="space-y-4">
-              {isKickoff ? (
+              {isKickoff && customer.kickoffVehicles ? (
                 <>
                   <h4 className="font-medium text-foreground/80 text-sm border-b border-border/50 pb-2">
                     Veículos ({customer.kickoffVehicleCount})
                   </h4>
-                  <div className="space-y-2">
-                    {customer.vehicles?.map((v, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/30">
-                        <Car className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex-1">
-                          <span className="text-sm font-medium text-foreground">
-                            {v.brand} {v.model} {v.year ? `(${v.year})` : ''}
-                          </span>
-                          {v.plate && v.plate !== 'Pendente' && (
-                            <span className="ml-2 text-xs text-muted-foreground">{v.plate}</span>
-                          )}
-                        </div>
-                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400">
-                          Aguardando Kickoff
-                        </Badge>
-                      </div>
+                  <div className="space-y-3">
+                    {customer.kickoffVehicles.map((vehicle) => (
+                      <KickoffVehicleSection
+                        key={vehicle.id}
+                        vehicle={vehicle}
+                      />
                     ))}
                   </div>
                 </>
