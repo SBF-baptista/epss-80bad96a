@@ -1,6 +1,7 @@
 export { CustomerTrackingFilters } from './CustomerTrackingFilters';
 export { CustomerCard } from './CustomerCard';
 export { KitSection } from './KitSection';
+export { KickoffVehicleSection } from './KickoffVehicleSection';
 export { KitStatusTimeline } from './KitStatusTimeline';
 export { KitItemsList } from './KitItemsList';
 export { CustomerEditModal } from './CustomerEditModal';
