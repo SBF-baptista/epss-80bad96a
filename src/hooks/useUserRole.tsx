@@ -188,11 +188,31 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     return ['approve', 'admin'].includes(level)
   }
 
-  const isAdmin = (): boolean => role === 'admin'
+  const isAdmin = (): boolean => realRole === 'admin' || role === 'admin'
   const isGestor = (): boolean => role === 'gestor'
   const isOperador = (): boolean => role === 'operador'
   const isVisualizador = (): boolean => role === 'visualizador'
   const canEdit = (): boolean => role !== 'visualizador' && role !== null
+
+  const startImpersonation = (simulatedRole: UserRole, simulatedPermissions: ModulePermission[]) => {
+    if (realRole === null && role !== null) {
+      setRealRole(role)
+      setRealPermissions(permissions)
+    }
+    setRole(simulatedRole)
+    setPermissions(simulatedPermissions)
+    setIsImpersonating(true)
+  }
+
+  const stopImpersonation = () => {
+    if (realRole !== null) {
+      setRole(realRole)
+      setPermissions(realPermissions)
+    }
+    setRealRole(null)
+    setRealPermissions([])
+    setIsImpersonating(false)
+  }
 
   const value: UserRoleContextType = {
     role,
@@ -208,7 +228,11 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     isGestor,
     isOperador,
     isVisualizador,
-    canEdit
+    canEdit,
+    isImpersonating,
+    realRole,
+    startImpersonation,
+    stopImpersonation,
   }
 
   return (
