@@ -221,7 +221,9 @@ function AppContent() {
               <Route path="/users" element={
                 <ProtectedRoute>
                   <RoleProtectedRoute requiredModule="users">
-                    <UserManagement />
+                    <Layout>
+                      <UserManagement />
+                    </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
