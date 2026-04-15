@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserPlus, RefreshCw, Plus, Pencil, Trash2, Shield, Eye, RotateCcw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-
 import { userManagementService, type User } from '@/services/userManagementService'
 import { accessProfileService, AccessProfile } from '@/services/accessProfileService'
 import { CreateUserModal } from '@/components/user-management/CreateUserModal'
