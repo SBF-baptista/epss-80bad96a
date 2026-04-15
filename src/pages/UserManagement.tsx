@@ -390,7 +390,7 @@ const UserManagement = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </Layout>
+    </div>
   )
 }
 
