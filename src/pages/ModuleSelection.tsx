@@ -14,6 +14,7 @@ import {
   Rocket,
   UserCheck,
   Clock,
+  ShoppingCart,
 } from "lucide-react";
 
 interface ModuleCard {
@@ -25,9 +26,9 @@ interface ModuleCard {
   gradient: string;
   iconBg: string;
   iconColor: string;
+  isPrimary: boolean;
 }
 
-// Ordered according to sidebar hierarchy
 const modules: ModuleCard[] = [
   {
     title: "Kickoff",
@@ -38,6 +39,7 @@ const modules: ModuleCard[] = [
     gradient: "from-violet-500 to-purple-600",
     iconBg: "bg-violet-500/10",
     iconColor: "text-violet-600",
+    isPrimary: true,
   },
   {
     title: "Homologação",
@@ -48,6 +50,7 @@ const modules: ModuleCard[] = [
     gradient: "from-emerald-500 to-teal-600",
     iconBg: "bg-emerald-500/10",
     iconColor: "text-emerald-600",
+    isPrimary: true,
   },
   {
     title: "Planejamento",
@@ -58,6 +61,7 @@ const modules: ModuleCard[] = [
     gradient: "from-orange-500 to-amber-600",
     iconBg: "bg-orange-500/10",
     iconColor: "text-orange-600",
+    isPrimary: true,
   },
   {
     title: "Logística",
@@ -68,6 +72,7 @@ const modules: ModuleCard[] = [
     gradient: "from-blue-500 to-indigo-600",
     iconBg: "bg-blue-500/10",
     iconColor: "text-blue-600",
+    isPrimary: true,
   },
   {
     title: "Agendamento",
@@ -78,6 +83,7 @@ const modules: ModuleCard[] = [
     gradient: "from-cyan-500 to-sky-600",
     iconBg: "bg-cyan-500/10",
     iconColor: "text-cyan-600",
+    isPrimary: true,
   },
   {
     title: "Acompanhamento",
@@ -88,6 +94,18 @@ const modules: ModuleCard[] = [
     gradient: "from-pink-500 to-rose-600",
     iconBg: "bg-pink-500/10",
     iconColor: "text-pink-600",
+    isPrimary: true,
+  },
+  {
+    title: "Pedidos",
+    description: "Gestão e acompanhamento de pedidos",
+    icon: ShoppingCart,
+    path: "/orders",
+    module: "orders",
+    gradient: "from-amber-500 to-yellow-600",
+    iconBg: "bg-amber-500/10",
+    iconColor: "text-amber-600",
+    isPrimary: false,
   },
   {
     title: "Kits",
@@ -98,6 +116,7 @@ const modules: ModuleCard[] = [
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
     iconColor: "text-slate-600",
+    isPrimary: false,
   },
   {
     title: "Técnicos",
@@ -108,6 +127,7 @@ const modules: ModuleCard[] = [
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
     iconColor: "text-slate-600",
+    isPrimary: false,
   },
   {
     title: "Usuários",
@@ -118,6 +138,7 @@ const modules: ModuleCard[] = [
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
     iconColor: "text-slate-600",
+    isPrimary: false,
   },
   {
     title: "Histórico",
@@ -128,6 +149,7 @@ const modules: ModuleCard[] = [
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
     iconColor: "text-slate-600",
+    isPrimary: false,
   },
   {
     title: "Dashboard",
@@ -138,11 +160,9 @@ const modules: ModuleCard[] = [
     gradient: "from-slate-500 to-zinc-600",
     iconBg: "bg-slate-500/10",
     iconColor: "text-slate-600",
+    isPrimary: false,
   },
 ];
-
-// Main modules that should be highlighted
-const mainModules = ["kickoff", "homologation", "planning", "kanban", "scheduling", "customer_tracking"];
 
 const ModuleSelection = () => {
   const navigate = useNavigate();
@@ -159,47 +179,72 @@ const ModuleSelection = () => {
     );
   }
 
-  // Filter modules based on user permissions
   const availableModules = modules.filter((module) => {
     if (role === "admin") return true;
     return canViewModule(module.module);
   });
 
-  // Remove duplicates
-  const uniqueModules = availableModules.filter((module, index, self) => 
-    index === self.findIndex(m => m.path === module.path)
+  const uniqueModules = availableModules.filter((module, index, self) =>
+    index === self.findIndex((m) => m.path === module.path)
   );
 
-  // Only show primary modules (remove secondary section)
-  const primaryModules = uniqueModules.filter(m => mainModules.includes(m.module));
+  const primaryModules = uniqueModules.filter((m) => m.isPrimary);
+  const secondaryModules = uniqueModules.filter((m) => !m.isPrimary);
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-      },
+      transition: { staggerChildren: 0.08 },
     },
   };
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: {
-        type: "spring" as const,
-        stiffness: 100,
-        damping: 15,
-      }
+      transition: { type: "spring" as const, stiffness: 100, damping: 15 },
     },
   };
 
+  const renderCard = (module: ModuleCard) => (
+    <motion.div
+      key={module.path + module.title}
+      variants={cardVariants}
+      whileHover={{
+        y: -6,
+        transition: { type: "spring", stiffness: 400, damping: 17 },
+      }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => navigate(module.path)}
+      className="group cursor-pointer"
+    >
+      <div className="relative h-full bg-card rounded-2xl border border-border/50 shadow-sm hover:shadow-xl hover:border-border transition-all duration-300 overflow-hidden">
+        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${module.gradient}`} />
+        <div className="p-6 flex flex-col h-full min-h-[160px]">
+          <div className={`w-14 h-14 rounded-full ${module.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+            <module.icon className={`h-6 w-6 ${module.iconColor}`} />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+            {module.title}
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+            {module.description}
+          </p>
+          <div className="mt-4 flex items-center text-sm font-medium text-muted-foreground/0 group-hover:text-primary transition-all duration-300">
+            <span className="opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
+              Acessar →
+            </span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
   return (
     <div className="space-y-10 max-w-7xl mx-auto">
-      {/* Header */}
-      <motion.div 
+      <motion.div
         className="text-center space-y-3"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -213,7 +258,6 @@ const ModuleSelection = () => {
         </p>
       </motion.div>
 
-      {/* Primary Modules Grid */}
       {primaryModules.length > 0 && (
         <motion.div
           variants={containerVariants}
@@ -221,56 +265,51 @@ const ModuleSelection = () => {
           animate="visible"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
         >
-          {primaryModules.map((module) => (
-            <motion.div
-              key={module.path + module.title}
-              variants={cardVariants}
-              whileHover={{ 
-                y: -6,
-                transition: { type: "spring", stiffness: 400, damping: 17 }
-              }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => navigate(module.path)}
-              className="group cursor-pointer"
-            >
-              <div className="relative h-full bg-card rounded-2xl border border-border/50 shadow-sm hover:shadow-xl hover:border-border transition-all duration-300 overflow-hidden">
-                {/* Gradient accent bar */}
-                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${module.gradient}`} />
-                
-                <div className="p-6 flex flex-col h-full min-h-[160px]">
-                  {/* Icon with circular background */}
-                  <div className={`w-14 h-14 rounded-full ${module.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <module.icon className={`h-6 w-6 ${module.iconColor}`} />
-                  </div>
-                  
-                  {/* Title */}
-                  <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                    {module.title}
-                  </h3>
-                  
-                  {/* Description */}
-                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">
-                    {module.description}
-                  </p>
-
-                  {/* Hover indicator */}
-                  <div className="mt-4 flex items-center text-sm font-medium text-muted-foreground/0 group-hover:text-primary transition-all duration-300">
-                    <span className="opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
-                      Acessar →
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+          {primaryModules.map(renderCard)}
         </motion.div>
       )}
 
-      {/* All modules in single grid */}
+      {secondaryModules.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider px-1">
+            Administração
+          </h2>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+          >
+            {secondaryModules.map((module) => (
+              <motion.div
+                key={module.path + module.title}
+                variants={cardVariants}
+                whileHover={{ y: -3 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(module.path)}
+                className="group cursor-pointer"
+              >
+                <div className="relative bg-card rounded-xl border border-border/40 shadow-sm hover:shadow-md hover:border-border transition-all duration-200 overflow-hidden p-4 flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg ${module.iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                    <module.icon className={`h-5 w-5 ${module.iconColor}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                      {module.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {module.description}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      )}
 
-      {/* No modules message */}
       {uniqueModules.length === 0 && (
-        <motion.div 
+        <motion.div
           className="text-center py-16 bg-muted/30 rounded-2xl border border-dashed"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
