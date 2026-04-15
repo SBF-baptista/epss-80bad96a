@@ -17,25 +17,37 @@ const RoleProtectedRoute = ({
   requiredModule,
   redirectTo = '/modules' 
 }: RoleProtectedRouteProps) => {
-  const { role, canViewModule, loading } = useUserRole()
+  const { role, canViewModule, loading, isImpersonating, realRole } = useUserRole()
   const navigate = useNavigate()
+
+  // Real admin (even when impersonating) should never be locked out of routes
+  const isRealAdmin = realRole === 'admin' || (!isImpersonating && role === 'admin')
 
   useEffect(() => {
     if (!loading && role) {
-      // Admin always has access
-      if (role === 'admin') return
+      if (isRealAdmin && !isImpersonating) return
 
       let hasAccess = false
 
-      // Check module-based access first
-      if (requiredModule) {
-        hasAccess = canViewModule(requiredModule)
-      } else if (allowedRoles.length > 0) {
-        // Legacy role-based check (admin and gestor have full access)
-        hasAccess = allowedRoles.includes(role)
+      if (isImpersonating) {
+        // When impersonating, check simulated permissions
+        if (requiredModule) {
+          hasAccess = canViewModule(requiredModule)
+        } else if (allowedRoles.length > 0) {
+          hasAccess = allowedRoles.includes(role)
+        } else {
+          hasAccess = true
+        }
+        // Real admin always has escape hatch - don't redirect, just show content
+        if (!hasAccess && isRealAdmin) hasAccess = true
       } else {
-        // No restrictions
-        hasAccess = true
+        if (requiredModule) {
+          hasAccess = canViewModule(requiredModule)
+        } else if (allowedRoles.length > 0) {
+          hasAccess = allowedRoles.includes(role)
+        } else {
+          hasAccess = true
+        }
       }
 
       if (!hasAccess) {
@@ -43,7 +55,7 @@ const RoleProtectedRoute = ({
         navigate(redirectTo)
       }
     }
-  }, [role, loading, allowedRoles, requiredModule, navigate, redirectTo, canViewModule])
+  }, [role, loading, allowedRoles, requiredModule, navigate, redirectTo, canViewModule, isImpersonating, isRealAdmin])
 
   if (loading) {
     return (
@@ -56,14 +68,17 @@ const RoleProtectedRoute = ({
     )
   }
 
-  // Admin always has access
-  if (role === 'admin') {
+  // Real admin always sees content
+  if (isRealAdmin && !isImpersonating) {
     return <>{children}</>
   }
 
   let hasAccess = false
   
-  if (requiredModule) {
+  if (isImpersonating && isRealAdmin) {
+    // Real admin impersonating - always allow but show simulated view
+    hasAccess = true
+  } else if (requiredModule) {
     hasAccess = canViewModule(requiredModule)
   } else if (allowedRoles.length > 0) {
     hasAccess = role !== null && allowedRoles.includes(role)

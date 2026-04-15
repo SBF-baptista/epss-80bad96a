@@ -33,6 +33,11 @@ interface UserRoleContextType {
   isOperador: () => boolean
   isVisualizador: () => boolean
   canEdit: () => boolean
+  // Admin impersonation
+  isImpersonating: boolean
+  realRole: UserRole
+  startImpersonation: (simulatedRole: UserRole, simulatedPermissions: ModulePermission[]) => void
+  stopImpersonation: () => void
 }
 
 const UserRoleContext = createContext<UserRoleContextType | null>(null)
@@ -60,6 +65,11 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole>(null)
   const [permissions, setPermissions] = useState<ModulePermission[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Impersonation state
+  const [isImpersonating, setIsImpersonating] = useState(false)
+  const [realRole, setRealRole] = useState<UserRole>(null)
+  const [realPermissions, setRealPermissions] = useState<ModulePermission[]>([])
 
   useEffect(() => {
     const fetchUserRoleAndPermissions = async () => {
@@ -152,37 +162,57 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 
   // Check module permissions
   const getModulePermission = (module: AppModule): PermissionLevel => {
-    if (role === 'admin') return 'admin'
+    if (!isImpersonating && role === 'admin') return 'admin'
     const perm = permissions.find(p => p.module === module)
     return perm?.permission || 'none'
   }
 
   const canViewModule = (module: AppModule): boolean => {
     if (loading) return false
-    if (role === 'admin') return true
+    if (!isImpersonating && role === 'admin') return true
     const level = getModulePermission(module)
     return ['view', 'edit', 'approve', 'admin'].includes(level)
   }
 
   const canEditModule = (module: AppModule): boolean => {
     if (loading) return false
-    if (role === 'admin') return true
+    if (!isImpersonating && role === 'admin') return true
     const level = getModulePermission(module)
     return ['edit', 'approve', 'admin'].includes(level)
   }
 
   const canApproveModule = (module: AppModule): boolean => {
     if (loading) return false
-    if (role === 'admin') return true
+    if (!isImpersonating && role === 'admin') return true
     const level = getModulePermission(module)
     return ['approve', 'admin'].includes(level)
   }
 
-  const isAdmin = (): boolean => role === 'admin'
+  const isAdmin = (): boolean => realRole === 'admin' || role === 'admin'
   const isGestor = (): boolean => role === 'gestor'
   const isOperador = (): boolean => role === 'operador'
   const isVisualizador = (): boolean => role === 'visualizador'
   const canEdit = (): boolean => role !== 'visualizador' && role !== null
+
+  const startImpersonation = (simulatedRole: UserRole, simulatedPermissions: ModulePermission[]) => {
+    if (realRole === null && role !== null) {
+      setRealRole(role)
+      setRealPermissions(permissions)
+    }
+    setRole(simulatedRole)
+    setPermissions(simulatedPermissions)
+    setIsImpersonating(true)
+  }
+
+  const stopImpersonation = () => {
+    if (realRole !== null) {
+      setRole(realRole)
+      setPermissions(realPermissions)
+    }
+    setRealRole(null)
+    setRealPermissions([])
+    setIsImpersonating(false)
+  }
 
   const value: UserRoleContextType = {
     role,
@@ -198,7 +228,11 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     isGestor,
     isOperador,
     isVisualizador,
-    canEdit
+    canEdit,
+    isImpersonating,
+    realRole,
+    startImpersonation,
+    stopImpersonation,
   }
 
   return (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { UserPlus, RefreshCw, Plus, Pencil, Trash2, Shield } from 'lucide-react'
+import { UserPlus, RefreshCw, Plus, Pencil, Trash2, Shield, Eye, RotateCcw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Layout } from '@/components/Layout'
 import { userManagementService, type User } from '@/services/userManagementService'
@@ -13,8 +13,10 @@ import { UserFilters, type UserFilterState } from '@/components/user-management/
 import { AccessProfileModal } from '@/components/access-profiles/AccessProfileModal'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { BASE_ROLE_LABELS, MODULE_GROUPS, AppModule, PermissionLevel } from '@/types/permissions'
-import { useUserRole } from '@/hooks/useUserRole'
+import { useUserRole, UserRole } from '@/hooks/useUserRole'
+import { ModulePermission } from '@/types/permissions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+
+const mapRawRole = (rawRole: string): UserRole => {
+  if (rawRole === 'admin') return 'admin'
+  if (rawRole === 'gestor') return 'gestor'
+  if (rawRole === 'operador' || rawRole?.startsWith('operador_')) return 'operador'
+  if (rawRole === 'visualizador') return 'visualizador'
+  return null
+}
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([])
@@ -41,8 +51,9 @@ const UserManagement = () => {
   const [deletingProfile, setDeletingProfile] = useState<AccessProfile | null>(null)
   
   const { toast } = useToast()
-  const { canEditModule } = useUserRole()
-  const canEditUsers = canEditModule('users')
+  const { canEditModule, realRole, isImpersonating, startImpersonation, stopImpersonation } = useUserRole()
+  const isRealAdmin = realRole === 'admin' || (!isImpersonating && canEditModule('users'))
+  const canEditUsers = isRealAdmin || canEditModule('users')
 
   const fetchUsers = async () => {
     try {
@@ -132,6 +143,71 @@ const UserManagement = () => {
             </p>
           </div>
         </div>
+
+        {/* Admin Profile Simulation */}
+        {isRealAdmin && (
+          <Card className={`border-2 ${isImpersonating ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20' : 'border-dashed border-muted-foreground/30'}`}>
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span>Simular perfil:</span>
+                </div>
+                <Select
+                  value={isImpersonating ? 'impersonating' : ''}
+                  onValueChange={(profileId) => {
+                    const profile = profiles.find(p => p.id === profileId)
+                    if (profile) {
+                      const simulatedRole = mapRawRole(profile.base_role)
+                      const simulatedPerms: ModulePermission[] = Object.entries(profile.permissions || {})
+                        .filter(([, perm]) => typeof perm === 'string' && perm !== 'none')
+                        .map(([mod, perm]) => ({
+                          user_id: '',
+                          module: mod as AppModule,
+                          permission: perm as PermissionLevel,
+                        }))
+                      startImpersonation(simulatedRole, simulatedPerms)
+                      toast({
+                        title: 'Simulação ativada',
+                        description: `Visualizando como: ${profile.name}`,
+                      })
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[240px] h-9">
+                    <SelectValue placeholder="Selecionar perfil..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {profile.name} ({BASE_ROLE_LABELS[profile.base_role]})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isImpersonating && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      stopImpersonation()
+                      toast({ title: 'Simulação desativada', description: 'Permissões de administrador restauradas' })
+                    }}
+                    className="border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-950"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Resetar
+                  </Button>
+                )}
+                {isImpersonating && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400">
+                    Modo simulação ativo
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* KPI Stats */}
         <UserManagementStats users={users} />
