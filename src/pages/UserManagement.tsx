@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { UserPlus, RefreshCw, Plus, Pencil, Trash2, Shield } from 'lucide-react'
+import { UserPlus, RefreshCw, Plus, Pencil, Trash2, Shield, Eye, RotateCcw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Layout } from '@/components/Layout'
 import { userManagementService, type User } from '@/services/userManagementService'
@@ -13,8 +13,10 @@ import { UserFilters, type UserFilterState } from '@/components/user-management/
 import { AccessProfileModal } from '@/components/access-profiles/AccessProfileModal'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { BASE_ROLE_LABELS, MODULE_GROUPS, AppModule, PermissionLevel } from '@/types/permissions'
-import { useUserRole } from '@/hooks/useUserRole'
+import { useUserRole, UserRole } from '@/hooks/useUserRole'
+import { ModulePermission } from '@/types/permissions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+
+const mapRawRole = (rawRole: string): UserRole => {
+  if (rawRole === 'admin') return 'admin'
+  if (rawRole === 'gestor') return 'gestor'
+  if (rawRole === 'operador' || rawRole?.startsWith('operador_')) return 'operador'
+  if (rawRole === 'visualizador') return 'visualizador'
+  return null
+}
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([])
@@ -41,8 +51,9 @@ const UserManagement = () => {
   const [deletingProfile, setDeletingProfile] = useState<AccessProfile | null>(null)
   
   const { toast } = useToast()
-  const { canEditModule } = useUserRole()
-  const canEditUsers = canEditModule('users')
+  const { canEditModule, realRole, isImpersonating, startImpersonation, stopImpersonation } = useUserRole()
+  const isRealAdmin = realRole === 'admin' || (!isImpersonating && canEditModule('users'))
+  const canEditUsers = isRealAdmin || canEditModule('users')
 
   const fetchUsers = async () => {
     try {
