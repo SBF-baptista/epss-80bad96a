@@ -1,35 +1,39 @@
 
 
-## Diagnostico: Veiculos duplicados entre vendas diferentes
+## Diagnostico: Permissoes de perfis nao refletidas na interface
 
-### Causa raiz
+### Causa raiz identificada
 
-A mesma placa fisica aparece em vendas diferentes (sale_summary_id distintos) porque o sync criou registros duplicados antes da correcao do indice unico. O indice atual so previne duplicatas dentro da mesma venda, mas nao entre vendas diferentes.
+Dois problemas principais:
 
-Duplicatas encontradas:
-- `QZJ3J56` - Zenatti: vendas 10945 e 10974
-- `QZU1C46` - Zenatti: vendas 10945 e 10974  
-- `QTO2117` - Control: vendas 10943 e 10973
+**1. Pagina de selecao de modulos filtra e esconde modulos acessiveis**
+Em `ModuleSelection.tsx` (linha 174), apenas 6 modulos "primarios" sao exibidos:
+```
+const primaryModules = uniqueModules.filter(m => mainModules.includes(m.module));
+```
+Modulos como Dashboard, Kits, Pedidos, Tecnicos, Usuarios ficam **invisiveis** mesmo que o perfil do usuario tenha permissao para acessa-los. A secao de modulos secundarios foi removida (linha 269 tem um comentario vazio).
+
+**2. Modulos exibidos no ModuleSelection nao incluem todos os que existem no sistema**
+O array `modules` no ModuleSelection nao inclui "Pedidos" (`orders`) como card, mas o perfil "Gestor de operacoes" tem `orders: view`. O usuario tem permissao mas nao ve o modulo na tela inicial.
 
 ### Plano de correcao
 
-**1. Limpar dados duplicados no banco**
-- Deletar os 3 registros duplicados mais recentes (das vendas 10974 e 10973), mantendo os originais nas vendas 10945 e 10943
-- IDs a remover: `32bd00a8` (QZJ3J56 na 10974), `b3a25374` (QZU1C46 na 10974), `d34c918f` (QTO2117 na 10973)
-- Se a venda 10974 ficar vazia, verificar se tem outros veiculos; se nao, o card simplesmente desaparece do kickoff
+**Arquivo 1: `src/pages/ModuleSelection.tsx`**
+- Adicionar o modulo "Pedidos" ao array `modules` (esta faltando)
+- Remover o filtro `primaryModules` e exibir TODOS os modulos que o usuario tem permissao para ver
+- Organizar visualmente: modulos principais (com gradiente colorido) e modulos administrativos/secundarios (kits, tecnicos, usuarios, historico, dashboard) em grid separado com visual mais discreto
+- Garantir que qualquer modulo presente no perfil de acesso apareca na tela
 
-**2. Prevenir duplicatas futuras na sincronizacao**
-- Modificar `receive-vehicle/processing.ts` para verificar se a placa ja existe em `incoming_vehicles` (qualquer sale_summary_id) antes de inserir
-- Se a placa ja existir e pertencer a outra venda, pular a insercao e registrar log de duplicata ignorada
-- Isso impede que o sync crie registros para veiculos que ja estao no sistema sob outra venda
+**Arquivo 2: `src/components/AppNavigation.tsx`**
+- Verificar e garantir consistencia entre a sidebar e os modulos definidos no perfil
+- Nenhuma mudanca estrutural necessaria (ja funciona corretamente via `canViewModule`)
 
-**3. Verificar se as vendas 10974 e 10973 ficam vazias**
-- Apos a limpeza, verificar se ainda restam veiculos nessas vendas
-- Se ficarem vazias, nenhum card aparecera no kickoff (comportamento correto)
+### O que muda para o usuario
+- Todos os modulos para os quais o perfil de acesso concede permissao aparecerao na tela de selecao de modulos
+- Ex: "Gestor de operacoes" vera: Customer Tracking, Dashboard, Kanban, Orders, Planning, Scheduling, Technicians
+- Ex: "Operador de Kickoff" vera: Kickoff + Acompanhamento de Clientes
+- A sidebar continuara funcionando normalmente
 
 ### Resultado esperado
-- Zenatti 10945: 10 veiculos (correto)
-- Zenatti 10974: 0 veiculos (card desaparece) ou apenas veiculos unicos
-- Control: sem duplicatas entre vendas
-- Futuras sincronizacoes nao criam duplicatas cross-venda
+Qualquer modulo definido no JSON de permissoes do perfil de acesso com nivel diferente de "none" aparecera tanto na tela de selecao de modulos quanto na sidebar de navegacao.
 
