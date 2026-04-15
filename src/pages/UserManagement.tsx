@@ -144,6 +144,71 @@ const UserManagement = () => {
           </div>
         </div>
 
+        {/* Admin Profile Simulation */}
+        {isRealAdmin && (
+          <Card className={`border-2 ${isImpersonating ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20' : 'border-dashed border-muted-foreground/30'}`}>
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span>Simular perfil:</span>
+                </div>
+                <Select
+                  value={isImpersonating ? 'impersonating' : ''}
+                  onValueChange={(profileId) => {
+                    const profile = profiles.find(p => p.id === profileId)
+                    if (profile) {
+                      const simulatedRole = mapRawRole(profile.base_role)
+                      const simulatedPerms: ModulePermission[] = Object.entries(profile.permissions || {})
+                        .filter(([, perm]) => typeof perm === 'string' && perm !== 'none')
+                        .map(([mod, perm]) => ({
+                          user_id: '',
+                          module: mod as AppModule,
+                          permission: perm as PermissionLevel,
+                        }))
+                      startImpersonation(simulatedRole, simulatedPerms)
+                      toast({
+                        title: 'Simulação ativada',
+                        description: `Visualizando como: ${profile.name}`,
+                      })
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[240px] h-9">
+                    <SelectValue placeholder="Selecionar perfil..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {profile.name} ({BASE_ROLE_LABELS[profile.base_role]})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isImpersonating && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      stopImpersonation()
+                      toast({ title: 'Simulação desativada', description: 'Permissões de administrador restauradas' })
+                    }}
+                    className="border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-950"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Resetar
+                  </Button>
+                )}
+                {isImpersonating && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400">
+                    Modo simulação ativo
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* KPI Stats */}
         <UserManagementStats users={users} />
 
