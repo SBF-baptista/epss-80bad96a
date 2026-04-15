@@ -162,28 +162,28 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 
   // Check module permissions
   const getModulePermission = (module: AppModule): PermissionLevel => {
-    if (role === 'admin') return 'admin'
+    if (!isImpersonating && role === 'admin') return 'admin'
     const perm = permissions.find(p => p.module === module)
     return perm?.permission || 'none'
   }
 
   const canViewModule = (module: AppModule): boolean => {
     if (loading) return false
-    if (role === 'admin') return true
+    if (!isImpersonating && role === 'admin') return true
     const level = getModulePermission(module)
     return ['view', 'edit', 'approve', 'admin'].includes(level)
   }
 
   const canEditModule = (module: AppModule): boolean => {
     if (loading) return false
-    if (role === 'admin') return true
+    if (!isImpersonating && role === 'admin') return true
     const level = getModulePermission(module)
     return ['edit', 'approve', 'admin'].includes(level)
   }
 
   const canApproveModule = (module: AppModule): boolean => {
     if (loading) return false
-    if (role === 'admin') return true
+    if (!isImpersonating && role === 'admin') return true
     const level = getModulePermission(module)
     return ['approve', 'admin'].includes(level)
   }
