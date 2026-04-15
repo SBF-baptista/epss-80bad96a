@@ -33,6 +33,11 @@ interface UserRoleContextType {
   isOperador: () => boolean
   isVisualizador: () => boolean
   canEdit: () => boolean
+  // Admin impersonation
+  isImpersonating: boolean
+  realRole: UserRole
+  startImpersonation: (simulatedRole: UserRole, simulatedPermissions: ModulePermission[]) => void
+  stopImpersonation: () => void
 }
 
 const UserRoleContext = createContext<UserRoleContextType | null>(null)
@@ -60,6 +65,11 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole>(null)
   const [permissions, setPermissions] = useState<ModulePermission[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Impersonation state
+  const [isImpersonating, setIsImpersonating] = useState(false)
+  const [realRole, setRealRole] = useState<UserRole>(null)
+  const [realPermissions, setRealPermissions] = useState<ModulePermission[]>([])
 
   useEffect(() => {
     const fetchUserRoleAndPermissions = async () => {
