@@ -2,6 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Scan } from "lucide-react";
 import { ProductionItem } from "@/services/productionService";
+import { SectionSkeleton } from "@/components/ui/loading";
 
 interface ProductionItemsListProps {
   productionItems: ProductionItem[];
