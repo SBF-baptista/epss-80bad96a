@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ruptelaVehicleService, RuptelaCheckResponse } from "@/services/ruptelaVehicleService";
 import { toast } from "sonner";
+import { SimulatorLoadingScreen } from "@/components/kickoff/SimulatorLoadingScreen";
 
 export interface SimulatorRowInput {
   brand: string;
