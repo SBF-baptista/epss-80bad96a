@@ -1,0 +1,301 @@
+import { useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
+import { motion } from "framer-motion";
+import { ArrowLeft, FileSpreadsheet, Upload, Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ruptelaVehicleService, RuptelaCheckResponse } from "@/services/ruptelaVehicleService";
+import { toast } from "sonner";
+
+export interface SimulatorRowInput {
+  brand: string;
+  model: string;
+  year: number | null;
+  raw: Record<string, any>;
+}
+
+export interface SimulatorRowResult {
+  input: SimulatorRowInput;
+  response: RuptelaCheckResponse | null;
+  error: string | null;
+}
+
+export interface SimulatorPayload {
+  generatedAt: string;
+  fileName: string;
+  results: SimulatorRowResult[];
+}
+
+const BRAND_KEYS = ["marca", "brand", "fabricante", "manufacturer", "make"];
+const MODEL_KEYS = ["modelo", "model", "veiculo", "vehicle"];
+const YEAR_KEYS = ["ano", "year", "ano_fab", "ano_modelo", "ano fabricacao"];
+
+function normalize(s: string) {
+  return s
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function detectColumn(headers: string[], candidates: string[]): string | null {
+  const normHeaders = headers.map((h) => ({ raw: h, norm: normalize(h) }));
+  for (const c of candidates) {
+    const found = normHeaders.find((h) => h.norm === c || h.norm.includes(c));
+    if (found) return found.raw;
+  }
+  return null;
+}
+
+function parseYear(value: any): number | null {
+  if (value == null || value === "") return null;
+  const str = String(value).trim();
+  const match = str.match(/(19|20)\d{2}/);
+  if (match) return parseInt(match[0], 10);
+  const num = parseInt(str, 10);
+  return Number.isFinite(num) ? num : null;
+}
+
+const KickoffSimulator = () => {
+  const navigate = useNavigate();
+  const [file, setFile] = useState<File | null>(null);
+  const [rows, setRows] = useState<SimulatorRowInput[]>([]);
+  const [detectedColumns, setDetectedColumns] = useState<{ brand: string | null; model: string | null; year: string | null } | null>(
+    null,
+  );
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = useCallback(async (selected: File) => {
+    setFile(selected);
+    setParseError(null);
+    setRows([]);
+    setDetectedColumns(null);
+
+    try {
+      const buffer = await selected.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const sheetName = wb.SheetNames[0];
+      if (!sheetName) {
+        setParseError("A planilha está vazia.");
+        return;
+      }
+      const sheet = wb.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+
+      if (data.length === 0) {
+        setParseError("Nenhuma linha encontrada na planilha.");
+        return;
+      }
+
+      const headers = Object.keys(data[0]);
+      const brandCol = detectColumn(headers, BRAND_KEYS);
+      const modelCol = detectColumn(headers, MODEL_KEYS);
+      const yearCol = detectColumn(headers, YEAR_KEYS);
+
+      setDetectedColumns({ brand: brandCol, model: modelCol, year: yearCol });
+
+      if (!brandCol || !modelCol) {
+        setParseError(
+          `Não foi possível detectar as colunas obrigatórias. Colunas encontradas: ${headers.join(", ")}. A planilha precisa ter colunas de Marca e Modelo.`,
+        );
+        return;
+      }
+
+      const parsedRows: SimulatorRowInput[] = data
+        .map((r) => ({
+          brand: String(r[brandCol] ?? "").trim(),
+          model: String(r[modelCol] ?? "").trim(),
+          year: yearCol ? parseYear(r[yearCol]) : null,
+          raw: r,
+        }))
+        .filter((r) => r.brand && r.model);
+
+      if (parsedRows.length === 0) {
+        setParseError("Nenhuma linha válida encontrada (marca e modelo são obrigatórios).");
+        return;
+      }
+
+      setRows(parsedRows);
+    } catch (err: any) {
+      console.error(err);
+      setParseError(`Erro ao ler a planilha: ${err.message ?? "desconhecido"}`);
+    }
+  }, []);
+
+  const handleSimulate = useCallback(async () => {
+    if (rows.length === 0) return;
+    setProcessing(true);
+    setProgress(0);
+
+    const results: SimulatorRowResult[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      try {
+        const response = await ruptelaVehicleService.checkVehicle(row.brand, row.model, row.year ?? undefined);
+        results.push({ input: row, response, error: null });
+      } catch (err: any) {
+        results.push({ input: row, response: null, error: err.message ?? "Erro ao consultar" });
+      }
+      setProgress(Math.round(((i + 1) / rows.length) * 100));
+    }
+
+    const payload: SimulatorPayload = {
+      generatedAt: new Date().toISOString(),
+      fileName: file?.name ?? "planilha.xlsx",
+      results,
+    };
+
+    try {
+      sessionStorage.setItem("kickoff-simulator-result", JSON.stringify(payload));
+    } catch {
+      toast.error("Não foi possível armazenar o resultado.");
+      setProcessing(false);
+      return;
+    }
+
+    setProcessing(false);
+    navigate("/kickoff/simulador/resultado");
+  }, [rows, file, navigate]);
+
+  return (
+    <div className="container mx-auto px-4 py-8 space-y-6 max-w-5xl">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/kickoff")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
+
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Simulador de Configuração</h1>
+        <p className="text-sm text-muted-foreground">
+          Faça upload de uma planilha (.xlsx) com Marca, Modelo e Ano dos veículos para consultar a configuração compatível na base
+          Ruptela.
+        </p>
+      </motion.div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-primary" />
+            Upload da Planilha
+          </CardTitle>
+          <CardDescription>
+            Aceita arquivos .xlsx. As colunas Marca, Modelo e Ano serão detectadas automaticamente pelo cabeçalho.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div
+            className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer hover:bg-muted/30 transition-colors"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files?.[0];
+              if (f) handleFileSelect(f);
+            }}
+          >
+            <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm font-medium">{file ? file.name : "Clique ou arraste a planilha aqui"}</p>
+            <p className="text-xs text-muted-foreground mt-1">Formato suportado: .xlsx</p>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFileSelect(f);
+              }}
+            />
+          </div>
+
+          {parseError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription>{parseError}</AlertDescription>
+            </Alert>
+          )}
+
+          {detectedColumns && rows.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Colunas detectadas:</span>
+                <Badge variant="secondary">Marca: {detectedColumns.brand}</Badge>
+                <Badge variant="secondary">Modelo: {detectedColumns.model}</Badge>
+                <Badge variant={detectedColumns.year ? "secondary" : "outline"}>
+                  Ano: {detectedColumns.year ?? "não detectada"}
+                </Badge>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <strong className="text-foreground">{rows.length}</strong> veículo(s) prontos para simulação.
+              </div>
+
+              <div className="border rounded-md max-h-64 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 sticky top-0">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium">#</th>
+                      <th className="text-left px-3 py-2 font-medium">Marca</th>
+                      <th className="text-left px-3 py-2 font-medium">Modelo</th>
+                      <th className="text-left px-3 py-2 font-medium">Ano</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.slice(0, 50).map((r, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                        <td className="px-3 py-2">{r.brand}</td>
+                        <td className="px-3 py-2">{r.model}</td>
+                        <td className="px-3 py-2">{r.year ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {rows.length > 50 && (
+                  <div className="text-xs text-muted-foreground px-3 py-2 border-t">
+                    Mostrando 50 de {rows.length} linhas.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {processing && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Consultando configurações... {progress}%
+              </div>
+              <Progress value={progress} />
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button onClick={handleSimulate} disabled={rows.length === 0 || processing} size="lg">
+              {processing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Simulando...
+                </>
+              ) : (
+                <>Simular Configuração</>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default KickoffSimulator;
