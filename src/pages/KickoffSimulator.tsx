@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ruptelaVehicleService, RuptelaCheckResponse } from "@/services/ruptelaVehicleService";
 import { toast } from "sonner";
-import { SimulatorLoadingScreen } from "@/components/kickoff/SimulatorLoadingScreen";
 
 export interface SimulatorRowInput {
   brand: string;
@@ -336,9 +335,14 @@ const KickoffSimulator = () => {
             </div>
           )}
 
-          {/* Loading premium em tela cheia: skeleton + mensagem contextual + etapas */}
           {processing && (
-            <SimulatorLoadingScreen progress={progress} total={rows.length} />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                <span className="truncate">Consultando configurações... {progress}%</span>
+              </div>
+              <Progress value={progress} />
+            </div>
           )}
 
           {/* Botão CTA: largura total no mobile (input/botões no mobile = full-width), padding lateral controlado */}
