@@ -81,25 +81,30 @@ const KickoffSimulatorResult = () => {
 
       {/* Stats: 2x2 no mobile, 4 colunas no desktop. Padding e tipografia reduzidos no mobile */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        <Card>
+        {/* KPI secundário (opacidade reduzida) */}
+        <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
-            <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
+            <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.total}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Total de veículos</p>
           </CardContent>
         </Card>
-        <Card>
+        {/* KPI primário: "Compatíveis" em destaque com fundo verde sutil */}
+        <Card
+          className="border-[rgba(34,197,94,0.3)] shadow-[0_4px_14px_rgba(34,197,94,0.12)]"
+          style={{ backgroundColor: "rgba(34,197,94,0.08)" }}
+        >
           <CardContent className="p-3 sm:p-6 sm:pt-6">
-            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.supported}</div>
-            <p className="text-[11px] sm:text-xs text-muted-foreground">Compatíveis</p>
+            <div className="text-2xl sm:text-3xl font-bold text-green-700">{stats.supported}</div>
+            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.unsupported}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Sem correspondência</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-destructive">{stats.errors}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Erros</p>
