@@ -122,17 +122,22 @@ const KickoffSimulator = () => {
         return;
       }
       const sheet = wb.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+      // Detect header row (planilhas exportadas costumam ter título nas primeiras linhas)
+      const headerRowIdx = findHeaderRow(sheet);
+      const data = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, {
+        defval: "",
+        range: headerRowIdx,
+      });
 
       if (data.length === 0) {
         setParseError("Nenhuma linha encontrada na planilha.");
         return;
       }
 
-      const headers = Object.keys(data[0]);
+      const headers = Object.keys(data[0]).filter((h) => h && !h.startsWith("__EMPTY"));
       const brandCol = detectColumn(headers, BRAND_KEYS);
       const modelCol = detectColumn(headers, MODEL_KEYS);
-      const yearCol = detectColumn(headers, YEAR_KEYS);
+      const yearCol = detectYearColumn(headers);
 
       setDetectedColumns({ brand: brandCol, model: modelCol, year: yearCol });
 
