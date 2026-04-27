@@ -285,9 +285,7 @@ export const SchedulingSection = ({
           </CardHeader>
           <CardContent className="p-4 sm:p-5 h-full overflow-auto max-h-[calc(100vh-420px)] scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-              </div>
+              <SectionSkeleton rows={5} message="Carregando agendamentos..." />
             ) : filteredCustomers.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
