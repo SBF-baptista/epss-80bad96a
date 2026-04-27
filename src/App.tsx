@@ -37,6 +37,8 @@ const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
 const RuptelaVehicleCheck = lazy(() => import("./pages/RuptelaVehicleCheck"));
+const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
+const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -235,6 +237,26 @@ function AppContent() {
                   <RoleProtectedRoute requiredModule="kickoff">
                     <Layout>
                       <Kickoff />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/kickoff/simulador" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="kickoff">
+                    <Layout>
+                      <KickoffSimulator />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/kickoff/simulador/resultado" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="kickoff">
+                    <Layout>
+                      <KickoffSimulatorResult />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
