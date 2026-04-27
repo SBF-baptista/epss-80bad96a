@@ -65,11 +65,22 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
   const entries: RuptelaEntry[] = [];
 
   for (const rowMatch of rowMatches) {
+    // Capture raw cell HTML so we can extract anchors before stripping tags
     const cellMatches = [...rowMatch[1].matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/g)];
     if (cellMatches.length < 11) continue;
 
-    const cells = cellMatches.map((c) => stripTags(c[1]));
+    const rawCells = cellMatches.map((c) => c[1]);
+    const cells = rawCells.map(stripTags);
     if (cells[0].toLowerCase() === 'brand') continue; // header
+
+    // Extract Installation Instructions / CANbus PDF link from Actions cell (index 11 when present).
+    // Ruptela renders a green PDF icon linking to doc.ruptela.com/.../INSTALLATION INSTRUCTIONS/...pdf
+    let canbusUrl: string | null = null;
+    const actionsHtml = rawCells[11] ?? '';
+    const pdfMatch =
+      actionsHtml.match(/href=["']([^"']*INSTALLATION%20INSTRUCTIONS[^"']*\.pdf)["']/i) ||
+      actionsHtml.match(/href=["']([^"']+\.pdf)["']/i);
+    if (pdfMatch) canbusUrl = pdfMatch[1];
 
     entries.push({
       brand: cells[0],
@@ -83,6 +94,7 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
       devices: splitList(cells[8]),
       connection_methods: splitList(cells[9]),
       created_at: cells[10] || '',
+      canbus_configuration_url: canbusUrl,
     });
   }
   return entries;
