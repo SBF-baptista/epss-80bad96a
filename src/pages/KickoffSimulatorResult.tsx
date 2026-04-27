@@ -48,29 +48,7 @@ const KickoffSimulatorResult = () => {
     // Fundo slate-100 (#F1F5F9) para destacar os cards brancos com aparência premium
     <div className="min-h-screen bg-[#F1F5F9]">
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6 max-w-7xl overflow-x-hidden">
-      {/* Botões de ação no topo — empilhados: "Nova Simulação" ACIMA de "Voltar ao Kickoff".
-          "Nova Simulação" limpa o cache do resultado e reabre o upload de planilha. */}
-      <div className="flex flex-col gap-2 max-w-sm">
-        <Button
-          variant="default"
-          onClick={() => {
-            try { sessionStorage.removeItem("kickoff-simulator-result"); } catch {}
-            navigate("/kickoff/simulador");
-          }}
-          className="min-h-12 w-full"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Nova Simulação
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate("/kickoff")}
-          className="min-h-12 w-full"
-        >
-          Voltar ao Kickoff
-        </Button>
-      </div>
-
+      {/* Cabeçalho — apenas título. Botões de ação ficam no rodapé. */}
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
@@ -152,6 +130,30 @@ const KickoffSimulatorResult = () => {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Ações no rodapé: "Nova Simulação" empilhado ACIMA de "Voltar ao Kickoff".
+          Clicar em "Nova Simulação" limpa o resultado em cache e reabre a tela
+          de upload de planilha (todo o processo é refeito do zero). */}
+      <div className="flex flex-col gap-2 pt-4 max-w-sm mx-auto sm:mx-0">
+        <Button
+          variant="default"
+          onClick={() => {
+            try { sessionStorage.removeItem("kickoff-simulator-result"); } catch {}
+            navigate("/kickoff/simulador");
+          }}
+          className="min-h-12 w-full"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Nova Simulação
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/kickoff")}
+          className="min-h-12 w-full"
+        >
+          Voltar ao Kickoff
+        </Button>
+      </div>
     </div>
     </div>
   );
