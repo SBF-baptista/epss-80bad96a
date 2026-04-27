@@ -119,10 +119,6 @@ const Kickoff = () => {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
           <p className="text-sm text-muted-foreground"></p>
         </div>
-        <Button onClick={() => navigate("/kickoff/simulador")} variant="outline" className="gap-2">
-          <FlaskConical className="h-4 w-4" />
-          Simulador de Configuração
-        </Button>
       </motion.div>
 
       {/* Tabs */}
