@@ -33,7 +33,9 @@ const RoleProtectedRoute = ({
 
       if (isImpersonating) {
         // When impersonating, check simulated permissions
-        if (requiredModule) {
+        if (requiredModules && requiredModules.length > 0) {
+          hasAccess = requiredModules.some(m => canViewModule(m))
+        } else if (requiredModule) {
           hasAccess = canViewModule(requiredModule)
         } else if (allowedRoles.length > 0) {
           hasAccess = allowedRoles.includes(role)
@@ -43,7 +45,9 @@ const RoleProtectedRoute = ({
         // Real admin always has escape hatch - don't redirect, just show content
         if (!hasAccess && isRealAdmin) hasAccess = true
       } else {
-        if (requiredModule) {
+        if (requiredModules && requiredModules.length > 0) {
+          hasAccess = requiredModules.some(m => canViewModule(m))
+        } else if (requiredModule) {
           hasAccess = canViewModule(requiredModule)
         } else if (allowedRoles.length > 0) {
           hasAccess = allowedRoles.includes(role)
