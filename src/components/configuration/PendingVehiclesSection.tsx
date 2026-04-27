@@ -144,9 +144,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-          </div>
+          <SectionSkeleton rows={3} message="Carregando veículos pendentes..." />
         </CardContent>
       </Card>
     );

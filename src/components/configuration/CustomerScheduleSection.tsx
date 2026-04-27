@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
+import { SectionSkeleton } from '@/components/ui/loading';
 import { Package, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useCentralRealtime } from '@/hooks/useCentralRealtime';
 import { CustomerScheduleCard, VehicleScheduleData } from './CustomerScheduleCard';
