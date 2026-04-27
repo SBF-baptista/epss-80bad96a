@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { PageLoader } from '@/components/ui/loading';
 import { Search, RefreshCw } from 'lucide-react';
 import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
