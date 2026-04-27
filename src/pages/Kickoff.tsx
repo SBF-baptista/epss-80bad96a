@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, History, Search, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, History, Search, FileText, FlaskConical } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -20,6 +22,7 @@ import { motion } from "framer-motion";
 
 const Kickoff = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -107,9 +110,19 @@ const Kickoff = () => {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
-        <p className="text-sm text-muted-foreground"></p>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+      >
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
+          <p className="text-sm text-muted-foreground"></p>
+        </div>
+        <Button onClick={() => navigate("/kickoff/simulador")} variant="outline" className="gap-2">
+          <FlaskConical className="h-4 w-4" />
+          Simulador de Configuração
+        </Button>
       </motion.div>
 
       {/* Tabs */}
