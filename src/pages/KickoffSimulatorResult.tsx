@@ -45,7 +45,8 @@ const KickoffSimulatorResult = () => {
   }
 
   return (
-    // Padding escalonado e overflow-x oculto para evitar scroll horizontal acidental
+    // Fundo slate-100 (#F1F5F9) para destacar os cards brancos com aparência premium
+    <div className="min-h-screen bg-[#F1F5F9]">
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6 max-w-7xl overflow-x-hidden">
       {/* Botões de navegação: empilham no mobile, ocupam largura total */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -80,25 +81,30 @@ const KickoffSimulatorResult = () => {
 
       {/* Stats: 2x2 no mobile, 4 colunas no desktop. Padding e tipografia reduzidos no mobile */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        <Card>
+        {/* KPI secundário (opacidade reduzida) */}
+        <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
-            <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
+            <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.total}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Total de veículos</p>
           </CardContent>
         </Card>
-        <Card>
+        {/* KPI primário: "Compatíveis" em destaque com fundo verde sutil */}
+        <Card
+          className="border-[rgba(34,197,94,0.3)] shadow-[0_4px_14px_rgba(34,197,94,0.12)]"
+          style={{ backgroundColor: "rgba(34,197,94,0.08)" }}
+        >
           <CardContent className="p-3 sm:p-6 sm:pt-6">
-            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.supported}</div>
-            <p className="text-[11px] sm:text-xs text-muted-foreground">Compatíveis</p>
+            <div className="text-2xl sm:text-3xl font-bold text-green-700">{stats.supported}</div>
+            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.unsupported}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Sem correspondência</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-destructive">{stats.errors}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Erros</p>
@@ -144,6 +150,7 @@ const KickoffSimulatorResult = () => {
         ))}
       </Tabs>
     </div>
+    </div>
   );
 };
 
@@ -167,74 +174,129 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
 
+  // Card "Compatível" recebe borda verde sutil + sombra suave + leve elevação no hover.
+  // Demais status mantêm visual neutro premium (fundo branco, borda slate).
+  const isSupported = status === "supported";
+  const cardClasses = isSupported
+    ? "overflow-hidden bg-white border border-[rgba(34,197,94,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
+    : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
+
+  // Badge "Compatível" em verde forte (#16A34A) com texto branco e bold.
+  const badgeClasses =
+    status === "supported"
+      ? "self-start sm:self-auto shrink-0 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold border-transparent"
+      : "self-start sm:self-auto shrink-0 font-semibold";
+
   return (
-    <Card className="overflow-hidden">
+    <Card className={cardClasses}>
       {/* Header: empilha no mobile para acomodar título longo + badge */}
       <CardHeader className={`${cfg.bg} py-3 px-3 sm:px-6`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <span className="text-xs font-mono text-muted-foreground shrink-0">#{index + 1}</span>
             <StatusIcon className={`h-5 w-5 ${cfg.color} shrink-0`} />
-            <CardTitle className="text-sm sm:text-base truncate">
-              {input.brand} {input.model} {input.year ? `· ${input.year}` : ""}
-            </CardTitle>
+            <div className="min-w-0">
+              {/* Título reformulado: "✔ MARCA MODELO ANO" + subtítulo "Compatível com sua operação" */}
+              <CardTitle className="text-sm sm:text-base truncate uppercase tracking-wide">
+                {isSupported && <span className="text-[#16A34A] mr-1">✔</span>}
+                {input.brand} {input.model} {input.year ? input.year : ""}
+              </CardTitle>
+              {isSupported && (
+                <p className="text-[11px] sm:text-xs text-green-700/80 mt-0.5 normal-case tracking-normal font-medium">
+                  Compatível com sua operação
+                </p>
+              )}
+            </div>
           </div>
           <Badge
             variant={status === "supported" ? "default" : status === "error" ? "destructive" : "secondary"}
-            className="self-start sm:self-auto shrink-0"
+            className={badgeClasses}
           >
             {cfg.label}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-4 px-3 sm:px-6 space-y-3">
+      <CardContent className="pt-4 px-3 sm:px-6 space-y-4">
         {error && <p className="text-xs sm:text-sm text-destructive break-words">{error}</p>}
 
+        {/* SEÇÃO: ESPECIFICAÇÕES (Geração, Tipo, Região) */}
         {response && response.matched_entry && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Geração</p>
-              <p className="font-medium">{response.matched_entry.generation || "—"}</p>
+          <div className="space-y-1.5">
+            <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
+              Especificações
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm rounded-lg bg-slate-50 border border-slate-100 p-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Geração</p>
+                <p className="font-semibold text-slate-800">{response.matched_entry.generation || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Tipo</p>
+                <p className="font-semibold text-slate-800">{response.matched_entry.type || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Região</p>
+                <p className="font-semibold text-slate-800">
+                  {response.matched_entry.regions.join(", ") || "—"}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Tipo</p>
-              <p className="font-medium">{response.matched_entry.type || "—"}</p>
-            </div>
-            <div>
+          </div>
+        )}
+
+        {/* SEÇÃO: PERÍODO (Faixa de anos) */}
+        {response && response.matched_entry && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
+              Período
+            </p>
+            <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs sm:text-sm">
               <p className="text-xs text-muted-foreground mb-1">Faixa de anos</p>
-              <p className="font-medium">
-                {response.matched_entry.year_from ?? "?"} - {response.matched_entry.year_to ?? "atual"}
+              <p className="font-semibold text-slate-800">
+                {response.matched_entry.year_from ?? "?"} – {response.matched_entry.year_to ?? "atual"}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Regiões</p>
-              <p className="font-medium">{response.matched_entry.regions.join(", ") || "—"}</p>
-            </div>
           </div>
         )}
 
-        {response && response.suggested_devices.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">Dispositivos compatíveis</p>
-            <div className="flex flex-wrap gap-1.5">
-              {response.suggested_devices.map((d) => (
-                <Badge key={d} variant="outline" className="font-mono">
-                  {d}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* SEÇÃO: COMPATIBILIDADE (Dispositivos + Métodos de conexão) */}
+        {response && (response.suggested_devices.length > 0 || response.connection_methods.length > 0) && (
+          <div className="space-y-2">
+            <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
+              Compatibilidade
+            </p>
+            <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 space-y-3">
+              {response.suggested_devices.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Dispositivos compatíveis</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {/* Chips primários: destaque com borda verde e texto verde */}
+                    {response.suggested_devices.map((d) => (
+                      <Badge
+                        key={d}
+                        variant="outline"
+                        className="font-mono border-[rgba(34,197,94,0.4)] bg-[rgba(34,197,94,0.08)] text-green-800 font-semibold"
+                      >
+                        {d}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {response && response.connection_methods.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">Métodos de conexão</p>
-            <div className="flex flex-wrap gap-1.5">
-              {response.connection_methods.map((c) => (
-                <Badge key={c} variant="secondary">
-                  {c}
-                </Badge>
-              ))}
+              {response.connection_methods.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Métodos de conexão</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {/* Chips secundários: opacidade reduzida */}
+                    {response.connection_methods.map((c) => (
+                      <Badge key={c} variant="secondary" className="opacity-80">
+                        {c}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
