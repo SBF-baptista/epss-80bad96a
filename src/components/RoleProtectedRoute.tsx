@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useUserRole, UserRole } from '@/hooks/useUserRole'
 import { AppModule } from '@/types/permissions'
 import { ROUTE_TO_MODULE } from '@/services/permissionsService'
+import { FullScreenLoader } from '@/components/ui/loading'
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode
