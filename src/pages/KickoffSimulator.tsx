@@ -205,35 +205,46 @@ const KickoffSimulator = () => {
   }, [rows, file, navigate]);
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6 max-w-5xl">
+    // Mobile-first: padding compacto no mobile, cresce no desktop. max-w garante boa leitura
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6 max-w-5xl">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/kickoff")}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/kickoff")}
+          // min-h-12 garante alvo de toque adequado (48px) no mobile
+          className="min-h-12 sm:min-h-9"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
       </div>
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Simulador de Configuração</h1>
-        <p className="text-sm text-muted-foreground">
+        {/* Tipografia escalonada por breakpoint */}
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+          Simulador de Configuração
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Faça upload de uma planilha (.xlsx) com Marca, Modelo e Ano dos veículos para consultar a configuração compatível na base
           Ruptela.
         </p>
       </motion.div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-primary" />
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <FileSpreadsheet className="h-5 w-5 text-primary shrink-0" />
             Upload da Planilha
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Aceita arquivos .xlsx. As colunas Marca, Modelo e Ano serão detectadas automaticamente pelo cabeçalho.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
+          {/* Dropzone: padding reduzido no mobile, área de toque grande */}
           <div
-            className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer hover:bg-muted/30 transition-colors"
+            className="border-2 border-dashed rounded-lg p-6 sm:p-10 text-center cursor-pointer hover:bg-muted/30 transition-colors touch-manipulation"
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -242,8 +253,8 @@ const KickoffSimulator = () => {
               if (f) handleFileSelect(f);
             }}
           >
-            <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm font-medium">{file ? file.name : "Clique ou arraste a planilha aqui"}</p>
+            <Upload className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm font-medium break-all">{file ? file.name : "Toque ou arraste a planilha aqui"}</p>
             <p className="text-xs text-muted-foreground mt-1">Formato suportado: .xlsx</p>
             <input
               ref={inputRef}
@@ -261,26 +272,41 @@ const KickoffSimulator = () => {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Erro</AlertTitle>
-              <AlertDescription>{parseError}</AlertDescription>
+              <AlertDescription className="text-xs sm:text-sm break-words">{parseError}</AlertDescription>
             </Alert>
           )}
 
           {detectedColumns && rows.length > 0 && (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Colunas detectadas:</span>
-                <Badge variant="secondary">Marca: {detectedColumns.brand}</Badge>
-                <Badge variant="secondary">Modelo: {detectedColumns.model}</Badge>
-                <Badge variant={detectedColumns.year ? "secondary" : "outline"}>
+              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                <span className="text-muted-foreground w-full sm:w-auto">Colunas detectadas:</span>
+                <Badge variant="secondary" className="max-w-full truncate">Marca: {detectedColumns.brand}</Badge>
+                <Badge variant="secondary" className="max-w-full truncate">Modelo: {detectedColumns.model}</Badge>
+                <Badge variant={detectedColumns.year ? "secondary" : "outline"} className="max-w-full truncate">
                   Ano: {detectedColumns.year ?? "não detectada"}
                 </Badge>
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 <strong className="text-foreground">{rows.length}</strong> veículo(s) prontos para simulação.
               </div>
 
+              {/* Mobile: lista de cards. Desktop (md+): tabela tradicional */}
               <div className="border rounded-md max-h-64 overflow-auto">
-                <table className="w-full text-sm">
+                {/* Cards para mobile */}
+                <ul className="md:hidden divide-y">
+                  {rows.slice(0, 50).map((r, i) => (
+                    <li key={i} className="p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
+                        <span className="text-xs text-muted-foreground">{r.year ?? "—"}</span>
+                      </div>
+                      <div className="font-medium truncate">{r.brand}</div>
+                      <div className="text-muted-foreground text-xs truncate">{r.model}</div>
+                    </li>
+                  ))}
+                </ul>
+                {/* Tabela para desktop */}
+                <table className="hidden md:table w-full text-sm">
                   <thead className="bg-muted/50 sticky top-0">
                     <tr>
                       <th className="text-left px-3 py-2 font-medium">#</th>
@@ -311,16 +337,22 @@ const KickoffSimulator = () => {
 
           {processing && (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Consultando configurações... {progress}%
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                <span className="truncate">Consultando configurações... {progress}%</span>
               </div>
               <Progress value={progress} />
             </div>
           )}
 
-          <div className="flex justify-end">
-            <Button onClick={handleSimulate} disabled={rows.length === 0 || processing} size="lg">
+          {/* Botão CTA: largura total no mobile (input/botões no mobile = full-width), padding lateral controlado */}
+          <div className="flex justify-stretch sm:justify-end">
+            <Button
+              onClick={handleSimulate}
+              disabled={rows.length === 0 || processing}
+              size="lg"
+              className="w-full sm:w-auto min-h-12"
+            >
               {processing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
