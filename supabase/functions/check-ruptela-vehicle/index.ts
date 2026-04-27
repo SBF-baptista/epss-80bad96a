@@ -372,13 +372,21 @@ Deno.serve(async (req) => {
     const best = candidates[0];
     const supported = !!best && best.score >= 70 && best.yearOk;
 
+    // Lazily enrich the matched entry with the CANbus Configuration text
+    // from the vehicle detail page (only when we have an internal vehicle_id).
+    let matchedEntry: RuptelaEntry | null = supported ? { ...best.entry } : null;
+    if (matchedEntry && matchedEntry.vehicle_id) {
+      const canbusText = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
+      matchedEntry.canbus_configuration = canbusText;
+    }
+
     return new Response(
       JSON.stringify({
         supported,
         brand,
         model,
         year: year ?? null,
-        matched_entry: supported ? best.entry : null,
+        matched_entry: matchedEntry,
         suggested_devices: supported ? best.entry.devices : [],
         connection_methods: supported ? best.entry.connection_methods : [],
         candidates: candidates.slice(0, 8).map((c) => ({
