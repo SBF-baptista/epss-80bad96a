@@ -68,6 +68,9 @@ const singleNavigationItems: NavItem[] = [
   { to: "/kickoff", label: "Kickoff", icon: Rocket, module: "kickoff" },
 ];
 
+// Simulador - visível para operadores de Kickoff e Homologação (e admin/gestor)
+const simulatorItem: NavItem = { to: "/kickoff/simulador", label: "Simulador", icon: Search, module: "kickoff" };
+
 // Navigation structure (groups shown after single items)
 const navigationGroups: NavGroup[] = [
   {
@@ -204,6 +207,7 @@ export function AppNavigation() {
   const canSeeScheduling = canAccessItem(schedulingItem);
   const canSeeInstallation = role === 'admin';
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
+  const canSeeSimulator = role === 'admin' || canViewModule('kickoff') || canViewModule('homologation');
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -248,6 +252,23 @@ export function AppNavigation() {
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* Simulador - visível para Kickoff e Homologação */}
+              {canSeeSimulator && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(simulatorItem.to)}
+                    tooltip={isCollapsed ? simulatorItem.label : undefined}
+                    className="touch-manipulation tap-target"
+                  >
+                    <NavLink to={simulatorItem.to} className="flex items-center gap-3 px-2 py-2">
+                      <simulatorItem.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium text-sm truncate">{simulatorItem.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
 
               {/* Homologação Group */}
               {visibleGroups.filter(g => g.label === "Homologação").map((group) => {

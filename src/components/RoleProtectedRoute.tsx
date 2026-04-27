@@ -8,6 +8,7 @@ interface RoleProtectedRouteProps {
   children: React.ReactNode
   allowedRoles?: UserRole[]  // Legacy support
   requiredModule?: AppModule // New module-based access
+  requiredModules?: AppModule[] // Allow access if user has ANY of these modules
   redirectTo?: string
 }
 
@@ -15,6 +16,7 @@ const RoleProtectedRoute = ({
   children, 
   allowedRoles = [], 
   requiredModule,
+  requiredModules,
   redirectTo = '/modules' 
 }: RoleProtectedRouteProps) => {
   const { role, canViewModule, loading, isImpersonating, realRole } = useUserRole()
@@ -31,7 +33,9 @@ const RoleProtectedRoute = ({
 
       if (isImpersonating) {
         // When impersonating, check simulated permissions
-        if (requiredModule) {
+        if (requiredModules && requiredModules.length > 0) {
+          hasAccess = requiredModules.some(m => canViewModule(m))
+        } else if (requiredModule) {
           hasAccess = canViewModule(requiredModule)
         } else if (allowedRoles.length > 0) {
           hasAccess = allowedRoles.includes(role)
@@ -41,7 +45,9 @@ const RoleProtectedRoute = ({
         // Real admin always has escape hatch - don't redirect, just show content
         if (!hasAccess && isRealAdmin) hasAccess = true
       } else {
-        if (requiredModule) {
+        if (requiredModules && requiredModules.length > 0) {
+          hasAccess = requiredModules.some(m => canViewModule(m))
+        } else if (requiredModule) {
           hasAccess = canViewModule(requiredModule)
         } else if (allowedRoles.length > 0) {
           hasAccess = allowedRoles.includes(role)
@@ -78,6 +84,8 @@ const RoleProtectedRoute = ({
   if (isImpersonating && isRealAdmin) {
     // Real admin impersonating - always allow but show simulated view
     hasAccess = true
+  } else if (requiredModules && requiredModules.length > 0) {
+    hasAccess = requiredModules.some(m => canViewModule(m))
   } else if (requiredModule) {
     hasAccess = canViewModule(requiredModule)
   } else if (allowedRoles.length > 0) {
