@@ -12,6 +12,8 @@ export interface RuptelaEntry {
   devices: string[];
   connection_methods: string[];
   created_at: string;
+  // Link to the official Ruptela CANbus / Installation Instructions PDF
+  canbus_configuration_url: string | null;
 }
 
 export interface RuptelaCandidate extends RuptelaEntry {
