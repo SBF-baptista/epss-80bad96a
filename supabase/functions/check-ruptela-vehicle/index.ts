@@ -24,8 +24,14 @@ interface RuptelaEntry {
   devices: string[];
   connection_methods: string[];
   created_at: string;
-  // CANbus / Installation Instructions PDF link extracted from the Actions cell
+  // Internal Ruptela vehicle id (used to fetch the detail page that has
+  // the actual CANbus Configuration text — e.g. "1. LCV group - CITROEN4").
+  vehicle_id: number | null;
+  // Link to the official Installation Instructions PDF (extracted from the listing).
   canbus_configuration_url: string | null;
+  // Plain text of the "CANbus Configuration" section from the vehicle detail page.
+  // Populated lazily for the matched entry only (avoids N extra requests when listing).
+  canbus_configuration: string | null;
 }
 
 // ---------- Helpers ----------
@@ -76,11 +82,17 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
     // Extract Installation Instructions / CANbus PDF link from Actions cell (index 11 when present).
     // Ruptela renders a green PDF icon linking to doc.ruptela.com/.../INSTALLATION INSTRUCTIONS/...pdf
     let canbusUrl: string | null = null;
+    let vehicleId: number | null = null;
     const actionsHtml = rawCells[11] ?? '';
     const pdfMatch =
       actionsHtml.match(/href=["']([^"']*INSTALLATION%20INSTRUCTIONS[^"']*\.pdf)["']/i) ||
       actionsHtml.match(/href=["']([^"']+\.pdf)["']/i);
     if (pdfMatch) canbusUrl = pdfMatch[1];
+
+    // The "showUpdateLog(N)" wire:click attribute carries the internal Ruptela vehicle id,
+    // which lets us fetch the detail page (/vehicle/N) for the CANbus Configuration text.
+    const idMatch = actionsHtml.match(/showUpdateLog\((\d+)\)/);
+    if (idMatch) vehicleId = parseInt(idMatch[1], 10);
 
     entries.push({
       brand: cells[0],
@@ -94,7 +106,9 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
       devices: splitList(cells[8]),
       connection_methods: splitList(cells[9]),
       created_at: cells[10] || '',
+      vehicle_id: vehicleId,
       canbus_configuration_url: canbusUrl,
+      canbus_configuration: null,
     });
   }
   return entries;
@@ -152,7 +166,75 @@ async function saveCache(
     );
 }
 
-// ---------- Matching ----------
+// ---------- Vehicle detail (CANbus Configuration text) ----------
+const VEHICLE_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — rarely changes
+
+/**
+ * Parses the "CANbus Configuration" card from the vehicle detail HTML.
+ * The card structure on https://vehicles.ruptela.com/vehicle/{id} is:
+ *   <h3>CANbus Configuration</h3> ... <div class="prose ...">TEXT</div>
+ */
+function parseCanbusConfiguration(html: string): string | null {
+  // Find the heading, then the next .prose container after it.
+  const headingIdx = html.search(/CANbus Configuration/i);
+  if (headingIdx === -1) return null;
+  const after = html.slice(headingIdx);
+  const proseMatch = after.match(/<div[^>]*class=["'][^"']*prose[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+  if (!proseMatch) return null;
+  const text = stripTags(proseMatch[1]);
+  return text || null;
+}
+
+async function fetchVehicleDetail(
+  supabase: ReturnType<typeof createClient>,
+  vehicleId: number,
+): Promise<string | null> {
+  const cacheKey = `vehicle_detail:${vehicleId}`;
+  // Reuse same cache table — payload is wrapped as { canbus_configuration }.
+  try {
+    const { data } = await supabase
+      .from('ruptela_vehicles_cache')
+      .select('payload, fetched_at')
+      .eq('cache_key', cacheKey)
+      .maybeSingle();
+    if (data) {
+      const age = Date.now() - new Date((data as any).fetched_at).getTime();
+      if (age < VEHICLE_DETAIL_TTL_MS) {
+        return ((data as any).payload?.canbus_configuration as string | null) ?? null;
+      }
+    }
+  } catch (_) {
+    // cache read failure → fall through to live fetch
+  }
+
+  try {
+    const res = await fetch(`https://vehicles.ruptela.com/vehicle/${vehicleId}`, {
+      headers: {
+        'User-Agent': 'OPM-SEGSAT/1.0 (+vehicle-compatibility-check)',
+        Accept: 'text/html',
+      },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const canbus = parseCanbusConfiguration(html);
+
+    await supabase
+      .from('ruptela_vehicles_cache')
+      .upsert(
+        {
+          cache_key: cacheKey,
+          payload: { canbus_configuration: canbus },
+          fetched_at: new Date().toISOString(),
+        },
+        { onConflict: 'cache_key' },
+      );
+
+    return canbus;
+  } catch (err) {
+    console.error('fetchVehicleDetail failed:', err);
+    return null;
+  }
+}
 function findCandidates(entries: RuptelaEntry[], model: string, year?: number) {
   const normModel = normalize(model);
   const firstWord = normModel.split(/\s+/)[0];
@@ -290,13 +372,21 @@ Deno.serve(async (req) => {
     const best = candidates[0];
     const supported = !!best && best.score >= 70 && best.yearOk;
 
+    // Lazily enrich the matched entry with the CANbus Configuration text
+    // from the vehicle detail page (only when we have an internal vehicle_id).
+    let matchedEntry: RuptelaEntry | null = supported ? { ...best.entry } : null;
+    if (matchedEntry && matchedEntry.vehicle_id) {
+      const canbusText = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
+      matchedEntry.canbus_configuration = canbusText;
+    }
+
     return new Response(
       JSON.stringify({
         supported,
         brand,
         model,
         year: year ?? null,
-        matched_entry: supported ? best.entry : null,
+        matched_entry: matchedEntry,
         suggested_devices: supported ? best.entry.devices : [],
         connection_methods: supported ? best.entry.connection_methods : [],
         candidates: candidates.slice(0, 8).map((c) => ({

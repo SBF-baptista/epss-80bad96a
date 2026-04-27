@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileSpreadsheet, FileText, ExternalLink } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -239,24 +239,17 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
           </div>
         )}
 
-        {/* CANbus Configuration: link oficial do PDF de instruções de instalação Ruptela */}
-        {response && response.matched_entry?.canbus_configuration_url && (
-          <div className="border-t pt-3">
+        {/* CANbus Configuration: texto literal extraído da página de detalhe Ruptela
+            (ex: "1. LCV group - CITROEN4"). Exibido logo abaixo dos métodos de conexão. */}
+        {response && response.matched_entry?.canbus_configuration && (
+          <div>
             <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" />
               CANbus Configuration
             </p>
-            <a
-              href={response.matched_entry.canbus_configuration_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-primary hover:underline break-all"
-            >
-              <span className="truncate max-w-[260px] sm:max-w-none">
-                Abrir Installation Instructions (PDF)
-              </span>
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-            </a>
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs sm:text-sm font-medium text-foreground whitespace-pre-line break-words">
+              {response.matched_entry.canbus_configuration}
+            </div>
           </div>
         )}
 
