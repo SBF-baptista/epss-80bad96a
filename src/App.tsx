@@ -10,6 +10,7 @@ import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import { Layout } from "@/components/Layout";
 import SmartRedirect from "@/components/SmartRedirect";
 import { UserRoleProvider } from "@/hooks/useUserRole";
+import { FullScreenLoader } from "@/components/ui/loading";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Kanban = lazy(() => import("./pages/Kanban"));
 const Homologation = lazy(() => import("./pages/Homologation"));
@@ -60,26 +61,14 @@ const queryClient = new QueryClient({
 });
 
 const RouteLoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen bg-background">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      <p className="mt-4 text-muted-foreground">Carregando...</p>
-    </div>
-  </div>
+  <FullScreenLoader message="Carregando página..." />
 );
 
 function AppContent() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="Inicializando aplicação..." />;
   }
 
   return (
