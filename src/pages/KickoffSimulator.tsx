@@ -32,24 +32,58 @@ export interface SimulatorPayload {
 
 const BRAND_KEYS = ["marca", "brand", "fabricante", "manufacturer", "make"];
 const MODEL_KEYS = ["modelo", "model", "veiculo", "vehicle"];
-const YEAR_KEYS = ["ano", "year", "ano_fab", "ano_modelo", "ano fabricacao"];
+// Ordered by preference: prefer "ano modelo" over "ano fab." when both exist
+const YEAR_MODEL_KEYS = ["ano modelo", "ano_modelo", "anomodelo"];
+const YEAR_FAB_KEYS = ["ano fab", "ano_fab", "ano fabricacao", "ano fabricação", "anofab"];
+const YEAR_GENERIC_KEYS = ["ano", "year"];
 
-function normalize(s: string) {
-  return s
-    .toString()
+function normalize(s: any) {
+  return String(s ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\./g, "")
     .toLowerCase()
     .trim();
 }
 
 function detectColumn(headers: string[], candidates: string[]): string | null {
   const normHeaders = headers.map((h) => ({ raw: h, norm: normalize(h) }));
+  // First pass: exact match
   for (const c of candidates) {
-    const found = normHeaders.find((h) => h.norm === c || h.norm.includes(c));
+    const found = normHeaders.find((h) => h.norm === c);
+    if (found) return found.raw;
+  }
+  // Second pass: contains
+  for (const c of candidates) {
+    const found = normHeaders.find((h) => h.norm.includes(c));
     if (found) return found.raw;
   }
   return null;
+}
+
+function detectYearColumn(headers: string[]): string | null {
+  return (
+    detectColumn(headers, YEAR_MODEL_KEYS) ||
+    detectColumn(headers, YEAR_FAB_KEYS) ||
+    detectColumn(headers, YEAR_GENERIC_KEYS)
+  );
+}
+
+/**
+ * Find the header row in a sheet by scanning the first ~20 rows for
+ * recognizable column names (MARCA/MODELO/PLACA). Returns the row index
+ * (0-based) to use as the header. Defaults to 0 when not found.
+ */
+function findHeaderRow(sheet: XLSX.WorkSheet): number {
+  const matrix = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "", blankrows: true });
+  const maxScan = Math.min(matrix.length, 20);
+  for (let i = 0; i < maxScan; i++) {
+    const row = (matrix[i] || []).map((c) => normalize(c));
+    const hasBrand = row.some((c) => BRAND_KEYS.includes(c) || c === "marca");
+    const hasModel = row.some((c) => MODEL_KEYS.includes(c) || c === "modelo");
+    if (hasBrand && hasModel) return i;
+  }
+  return 0;
 }
 
 function parseYear(value: any): number | null {
