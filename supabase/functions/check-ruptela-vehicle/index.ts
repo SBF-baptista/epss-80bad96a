@@ -166,7 +166,75 @@ async function saveCache(
     );
 }
 
-// ---------- Matching ----------
+// ---------- Vehicle detail (CANbus Configuration text) ----------
+const VEHICLE_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — rarely changes
+
+/**
+ * Parses the "CANbus Configuration" card from the vehicle detail HTML.
+ * The card structure on https://vehicles.ruptela.com/vehicle/{id} is:
+ *   <h3>CANbus Configuration</h3> ... <div class="prose ...">TEXT</div>
+ */
+function parseCanbusConfiguration(html: string): string | null {
+  // Find the heading, then the next .prose container after it.
+  const headingIdx = html.search(/CANbus Configuration/i);
+  if (headingIdx === -1) return null;
+  const after = html.slice(headingIdx);
+  const proseMatch = after.match(/<div[^>]*class=["'][^"']*prose[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+  if (!proseMatch) return null;
+  const text = stripTags(proseMatch[1]);
+  return text || null;
+}
+
+async function fetchVehicleDetail(
+  supabase: ReturnType<typeof createClient>,
+  vehicleId: number,
+): Promise<string | null> {
+  const cacheKey = `vehicle_detail:${vehicleId}`;
+  // Reuse same cache table — payload is wrapped as { canbus_configuration }.
+  try {
+    const { data } = await supabase
+      .from('ruptela_vehicles_cache')
+      .select('payload, fetched_at')
+      .eq('cache_key', cacheKey)
+      .maybeSingle();
+    if (data) {
+      const age = Date.now() - new Date((data as any).fetched_at).getTime();
+      if (age < VEHICLE_DETAIL_TTL_MS) {
+        return ((data as any).payload?.canbus_configuration as string | null) ?? null;
+      }
+    }
+  } catch (_) {
+    // cache read failure → fall through to live fetch
+  }
+
+  try {
+    const res = await fetch(`https://vehicles.ruptela.com/vehicle/${vehicleId}`, {
+      headers: {
+        'User-Agent': 'OPM-SEGSAT/1.0 (+vehicle-compatibility-check)',
+        Accept: 'text/html',
+      },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const canbus = parseCanbusConfiguration(html);
+
+    await supabase
+      .from('ruptela_vehicles_cache')
+      .upsert(
+        {
+          cache_key: cacheKey,
+          payload: { canbus_configuration: canbus },
+          fetched_at: new Date().toISOString(),
+        },
+        { onConflict: 'cache_key' },
+      );
+
+    return canbus;
+  } catch (err) {
+    console.error('fetchVehicleDetail failed:', err);
+    return null;
+  }
+}
 function findCandidates(entries: RuptelaEntry[], model: string, year?: number) {
   const normModel = normalize(model);
   const firstWord = normModel.split(/\s+/)[0];
