@@ -340,7 +340,7 @@ const ApiMonitoring = () => {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12"><div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="p-0"><SectionSkeleton rows={4} message="Carregando endpoints..." /></TableCell></TableRow>
                 ) : filteredEndpoints.length === 0 ? (
                   <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     {endpoints.length === 0 ? 'Nenhum endpoint cadastrado. Clique em "Novo Endpoint" para começar.' : 'Nenhum endpoint encontrado com os filtros selecionados.'}
