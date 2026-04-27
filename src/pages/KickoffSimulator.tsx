@@ -336,14 +336,9 @@ const KickoffSimulator = () => {
             </div>
           )}
 
+          {/* Loading premium em tela cheia: skeleton + mensagem contextual + etapas */}
           {processing && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                <span className="truncate">Consultando configurações... {progress}%</span>
-              </div>
-              <Progress value={progress} />
-            </div>
+            <SimulatorLoadingScreen progress={progress} total={rows.length} />
           )}
 
           {/* Botão CTA: largura total no mobile (input/botões no mobile = full-width), padding lateral controlado */}
