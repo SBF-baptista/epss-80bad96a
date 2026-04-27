@@ -48,26 +48,7 @@ const KickoffSimulatorResult = () => {
     // Fundo slate-100 (#F1F5F9) para destacar os cards brancos com aparência premium
     <div className="min-h-screen bg-[#F1F5F9]">
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6 max-w-7xl overflow-x-hidden">
-      {/* Botões de navegação: empilham no mobile, ocupam largura total */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/kickoff/simulador")}
-          className="min-h-12 sm:min-h-9 justify-start sm:justify-center"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Nova Simulação
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/kickoff")}
-          className="min-h-12 sm:min-h-9"
-        >
-          Voltar ao Kickoff
-        </Button>
-      </div>
+      {/* Cabeçalho — apenas título. Botões de ação ficam no rodapé. */}
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
