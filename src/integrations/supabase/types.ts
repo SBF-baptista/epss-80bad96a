@@ -1707,6 +1707,33 @@ export type Database = {
           },
         ]
       }
+      ruptela_vehicles_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          fetched_at: string
+          id: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scheduling_service_options: {
         Row: {
           created_at: string
