@@ -12,8 +12,12 @@ export interface RuptelaEntry {
   devices: string[];
   connection_methods: string[];
   created_at: string;
+  vehicle_id: number | null;
   // Link to the official Ruptela CANbus / Installation Instructions PDF
   canbus_configuration_url: string | null;
+  // Plain text of the "CANbus Configuration" card from the Ruptela detail page
+  // (e.g. "1. LCV group - CITROEN4"). Only populated for the matched entry.
+  canbus_configuration: string | null;
 }
 
 export interface RuptelaCandidate extends RuptelaEntry {
