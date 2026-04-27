@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { SectionSkeleton } from "@/components/ui/loading";
 import { 
   Select,
   SelectContent,
@@ -319,11 +320,7 @@ const EditRequests = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <SectionSkeleton rows={5} message="Carregando solicitações..." className="min-h-[400px]" />;
   }
 
   // --- REQUEST CARD ---

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { SectionSkeleton } from '@/components/ui/loading';
 import {
   Activity, Search, RefreshCw, Plus, Play, FileText, Edit2, Trash2,
   CheckCircle2, AlertTriangle, XCircle, HelpCircle, Clock, Zap, Server,
@@ -340,7 +341,7 @@ const ApiMonitoring = () => {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12"><div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="p-0"><SectionSkeleton rows={4} message="Carregando endpoints..." /></TableCell></TableRow>
                 ) : filteredEndpoints.length === 0 ? (
                   <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     {endpoints.length === 0 ? 'Nenhum endpoint cadastrado. Clique em "Novo Endpoint" para começar.' : 'Nenhum endpoint encontrado com os filtros selecionados.'}

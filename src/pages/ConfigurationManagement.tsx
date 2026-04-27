@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
+import { SectionSkeleton } from '@/components/ui/loading'
 import {
   Table,
   TableBody,
@@ -253,9 +254,7 @@ const ConfigurationManagement = () => {
           </CardHeader>
           <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4 flex-1 overflow-hidden">
             {isLoading ? (
-              <div className="flex justify-center items-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
+              <SectionSkeleton rows={5} message="Carregando regras..." />
             ) : filteredRules.length === 0 ? (
               <div className="flex justify-center items-center h-full text-muted-foreground">
                 {rules.length === 0 ? 'Nenhuma regra cadastrada.' : 'Nenhuma regra encontrada com os filtros aplicados.'}

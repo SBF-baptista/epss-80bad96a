@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useCentralRealtime } from '@/hooks/useCentralRealtime';
+import { SectionSkeleton } from '@/components/ui/loading';
 import { Car, Truck, Calendar, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PendingVehicleData } from './ScheduleFormModal';
@@ -144,9 +145,7 @@ export const PendingVehiclesSection = ({ onScheduleVehicle, hiddenKitScheduleIds
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-          </div>
+          <SectionSkeleton rows={3} message="Carregando veículos pendentes..." />
         </CardContent>
       </Card>
     );

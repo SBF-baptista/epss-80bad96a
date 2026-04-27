@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { SectionSkeleton } from "@/components/ui/loading";
 
 interface IncomingVehicleRow {
   id: string;
@@ -165,9 +166,7 @@ export default function SegsaleSales() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <SectionSkeleton rows={5} message="Carregando vendas..." />
       ) : sortedGroups.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">

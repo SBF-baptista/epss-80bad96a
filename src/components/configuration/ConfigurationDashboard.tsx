@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { PageLoader } from '@/components/ui/loading';
 import { Search, RefreshCw } from 'lucide-react';
 import { getTechnicians, type Technician } from '@/services/technicianService';
 import { fetchHomologationKits, type HomologationKit } from '@/services/homologationKitService';
@@ -121,11 +122,7 @@ export const ConfigurationDashboard = ({ onNavigateToSection }: ConfigurationDas
   });
 
   if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <PageLoader variant="dashboard" message="Carregando configurações..." />;
   }
 
   return (

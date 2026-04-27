@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, CheckCircle2, XCircle, Loader2, Wrench, Clock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SectionSkeleton } from "@/components/ui/loading";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -358,9 +359,7 @@ const Installation = () => {
             </CardHeader>
             <CardContent>
               {historyLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+                <SectionSkeleton rows={3} message="Carregando histórico..." />
               ) : history.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />

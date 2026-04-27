@@ -2,6 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Scan } from "lucide-react";
 import { ProductionItem } from "@/services/productionService";
+import { SectionSkeleton } from "@/components/ui/loading";
 
 interface ProductionItemsListProps {
   productionItems: ProductionItem[];
@@ -24,10 +25,7 @@ const ProductionItemsList = ({
       </div>
       
       {isLoading ? (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-sm text-gray-600 mt-2">Carregando itens...</p>
-        </div>
+        <SectionSkeleton rows={3} message="Carregando itens..." />
       ) : productionItems.length > 0 ? (
         <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg">
           {productionItems.map((item, index) => (

@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { SectionSkeleton } from '@/components/ui/loading';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
@@ -202,9 +203,7 @@ const WhatsAppMessageControl = () => {
       <div className="flex-1 overflow-hidden px-4 sm:px-6 lg:px-8 py-4">
         <Card className="h-full flex flex-col rounded-xl border-border/40 shadow-sm overflow-hidden">
           {isLoading ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
+            <SectionSkeleton rows={6} message="Carregando mensagens..." />
           ) : logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 py-16">
               <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center">

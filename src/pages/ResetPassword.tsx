@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FolderKanban, Lock, Loader2, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { FullScreenLoader } from "@/components/ui/loading";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -94,11 +95,7 @@ const ResetPassword = () => {
   };
 
   if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <FullScreenLoader message="Validando link de redefinição..." />;
   }
 
   if (!isValidSession) {

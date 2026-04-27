@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
+import { SectionSkeleton } from '@/components/ui/loading';
 import { Package, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useCentralRealtime } from '@/hooks/useCentralRealtime';
 import { CustomerScheduleCard, VehicleScheduleData } from './CustomerScheduleCard';
@@ -252,9 +253,7 @@ export const CustomerScheduleSection = ({ onScheduleSuccess }: CustomerScheduleS
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-          </div>
+          <SectionSkeleton rows={3} message="Carregando veículos pendentes..." />
         </CardContent>
       </Card>
     );

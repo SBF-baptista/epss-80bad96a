@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AppModule } from "@/types/permissions";
+import { PageLoader } from "@/components/ui/loading";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -169,14 +170,7 @@ const ModuleSelection = () => {
   const { role, canViewModule, loading } = useUserRole();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando módulos...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader variant="list" message="Carregando módulos..." />;
   }
 
   const availableModules = modules.filter((module) => {
