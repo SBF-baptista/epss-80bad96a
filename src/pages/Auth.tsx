@@ -180,9 +180,9 @@ const Auth = () => {
   };
 
   const features = [
-    { icon: BarChart3, title: "Gestão inteligente", desc: "Controle total dos seus pedidos em tempo real" },
-    { icon: Zap, title: "Automação completa", desc: "Processos otimizados do início ao fim" },
-    { icon: Shield, title: "Segurança avançada", desc: "Dados protegidos com criptografia de ponta" },
+    { icon: BarChart3, title: "Fluxo ponta a ponta", desc: "Homologação, kickoff, planejamento, logística e agendamento conectados" },
+    { icon: Zap, title: "Acompanhamento em tempo real", desc: "Status de cada veículo e cliente atualizado instantaneamente" },
+    { icon: Shield, title: "Controle por perfil de acesso", desc: "Permissões granulares por módulo e operação" },
   ];
 
   return (
@@ -209,11 +209,11 @@ const Auth = () => {
 
           <div className="relative z-10 flex-1 flex flex-col justify-center -mt-8">
             <h2 className="text-3xl xl:text-4xl font-bold text-primary-foreground leading-tight mb-4">
-              Gerencie suas operações com{" "}
-              <span className="text-white/80">inteligência e controle total</span>
+              Do kickoff à instalação,{" "}
+              <span className="text-white/80">uma única plataforma operacional</span>
             </h2>
             <p className="text-primary-foreground/60 text-base leading-relaxed max-w-md">
-              Plataforma completa para gestão de pedidos, homologação de veículos e acompanhamento de instalações.
+              OPM centraliza homologação, planejamento, logística e agendamento de rastreadores veiculares — com visibilidade completa de cada veículo, do recebimento à instalação em campo.
             </p>
 
             <div className="mt-10 space-y-5">
