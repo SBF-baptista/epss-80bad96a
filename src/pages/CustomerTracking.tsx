@@ -312,12 +312,7 @@ const CustomerTracking = () => {
             Acompanhamento de Clientes
           </h1>
         </div>
-        <div className="flex items-center justify-center py-16">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Carregando dados...</p>
-          </div>
-        </div>
+        <PageLoader variant="list" message="Carregando dados dos clientes..." className="p-0" />
       </div>
     );
   }

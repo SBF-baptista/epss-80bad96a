@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { SectionSkeleton } from '@/components/ui/loading';
 import {
   Activity, Search, RefreshCw, Plus, Play, FileText, Edit2, Trash2,
   CheckCircle2, AlertTriangle, XCircle, HelpCircle, Clock, Zap, Server,
