@@ -82,11 +82,17 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
     // Extract Installation Instructions / CANbus PDF link from Actions cell (index 11 when present).
     // Ruptela renders a green PDF icon linking to doc.ruptela.com/.../INSTALLATION INSTRUCTIONS/...pdf
     let canbusUrl: string | null = null;
+    let vehicleId: number | null = null;
     const actionsHtml = rawCells[11] ?? '';
     const pdfMatch =
       actionsHtml.match(/href=["']([^"']*INSTALLATION%20INSTRUCTIONS[^"']*\.pdf)["']/i) ||
       actionsHtml.match(/href=["']([^"']+\.pdf)["']/i);
     if (pdfMatch) canbusUrl = pdfMatch[1];
+
+    // The "showUpdateLog(N)" wire:click attribute carries the internal Ruptela vehicle id,
+    // which lets us fetch the detail page (/vehicle/N) for the CANbus Configuration text.
+    const idMatch = actionsHtml.match(/showUpdateLog\((\d+)\)/);
+    if (idMatch) vehicleId = parseInt(idMatch[1], 10);
 
     entries.push({
       brand: cells[0],
@@ -100,7 +106,9 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
       devices: splitList(cells[8]),
       connection_methods: splitList(cells[9]),
       created_at: cells[10] || '',
+      vehicle_id: vehicleId,
       canbus_configuration_url: canbusUrl,
+      canbus_configuration: null,
     });
   }
   return entries;
