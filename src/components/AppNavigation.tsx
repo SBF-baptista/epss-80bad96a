@@ -68,6 +68,9 @@ const singleNavigationItems: NavItem[] = [
   { to: "/kickoff", label: "Kickoff", icon: Rocket, module: "kickoff" },
 ];
 
+// Simulador - visível para operadores de Kickoff e Homologação (e admin/gestor)
+const simulatorItem: NavItem = { to: "/kickoff/simulador", label: "Simulador", icon: Search, module: "kickoff" };
+
 // Navigation structure (groups shown after single items)
 const navigationGroups: NavGroup[] = [
   {
