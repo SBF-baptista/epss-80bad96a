@@ -152,30 +152,6 @@ const KickoffSimulatorResult = () => {
           </TabsContent>
         ))}
       </Tabs>
-
-      {/* Ações no rodapé: "Nova Simulação" empilhado ACIMA de "Voltar ao Kickoff".
-          Clicar em "Nova Simulação" limpa o resultado em cache e reabre a tela
-          de upload de planilha (todo o processo é refeito do zero). */}
-      <div className="flex flex-col gap-2 pt-4 max-w-sm mx-auto sm:mx-0">
-        <Button
-          variant="default"
-          onClick={() => {
-            try { sessionStorage.removeItem("kickoff-simulator-result"); } catch {}
-            navigate("/kickoff/simulador");
-          }}
-          className="min-h-12 w-full"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Nova Simulação
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate("/kickoff")}
-          className="min-h-12 w-full"
-        >
-          Voltar ao Kickoff
-        </Button>
-      </div>
     </div>
     </div>
   );
