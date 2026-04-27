@@ -372,91 +372,79 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const cacheKey = listBrands ? 'all_brands' : `brand:${normalize(brand)}`;
-
-    // Try cache
-    let entries: RuptelaEntry[] = [];
-    let fetchedAt: string | null = null;
-    let stale = false;
-
-    if (!force) {
-      const cached = await getCached(supabase, cacheKey);
-      if (cached) {
-        const age = Date.now() - new Date(cached.fetched_at).getTime();
-        if (age < CACHE_TTL_MS) {
-          entries = cached.payload;
-          fetchedAt = cached.fetched_at;
+    // List-brands path is independent (no per-brand fetching)
+    if (listBrands) {
+      const cached = await getCached(supabase, 'all_brands');
+      if (cached && Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS) {
+        return new Response(
+          JSON.stringify({ brands: cached.payload, fetched_at: cached.fetched_at }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      const res = await fetch(RUPTELA_BASE, {
+        headers: { 'User-Agent': 'OPM-SEGSAT/1.0', Accept: 'text/html' },
+      });
+      const html = await res.text();
+      const selectMatch = html.match(/<select[^>]*name=["']?brand["']?[^>]*>([\s\S]*?)<\/select>/i);
+      const brands: string[] = [];
+      if (selectMatch) {
+        const opts = selectMatch[1].matchAll(/<option[^>]*>([^<]+)<\/option>/g);
+        for (const o of opts) {
+          const v = o[1].trim();
+          if (v && !/all brands/i.test(v)) brands.push(v);
         }
       }
+      await saveCache(supabase, 'all_brands', brands as any);
+      return new Response(JSON.stringify({ brands, fetched_at: new Date().toISOString() }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Cache miss or forced
-    if (entries.length === 0) {
-      try {
-        if (listBrands) {
-          // Fetch first page only — enough to extract brand select options
-          const res = await fetch(RUPTELA_BASE, {
-            headers: { 'User-Agent': 'OPM-SEGSAT/1.0', Accept: 'text/html' },
-          });
-          const html = await res.text();
-          // brands appear in a <select> — extract <option> values
-          const selectMatch = html.match(/<select[^>]*name=["']?brand["']?[^>]*>([\s\S]*?)<\/select>/i);
-          const brands: string[] = [];
-          if (selectMatch) {
-            const opts = selectMatch[1].matchAll(/<option[^>]*>([^<]+)<\/option>/g);
-            for (const o of opts) {
-              const v = o[1].trim();
-              if (v && !/all brands/i.test(v)) brands.push(v);
-            }
-          }
-          await saveCache(supabase, cacheKey, brands as any);
-          return new Response(JSON.stringify({ brands, fetched_at: new Date().toISOString() }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+    // Primary fetch by the user-supplied brand
+    let { entries, fetchedAt, stale } = await tryFetchBrand(supabase, brand, force);
+    let effectiveBrand = brand;
 
-        entries = await fetchRuptelaBrand(brand);
-        if (entries.length === 0) {
-          // Treat as a structural problem only if even a popular brand returns 0;
-          // otherwise just an unknown brand → cache empty result for short period
-        }
-        await saveCache(supabase, cacheKey, entries);
-        fetchedAt = new Date().toISOString();
-      } catch (fetchErr) {
-        // Fallback to stale cache
-        const cached = await getCached(supabase, cacheKey);
-        if (cached) {
-          entries = cached.payload;
-          fetchedAt = cached.fetched_at;
-          stale = true;
-        } else {
-          throw fetchErr;
-        }
-      }
-    }
-
-    // List-brands path already returned above
+    // Listing-only mode (no model param) → return everything we got
     if (!model) {
       return new Response(
-        JSON.stringify({
-          brand,
-          total: entries.length,
-          entries,
-          fetched_at: fetchedAt,
-          stale,
-        }),
+        JSON.stringify({ brand, total: entries.length, entries, fetched_at: fetchedAt, stale }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // Match model (+ optional year)
-    const candidates = findCandidates(entries, model, year);
-    const best = candidates[0];
-    const supported = !!best && best.score >= 70 && best.yearOk;
+    // Score candidates with current entries
+    let candidates = findCandidates(entries, model, year);
+    let best = candidates[0];
+    let supported = !!best && best.score >= 70 && best.yearOk;
+
+    // FALLBACK 1: brand returned nothing OR no decent candidate → maybe user
+    // swapped brand and model (e.g. brand="giulietta", model="alfa romeo").
+    // Retry by treating the model field as the brand.
+    if (!supported && model && model.toLowerCase() !== brand.toLowerCase()) {
+      const swapped = await tryFetchBrand(supabase, model, force);
+      if (swapped.entries.length > 0) {
+        // Search using `brand` as the model query against the swapped brand list
+        const swappedCandidates = findCandidates(swapped.entries, brand, year);
+        const swappedBest = swappedCandidates[0];
+        const swappedSupported = !!swappedBest && swappedBest.score >= 70 && swappedBest.yearOk;
+        // Use swap result if it's clearly better than the original
+        if (
+          swappedSupported ||
+          (swappedBest && (!best || swappedBest.score > best.score))
+        ) {
+          entries = swapped.entries;
+          fetchedAt = swapped.fetchedAt ?? fetchedAt;
+          stale = swapped.stale;
+          candidates = swappedCandidates;
+          best = swappedBest;
+          supported = swappedSupported;
+          effectiveBrand = model;
+        }
+      }
+    }
 
     // Lazily enrich the matched entry with the CANbus Configuration text
-    // from the vehicle detail page (only when we have an internal vehicle_id).
-    let matchedEntry: RuptelaEntry | null = supported ? { ...best.entry } : null;
+    const matchedEntry: RuptelaEntry | null = supported ? { ...best!.entry } : null;
     if (matchedEntry && matchedEntry.vehicle_id) {
       const canbusText = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
       matchedEntry.canbus_configuration = canbusText;
@@ -465,12 +453,12 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         supported,
-        brand,
+        brand: effectiveBrand,
         model,
         year: year ?? null,
         matched_entry: matchedEntry,
-        suggested_devices: supported ? best.entry.devices : [],
-        connection_methods: supported ? best.entry.connection_methods : [],
+        suggested_devices: supported ? best!.entry.devices : [],
+        connection_methods: supported ? best!.entry.connection_methods : [],
         candidates: candidates.slice(0, 8).map((c) => ({
           ...c.entry,
           match_score: c.score,
