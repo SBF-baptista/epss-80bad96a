@@ -154,13 +154,9 @@ export function FullScreenLoader({
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background animate-fade-in">
-      <div className="w-full max-w-md p-6 space-y-4">
-        <div className="flex items-center justify-center mb-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-        <Skeleton className="h-5 w-3/4 mx-auto" />
-        <Skeleton className="h-4 w-1/2 mx-auto" />
-        <p className="text-center text-sm text-muted-foreground pt-2">{message}</p>
+      <div className="flex flex-col items-center gap-4 p-6">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-center text-sm text-muted-foreground">{message}</p>
       </div>
     </div>
   );
