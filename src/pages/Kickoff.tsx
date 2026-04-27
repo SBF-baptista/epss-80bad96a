@@ -119,7 +119,10 @@ const Kickoff = () => {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
           <p className="text-sm text-muted-foreground"></p>
         </div>
-        <Button onClick={() => navigate("/kickoff/simulador")} variant="outline" className="gap-2">
+        {/* Vai direto para a tela de resultado (que contém os botões "Nova Simulação"
+            e "Voltar ao Kickoff"). Se não houver resultado em sessionStorage, a
+            própria tela de resultado mostra o estado vazio com link para o upload. */}
+        <Button onClick={() => navigate("/kickoff/simulador/resultado")} variant="outline" className="gap-2">
           <FlaskConical className="h-4 w-4" />
           Simulador de Configuração
         </Button>
