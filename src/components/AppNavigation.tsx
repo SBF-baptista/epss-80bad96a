@@ -233,6 +233,23 @@ export function AppNavigation() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Simulador - visível para Kickoff e Homologação (logo após Início) */}
+              {canSeeSimulator && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(simulatorItem.to)}
+                    tooltip={isCollapsed ? simulatorItem.label : undefined}
+                    className="touch-manipulation tap-target"
+                  >
+                    <NavLink to={simulatorItem.to} className="flex items-center gap-3 px-2 py-2">
+                      <simulatorItem.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium text-sm truncate">{simulatorItem.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
               {/* Single Navigation Items */}
               {visibleSingleItems.map((item) => {
                 const Icon = item.icon;
@@ -252,23 +269,6 @@ export function AppNavigation() {
                   </SidebarMenuItem>
                 );
               })}
-
-              {/* Simulador - visível para Kickoff e Homologação */}
-              {canSeeSimulator && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(simulatorItem.to)}
-                    tooltip={isCollapsed ? simulatorItem.label : undefined}
-                    className="touch-manipulation tap-target"
-                  >
-                    <NavLink to={simulatorItem.to} className="flex items-center gap-3 px-2 py-2">
-                      <simulatorItem.icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="font-medium text-sm truncate">{simulatorItem.label}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
 
               {/* Homologação Group */}
               {visibleGroups.filter(g => g.label === "Homologação").map((group) => {
