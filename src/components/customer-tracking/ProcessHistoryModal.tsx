@@ -311,12 +311,7 @@ export const ProcessHistoryModal = ({
         {/* Content */}
         <div className="px-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="flex flex-col items-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-                <span className="text-sm text-muted-foreground">Carregando histórico...</span>
-              </div>
-            </div>
+            <SectionSkeleton rows={6} message="Carregando histórico..." />
           ) : !history || history.events.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">

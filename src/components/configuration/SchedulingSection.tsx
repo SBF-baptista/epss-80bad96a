@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { SectionSkeleton } from '@/components/ui/loading';
 import { Search, Calendar, User, Package, MapPin, FileText, Phone, Clock, Plus, Truck, Eye } from 'lucide-react';
 import type { Technician } from '@/services/technicianService';
 import type { HomologationKit } from '@/services/homologationKitService';
