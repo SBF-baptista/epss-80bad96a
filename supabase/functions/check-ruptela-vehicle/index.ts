@@ -24,8 +24,14 @@ interface RuptelaEntry {
   devices: string[];
   connection_methods: string[];
   created_at: string;
-  // CANbus / Installation Instructions PDF link extracted from the Actions cell
+  // Internal Ruptela vehicle id (used to fetch the detail page that has
+  // the actual CANbus Configuration text — e.g. "1. LCV group - CITROEN4").
+  vehicle_id: number | null;
+  // Link to the official Installation Instructions PDF (extracted from the listing).
   canbus_configuration_url: string | null;
+  // Plain text of the "CANbus Configuration" section from the vehicle detail page.
+  // Populated lazily for the matched entry only (avoids N extra requests when listing).
+  canbus_configuration: string | null;
 }
 
 // ---------- Helpers ----------
