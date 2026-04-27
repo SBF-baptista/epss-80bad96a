@@ -24,6 +24,8 @@ interface RuptelaEntry {
   devices: string[];
   connection_methods: string[];
   created_at: string;
+  // CANbus / Installation Instructions PDF link extracted from the Actions cell
+  canbus_configuration_url: string | null;
 }
 
 // ---------- Helpers ----------
