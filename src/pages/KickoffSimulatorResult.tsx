@@ -31,73 +31,101 @@ const KickoffSimulatorResult = () => {
 
   if (!payload) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-3xl text-center space-y-4">
-        <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground" />
-        <h2 className="text-xl font-semibold">Nenhum resultado disponível</h2>
-        <p className="text-sm text-muted-foreground">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-3xl text-center space-y-4">
+        <FileSpreadsheet className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-muted-foreground" />
+        <h2 className="text-lg sm:text-xl font-semibold">Nenhum resultado disponível</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           O resultado da simulação expirou ou não foi gerado. Faça uma nova simulação.
         </p>
-        <Button onClick={() => navigate("/kickoff/simulador")}>Ir para Simulador</Button>
+        <Button onClick={() => navigate("/kickoff/simulador")} className="min-h-12 w-full sm:w-auto">
+          Ir para Simulador
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6 max-w-7xl">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/kickoff/simulador")}>
+    // Padding escalonado e overflow-x oculto para evitar scroll horizontal acidental
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6 max-w-7xl overflow-x-hidden">
+      {/* Botões de navegação: empilham no mobile, ocupam largura total */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/kickoff/simulador")}
+          className="min-h-12 sm:min-h-9 justify-start sm:justify-center"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Nova Simulação
         </Button>
-        <Button variant="outline" size="sm" onClick={() => navigate("/kickoff")}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/kickoff")}
+          className="min-h-12 sm:min-h-9"
+        >
           Voltar ao Kickoff
         </Button>
       </div>
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Resultado da Simulação</h1>
-        <p className="text-sm text-muted-foreground">
-          Arquivo: <strong>{payload.fileName}</strong> ·{" "}
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+          Resultado da Simulação
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground break-words">
+          Arquivo: <strong className="break-all">{payload.fileName}</strong> ·{" "}
           {new Date(payload.generatedAt).toLocaleString("pt-BR")}
         </p>
       </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Stats: 2x2 no mobile, 4 colunas no desktop. Padding e tipografia reduzidos no mobile */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Total de veículos</p>
+          <CardContent className="p-3 sm:p-6 sm:pt-6">
+            <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground">Total de veículos</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">{stats.supported}</div>
-            <p className="text-xs text-muted-foreground">Compatíveis</p>
+          <CardContent className="p-3 sm:p-6 sm:pt-6">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.supported}</div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground">Compatíveis</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-orange-600">{stats.unsupported}</div>
-            <p className="text-xs text-muted-foreground">Sem correspondência</p>
+          <CardContent className="p-3 sm:p-6 sm:pt-6">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.unsupported}</div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground">Sem correspondência</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-destructive">{stats.errors}</div>
-            <p className="text-xs text-muted-foreground">Erros</p>
+          <CardContent className="p-3 sm:p-6 sm:pt-6">
+            <div className="text-xl sm:text-2xl font-bold text-destructive">{stats.errors}</div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground">Erros</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Results */}
+      {/* Results: TabsList com scroll horizontal no mobile evita quebra/overflow */}
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">Todos ({stats.total})</TabsTrigger>
-          <TabsTrigger value="supported">Compatíveis ({stats.supported})</TabsTrigger>
-          <TabsTrigger value="unsupported">Sem correspondência ({stats.unsupported})</TabsTrigger>
-          {stats.errors > 0 && <TabsTrigger value="errors">Erros ({stats.errors})</TabsTrigger>}
-        </TabsList>
+        <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max sm:w-auto">
+            <TabsTrigger value="all" className="text-xs sm:text-sm whitespace-nowrap">
+              Todos ({stats.total})
+            </TabsTrigger>
+            <TabsTrigger value="supported" className="text-xs sm:text-sm whitespace-nowrap">
+              Compatíveis ({stats.supported})
+            </TabsTrigger>
+            <TabsTrigger value="unsupported" className="text-xs sm:text-sm whitespace-nowrap">
+              Sem correspondência ({stats.unsupported})
+            </TabsTrigger>
+            {stats.errors > 0 && (
+              <TabsTrigger value="errors" className="text-xs sm:text-sm whitespace-nowrap">
+                Erros ({stats.errors})
+              </TabsTrigger>
+            )}
+          </TabsList>
+        </div>
 
         {(["all", "supported", "unsupported", "errors"] as const).map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-3">
@@ -141,25 +169,29 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className={`${cfg.bg} py-3`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-muted-foreground">#{index + 1}</span>
-            <StatusIcon className={`h-5 w-5 ${cfg.color}`} />
-            <CardTitle className="text-base">
+      {/* Header: empilha no mobile para acomodar título longo + badge */}
+      <CardHeader className={`${cfg.bg} py-3 px-3 sm:px-6`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <span className="text-xs font-mono text-muted-foreground shrink-0">#{index + 1}</span>
+            <StatusIcon className={`h-5 w-5 ${cfg.color} shrink-0`} />
+            <CardTitle className="text-sm sm:text-base truncate">
               {input.brand} {input.model} {input.year ? `· ${input.year}` : ""}
             </CardTitle>
           </div>
-          <Badge variant={status === "supported" ? "default" : status === "error" ? "destructive" : "secondary"}>
+          <Badge
+            variant={status === "supported" ? "default" : status === "error" ? "destructive" : "secondary"}
+            className="self-start sm:self-auto shrink-0"
+          >
             {cfg.label}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-4 space-y-3">
-        {error && <p className="text-sm text-destructive">{error}</p>}
+      <CardContent className="pt-4 px-3 sm:px-6 space-y-3">
+        {error && <p className="text-xs sm:text-sm text-destructive break-words">{error}</p>}
 
         {response && response.matched_entry && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Geração</p>
               <p className="font-medium">{response.matched_entry.generation || "—"}</p>
