@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FolderKanban, Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { FullScreenLoader } from "@/components/ui/loading";
 
 const passwordRules = [
   { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
