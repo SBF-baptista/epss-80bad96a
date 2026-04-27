@@ -64,14 +64,7 @@ const RoleProtectedRoute = ({
   }, [role, loading, allowedRoles, requiredModule, navigate, redirectTo, canViewModule, isImpersonating, isRealAdmin])
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Verificando permissões...</p>
-        </div>
-      </div>
-    )
+    return <FullScreenLoader message="Verificando permissões..." />
   }
 
   // Real admin always sees content
