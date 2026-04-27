@@ -94,11 +94,7 @@ const ResetPassword = () => {
   };
 
   if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <FullScreenLoader message="Validando link de redefinição..." />;
   }
 
   if (!isValidSession) {
