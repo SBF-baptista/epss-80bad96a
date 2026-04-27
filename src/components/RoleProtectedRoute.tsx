@@ -84,6 +84,8 @@ const RoleProtectedRoute = ({
   if (isImpersonating && isRealAdmin) {
     // Real admin impersonating - always allow but show simulated view
     hasAccess = true
+  } else if (requiredModules && requiredModules.length > 0) {
+    hasAccess = requiredModules.some(m => canViewModule(m))
   } else if (requiredModule) {
     hasAccess = canViewModule(requiredModule)
   } else if (allowedRoles.length > 0) {
