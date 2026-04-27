@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AppModule } from "@/types/permissions";
+import { PageLoader } from "@/components/ui/loading";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,

@@ -118,14 +118,7 @@ const UserManagement = () => {
   const isLoading = isLoadingUsers || isLoadingProfiles
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    )
+    return <PageLoader variant="list" message="Carregando usuários..." />
   }
 
   return (
