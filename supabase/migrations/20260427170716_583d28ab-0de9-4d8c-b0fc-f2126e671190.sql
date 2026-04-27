@@ -1,0 +1,1 @@
+DELETE FROM public.ruptela_vehicles_cache;
