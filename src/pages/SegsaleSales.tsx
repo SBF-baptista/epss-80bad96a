@@ -165,9 +165,7 @@ export default function SegsaleSales() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <SectionSkeleton rows={5} message="Carregando vendas..." />
       ) : sortedGroups.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
