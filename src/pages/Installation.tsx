@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, CheckCircle2, XCircle, Loader2, Wrench, Clock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SectionSkeleton } from "@/components/ui/loading";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
