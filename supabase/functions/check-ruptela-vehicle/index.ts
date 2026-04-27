@@ -235,17 +235,63 @@ async function fetchVehicleDetail(
     return null;
   }
 }
+// Tokens too generic to be discriminative (brand prefixes, abbreviations).
+const STOPWORDS = new Set([
+  'vw', 'mb', 'br', 'gm', 'fiat', 'ford', 'chevrolet', 'volkswagen', 'mercedes',
+  'benz', 'de', 'do', 'da', 'the', 'new', 'novo', 'nova', 'serie', 'series',
+  'class', 'classe', 'gen', 'type', 'mk',
+]);
+
+function tokenize(s: string): string[] {
+  return normalize(s)
+    .replace(/[^a-z0-9.\s-]/g, ' ')
+    .split(/[\s-]+/)
+    .filter((t) => t.length >= 2);
+}
+
+function significantTokens(s: string): string[] {
+  return tokenize(s).filter((t) => !STOPWORDS.has(t));
+}
+
+/**
+ * Token-set similarity: how many of the query's significant tokens appear
+ * in the candidate (substring match allowed for numeric/model codes).
+ * Returns 0..100.
+ */
+function tokenScore(query: string, target: string): number {
+  const qTokens = significantTokens(query);
+  const tTokens = tokenize(target);
+  if (qTokens.length === 0) return 0;
+
+  let hits = 0;
+  for (const qt of qTokens) {
+    const matched = tTokens.some(
+      (tt) => tt === qt || (qt.length >= 3 && (tt.includes(qt) || qt.includes(tt))),
+    );
+    if (matched) hits++;
+  }
+  return Math.round((hits / qTokens.length) * 100);
+}
+
 function findCandidates(entries: RuptelaEntry[], model: string, year?: number) {
   const normModel = normalize(model);
-  const firstWord = normModel.split(/\s+/)[0];
 
   const scored = entries.map((entry) => {
     const en = normalize(entry.model);
     let score = 0;
-    if (en === normModel) score = 100;
-    else if (en.includes(normModel) || normModel.includes(en)) score = 70;
-    else if (en.split(/\s+/)[0] === firstWord) score = 50;
-    else if (en.includes(firstWord) || firstWord.includes(en.split(/\s+/)[0])) score = 30;
+
+    if (en === normModel) {
+      score = 100;
+    } else if (en.includes(normModel) || normModel.includes(en)) {
+      score = 85;
+    } else {
+      // Token-based bidirectional scoring (handles word order, extra noise)
+      const forward = tokenScore(model, entry.model);
+      const backward = tokenScore(entry.model, model);
+      score = Math.max(forward, backward);
+      // Require at least one significant token match — avoid 0-token false positives
+      if (score > 0 && score < 50) score = Math.max(score, 30);
+    }
 
     let yearOk = true;
     if (year && score > 0) {
@@ -258,11 +304,47 @@ function findCandidates(entries: RuptelaEntry[], model: string, year?: number) {
   });
 
   return scored
-    .filter((s) => s.score > 0)
+    .filter((s) => s.score >= 30)
     .sort((a, b) => {
       if (a.yearOk !== b.yearOk) return a.yearOk ? -1 : 1;
       return b.score - a.score;
     });
+}
+
+// Try to load entries for a brand, returning empty array on any error.
+async function tryFetchBrand(
+  supabase: ReturnType<typeof createClient>,
+  brand: string,
+  force: boolean,
+): Promise<{ entries: RuptelaEntry[]; fetchedAt: string | null; stale: boolean }> {
+  const cacheKey = `brand:${normalize(brand)}`;
+  let entries: RuptelaEntry[] = [];
+  let fetchedAt: string | null = null;
+  let stale = false;
+
+  if (!force) {
+    const cached = await getCached(supabase, cacheKey);
+    if (cached) {
+      const age = Date.now() - new Date(cached.fetched_at).getTime();
+      if (age < CACHE_TTL_MS) {
+        return { entries: cached.payload, fetchedAt: cached.fetched_at, stale: false };
+      }
+    }
+  }
+
+  try {
+    entries = await fetchRuptelaBrand(brand);
+    await saveCache(supabase, cacheKey, entries);
+    fetchedAt = new Date().toISOString();
+  } catch (_) {
+    const cached = await getCached(supabase, cacheKey);
+    if (cached) {
+      entries = cached.payload;
+      fetchedAt = cached.fetched_at;
+      stale = true;
+    }
+  }
+  return { entries, fetchedAt, stale };
 }
 
 // ---------- Handler ----------
