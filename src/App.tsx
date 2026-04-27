@@ -36,6 +36,7 @@ const Installation = lazy(() => import("./pages/Installation"));
 const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
+const RuptelaVehicleCheck = lazy(() => import("./pages/RuptelaVehicleCheck"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -300,6 +301,17 @@ function AppContent() {
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <SegsaleSearch />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Ruptela Vehicle Check - requires homologation module */}
+              <Route path="/ruptela-check" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="homologation">
+                    <Layout>
+                      <RuptelaVehicleCheck />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
