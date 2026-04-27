@@ -180,9 +180,9 @@ const Auth = () => {
   };
 
   const features = [
-    { icon: BarChart3, title: "Gestão inteligente", desc: "Controle total dos seus pedidos em tempo real" },
-    { icon: Zap, title: "Automação completa", desc: "Processos otimizados do início ao fim" },
-    { icon: Shield, title: "Segurança avançada", desc: "Dados protegidos com criptografia de ponta" },
+    { icon: BarChart3, title: "Fluxo ponta a ponta", desc: "Homologação, kickoff, planejamento, logística e agendamento conectados" },
+    { icon: Zap, title: "Acompanhamento em tempo real", desc: "Status de cada veículo e cliente atualizado instantaneamente" },
+    { icon: Shield, title: "Controle por perfil de acesso", desc: "Permissões granulares por módulo e operação" },
   ];
 
   return (
