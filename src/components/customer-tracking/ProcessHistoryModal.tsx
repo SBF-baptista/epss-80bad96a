@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SectionSkeleton } from "@/components/ui/loading";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   fetchProcessHistory, 
