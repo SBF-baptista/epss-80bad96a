@@ -8,6 +8,7 @@ interface RoleProtectedRouteProps {
   children: React.ReactNode
   allowedRoles?: UserRole[]  // Legacy support
   requiredModule?: AppModule // New module-based access
+  requiredModules?: AppModule[] // Allow access if user has ANY of these modules
   redirectTo?: string
 }
 
@@ -15,6 +16,7 @@ const RoleProtectedRoute = ({
   children, 
   allowedRoles = [], 
   requiredModule,
+  requiredModules,
   redirectTo = '/modules' 
 }: RoleProtectedRouteProps) => {
   const { role, canViewModule, loading, isImpersonating, realRole } = useUserRole()
