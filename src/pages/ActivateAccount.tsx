@@ -100,16 +100,7 @@ const ActivateAccount = () => {
   };
 
   if (checkingSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardContent className="pt-6 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
-            <p className="text-muted-foreground">Verificando link de ativação...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <FullScreenLoader message="Verificando link de ativação..." />;
   }
 
   if (!hasSession) {
