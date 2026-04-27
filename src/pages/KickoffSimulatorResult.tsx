@@ -145,6 +145,7 @@ const KickoffSimulatorResult = () => {
         ))}
       </Tabs>
     </div>
+    </div>
   );
 };
 
