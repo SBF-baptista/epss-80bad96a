@@ -207,6 +207,7 @@ export function AppNavigation() {
   const canSeeScheduling = canAccessItem(schedulingItem);
   const canSeeInstallation = role === 'admin';
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
+  const canSeeSimulator = role === 'admin' || canViewModule('kickoff') || canViewModule('homologation');
 
   return (
     <Sidebar collapsible="icon" className="border-r">
