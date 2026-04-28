@@ -125,14 +125,25 @@ const KickoffSimulatorResult = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Nova Simulação
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/kickoff")}
-          className="min-h-12 sm:min-h-9"
-        >
-          Voltar ao Kickoff
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleExport}
+            className="min-h-12 sm:min-h-9"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar planilha
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/kickoff")}
+            className="min-h-12 sm:min-h-9"
+          >
+            Voltar ao Kickoff
+          </Button>
+        </div>
       </div>
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
@@ -145,23 +156,30 @@ const KickoffSimulatorResult = () => {
         </p>
       </motion.div>
 
-      {/* Stats: 2x2 no mobile, 4 colunas no desktop. Padding e tipografia reduzidos no mobile */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        {/* KPI secundário (opacidade reduzida) */}
+      {/* Stats: 5 KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
         <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.total}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Total de veículos</p>
           </CardContent>
         </Card>
-        {/* KPI primário: "Compatíveis" em destaque com fundo verde sutil */}
         <Card
           className="border-[rgba(34,197,94,0.3)] shadow-[0_4px_14px_rgba(34,197,94,0.12)]"
           style={{ backgroundColor: "rgba(34,197,94,0.08)" }}
         >
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-2xl sm:text-3xl font-bold text-green-700">{stats.supported}</div>
-            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis</p>
+            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis (Ruptela)</p>
+          </CardContent>
+        </Card>
+        <Card
+          className="border-[rgba(59,130,246,0.3)] shadow-[0_4px_14px_rgba(59,130,246,0.12)]"
+          style={{ backgroundColor: "rgba(59,130,246,0.08)" }}
+        >
+          <CardContent className="p-3 sm:p-6 sm:pt-6">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-700">{stats.fallback}</div>
+            <p className="text-[11px] sm:text-xs font-medium text-blue-800/80">Homologado (interno)</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-slate-200 opacity-80">
@@ -178,7 +196,6 @@ const KickoffSimulatorResult = () => {
         </Card>
       </div>
 
-      {/* Results: TabsList com scroll horizontal no mobile evita quebra/overflow */}
       <Tabs defaultValue="all" className="space-y-4">
         <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max sm:w-auto">
@@ -187,6 +204,9 @@ const KickoffSimulatorResult = () => {
             </TabsTrigger>
             <TabsTrigger value="supported" className="text-xs sm:text-sm whitespace-nowrap">
               Compatíveis ({stats.supported})
+            </TabsTrigger>
+            <TabsTrigger value="fallback" className="text-xs sm:text-sm whitespace-nowrap">
+              Homologado ({stats.fallback})
             </TabsTrigger>
             <TabsTrigger value="unsupported" className="text-xs sm:text-sm whitespace-nowrap">
               Sem correspondência ({stats.unsupported})
@@ -199,13 +219,14 @@ const KickoffSimulatorResult = () => {
           </TabsList>
         </div>
 
-        {(["all", "supported", "unsupported", "errors"] as const).map((tab) => (
+        {(["all", "supported", "fallback", "unsupported", "errors"] as const).map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-3">
             {payload.results
               .filter((r) => {
                 if (tab === "all") return true;
                 if (tab === "supported") return r.response?.supported;
-                if (tab === "unsupported") return !r.error && !r.response?.supported;
+                if (tab === "fallback") return !r.response?.supported && !!r.fallback && !r.error;
+                if (tab === "unsupported") return !r.error && !r.response?.supported && !r.fallback;
                 if (tab === "errors") return !!r.error;
                 return true;
               })
