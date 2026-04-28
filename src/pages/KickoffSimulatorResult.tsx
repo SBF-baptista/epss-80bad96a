@@ -158,8 +158,8 @@ const KickoffSimulatorResult = () => {
         </p>
       </motion.div>
 
-      {/* Stats: 5 KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
+      {/* Stats: 4 KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
         <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.total}</div>
@@ -172,16 +172,7 @@ const KickoffSimulatorResult = () => {
         >
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-2xl sm:text-3xl font-bold text-green-700">{stats.supported}</div>
-            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis (Ruptela)</p>
-          </CardContent>
-        </Card>
-        <Card
-          className="border-[rgba(59,130,246,0.3)] shadow-[0_4px_14px_rgba(59,130,246,0.12)]"
-          style={{ backgroundColor: "rgba(59,130,246,0.08)" }}
-        >
-          <CardContent className="p-3 sm:p-6 sm:pt-6">
-            <div className="text-2xl sm:text-3xl font-bold text-blue-700">{stats.fallback}</div>
-            <p className="text-[11px] sm:text-xs font-medium text-blue-800/80">Homologado (interno)</p>
+            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-slate-200 opacity-80">
