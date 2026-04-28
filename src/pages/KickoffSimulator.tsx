@@ -9,6 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ruptelaVehicleService, RuptelaCheckResponse } from "@/services/ruptelaVehicleService";
+import { findHomologatedConfig, HomologationFallbackMatch } from "@/services/homologationFallbackService";
+import { simulatorService } from "@/services/simulatorService";
 import { toast } from "sonner";
 
 export interface SimulatorRowInput {
@@ -21,6 +23,7 @@ export interface SimulatorRowInput {
 export interface SimulatorRowResult {
   input: SimulatorRowInput;
   response: RuptelaCheckResponse | null;
+  fallback?: HomologationFallbackMatch | null;
   error: string | null;
 }
 
@@ -28,6 +31,7 @@ export interface SimulatorPayload {
   generatedAt: string;
   fileName: string;
   results: SimulatorRowResult[];
+  simulationId?: string;
 }
 
 const BRAND_KEYS = ["marca", "brand", "fabricante", "manufacturer", "make"];
@@ -177,12 +181,25 @@ const KickoffSimulator = () => {
     const results: SimulatorRowResult[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
+      let response: RuptelaCheckResponse | null = null;
+      let error: string | null = null;
       try {
-        const response = await ruptelaVehicleService.checkVehicle(row.brand, row.model, row.year ?? undefined);
-        results.push({ input: row, response, error: null });
+        response = await ruptelaVehicleService.checkVehicle(row.brand, row.model, row.year ?? undefined);
       } catch (err: any) {
-        results.push({ input: row, response: null, error: err.message ?? "Erro ao consultar" });
+        error = err.message ?? "Erro ao consultar";
       }
+
+      // Fallback: if Ruptela did not return a supported match, search homologation/automation rules
+      let fallback: HomologationFallbackMatch | null = null;
+      if (!response?.supported) {
+        try {
+          fallback = await findHomologatedConfig(row.brand, row.model, row.year);
+        } catch (e) {
+          console.warn("[simulator] fallback lookup failed", e);
+        }
+      }
+
+      results.push({ input: row, response, fallback, error });
       setProgress(Math.round(((i + 1) / rows.length) * 100));
     }
 
@@ -191,6 +208,14 @@ const KickoffSimulator = () => {
       fileName: file?.name ?? "planilha.xlsx",
       results,
     };
+
+    // Persist to DB (per user). Fallback to sessionStorage if save fails.
+    try {
+      const saved = await simulatorService.save(payload);
+      if (saved) payload.simulationId = saved.id;
+    } catch (e) {
+      console.warn("[simulator] persist failed", e);
+    }
 
     try {
       sessionStorage.setItem("kickoff-simulator-result", JSON.stringify(payload));
