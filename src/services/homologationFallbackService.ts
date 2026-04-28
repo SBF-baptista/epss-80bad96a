@@ -81,6 +81,52 @@ const STOP_TOKENS = new Set([
   "TDI",
 ]);
 
+// Levenshtein distance — small DP, fine for short brand/model strings.
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const m = a.length, n = b.length;
+  let prev = new Array(n + 1);
+  let curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+// Similarity ratio in [0,1] based on Levenshtein.
+function similarity(a: string, b: string): number {
+  const A = normalize(a), B = normalize(b);
+  if (!A && !B) return 1;
+  const maxLen = Math.max(A.length, B.length);
+  if (maxLen === 0) return 1;
+  return 1 - levenshtein(A, B) / maxLen;
+}
+
+// Returns true if two brand strings are "the same" tolerating typos.
+// Uses alias map first, then a Levenshtein threshold (>=0.8 or distance<=2).
+function brandsMatch(a: string, b: string): boolean {
+  const A = normalize(a), B = normalize(b);
+  if (!A || !B) return false;
+  if (A === B) return true;
+  // Alias intersection
+  const va = new Set(brandVariants(a));
+  const vb = new Set(brandVariants(b));
+  for (const v of va) if (vb.has(v)) return true;
+  // Fuzzy: tolerate small typos like VOLKSWAGEM <-> VOLKSWAGEN
+  const dist = levenshtein(A, B);
+  if (dist <= 2) return true;
+  if (similarity(A, B) >= 0.8) return true;
+  return false;
+}
+
 function modelTokens(s: string): string[] {
   return normalize(s)
     .split(" ")
