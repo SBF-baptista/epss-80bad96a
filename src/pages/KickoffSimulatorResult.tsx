@@ -300,27 +300,27 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
             <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
               Configuração homologada
             </p>
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 space-y-2 text-xs sm:text-sm">
+            <div className="rounded-lg bg-green-50 border border-green-200 p-3 space-y-2 text-xs sm:text-sm">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Configuração</p>
-                  <p className="font-semibold text-blue-900 break-words">{fallback.configuration}</p>
+                  <p className="font-semibold text-green-900 break-words">{fallback.configuration}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Fonte</p>
-                  <p className="font-semibold text-blue-900">
+                  <p className="font-semibold text-green-900">
                     {fallback.source === "homologation_card" ? "Homologação interna" : "Regra de automação"}
                   </p>
                 </div>
                 {fallback.tracker_model && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Rastreador</p>
-                    <p className="font-semibold text-blue-900">{fallback.tracker_model}</p>
+                    <p className="font-semibold text-green-900">{fallback.tracker_model}</p>
                   </div>
                 )}
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Veículo encontrado</p>
-                  <p className="font-semibold text-blue-900">
+                  <p className="font-semibold text-green-900">
                     {fallback.brand} {fallback.model} {fallback.year ? `(${fallback.year})` : ""}
                   </p>
                 </div>
