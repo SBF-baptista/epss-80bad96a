@@ -43,10 +43,12 @@ const KickoffSimulatorResult = () => {
   const stats = useMemo(() => {
     if (!payload) return { total: 0, supported: 0, fallback: 0, unsupported: 0, errors: 0 };
     const total = payload.results.length;
-    const supported = payload.results.filter((r) => r.response?.supported).length;
-    const fallback = payload.results.filter((r) => !r.response?.supported && !!r.fallback).length;
+    const ruptela = payload.results.filter((r) => r.response?.supported).length;
+    const fallback = payload.results.filter((r) => !r.response?.supported && !!r.fallback && !r.error).length;
     const errors = payload.results.filter((r) => r.error).length;
-    return { total, supported, fallback, unsupported: total - supported - fallback - errors, errors };
+    // Homologated counts as compatible (same color/treatment)
+    const supported = ruptela + fallback;
+    return { total, supported, fallback, unsupported: total - supported - errors, errors };
   }, [payload]);
 
   const handleExport = () => {
@@ -156,8 +158,8 @@ const KickoffSimulatorResult = () => {
         </p>
       </motion.div>
 
-      {/* Stats: 5 KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
+      {/* Stats: 4 KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
         <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.total}</div>
@@ -170,16 +172,7 @@ const KickoffSimulatorResult = () => {
         >
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-2xl sm:text-3xl font-bold text-green-700">{stats.supported}</div>
-            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis (Ruptela)</p>
-          </CardContent>
-        </Card>
-        <Card
-          className="border-[rgba(59,130,246,0.3)] shadow-[0_4px_14px_rgba(59,130,246,0.12)]"
-          style={{ backgroundColor: "rgba(59,130,246,0.08)" }}
-        >
-          <CardContent className="p-3 sm:p-6 sm:pt-6">
-            <div className="text-2xl sm:text-3xl font-bold text-blue-700">{stats.fallback}</div>
-            <p className="text-[11px] sm:text-xs font-medium text-blue-800/80">Homologado (interno)</p>
+            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-slate-200 opacity-80">
@@ -205,9 +198,6 @@ const KickoffSimulatorResult = () => {
             <TabsTrigger value="supported" className="text-xs sm:text-sm whitespace-nowrap">
               Compatíveis ({stats.supported})
             </TabsTrigger>
-            <TabsTrigger value="fallback" className="text-xs sm:text-sm whitespace-nowrap">
-              Homologado ({stats.fallback})
-            </TabsTrigger>
             <TabsTrigger value="unsupported" className="text-xs sm:text-sm whitespace-nowrap">
               Sem correspondência ({stats.unsupported})
             </TabsTrigger>
@@ -219,13 +209,12 @@ const KickoffSimulatorResult = () => {
           </TabsList>
         </div>
 
-        {(["all", "supported", "fallback", "unsupported", "errors"] as const).map((tab) => (
+        {(["all", "supported", "unsupported", "errors"] as const).map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-3">
             {payload.results
               .filter((r) => {
                 if (tab === "all") return true;
-                if (tab === "supported") return r.response?.supported;
-                if (tab === "fallback") return !r.response?.supported && !!r.fallback && !r.error;
+                if (tab === "supported") return r.response?.supported || (!!r.fallback && !r.error);
                 if (tab === "unsupported") return !r.error && !r.response?.supported && !r.fallback;
                 if (tab === "errors") return !!r.error;
                 return true;
@@ -251,7 +240,7 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
 
   const statusConfig = {
     supported: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", label: "Compatível" },
-    fallback: { icon: ShieldCheck, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Homologado" },
+    fallback: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", label: "Compatível" },
     unsupported: {
       icon: AlertTriangle,
       color: "text-orange-600",
@@ -265,18 +254,14 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
 
   const isSupported = status === "supported";
   const isFallback = status === "fallback";
-  const cardClasses = isSupported
+  const isCompatible = isSupported || isFallback;
+  const cardClasses = isCompatible
     ? "overflow-hidden bg-white border border-[rgba(34,197,94,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
-    : isFallback
-      ? "overflow-hidden bg-white border border-[rgba(59,130,246,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-transform duration-200 hover:-translate-y-0.5"
-      : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
+    : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
 
-  const badgeClasses =
-    status === "supported"
-      ? "self-start sm:self-auto shrink-0 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold border-transparent"
-      : status === "fallback"
-        ? "self-start sm:self-auto shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold border-transparent"
-        : "self-start sm:self-auto shrink-0 font-semibold";
+  const badgeClasses = isCompatible
+    ? "self-start sm:self-auto shrink-0 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold border-transparent"
+    : "self-start sm:self-auto shrink-0 font-semibold";
 
   return (
     <Card className={cardClasses}>
@@ -287,25 +272,19 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
             <span className="text-xs font-mono text-muted-foreground shrink-0">#{index + 1}</span>
             <StatusIcon className={`h-5 w-5 ${cfg.color} shrink-0`} />
             <div className="min-w-0">
-              {/* Título reformulado: "✔ MARCA MODELO ANO" + subtítulo "Compatível com sua operação" */}
               <CardTitle className="text-sm sm:text-base truncate uppercase tracking-wide">
-                {isSupported && <span className="text-[#16A34A] mr-1">✔</span>}
+                {isCompatible && <span className="text-[#16A34A] mr-1">✔</span>}
                 {input.brand} {input.model} {input.year ? input.year : ""}
               </CardTitle>
-              {isSupported && (
+              {isCompatible && (
                 <p className="text-[11px] sm:text-xs text-green-700/80 mt-0.5 normal-case tracking-normal font-medium">
                   Compatível com sua operação
-                </p>
-              )}
-              {isFallback && (
-                <p className="text-[11px] sm:text-xs text-blue-700/80 mt-0.5 normal-case tracking-normal font-medium">
-                  Configuração homologada encontrada na base interna
                 </p>
               )}
             </div>
           </div>
           <Badge
-            variant={status === "supported" ? "default" : status === "error" ? "destructive" : "secondary"}
+            variant={isCompatible ? "default" : status === "error" ? "destructive" : "secondary"}
             className={badgeClasses}
           >
             {cfg.label}
@@ -321,27 +300,27 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
             <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
               Configuração homologada
             </p>
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 space-y-2 text-xs sm:text-sm">
+            <div className="rounded-lg bg-green-50 border border-green-200 p-3 space-y-2 text-xs sm:text-sm">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Configuração</p>
-                  <p className="font-semibold text-blue-900 break-words">{fallback.configuration}</p>
+                  <p className="font-semibold text-green-900 break-words">{fallback.configuration}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Fonte</p>
-                  <p className="font-semibold text-blue-900">
+                  <p className="font-semibold text-green-900">
                     {fallback.source === "homologation_card" ? "Homologação interna" : "Regra de automação"}
                   </p>
                 </div>
                 {fallback.tracker_model && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Rastreador</p>
-                    <p className="font-semibold text-blue-900">{fallback.tracker_model}</p>
+                    <p className="font-semibold text-green-900">{fallback.tracker_model}</p>
                   </div>
                 )}
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Veículo encontrado</p>
-                  <p className="font-semibold text-blue-900">
+                  <p className="font-semibold text-green-900">
                     {fallback.brand} {fallback.model} {fallback.year ? `(${fallback.year})` : ""}
                   </p>
                 </div>
