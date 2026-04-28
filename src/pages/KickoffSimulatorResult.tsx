@@ -242,14 +242,16 @@ const KickoffSimulatorResult = () => {
 };
 
 const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][number]; index: number }) => {
-  const { input, response, error } = result;
+  const { input, response, fallback, error } = result;
 
-  let status: "supported" | "unsupported" | "error" = "unsupported";
+  let status: "supported" | "fallback" | "unsupported" | "error" = "unsupported";
   if (error) status = "error";
   else if (response?.supported) status = "supported";
+  else if (fallback) status = "fallback";
 
   const statusConfig = {
     supported: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", label: "Compatível" },
+    fallback: { icon: ShieldCheck, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Homologado" },
     unsupported: {
       icon: AlertTriangle,
       color: "text-orange-600",
@@ -261,18 +263,20 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
 
-  // Card "Compatível" recebe borda verde sutil + sombra suave + leve elevação no hover.
-  // Demais status mantêm visual neutro premium (fundo branco, borda slate).
   const isSupported = status === "supported";
+  const isFallback = status === "fallback";
   const cardClasses = isSupported
     ? "overflow-hidden bg-white border border-[rgba(34,197,94,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
-    : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
+    : isFallback
+      ? "overflow-hidden bg-white border border-[rgba(59,130,246,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-transform duration-200 hover:-translate-y-0.5"
+      : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
 
-  // Badge "Compatível" em verde forte (#16A34A) com texto branco e bold.
   const badgeClasses =
     status === "supported"
       ? "self-start sm:self-auto shrink-0 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold border-transparent"
-      : "self-start sm:self-auto shrink-0 font-semibold";
+      : status === "fallback"
+        ? "self-start sm:self-auto shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold border-transparent"
+        : "self-start sm:self-auto shrink-0 font-semibold";
 
   return (
     <Card className={cardClasses}>
