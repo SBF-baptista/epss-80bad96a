@@ -1,33 +1,99 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileSpreadsheet, FileText } from "lucide-react";
+import * as XLSX from "xlsx";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileSpreadsheet, FileText, Download, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SimulatorPayload } from "./KickoffSimulator";
+import { simulatorService } from "@/services/simulatorService";
+import { toast } from "sonner";
 
 const KickoffSimulatorResult = () => {
   const navigate = useNavigate();
   const [payload, setPayload] = useState<SimulatorPayload | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("kickoff-simulator-result");
-      if (raw) setPayload(JSON.parse(raw));
-    } catch (e) {
-      console.error(e);
-    }
+    (async () => {
+      try {
+        const raw = sessionStorage.getItem("kickoff-simulator-result");
+        if (raw) {
+          setPayload(JSON.parse(raw));
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      // Fallback: load latest saved simulation for the current user
+      try {
+        const latest = await simulatorService.getLatest();
+        if (latest) {
+          const p = { ...latest.payload, simulationId: latest.id };
+          setPayload(p);
+          sessionStorage.setItem("kickoff-simulator-result", JSON.stringify(p));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
   }, []);
 
   const stats = useMemo(() => {
-    if (!payload) return { total: 0, supported: 0, unsupported: 0, errors: 0 };
+    if (!payload) return { total: 0, supported: 0, fallback: 0, unsupported: 0, errors: 0 };
     const total = payload.results.length;
     const supported = payload.results.filter((r) => r.response?.supported).length;
+    const fallback = payload.results.filter((r) => !r.response?.supported && !!r.fallback).length;
     const errors = payload.results.filter((r) => r.error).length;
-    return { total, supported, unsupported: total - supported - errors, errors };
+    return { total, supported, fallback, unsupported: total - supported - fallback - errors, errors };
   }, [payload]);
+
+  const handleExport = () => {
+    if (!payload) return;
+    try {
+      const rows = payload.results.map((r, i) => {
+        const matched = r.response?.matched_entry;
+        const fb = r.fallback;
+        const isRuptela = !!r.response?.supported;
+        const isHomologated = !isRuptela && !!fb;
+        return {
+          "#": i + 1,
+          Marca: r.input.brand,
+          Modelo: r.input.model,
+          Ano: r.input.year ?? "",
+          Status: r.error
+            ? "Erro"
+            : isRuptela
+              ? "Compatível (Ruptela)"
+              : isHomologated
+                ? "Homologado (interno)"
+                : "Sem correspondência",
+          Fonte: isRuptela ? "Ruptela" : isHomologated ? (fb!.source === "homologation_card" ? "Homologação" : "Regra de automação") : "",
+          Configuração: isRuptela
+            ? matched?.canbus_configuration ?? ""
+            : isHomologated
+              ? fb!.configuration
+              : "",
+          "Dispositivos sugeridos": isRuptela ? (r.response?.suggested_devices ?? []).join(", ") : isHomologated ? (fb!.tracker_model ?? "") : "",
+          "Métodos de conexão": isRuptela ? (r.response?.connection_methods ?? []).join(", ") : "",
+          Geração: matched?.generation ?? "",
+          Tipo: matched?.type ?? "",
+          Região: matched?.regions?.join(", ") ?? "",
+          "Faixa de anos": matched ? `${matched.year_from ?? "?"} - ${matched.year_to ?? "atual"}` : "",
+          Erro: r.error ?? "",
+        };
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Simulação");
+      const baseName = payload.fileName.replace(/\.[^.]+$/, "") || "simulacao";
+      XLSX.writeFile(wb, `${baseName}-resultado.xlsx`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao exportar planilha.");
+    }
+  };
 
   if (!payload) {
     return (
