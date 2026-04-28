@@ -396,6 +396,75 @@ const KickoffSimulator = () => {
           </div>
         </CardContent>
       </Card>
+
+      {savedSimulations.length > 0 && (
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <History className="h-5 w-5 text-primary shrink-0" />
+              Minhas simulações salvas
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Suas simulações anteriores ficam salvas e disponíveis para consulta a qualquer momento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+            <ul className="divide-y border rounded-md">
+              {savedSimulations.map((s) => (
+                <li key={s.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{s.file_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(s.created_at).toLocaleString("pt-BR")} · {s.total_rows} veículo(s) ·{" "}
+                      <span className="text-green-700 font-medium">{s.supported_count} compatíveis</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const full = await simulatorService.getById(s.id);
+                        if (!full) {
+                          toast.error("Não foi possível carregar a simulação.");
+                          return;
+                        }
+                        try {
+                          sessionStorage.setItem(
+                            "kickoff-simulator-result",
+                            JSON.stringify({ ...full.payload, simulationId: full.id }),
+                          );
+                          navigate("/kickoff/simulador/resultado");
+                        } catch {
+                          toast.error("Erro ao abrir simulação.");
+                        }
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-1" /> Abrir
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        if (!confirm("Excluir esta simulação?")) return;
+                        const ok = await simulatorService.remove(s.id);
+                        if (ok) {
+                          setSavedSimulations((prev) => prev.filter((x) => x.id !== s.id));
+                          toast.success("Simulação excluída.");
+                        } else {
+                          toast.error("Não foi possível excluir.");
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
