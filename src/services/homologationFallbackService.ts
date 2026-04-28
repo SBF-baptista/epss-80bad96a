@@ -277,7 +277,7 @@ export async function findHomologatedConfig(
     if (error) console.warn("[homologationFallback] rules query error", error);
 
     if (rules && rules.length > 0) {
-      const pick = pickBest(rules as any, model, year);
+      const pick = pickBest(rules as any, brand, model, year);
       if (pick && pick.configuration) {
         return {
           source: "automation_rule",
