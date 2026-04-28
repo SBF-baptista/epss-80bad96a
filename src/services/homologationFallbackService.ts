@@ -108,7 +108,7 @@ function modelScore(inputTokens: string[], candidate: string): number {
  *  2) exact year match (when input year provided)
  *  3) closest year (smallest absolute diff)
  */
-function pickBest<T extends { configuration: string | null; year?: number | null; model_year?: string | null; model: string }>(
+function pickBest<T extends Record<string, any>>(
   items: T[],
   inputModel: string,
   inputYear: number | null,
@@ -118,10 +118,10 @@ function pickBest<T extends { configuration: string | null; year?: number | null
     .filter((i) => !!i.configuration)
     .map((i) => {
       const itemYear =
-        (i as any).year != null
-          ? Number((i as any).year)
-          : (i as any).model_year
-            ? parseInt((i as any).model_year, 10) || null
+        i.year != null
+          ? Number(i.year)
+          : i.model_year
+            ? parseInt(i.model_year, 10) || null
             : null;
       const score = modelScore(inputTokens, i.model);
       const yearDiff = inputYear != null && itemYear != null ? Math.abs(itemYear - inputYear) : 999;
