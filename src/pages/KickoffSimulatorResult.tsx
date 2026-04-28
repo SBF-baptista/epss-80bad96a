@@ -297,6 +297,11 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
                   Compatível com sua operação
                 </p>
               )}
+              {isFallback && (
+                <p className="text-[11px] sm:text-xs text-blue-700/80 mt-0.5 normal-case tracking-normal font-medium">
+                  Configuração homologada encontrada na base interna
+                </p>
+              )}
             </div>
           </div>
           <Badge
@@ -309,6 +314,44 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
       </CardHeader>
       <CardContent className="pt-4 px-3 sm:px-6 space-y-4">
         {error && <p className="text-xs sm:text-sm text-destructive break-words">{error}</p>}
+
+        {/* SEÇÃO: HOMOLOGADO INTERNO (fallback) */}
+        {isFallback && fallback && (
+          <div className="space-y-2">
+            <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
+              Configuração homologada
+            </p>
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 space-y-2 text-xs sm:text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Configuração</p>
+                  <p className="font-semibold text-blue-900 break-words">{fallback.configuration}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Fonte</p>
+                  <p className="font-semibold text-blue-900">
+                    {fallback.source === "homologation_card" ? "Homologação interna" : "Regra de automação"}
+                  </p>
+                </div>
+                {fallback.tracker_model && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Rastreador</p>
+                    <p className="font-semibold text-blue-900">{fallback.tracker_model}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Veículo encontrado</p>
+                  <p className="font-semibold text-blue-900">
+                    {fallback.brand} {fallback.model} {fallback.year ? `(${fallback.year})` : ""}
+                  </p>
+                </div>
+              </div>
+              {fallback.notes && (
+                <p className="text-xs text-muted-foreground italic break-words">{fallback.notes}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* SEÇÃO: ESPECIFICAÇÕES (Geração, Tipo, Região) */}
         {response && response.matched_entry && (
