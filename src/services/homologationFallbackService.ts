@@ -247,7 +247,7 @@ export async function findHomologatedConfig(
       console.log("[homologationFallback] cards (model only)", cards.length);
     }
     if (cards.length > 0) {
-      const pick = pickBest(cards as any, model, year);
+      const pick = pickBest(cards as any, brand, model, year);
       console.log("[homologationFallback] best card pick", pick);
       if (pick && pick.configuration) {
         return {
