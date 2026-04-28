@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { motion } from "framer-motion";
@@ -113,10 +113,9 @@ const KickoffSimulator = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Load previously saved simulations for this user
-  useState(() => {
+  useEffect(() => {
     simulatorService.list().then(setSavedSimulations).catch(() => {});
-    return undefined as any;
-  });
+  }, []);
 
   const handleFileSelect = useCallback(async (selected: File) => {
     setFile(selected);
