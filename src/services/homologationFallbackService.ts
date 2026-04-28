@@ -156,6 +156,7 @@ function modelScore(inputTokens: string[], candidate: string): number {
  */
 function pickBest<T extends Record<string, any>>(
   items: T[],
+  inputBrand: string,
   inputModel: string,
   inputYear: number | null,
 ): T | null {
@@ -172,16 +173,21 @@ function pickBest<T extends Record<string, any>>(
       const score = modelScore(inputTokens, i.model);
       const yearDiff = inputYear != null && itemYear != null ? Math.abs(itemYear - inputYear) : 999;
       const exactYear = inputYear != null && itemYear === inputYear ? 1 : 0;
-      return { item: i, score, yearDiff, exactYear };
+      const brandSim = similarity(inputBrand, String(i.brand ?? ""));
+      const brandOk = brandsMatch(inputBrand, String(i.brand ?? "")) ? 1 : 0;
+      return { item: i, score, yearDiff, exactYear, brandSim, brandOk };
     })
     .filter((s) => s.score > 0); // Require at least 1 model token overlap
 
   if (scored.length === 0) return null;
 
   scored.sort((a, b) => {
+    // Prefer brand match (alias or fuzzy)
+    if (b.brandOk !== a.brandOk) return b.brandOk - a.brandOk;
     if (b.score !== a.score) return b.score - a.score;
     if (b.exactYear !== a.exactYear) return b.exactYear - a.exactYear;
-    return a.yearDiff - b.yearDiff;
+    if (a.yearDiff !== b.yearDiff) return a.yearDiff - b.yearDiff;
+    return b.brandSim - a.brandSim;
   });
 
   return scored[0].item;
