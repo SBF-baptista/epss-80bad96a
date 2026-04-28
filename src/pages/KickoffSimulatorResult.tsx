@@ -43,10 +43,12 @@ const KickoffSimulatorResult = () => {
   const stats = useMemo(() => {
     if (!payload) return { total: 0, supported: 0, fallback: 0, unsupported: 0, errors: 0 };
     const total = payload.results.length;
-    const supported = payload.results.filter((r) => r.response?.supported).length;
-    const fallback = payload.results.filter((r) => !r.response?.supported && !!r.fallback).length;
+    const ruptela = payload.results.filter((r) => r.response?.supported).length;
+    const fallback = payload.results.filter((r) => !r.response?.supported && !!r.fallback && !r.error).length;
     const errors = payload.results.filter((r) => r.error).length;
-    return { total, supported, fallback, unsupported: total - supported - fallback - errors, errors };
+    // Homologated counts as compatible (same color/treatment)
+    const supported = ruptela + fallback;
+    return { total, supported, fallback, unsupported: total - supported - errors, errors };
   }, [payload]);
 
   const handleExport = () => {
