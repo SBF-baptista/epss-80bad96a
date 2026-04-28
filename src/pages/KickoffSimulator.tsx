@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileSpreadsheet, Upload, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Upload, Loader2, AlertCircle, History, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
