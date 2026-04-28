@@ -109,7 +109,14 @@ const KickoffSimulator = () => {
   const [parseError, setParseError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [savedSimulations, setSavedSimulations] = useState<Awaited<ReturnType<typeof simulatorService.list>>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load previously saved simulations for this user
+  useState(() => {
+    simulatorService.list().then(setSavedSimulations).catch(() => {});
+    return undefined as any;
+  });
 
   const handleFileSelect = useCallback(async (selected: File) => {
     setFile(selected);
