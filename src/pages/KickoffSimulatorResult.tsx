@@ -1,33 +1,99 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileSpreadsheet, FileText } from "lucide-react";
+import * as XLSX from "xlsx";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileSpreadsheet, FileText, Download, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SimulatorPayload } from "./KickoffSimulator";
+import { simulatorService } from "@/services/simulatorService";
+import { toast } from "sonner";
 
 const KickoffSimulatorResult = () => {
   const navigate = useNavigate();
   const [payload, setPayload] = useState<SimulatorPayload | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("kickoff-simulator-result");
-      if (raw) setPayload(JSON.parse(raw));
-    } catch (e) {
-      console.error(e);
-    }
+    (async () => {
+      try {
+        const raw = sessionStorage.getItem("kickoff-simulator-result");
+        if (raw) {
+          setPayload(JSON.parse(raw));
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      // Fallback: load latest saved simulation for the current user
+      try {
+        const latest = await simulatorService.getLatest();
+        if (latest) {
+          const p = { ...latest.payload, simulationId: latest.id };
+          setPayload(p);
+          sessionStorage.setItem("kickoff-simulator-result", JSON.stringify(p));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
   }, []);
 
   const stats = useMemo(() => {
-    if (!payload) return { total: 0, supported: 0, unsupported: 0, errors: 0 };
+    if (!payload) return { total: 0, supported: 0, fallback: 0, unsupported: 0, errors: 0 };
     const total = payload.results.length;
     const supported = payload.results.filter((r) => r.response?.supported).length;
+    const fallback = payload.results.filter((r) => !r.response?.supported && !!r.fallback).length;
     const errors = payload.results.filter((r) => r.error).length;
-    return { total, supported, unsupported: total - supported - errors, errors };
+    return { total, supported, fallback, unsupported: total - supported - fallback - errors, errors };
   }, [payload]);
+
+  const handleExport = () => {
+    if (!payload) return;
+    try {
+      const rows = payload.results.map((r, i) => {
+        const matched = r.response?.matched_entry;
+        const fb = r.fallback;
+        const isRuptela = !!r.response?.supported;
+        const isHomologated = !isRuptela && !!fb;
+        return {
+          "#": i + 1,
+          Marca: r.input.brand,
+          Modelo: r.input.model,
+          Ano: r.input.year ?? "",
+          Status: r.error
+            ? "Erro"
+            : isRuptela
+              ? "Compatível (Ruptela)"
+              : isHomologated
+                ? "Homologado (interno)"
+                : "Sem correspondência",
+          Fonte: isRuptela ? "Ruptela" : isHomologated ? (fb!.source === "homologation_card" ? "Homologação" : "Regra de automação") : "",
+          Configuração: isRuptela
+            ? matched?.canbus_configuration ?? ""
+            : isHomologated
+              ? fb!.configuration
+              : "",
+          "Dispositivos sugeridos": isRuptela ? (r.response?.suggested_devices ?? []).join(", ") : isHomologated ? (fb!.tracker_model ?? "") : "",
+          "Métodos de conexão": isRuptela ? (r.response?.connection_methods ?? []).join(", ") : "",
+          Geração: matched?.generation ?? "",
+          Tipo: matched?.type ?? "",
+          Região: matched?.regions?.join(", ") ?? "",
+          "Faixa de anos": matched ? `${matched.year_from ?? "?"} - ${matched.year_to ?? "atual"}` : "",
+          Erro: r.error ?? "",
+        };
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Simulação");
+      const baseName = payload.fileName.replace(/\.[^.]+$/, "") || "simulacao";
+      XLSX.writeFile(wb, `${baseName}-resultado.xlsx`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao exportar planilha.");
+    }
+  };
 
   if (!payload) {
     return (
@@ -59,14 +125,25 @@ const KickoffSimulatorResult = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Nova Simulação
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/kickoff")}
-          className="min-h-12 sm:min-h-9"
-        >
-          Voltar ao Kickoff
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleExport}
+            className="min-h-12 sm:min-h-9"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar planilha
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/kickoff")}
+            className="min-h-12 sm:min-h-9"
+          >
+            Voltar ao Kickoff
+          </Button>
+        </div>
       </div>
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
@@ -79,23 +156,30 @@ const KickoffSimulatorResult = () => {
         </p>
       </motion.div>
 
-      {/* Stats: 2x2 no mobile, 4 colunas no desktop. Padding e tipografia reduzidos no mobile */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        {/* KPI secundário (opacidade reduzida) */}
+      {/* Stats: 5 KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
         <Card className="bg-white border-slate-200 opacity-80">
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.total}</div>
             <p className="text-[11px] sm:text-xs text-muted-foreground">Total de veículos</p>
           </CardContent>
         </Card>
-        {/* KPI primário: "Compatíveis" em destaque com fundo verde sutil */}
         <Card
           className="border-[rgba(34,197,94,0.3)] shadow-[0_4px_14px_rgba(34,197,94,0.12)]"
           style={{ backgroundColor: "rgba(34,197,94,0.08)" }}
         >
           <CardContent className="p-3 sm:p-6 sm:pt-6">
             <div className="text-2xl sm:text-3xl font-bold text-green-700">{stats.supported}</div>
-            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis</p>
+            <p className="text-[11px] sm:text-xs font-medium text-green-800/80">Compatíveis (Ruptela)</p>
+          </CardContent>
+        </Card>
+        <Card
+          className="border-[rgba(59,130,246,0.3)] shadow-[0_4px_14px_rgba(59,130,246,0.12)]"
+          style={{ backgroundColor: "rgba(59,130,246,0.08)" }}
+        >
+          <CardContent className="p-3 sm:p-6 sm:pt-6">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-700">{stats.fallback}</div>
+            <p className="text-[11px] sm:text-xs font-medium text-blue-800/80">Homologado (interno)</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-slate-200 opacity-80">
@@ -112,7 +196,6 @@ const KickoffSimulatorResult = () => {
         </Card>
       </div>
 
-      {/* Results: TabsList com scroll horizontal no mobile evita quebra/overflow */}
       <Tabs defaultValue="all" className="space-y-4">
         <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max sm:w-auto">
@@ -121,6 +204,9 @@ const KickoffSimulatorResult = () => {
             </TabsTrigger>
             <TabsTrigger value="supported" className="text-xs sm:text-sm whitespace-nowrap">
               Compatíveis ({stats.supported})
+            </TabsTrigger>
+            <TabsTrigger value="fallback" className="text-xs sm:text-sm whitespace-nowrap">
+              Homologado ({stats.fallback})
             </TabsTrigger>
             <TabsTrigger value="unsupported" className="text-xs sm:text-sm whitespace-nowrap">
               Sem correspondência ({stats.unsupported})
@@ -133,13 +219,14 @@ const KickoffSimulatorResult = () => {
           </TabsList>
         </div>
 
-        {(["all", "supported", "unsupported", "errors"] as const).map((tab) => (
+        {(["all", "supported", "fallback", "unsupported", "errors"] as const).map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-3">
             {payload.results
               .filter((r) => {
                 if (tab === "all") return true;
                 if (tab === "supported") return r.response?.supported;
-                if (tab === "unsupported") return !r.error && !r.response?.supported;
+                if (tab === "fallback") return !r.response?.supported && !!r.fallback && !r.error;
+                if (tab === "unsupported") return !r.error && !r.response?.supported && !r.fallback;
                 if (tab === "errors") return !!r.error;
                 return true;
               })
@@ -155,14 +242,16 @@ const KickoffSimulatorResult = () => {
 };
 
 const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][number]; index: number }) => {
-  const { input, response, error } = result;
+  const { input, response, fallback, error } = result;
 
-  let status: "supported" | "unsupported" | "error" = "unsupported";
+  let status: "supported" | "fallback" | "unsupported" | "error" = "unsupported";
   if (error) status = "error";
   else if (response?.supported) status = "supported";
+  else if (fallback) status = "fallback";
 
   const statusConfig = {
     supported: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", label: "Compatível" },
+    fallback: { icon: ShieldCheck, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Homologado" },
     unsupported: {
       icon: AlertTriangle,
       color: "text-orange-600",
@@ -174,18 +263,20 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
 
-  // Card "Compatível" recebe borda verde sutil + sombra suave + leve elevação no hover.
-  // Demais status mantêm visual neutro premium (fundo branco, borda slate).
   const isSupported = status === "supported";
+  const isFallback = status === "fallback";
   const cardClasses = isSupported
     ? "overflow-hidden bg-white border border-[rgba(34,197,94,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
-    : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
+    : isFallback
+      ? "overflow-hidden bg-white border border-[rgba(59,130,246,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-transform duration-200 hover:-translate-y-0.5"
+      : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
 
-  // Badge "Compatível" em verde forte (#16A34A) com texto branco e bold.
   const badgeClasses =
     status === "supported"
       ? "self-start sm:self-auto shrink-0 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold border-transparent"
-      : "self-start sm:self-auto shrink-0 font-semibold";
+      : status === "fallback"
+        ? "self-start sm:self-auto shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold border-transparent"
+        : "self-start sm:self-auto shrink-0 font-semibold";
 
   return (
     <Card className={cardClasses}>
@@ -206,6 +297,11 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
                   Compatível com sua operação
                 </p>
               )}
+              {isFallback && (
+                <p className="text-[11px] sm:text-xs text-blue-700/80 mt-0.5 normal-case tracking-normal font-medium">
+                  Configuração homologada encontrada na base interna
+                </p>
+              )}
             </div>
           </div>
           <Badge
@@ -218,6 +314,44 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
       </CardHeader>
       <CardContent className="pt-4 px-3 sm:px-6 space-y-4">
         {error && <p className="text-xs sm:text-sm text-destructive break-words">{error}</p>}
+
+        {/* SEÇÃO: HOMOLOGADO INTERNO (fallback) */}
+        {isFallback && fallback && (
+          <div className="space-y-2">
+            <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
+              Configuração homologada
+            </p>
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 space-y-2 text-xs sm:text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Configuração</p>
+                  <p className="font-semibold text-blue-900 break-words">{fallback.configuration}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Fonte</p>
+                  <p className="font-semibold text-blue-900">
+                    {fallback.source === "homologation_card" ? "Homologação interna" : "Regra de automação"}
+                  </p>
+                </div>
+                {fallback.tracker_model && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Rastreador</p>
+                    <p className="font-semibold text-blue-900">{fallback.tracker_model}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Veículo encontrado</p>
+                  <p className="font-semibold text-blue-900">
+                    {fallback.brand} {fallback.model} {fallback.year ? `(${fallback.year})` : ""}
+                  </p>
+                </div>
+              </div>
+              {fallback.notes && (
+                <p className="text-xs text-muted-foreground italic break-words">{fallback.notes}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* SEÇÃO: ESPECIFICAÇÕES (Geração, Tipo, Região) */}
         {response && response.matched_entry && (

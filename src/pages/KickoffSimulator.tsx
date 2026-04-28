@@ -1,14 +1,16 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileSpreadsheet, Upload, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Upload, Loader2, AlertCircle, History, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ruptelaVehicleService, RuptelaCheckResponse } from "@/services/ruptelaVehicleService";
+import { findHomologatedConfig, HomologationFallbackMatch } from "@/services/homologationFallbackService";
+import { simulatorService } from "@/services/simulatorService";
 import { toast } from "sonner";
 
 export interface SimulatorRowInput {
@@ -21,6 +23,7 @@ export interface SimulatorRowInput {
 export interface SimulatorRowResult {
   input: SimulatorRowInput;
   response: RuptelaCheckResponse | null;
+  fallback?: HomologationFallbackMatch | null;
   error: string | null;
 }
 
@@ -28,6 +31,7 @@ export interface SimulatorPayload {
   generatedAt: string;
   fileName: string;
   results: SimulatorRowResult[];
+  simulationId?: string;
 }
 
 const BRAND_KEYS = ["marca", "brand", "fabricante", "manufacturer", "make"];
@@ -105,7 +109,13 @@ const KickoffSimulator = () => {
   const [parseError, setParseError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [savedSimulations, setSavedSimulations] = useState<Awaited<ReturnType<typeof simulatorService.list>>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load previously saved simulations for this user
+  useEffect(() => {
+    simulatorService.list().then(setSavedSimulations).catch(() => {});
+  }, []);
 
   const handleFileSelect = useCallback(async (selected: File) => {
     setFile(selected);
@@ -177,12 +187,25 @@ const KickoffSimulator = () => {
     const results: SimulatorRowResult[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
+      let response: RuptelaCheckResponse | null = null;
+      let error: string | null = null;
       try {
-        const response = await ruptelaVehicleService.checkVehicle(row.brand, row.model, row.year ?? undefined);
-        results.push({ input: row, response, error: null });
+        response = await ruptelaVehicleService.checkVehicle(row.brand, row.model, row.year ?? undefined);
       } catch (err: any) {
-        results.push({ input: row, response: null, error: err.message ?? "Erro ao consultar" });
+        error = err.message ?? "Erro ao consultar";
       }
+
+      // Fallback: if Ruptela did not return a supported match, search homologation/automation rules
+      let fallback: HomologationFallbackMatch | null = null;
+      if (!response?.supported) {
+        try {
+          fallback = await findHomologatedConfig(row.brand, row.model, row.year);
+        } catch (e) {
+          console.warn("[simulator] fallback lookup failed", e);
+        }
+      }
+
+      results.push({ input: row, response, fallback, error });
       setProgress(Math.round(((i + 1) / rows.length) * 100));
     }
 
@@ -191,6 +214,14 @@ const KickoffSimulator = () => {
       fileName: file?.name ?? "planilha.xlsx",
       results,
     };
+
+    // Persist to DB (per user). Fallback to sessionStorage if save fails.
+    try {
+      const saved = await simulatorService.save(payload);
+      if (saved) payload.simulationId = saved.id;
+    } catch (e) {
+      console.warn("[simulator] persist failed", e);
+    }
 
     try {
       sessionStorage.setItem("kickoff-simulator-result", JSON.stringify(payload));
@@ -365,6 +396,75 @@ const KickoffSimulator = () => {
           </div>
         </CardContent>
       </Card>
+
+      {savedSimulations.length > 0 && (
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <History className="h-5 w-5 text-primary shrink-0" />
+              Minhas simulações salvas
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Suas simulações anteriores ficam salvas e disponíveis para consulta a qualquer momento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+            <ul className="divide-y border rounded-md">
+              {savedSimulations.map((s) => (
+                <li key={s.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{s.file_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(s.created_at).toLocaleString("pt-BR")} · {s.total_rows} veículo(s) ·{" "}
+                      <span className="text-green-700 font-medium">{s.supported_count} compatíveis</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const full = await simulatorService.getById(s.id);
+                        if (!full) {
+                          toast.error("Não foi possível carregar a simulação.");
+                          return;
+                        }
+                        try {
+                          sessionStorage.setItem(
+                            "kickoff-simulator-result",
+                            JSON.stringify({ ...full.payload, simulationId: full.id }),
+                          );
+                          navigate("/kickoff/simulador/resultado");
+                        } catch {
+                          toast.error("Erro ao abrir simulação.");
+                        }
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-1" /> Abrir
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        if (!confirm("Excluir esta simulação?")) return;
+                        const ok = await simulatorService.remove(s.id);
+                        if (ok) {
+                          setSavedSimulations((prev) => prev.filter((x) => x.id !== s.id));
+                          toast.success("Simulação excluída.");
+                        } else {
+                          toast.error("Não foi possível excluir.");
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
