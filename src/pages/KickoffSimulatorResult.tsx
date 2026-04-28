@@ -240,7 +240,7 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
 
   const statusConfig = {
     supported: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", label: "Compatível" },
-    fallback: { icon: ShieldCheck, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Homologado" },
+    fallback: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", label: "Compatível" },
     unsupported: {
       icon: AlertTriangle,
       color: "text-orange-600",
@@ -254,18 +254,14 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
 
   const isSupported = status === "supported";
   const isFallback = status === "fallback";
-  const cardClasses = isSupported
+  const isCompatible = isSupported || isFallback;
+  const cardClasses = isCompatible
     ? "overflow-hidden bg-white border border-[rgba(34,197,94,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
-    : isFallback
-      ? "overflow-hidden bg-white border border-[rgba(59,130,246,0.3)] shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-transform duration-200 hover:-translate-y-0.5"
-      : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
+    : "overflow-hidden bg-white border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5";
 
-  const badgeClasses =
-    status === "supported"
-      ? "self-start sm:self-auto shrink-0 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold border-transparent"
-      : status === "fallback"
-        ? "self-start sm:self-auto shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold border-transparent"
-        : "self-start sm:self-auto shrink-0 font-semibold";
+  const badgeClasses = isCompatible
+    ? "self-start sm:self-auto shrink-0 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold border-transparent"
+    : "self-start sm:self-auto shrink-0 font-semibold";
 
   return (
     <Card className={cardClasses}>
@@ -276,25 +272,19 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
             <span className="text-xs font-mono text-muted-foreground shrink-0">#{index + 1}</span>
             <StatusIcon className={`h-5 w-5 ${cfg.color} shrink-0`} />
             <div className="min-w-0">
-              {/* Título reformulado: "✔ MARCA MODELO ANO" + subtítulo "Compatível com sua operação" */}
               <CardTitle className="text-sm sm:text-base truncate uppercase tracking-wide">
-                {isSupported && <span className="text-[#16A34A] mr-1">✔</span>}
+                {isCompatible && <span className="text-[#16A34A] mr-1">✔</span>}
                 {input.brand} {input.model} {input.year ? input.year : ""}
               </CardTitle>
-              {isSupported && (
+              {isCompatible && (
                 <p className="text-[11px] sm:text-xs text-green-700/80 mt-0.5 normal-case tracking-normal font-medium">
                   Compatível com sua operação
-                </p>
-              )}
-              {isFallback && (
-                <p className="text-[11px] sm:text-xs text-blue-700/80 mt-0.5 normal-case tracking-normal font-medium">
-                  Configuração homologada encontrada na base interna
                 </p>
               )}
             </div>
           </div>
           <Badge
-            variant={status === "supported" ? "default" : status === "error" ? "destructive" : "secondary"}
+            variant={isCompatible ? "default" : status === "error" ? "destructive" : "secondary"}
             className={badgeClasses}
           >
             {cfg.label}
