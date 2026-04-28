@@ -198,9 +198,6 @@ const KickoffSimulatorResult = () => {
             <TabsTrigger value="supported" className="text-xs sm:text-sm whitespace-nowrap">
               Compatíveis ({stats.supported})
             </TabsTrigger>
-            <TabsTrigger value="fallback" className="text-xs sm:text-sm whitespace-nowrap">
-              Homologado ({stats.fallback})
-            </TabsTrigger>
             <TabsTrigger value="unsupported" className="text-xs sm:text-sm whitespace-nowrap">
               Sem correspondência ({stats.unsupported})
             </TabsTrigger>
@@ -212,13 +209,12 @@ const KickoffSimulatorResult = () => {
           </TabsList>
         </div>
 
-        {(["all", "supported", "fallback", "unsupported", "errors"] as const).map((tab) => (
+        {(["all", "supported", "unsupported", "errors"] as const).map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-3">
             {payload.results
               .filter((r) => {
                 if (tab === "all") return true;
-                if (tab === "supported") return r.response?.supported;
-                if (tab === "fallback") return !r.response?.supported && !!r.fallback && !r.error;
+                if (tab === "supported") return r.response?.supported || (!!r.fallback && !r.error);
                 if (tab === "unsupported") return !r.error && !r.response?.supported && !r.fallback;
                 if (tab === "errors") return !!r.error;
                 return true;
