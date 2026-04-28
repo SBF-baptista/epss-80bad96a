@@ -168,21 +168,35 @@ export async function findHomologatedConfig(
   const tokens = modelTokens(model);
   const primaryToken = tokens[0] || nm;
 
+  console.log("[homologationFallback] searching", { brand, model, year, brandList, primaryToken, tokens });
+
   // 1) homologation_cards (status homologado, configuration not null)
-  try {
-    const { data: cards, error } = await supabase
+  // Try a focused query first (brand + primary token), then a wider query if nothing matches.
+  const tryCards = async (useBrandFilter: boolean, useModelFilter: boolean) => {
+    let q = supabase
       .from("homologation_cards")
       .select("brand, model, year, configuration, notes, status")
       .eq("status", "homologado")
-      .or(brandOr)
-      .ilike("model", `%${primaryToken}%`)
       .not("configuration", "is", null)
-      .limit(50);
-
+      .limit(200);
+    if (useBrandFilter) q = q.or(brandOr);
+    if (useModelFilter) q = q.ilike("model", `%${primaryToken}%`);
+    const { data, error } = await q;
     if (error) console.warn("[homologationFallback] cards query error", error);
+    return data ?? [];
+  };
 
-    if (cards && cards.length > 0) {
+  try {
+    let cards = await tryCards(true, true);
+    console.log("[homologationFallback] cards (brand+model)", cards.length);
+    if (cards.length === 0) {
+      // Brand filter may be too narrow (e.g. brand stored differently) — try model only
+      cards = await tryCards(false, true);
+      console.log("[homologationFallback] cards (model only)", cards.length);
+    }
+    if (cards.length > 0) {
       const pick = pickBest(cards as any, model, year);
+      console.log("[homologationFallback] best card pick", pick);
       if (pick && pick.configuration) {
         return {
           source: "homologation_card",
