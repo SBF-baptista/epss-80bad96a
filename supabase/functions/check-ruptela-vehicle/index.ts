@@ -32,6 +32,11 @@ interface RuptelaEntry {
   // Plain text of the "CANbus Configuration" section from the vehicle detail page.
   // Populated lazily for the matched entry only (avoids N extra requests when listing).
   canbus_configuration: string | null;
+  // Plain text of the "OBD Configuration" section (e.g. "1. OBD - Volkswagen").
+  obd_configuration: string | null;
+  // Plain text of the "CANbus (HCV/LCV) Configuration" sub-section under Supported Parameters,
+  // when present. Falls back to null when not available.
+  canbus_hcv_lcv_configuration: string | null;
 }
 
 // ---------- Helpers ----------
