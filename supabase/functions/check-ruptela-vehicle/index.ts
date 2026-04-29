@@ -533,7 +533,7 @@ Deno.serve(async (req) => {
       const detail = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
       matchedEntry.canbus_configuration = detail.canbus_configuration;
       matchedEntry.obd_configuration = detail.obd_configuration;
-      matchedEntry.canbus_hcv_lcv_configuration = detail.canbus_hcv_lcv_configuration;
+      matchedEntry.canbus_hcv_lcv_parameters = detail.canbus_hcv_lcv_parameters;
     }
 
     return new Response(
