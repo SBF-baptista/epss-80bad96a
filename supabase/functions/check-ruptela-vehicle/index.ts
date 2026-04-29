@@ -491,8 +491,10 @@ Deno.serve(async (req) => {
     // Lazily enrich the matched entry with the CANbus Configuration text
     const matchedEntry: RuptelaEntry | null = supported ? { ...best!.entry } : null;
     if (matchedEntry && matchedEntry.vehicle_id) {
-      const canbusText = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
-      matchedEntry.canbus_configuration = canbusText;
+      const detail = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
+      matchedEntry.canbus_configuration = detail.canbus_configuration;
+      matchedEntry.obd_configuration = detail.obd_configuration;
+      matchedEntry.canbus_hcv_lcv_configuration = detail.canbus_hcv_lcv_configuration;
     }
 
     return new Response(
