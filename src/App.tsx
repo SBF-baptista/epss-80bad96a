@@ -319,16 +319,6 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Ruptela Vehicle Check - requires homologation module */}
-              <Route path="/ruptela-check" element={
-                <ProtectedRoute>
-                  <RoleProtectedRoute requiredModule="homologation">
-                    <Layout>
-                      <RuptelaVehicleCheck />
-                    </Layout>
-                  </RoleProtectedRoute>
-                </ProtectedRoute>
-              } />
 
               {/* Module Selection - no special permissions needed */}
               <Route path="/modules" element={
