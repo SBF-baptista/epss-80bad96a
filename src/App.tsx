@@ -235,21 +235,17 @@ function AppContent() {
 
               <Route path="/kickoff/simulador" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModules={["kickoff", "homologation"]}>
-                    <Layout>
-                      <KickoffSimulator />
-                    </Layout>
-                  </RoleProtectedRoute>
+                  <Layout>
+                    <KickoffSimulator />
+                  </Layout>
                 </ProtectedRoute>
               } />
 
               <Route path="/kickoff/simulador/resultado" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModules={["kickoff", "homologation"]}>
-                    <Layout>
-                      <KickoffSimulatorResult />
-                    </Layout>
-                  </RoleProtectedRoute>
+                  <Layout>
+                    <KickoffSimulatorResult />
+                  </Layout>
                 </ProtectedRoute>
               } />
               

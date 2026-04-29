@@ -208,7 +208,7 @@ export function AppNavigation() {
   const canSeeScheduling = canAccessItem(schedulingItem);
   const canSeeInstallation = role === 'admin';
   const visibleAdditionalItems = additionalSingleItems.filter(canAccessItem);
-  const canSeeSimulator = role === 'admin' || canViewModule('kickoff') || canViewModule('homologation');
+  const canSeeSimulator = true; // Simulador liberado para todos os perfis autenticados
 
   return (
     <Sidebar collapsible="icon" className="border-r">
