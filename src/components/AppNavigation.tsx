@@ -81,7 +81,6 @@ const navigationGroups: NavGroup[] = [
       { to: "/kits", label: "Kits", icon: Package, module: "kits" },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies" },
       { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "homologation", adminOnly: true },
-      { to: "/ruptela-check", label: "Compatibilidade Ruptela", icon: Car, module: "homologation" },
       { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true, gestorOrAdminOnly: true },
     ]
   },
