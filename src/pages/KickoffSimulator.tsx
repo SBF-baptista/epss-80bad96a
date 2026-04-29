@@ -99,9 +99,47 @@ function parseYear(value: any): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+const IN_PROGRESS_KEY = "kickoff-simulator-inprogress";
+
+interface InProgressState {
+  fileName: string;
+  rows: SimulatorRowInput[];
+  detectedColumns: { brand: string | null; model: string | null; year: string | null } | null;
+  results: SimulatorRowResult[];
+  processedIndex: number; // próximo índice a processar
+  processing: boolean;
+}
+
+function readInProgress(): InProgressState | null {
+  try {
+    const raw = sessionStorage.getItem(IN_PROGRESS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as InProgressState;
+  } catch {
+    return null;
+  }
+}
+
+function writeInProgress(state: InProgressState) {
+  try {
+    sessionStorage.setItem(IN_PROGRESS_KEY, JSON.stringify(state));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function clearInProgress() {
+  try {
+    sessionStorage.removeItem(IN_PROGRESS_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 const KickoffSimulator = () => {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState<string>("");
   const [rows, setRows] = useState<SimulatorRowInput[]>([]);
   const [detectedColumns, setDetectedColumns] = useState<{ brand: string | null; model: string | null; year: string | null } | null>(
     null,
@@ -112,16 +150,50 @@ const KickoffSimulator = () => {
   const [savedSimulations, setSavedSimulations] = useState<Awaited<ReturnType<typeof simulatorService.list>>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Refs para o loop de processamento — permitem retomar após desmontagem.
+  const processingRef = useRef(false);
+  const resultsRef = useRef<SimulatorRowResult[]>([]);
+  const processedIndexRef = useRef(0);
+
   // Load previously saved simulations for this user
   useEffect(() => {
     simulatorService.list().then(setSavedSimulations).catch(() => {});
   }, []);
 
+  // Restaurar estado em andamento (planilha já parseada e/ou progresso parcial)
+  useEffect(() => {
+    const saved = readInProgress();
+    if (!saved) return;
+    setFileName(saved.fileName);
+    setRows(saved.rows);
+    setDetectedColumns(saved.detectedColumns);
+    if (saved.results.length > 0) {
+      resultsRef.current = saved.results;
+      processedIndexRef.current = saved.processedIndex;
+      const total = saved.rows.length || 1;
+      setProgress(Math.round((saved.processedIndex / total) * 100));
+    }
+    // Se estava processando quando desmontou, retoma automaticamente
+    if (saved.processing && saved.processedIndex < saved.rows.length) {
+      // pequeno delay para garantir que estado React está montado
+      setTimeout(() => {
+        runProcessingLoop(saved.rows, saved.fileName);
+      }, 50);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleFileSelect = useCallback(async (selected: File) => {
     setFile(selected);
+    setFileName(selected.name);
     setParseError(null);
     setRows([]);
     setDetectedColumns(null);
+    // Nova planilha: limpa qualquer progresso anterior
+    resultsRef.current = [];
+    processedIndexRef.current = 0;
+    setProgress(0);
+    clearInProgress();
 
     try {
       const buffer = await selected.arrayBuffer();
@@ -149,7 +221,8 @@ const KickoffSimulator = () => {
       const modelCol = detectColumn(headers, MODEL_KEYS);
       const yearCol = detectYearColumn(headers);
 
-      setDetectedColumns({ brand: brandCol, model: modelCol, year: yearCol });
+      const detected = { brand: brandCol, model: modelCol, year: yearCol };
+      setDetectedColumns(detected);
 
       if (!brandCol || !modelCol) {
         setParseError(
@@ -173,67 +246,119 @@ const KickoffSimulator = () => {
       }
 
       setRows(parsedRows);
+      // Persiste a planilha parseada para sobreviver a desmontagens
+      writeInProgress({
+        fileName: selected.name,
+        rows: parsedRows,
+        detectedColumns: detected,
+        results: [],
+        processedIndex: 0,
+        processing: false,
+      });
     } catch (err: any) {
       console.error(err);
       setParseError(`Erro ao ler a planilha: ${err.message ?? "desconhecido"}`);
     }
   }, []);
 
-  const handleSimulate = useCallback(async () => {
-    if (rows.length === 0) return;
-    setProcessing(true);
-    setProgress(0);
+  // Loop de processamento extraído — pode ser chamado para iniciar do zero
+  // ou retomar do índice salvo. Usa refs para sobreviver a desmontagens.
+  const runProcessingLoop = useCallback(
+    async (rowsToProcess: SimulatorRowInput[], fName: string) => {
+      if (processingRef.current) return; // já está rodando
+      processingRef.current = true;
+      setProcessing(true);
 
-    const results: SimulatorRowResult[] = [];
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      let response: RuptelaCheckResponse | null = null;
-      let error: string | null = null;
-      try {
-        response = await ruptelaVehicleService.checkVehicle(row.brand, row.model, row.year ?? undefined);
-      } catch (err: any) {
-        error = err.message ?? "Erro ao consultar";
-      }
+      const startIdx = processedIndexRef.current;
+      // marca como processing no storage
+      writeInProgress({
+        fileName: fName,
+        rows: rowsToProcess,
+        detectedColumns: null,
+        results: resultsRef.current,
+        processedIndex: startIdx,
+        processing: true,
+      });
 
-      // Fallback: if Ruptela did not return a supported match, search homologation/automation rules
-      let fallback: HomologationFallbackMatch | null = null;
-      if (!response?.supported) {
+      for (let i = startIdx; i < rowsToProcess.length; i++) {
+        const row = rowsToProcess[i];
+        let response: RuptelaCheckResponse | null = null;
+        let error: string | null = null;
         try {
-          fallback = await findHomologatedConfig(row.brand, row.model, row.year);
-        } catch (e) {
-          console.warn("[simulator] fallback lookup failed", e);
+          response = await ruptelaVehicleService.checkVehicle(row.brand, row.model, row.year ?? undefined);
+        } catch (err: any) {
+          error = err.message ?? "Erro ao consultar";
+        }
+
+        let fallback: HomologationFallbackMatch | null = null;
+        if (!response?.supported) {
+          try {
+            fallback = await findHomologatedConfig(row.brand, row.model, row.year);
+          } catch (e) {
+            console.warn("[simulator] fallback lookup failed", e);
+          }
+        }
+
+        resultsRef.current.push({ input: row, response, fallback, error });
+        processedIndexRef.current = i + 1;
+        setProgress(Math.round(((i + 1) / rowsToProcess.length) * 100));
+
+        // Persiste a cada N linhas (e na última) para não estourar o storage
+        if ((i + 1) % 5 === 0 || i + 1 === rowsToProcess.length) {
+          writeInProgress({
+            fileName: fName,
+            rows: rowsToProcess,
+            detectedColumns: null,
+            results: resultsRef.current,
+            processedIndex: i + 1,
+            processing: true,
+          });
         }
       }
 
-      results.push({ input: row, response, fallback, error });
-      setProgress(Math.round(((i + 1) / rows.length) * 100));
-    }
+      const payload: SimulatorPayload = {
+        generatedAt: new Date().toISOString(),
+        fileName: fName,
+        results: resultsRef.current,
+      };
 
-    const payload: SimulatorPayload = {
-      generatedAt: new Date().toISOString(),
-      fileName: file?.name ?? "planilha.xlsx",
-      results,
-    };
+      try {
+        const saved = await simulatorService.save(payload);
+        if (saved) payload.simulationId = saved.id;
+      } catch (e) {
+        console.warn("[simulator] persist failed", e);
+      }
 
-    // Persist to DB (per user). Fallback to sessionStorage if save fails.
-    try {
-      const saved = await simulatorService.save(payload);
-      if (saved) payload.simulationId = saved.id;
-    } catch (e) {
-      console.warn("[simulator] persist failed", e);
-    }
+      try {
+        sessionStorage.setItem("kickoff-simulator-result", JSON.stringify(payload));
+      } catch {
+        toast.error("Não foi possível armazenar o resultado.");
+        processingRef.current = false;
+        setProcessing(false);
+        return;
+      }
 
-    try {
-      sessionStorage.setItem("kickoff-simulator-result", JSON.stringify(payload));
-    } catch {
-      toast.error("Não foi possível armazenar o resultado.");
+      // Limpa progresso em andamento — finalizado com sucesso
+      clearInProgress();
+      resultsRef.current = [];
+      processedIndexRef.current = 0;
+
+      processingRef.current = false;
       setProcessing(false);
-      return;
-    }
+      navigate("/kickoff/simulador/resultado");
+    },
+    [navigate],
+  );
 
-    setProcessing(false);
-    navigate("/kickoff/simulador/resultado");
-  }, [rows, file, navigate]);
+  const handleSimulate = useCallback(async () => {
+    if (rows.length === 0) return;
+    // Reinicia se for nova execução manual
+    resultsRef.current = [];
+    processedIndexRef.current = 0;
+    setProgress(0);
+    await runProcessingLoop(rows, fileName || file?.name || "planilha.xlsx");
+  }, [rows, fileName, file, runProcessingLoop]);
+
 
   return (
     // Mobile-first: padding compacto no mobile, cresce no desktop. max-w garante boa leitura
