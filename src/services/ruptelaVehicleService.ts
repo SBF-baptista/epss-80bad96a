@@ -20,8 +20,8 @@ export interface RuptelaEntry {
   canbus_configuration: string | null;
   // Plain text of the "OBD Configuration" card (e.g. "1. OBD - Volkswagen").
   obd_configuration: string | null;
-  // Plain text of the "CANbus (HCV/LCV) Configuration" sub-section, when present.
-  canbus_hcv_lcv_configuration: string | null;
+  // Names of supported parameters from the HCV/LCV table (e.g. "(197) CAN engine speed (RPM)").
+  canbus_hcv_lcv_parameters: string[];
 }
 
 export interface RuptelaCandidate extends RuptelaEntry {
