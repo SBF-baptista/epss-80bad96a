@@ -11,6 +11,7 @@ import { Layout } from "@/components/Layout";
 import SmartRedirect from "@/components/SmartRedirect";
 import { UserRoleProvider } from "@/hooks/useUserRole";
 import { FullScreenLoader } from "@/components/ui/loading";
+import ScrollToTop from "@/components/ScrollToTop";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Kanban = lazy(() => import("./pages/Kanban"));
 const Homologation = lazy(() => import("./pages/Homologation"));
@@ -73,6 +74,7 @@ function AppContent() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
               <Route path="/login" element={<Login />} />

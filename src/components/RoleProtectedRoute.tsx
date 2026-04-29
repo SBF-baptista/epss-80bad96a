@@ -65,6 +65,12 @@ const RoleProtectedRoute = ({
   }, [role, loading, allowedRoles, requiredModule, navigate, redirectTo, canViewModule, isImpersonating, isRealAdmin])
 
   if (loading) {
+    // Se já tínhamos uma role carregada (ex.: refetch silencioso após token refresh),
+    // não desmonte os filhos — manter a árvore evita o "refresh" visual ao
+    // trocar de aba do navegador.
+    if (role) {
+      return <>{children}</>
+    }
     return <FullScreenLoader message="Verificando permissões..." />
   }
 
