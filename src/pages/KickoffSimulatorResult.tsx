@@ -445,18 +445,30 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
           </div>
         )}
 
-        {/* CANbus (HCV/LCV) Configuration: subseção dentro de "Supported Parameters". */}
-        {response && response.matched_entry?.canbus_hcv_lcv_configuration && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5" />
-              CANbus (HCV/LCV) Configuration
-            </p>
-            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs sm:text-sm font-medium text-foreground whitespace-pre-line break-words">
-              {response.matched_entry.canbus_hcv_lcv_configuration}
+        {/* CANbus (HCV/LCV) Configuration — Supported Parameters table.
+            Lista os parâmetros marcados com check verde no detalhe da Ruptela. */}
+        {response &&
+          response.matched_entry?.canbus_hcv_lcv_parameters &&
+          response.matched_entry.canbus_hcv_lcv_parameters.length > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                CANbus (HCV/LCV) Configuration · Parâmetros suportados (
+                {response.matched_entry.canbus_hcv_lcv_parameters.length})
+              </p>
+              <div className="rounded-md border bg-muted/40 px-3 py-2 flex flex-wrap gap-1.5">
+                {response.matched_entry.canbus_hcv_lcv_parameters.map((p) => (
+                  <Badge
+                    key={p}
+                    variant="outline"
+                    className="text-[11px] sm:text-xs font-normal border-[rgba(34,197,94,0.4)] bg-[rgba(34,197,94,0.06)] text-green-800"
+                  >
+                    {p}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {response && !response.supported && response.candidates.length > 0 && (
           <div className="border-t pt-3">
