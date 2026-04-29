@@ -116,7 +116,7 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
       canbus_configuration_url: canbusUrl,
       canbus_configuration: null,
       obd_configuration: null,
-      canbus_hcv_lcv_configuration: null,
+      canbus_hcv_lcv_parameters: [],
     });
   }
   return entries;
