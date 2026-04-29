@@ -174,50 +174,86 @@ async function saveCache(
     );
 }
 
-// ---------- Vehicle detail (CANbus Configuration text) ----------
+// ---------- Vehicle detail (CANbus / OBD / HCV-LCV parameters) ----------
 const VEHICLE_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — rarely changes
+// Bump this whenever the parser changes shape so old cached payloads are ignored.
+const VEHICLE_DETAIL_PARSER_VERSION = 2;
 
 /**
  * Parses a labeled card from the vehicle detail HTML by locating the heading
  * (any h2/h3/h4) whose visible text matches `label`, then extracting the next
- * `.prose` container that follows it. Returns null when missing.
+ * `.prose` container that follows it. Returns null when missing or empty.
  */
 function parseSection(html: string, label: RegExp): string | null {
-  // Match a heading tag enclosing the label text
   const headingRe = new RegExp(
     `<h[1-6][^>]*>\\s*${label.source}\\s*<\\/h[1-6]>`,
     'i',
   );
-  const m = html.match(headingRe);
-  if (!m || m.index === undefined) return null;
-  const after = html.slice(m.index + m[0].length);
-  // The .prose container holds the human-readable text. Take the FIRST prose
-  // div that follows the heading and is reasonably close (avoid jumping past
-  // unrelated sections).
-  const proseMatch = after.slice(0, 4000).match(
-    /<div[^>]*class=["'][^"']*prose[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
-  );
-  if (!proseMatch) return null;
-  const text = stripTags(proseMatch[1]);
-  return text || null;
+  // Iterate every occurrence of the heading — the same label may appear in
+  // both the sidebar (h3, often empty) and the detail body (h4 with content).
+  // Keep the first non-empty value found.
+  let result: string | null = null;
+  let m: RegExpExecArray | null;
+  const re = new RegExp(headingRe.source, 'gi');
+  while ((m = re.exec(html)) !== null) {
+    const after = html.slice(m.index + m[0].length, m.index + m[0].length + 4000);
+    const proseMatch = after.match(
+      /<div[^>]*class=["'][^"']*prose[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    );
+    if (!proseMatch) continue;
+    const text = stripTags(proseMatch[1]);
+    if (text) {
+      result = text;
+      break;
+    }
+  }
+  return result;
+}
+
+/**
+ * Parses the HCV/LCV "Supported Parameters" table from the vehicle detail page.
+ * The table id is either "lcv-table" or "hcv-table". A row is considered
+ * supported when the second column contains a green-check SVG (text-green-*).
+ */
+function parseHcvLcvParameters(html: string): string[] {
+  const ids = ['lcv-table', 'hcv-table'];
+  const out: string[] = [];
+  for (const id of ids) {
+    const tableRe = new RegExp(
+      `<table[^>]*id=["']${id}["'][^>]*>([\\s\\S]*?)<\\/table>`,
+      'i',
+    );
+    const tm = html.match(tableRe);
+    if (!tm) continue;
+    const rows = [...tm[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
+    for (const r of rows) {
+      const cells = [...r[1].matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/g)];
+      if (cells.length < 2) continue;
+      const name = stripTags(cells[0][1]);
+      if (!name || /^parameter$/i.test(name)) continue;
+      const supportedHtml = cells[1][1];
+      // Green-check icon → supported. Red/gray icons → not supported.
+      const isSupported =
+        /text-green/i.test(supportedHtml) ||
+        /class=["'][^"']*green/i.test(supportedHtml);
+      if (isSupported) out.push(name);
+    }
+  }
+  // Deduplicate while preserving order
+  return [...new Set(out)];
 }
 
 interface VehicleDetail {
   canbus_configuration: string | null;
   obd_configuration: string | null;
-  canbus_hcv_lcv_configuration: string | null;
+  canbus_hcv_lcv_parameters: string[];
 }
 
 function parseVehicleDetail(html: string): VehicleDetail {
   return {
-    // Sidebar h3 cards
     canbus_configuration: parseSection(html, /CANbus Configuration/i),
     obd_configuration: parseSection(html, /OBD Configuration/i),
-    // "Supported Parameters" sub-section (h4) — escape parens
-    canbus_hcv_lcv_configuration: parseSection(
-      html,
-      /CANbus \(HCV\/LCV\) Configuration/i,
-    ),
+    canbus_hcv_lcv_parameters: parseHcvLcvParameters(html),
   };
 }
 
@@ -228,9 +264,10 @@ async function fetchVehicleDetail(
   const empty: VehicleDetail = {
     canbus_configuration: null,
     obd_configuration: null,
-    canbus_hcv_lcv_configuration: null,
+    canbus_hcv_lcv_parameters: [],
   };
-  const cacheKey = `vehicle_detail:${vehicleId}`;
+  // Versioned cache key — invalidates v1 payloads (which lacked OBD/HCV-LCV).
+  const cacheKey = `vehicle_detail_v${VEHICLE_DETAIL_PARSER_VERSION}:${vehicleId}`;
   try {
     const { data } = await supabase
       .from('ruptela_vehicles_cache')
@@ -241,11 +278,12 @@ async function fetchVehicleDetail(
       const age = Date.now() - new Date((data as any).fetched_at).getTime();
       if (age < VEHICLE_DETAIL_TTL_MS) {
         const p = (data as any).payload ?? {};
-        // Backwards-compat: older cache entries only stored canbus_configuration.
         return {
           canbus_configuration: p.canbus_configuration ?? null,
           obd_configuration: p.obd_configuration ?? null,
-          canbus_hcv_lcv_configuration: p.canbus_hcv_lcv_configuration ?? null,
+          canbus_hcv_lcv_parameters: Array.isArray(p.canbus_hcv_lcv_parameters)
+            ? p.canbus_hcv_lcv_parameters
+            : [],
         };
       }
     }
