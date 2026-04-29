@@ -1,69 +1,99 @@
-## Consumir a lista de veículos suportados pela Ruptela
+## Diagnóstico
 
-### O que descobri sobre a fonte
+Existem **dois problemas distintos**, ambos causados pelo mesmo padrão arquitetural — e o fix beneficia **todas as páginas protegidas**, não só o Simulador.
 
-A página `vehicles.ruptela.com/vehicles` é uma aplicação **Laravel + Livewire** que renderiza a tabela direto no HTML — **não existe API JSON pública** da Ruptela. Mas a boa notícia é que a tabela vem completamente estruturada no próprio HTML, com 12 colunas fixas (marca, modelo, tipo, geração, ano de início/fim, regiões, tags, dispositivos compatíveis, método de conexão, data de criação) e paginação de 50 linhas por página via parâmetros de query.
+### Problema 1 — Trocar de aba do navegador "dá refresh" na página de resultado
 
-Isso significa que dá pra "fingir ser uma API" parseando o HTML server-side. Faremos isso dentro de uma Edge Function, com cache, para o frontend nunca encostar diretamente no site da Ruptela.
+Quando você sai da aba do navegador e volta:
 
-### Como vai funcionar
+1. O Supabase Auth dispara automaticamente um evento `TOKEN_REFRESHED` (ou `SIGNED_IN`) ao reganhar foco para revalidar o JWT.
+2. Em `src/hooks/useAuth.tsx` (linhas 71–82), o handler de `onAuthStateChange` chama `setUser(session?.user ?? null)` em **toda** chamada — mesmo quando o usuário é o mesmo. Isso cria uma **nova referência** do objeto `user`.
+3. Em `src/hooks/useUserRole.tsx` (linha 150), o `useEffect` depende de `[user]`. Como a referência mudou, ele refaz toda a busca de roles e permissões, e durante a busca `loading=true`.
+4. Em `src/components/RoleProtectedRoute.tsx`, enquanto `loading=true`, o componente renderiza `<FullScreenLoader message="Verificando permissões..." />` (confirmado no session replay: "Verificando permissões..." aparece exatamente quando você troca de aba).
+5. Isso **desmonta** o `<KickoffSimulatorResult />`, perde o estado React (`useState payload`) e remonta. Na remontagem, ele lê do `sessionStorage` — funciona, mas visualmente parece um "refresh".
+
+**Isso afeta todas as páginas envolvidas em `RoleProtectedRoute`**, não só o Simulador. Em outras páginas é menos perceptível porque os dados vêm do React Query em cache. No resultado da simulação, como o estado é local e há o flash do loader, o efeito é gritante.
+
+### Problema 2 — Sair da página enquanto a planilha carrega perde tudo
+
+Em `src/pages/KickoffSimulator.tsx`:
+
+- O estado `file`, `rows`, `processing` e `progress` vivem dentro do componente (linhas 104–113).
+- O loop de processamento (`handleSimulate`, linhas 182–236) só salva o resultado **no final** (linha 220 `simulatorService.save` e linha 227 `sessionStorage.setItem`).
+- Se você navega para fora durante o processamento, o componente desmonta, o loop continua executando em memória mas os `setProgress`/`setProcessing` se perdem, e ao voltar a tela está zerada — você precisa subir a planilha de novo.
+
+Agravante: quando você troca de aba do navegador, o mesmo mecanismo do Problema 1 desmonta a página de upload no meio do processamento.
+
+---
+
+## Plano de correção
+
+### Fix A — Eliminar o "refresh" ao trocar de aba (resolve em todo o app)
+
+Em `src/hooks/useAuth.tsx`:
+
+- No handler `onAuthStateChange`, só chamar `setUser` / `setSession` quando `session?.user?.id` realmente mudar. Comparar com o estado anterior usando refs.
+- Ignorar explicitamente o evento `TOKEN_REFRESHED` para fins de re-render (ainda mantemos a sessão atualizada internamente, mas sem trocar a referência de `user`).
+
+Em `src/hooks/useUserRole.tsx`:
+
+- Trocar a dependência do `useEffect` de `[user]` para `[user?.id]`. Assim, mesmo se `user` virar nova referência, o efeito não dispara enquanto o ID for o mesmo.
+- Não setar `loading=true` quando já temos `role` carregado para o mesmo usuário (refetch silencioso).
+
+Em `src/components/RoleProtectedRoute.tsx`:
+
+- Não desmontar os filhos quando `loading=true` **se já temos uma `role` previamente carregada**. Mostra os filhos com a verificação anterior em vez de trocar para `<FullScreenLoader />`. Isso evita o flash de "Verificando permissões..." e a perda de estado das páginas.
+
+### Fix B — Persistir o progresso do Simulador
+
+Em `src/pages/KickoffSimulator.tsx`:
+
+1. Persistir `file metadata`, `rows`, `detectedColumns`, `processing` e `progress` em `sessionStorage` durante todo o processo (não só no final). Chave dedicada: `kickoff-simulator-inprogress`.
+2. Ao montar o componente, restaurar esse estado se existir.
+3. Continuar a partir do índice `progress` em vez de recomeçar do zero (o array `results` parcial também é salvo).
+4. Limpar a chave quando a simulação terminar com sucesso (e ao iniciar uma nova).
+
+Observação: o `File` em si não pode ser serializado, mas as `rows` parseadas já são suficientes para retomar — não precisamos do arquivo original depois do parse.
+
+### Fix C (preventivo) — ScrollToTop global
+
+Adicionar um componente `<ScrollToTop />` dentro do `BrowserRouter` em `src/App.tsx` para resetar o scroll a cada navegação. Isso resolve um efeito colateral comum (manter posição de scroll antiga ao mudar de página) que se mistura com a percepção de "refresh".
+
+---
+
+## Detalhes técnicos
+
+**Arquivos a modificar:**
 
 ```text
-Frontend (página de teste)
-     │
-     │  supabase.functions.invoke('check-ruptela-vehicle', { brand, model, year })
-     ▼
-Edge Function check-ruptela-vehicle  ◄──── cache em ruptela_vehicles_cache (24h)
-     │
-     │  fetch HTML da Ruptela só se cache vencer
-     ▼
-vehicles.ruptela.com/vehicles?brand=...   →   parser → JSON normalizado
+src/hooks/useAuth.tsx
+  - Comparar user?.id antigo vs novo antes de setUser
+  - Ignorar TOKEN_REFRESHED no re-render
+
+src/hooks/useUserRole.tsx
+  - useEffect dep: [user?.id]
+  - loading=true só na primeira carga (lastUserId ref)
+
+src/components/RoleProtectedRoute.tsx
+  - Se loading && role já existe -> usar role atual em vez de FullScreenLoader
+
+src/pages/KickoffSimulator.tsx
+  - Persistir rows/progress/results parciais em sessionStorage durante handleSimulate
+  - Restaurar no mount; retomar do índice salvo
+  - Limpar chave ao concluir
+
+src/components/ScrollToTop.tsx (novo)
+src/App.tsx
+  - Montar <ScrollToTop /> dentro do BrowserRouter
 ```
 
-A função aceita 3 modos:
-1. **`?brand=X&model=Y&year=Z`** → retorna se o veículo é suportado, em qual geração, com quais dispositivos Ruptela e método de conexão (OBD/CANBus). Ideal para validar pontualmente um veículo do Kickoff.
-2. **`?brand=X`** → lista todos os modelos suportados daquela marca.
-3. **`?brands=true`** → retorna a lista completa de marcas suportadas (útil para popular um dropdown depois).
+**Por que isso é seguro:** o real refresh de token continua acontecendo no Supabase client; só evitamos disparar re-renders desnecessários da árvore React. Permissões continuam sendo revalidadas quando o `user.id` muda (login/logout reais).
 
-### Entregáveis
+---
 
-**1. Tabela de cache** `ruptela_vehicles_cache`
-   - `cache_key` (texto, único — ex: `brand:mercedes-benz`, `all_brands`)
-   - `payload` (jsonb com a lista parseada)
-   - `fetched_at` (timestamptz)
-   - RLS: leitura pública para usuários autenticados, escrita só via service role (a Edge Function escreve)
-   - TTL configurável na função (padrão 24h)
+## Fora do escopo
 
-**2. Edge Function `check-ruptela-vehicle`** (`verify_jwt = true` — só usuário logado consulta)
-   - Lê cache; se válido (< 24h), responde direto
-   - Se vencido, faz `fetch` no HTML da Ruptela paginando até cobrir a marca pedida (a paginação retorna 50 linhas/página, então marcas grandes como Mercedes-Benz vão precisar de 2-3 requisições)
-   - Parser extrai as 12 colunas de cada `<tr>` e monta um array de objetos `{ brand, model, type, generation, year_from, year_to, regions[], tags[], devices[], connection_methods[], created_at }`
-   - Para o modo `brand+model+year`: filtra a lista pela marca normalizada (case-insensitive, sem acento), depois match difuso de modelo (mesma lógica `UPPER(TRIM(SPLIT_PART))` já usada nas suas regras de automação) e valida se o ano cai entre `year_from` e `year_to` (ou `year_to = null` significa "até hoje")
-   - Resposta padronizada: `{ supported: true/false, matched_entry?, suggested_devices?, connection_method?, candidates: [...] }`
-   - CORS configurado, validação com Zod, erros 4xx claros
+- Não vou refatorar o React Query nem invalidations de outras páginas.
+- Não vou mover o processamento para um Web Worker (out of scope; o ganho aqui é apenas evitar perda de estado).
 
-**3. Service e hook React** (`src/services/ruptelaVehicleService.ts`, `src/hooks/useRuptelaCheck.ts`)
-   - Wrapper tipado em torno de `supabase.functions.invoke`
-   - Hook React Query com cache local de 1h (camada extra além do cache da função)
-
-**4. Página de teste** `src/pages/RuptelaVehicleCheck.tsx`
-   - Formulário com Marca / Modelo / Ano (espelhando o `VehicleVerificationTest.tsx` existente para manter o padrão visual)
-   - Mostra: badge "Suportado/Não suportado", geração compatível, lista de dispositivos Ruptela recomendados, método de conexão, e — se não houver match exato — sugestões de modelos parecidos da mesma marca
-   - Adicionada ao menu apenas para perfis com acesso ao módulo `homologation` (segue o padrão `has_module_access`)
-
-### Detalhes técnicos
-
-- **Parser:** regex sobre `<table>` → `<tr>` → `<td>` é suficiente porque o markup é estável e gerado por Livewire (não muda com JS no cliente). Como fallback, se a quantidade de colunas mudar, a função loga e retorna 502 em vez de devolver dados corrompidos.
-- **Normalização:** `brand` e `model` passam por NFD + remoção de diacríticos + lowercase, mesmo padrão já estabelecido em `mem://features/accessory-detection-normalization-logic`.
-- **Rate limiting:** como a Ruptela não publica limites, vamos respeitar com cache de 24h por marca + `User-Agent` identificável + no máximo 1 fetch a cada 5s por marca (controle simples in-function).
-- **Resiliência:** se o fetch falhar, retorna o cache antigo com flag `stale: true` (mesma estratégia de `mem://performance/external-api-caching-policy`).
-- **Sem secrets:** a Ruptela é pública, não precisa de API key.
-
-### Fora do escopo (deixar para depois, se você quiser)
-
-- Cruzar automaticamente cada veículo do Kickoff/Homologação com a Ruptela e mostrar selo nos cards
-- Importar a base inteira para uma tabela própria
-- Endpoint público (atualmente exige login)
-- Atualização agendada via pg_cron
-
-Estes podem virar próximos passos depois que validarmos que o parser está estável com a Ruptela.
+Após aprovado, aplico os 5 ajustes acima de uma vez.

@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
+import { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react'
 import { useAuth } from './useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { AppModule, PermissionLevel, ModulePermission } from '@/types/permissions'
@@ -71,16 +71,28 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const [realRole, setRealRole] = useState<UserRole>(null)
   const [realPermissions, setRealPermissions] = useState<ModulePermission[]>([])
 
+  // Track last fetched user id to avoid re-fetching (and toggling loading=true)
+  // when the user object reference changes but the actual user is the same
+  // (e.g. on TOKEN_REFRESHED). This prevents the "verifying permissions" flash
+  // that was unmounting protected pages on tab switch.
+  const lastFetchedUserId = useRef<string | null>(null)
+
   useEffect(() => {
     const fetchUserRoleAndPermissions = async () => {
       if (!user) {
+        lastFetchedUserId.current = null
         setRole(null)
         setPermissions([])
         setLoading(false)
         return
       }
 
-      setLoading(true)
+      // Only show full loader on first load for this user
+      const isFirstLoadForUser = lastFetchedUserId.current !== user.id
+      if (isFirstLoadForUser) {
+        setLoading(true)
+      }
+      lastFetchedUserId.current = user.id
 
       try {
         const { data: roleData, error: roleError } = await supabase
@@ -147,7 +159,9 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     }
 
     fetchUserRoleAndPermissions()
-  }, [user])
+    // Depend on user id (not the object reference) so token refreshes don't
+    // re-trigger the fetch and unmount protected children.
+  }, [user?.id])
 
   // Check if user has a specific base role
   const hasRole = (requiredRole: UserRole): boolean => {

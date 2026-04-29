@@ -68,10 +68,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Set up auth state listener
+    // IMPORTANTE: para evitar re-renders desnecessários (e desmontagens de
+    // componentes ao trocar de aba), só atualizamos `user`/`session` quando
+    // o ID do usuário realmente mudar. Eventos como TOKEN_REFRESHED disparam
+    // automaticamente quando a aba reganha foco — sem este guard, eles
+    // criavam novas referências de objeto e causavam um "refresh" visual
+    // em todas as páginas protegidas.
+    let lastUserId: string | null = null
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
+        const nextUserId = session?.user?.id ?? null
+        const userChanged = nextUserId !== lastUserId
+
+        if (userChanged) {
+          lastUserId = nextUserId
+          setSession(session)
+          setUser(session?.user ?? null)
+        } else {
+          // Atualiza apenas a sessão (token novo) sem trocar referência de user
+          setSession(session)
+        }
         setLoading(false)
 
         // Record last seen on any auth event with a valid session
@@ -89,8 +105,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(sessionTimeout)
-      setSession(session)
-      setUser(session?.user ?? null)
+      const nextUserId = session?.user?.id ?? null
+      if (nextUserId !== lastUserId) {
+        lastUserId = nextUserId
+        setSession(session)
+        setUser(session?.user ?? null)
+      } else {
+        setSession(session)
+      }
       setLoading(false)
 
       if (session?.user?.id) {
