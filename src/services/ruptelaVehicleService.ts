@@ -18,6 +18,10 @@ export interface RuptelaEntry {
   // Plain text of the "CANbus Configuration" card from the Ruptela detail page
   // (e.g. "1. LCV group - CITROEN4"). Only populated for the matched entry.
   canbus_configuration: string | null;
+  // Plain text of the "OBD Configuration" card (e.g. "1. OBD - Volkswagen").
+  obd_configuration: string | null;
+  // Plain text of the "CANbus (HCV/LCV) Configuration" sub-section, when present.
+  canbus_hcv_lcv_configuration: string | null;
 }
 
 export interface RuptelaCandidate extends RuptelaEntry {

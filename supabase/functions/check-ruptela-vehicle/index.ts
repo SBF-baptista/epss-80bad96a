@@ -32,6 +32,11 @@ interface RuptelaEntry {
   // Plain text of the "CANbus Configuration" section from the vehicle detail page.
   // Populated lazily for the matched entry only (avoids N extra requests when listing).
   canbus_configuration: string | null;
+  // Plain text of the "OBD Configuration" section (e.g. "1. OBD - Volkswagen").
+  obd_configuration: string | null;
+  // Plain text of the "CANbus (HCV/LCV) Configuration" sub-section under Supported Parameters,
+  // when present. Falls back to null when not available.
+  canbus_hcv_lcv_configuration: string | null;
 }
 
 // ---------- Helpers ----------
@@ -109,6 +114,8 @@ function parseRuptelaHtml(html: string): RuptelaEntry[] {
       vehicle_id: vehicleId,
       canbus_configuration_url: canbusUrl,
       canbus_configuration: null,
+      obd_configuration: null,
+      canbus_hcv_lcv_configuration: null,
     });
   }
   return entries;
@@ -170,27 +177,59 @@ async function saveCache(
 const VEHICLE_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — rarely changes
 
 /**
- * Parses the "CANbus Configuration" card from the vehicle detail HTML.
- * The card structure on https://vehicles.ruptela.com/vehicle/{id} is:
- *   <h3>CANbus Configuration</h3> ... <div class="prose ...">TEXT</div>
+ * Parses a labeled card from the vehicle detail HTML by locating the heading
+ * (any h2/h3/h4) whose visible text matches `label`, then extracting the next
+ * `.prose` container that follows it. Returns null when missing.
  */
-function parseCanbusConfiguration(html: string): string | null {
-  // Find the heading, then the next .prose container after it.
-  const headingIdx = html.search(/CANbus Configuration/i);
-  if (headingIdx === -1) return null;
-  const after = html.slice(headingIdx);
-  const proseMatch = after.match(/<div[^>]*class=["'][^"']*prose[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+function parseSection(html: string, label: RegExp): string | null {
+  // Match a heading tag enclosing the label text
+  const headingRe = new RegExp(
+    `<h[1-6][^>]*>\\s*${label.source}\\s*<\\/h[1-6]>`,
+    'i',
+  );
+  const m = html.match(headingRe);
+  if (!m || m.index === undefined) return null;
+  const after = html.slice(m.index + m[0].length);
+  // The .prose container holds the human-readable text. Take the FIRST prose
+  // div that follows the heading and is reasonably close (avoid jumping past
+  // unrelated sections).
+  const proseMatch = after.slice(0, 4000).match(
+    /<div[^>]*class=["'][^"']*prose[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+  );
   if (!proseMatch) return null;
   const text = stripTags(proseMatch[1]);
   return text || null;
 }
 
+interface VehicleDetail {
+  canbus_configuration: string | null;
+  obd_configuration: string | null;
+  canbus_hcv_lcv_configuration: string | null;
+}
+
+function parseVehicleDetail(html: string): VehicleDetail {
+  return {
+    // Sidebar h3 cards
+    canbus_configuration: parseSection(html, /CANbus Configuration/i),
+    obd_configuration: parseSection(html, /OBD Configuration/i),
+    // "Supported Parameters" sub-section (h4) — escape parens
+    canbus_hcv_lcv_configuration: parseSection(
+      html,
+      /CANbus \(HCV\/LCV\) Configuration/i,
+    ),
+  };
+}
+
 async function fetchVehicleDetail(
   supabase: ReturnType<typeof createClient>,
   vehicleId: number,
-): Promise<string | null> {
+): Promise<VehicleDetail> {
+  const empty: VehicleDetail = {
+    canbus_configuration: null,
+    obd_configuration: null,
+    canbus_hcv_lcv_configuration: null,
+  };
   const cacheKey = `vehicle_detail:${vehicleId}`;
-  // Reuse same cache table — payload is wrapped as { canbus_configuration }.
   try {
     const { data } = await supabase
       .from('ruptela_vehicles_cache')
@@ -200,7 +239,13 @@ async function fetchVehicleDetail(
     if (data) {
       const age = Date.now() - new Date((data as any).fetched_at).getTime();
       if (age < VEHICLE_DETAIL_TTL_MS) {
-        return ((data as any).payload?.canbus_configuration as string | null) ?? null;
+        const p = (data as any).payload ?? {};
+        // Backwards-compat: older cache entries only stored canbus_configuration.
+        return {
+          canbus_configuration: p.canbus_configuration ?? null,
+          obd_configuration: p.obd_configuration ?? null,
+          canbus_hcv_lcv_configuration: p.canbus_hcv_lcv_configuration ?? null,
+        };
       }
     }
   } catch (_) {
@@ -214,25 +259,25 @@ async function fetchVehicleDetail(
         Accept: 'text/html',
       },
     });
-    if (!res.ok) return null;
+    if (!res.ok) return empty;
     const html = await res.text();
-    const canbus = parseCanbusConfiguration(html);
+    const detail = parseVehicleDetail(html);
 
     await supabase
       .from('ruptela_vehicles_cache')
       .upsert(
         {
           cache_key: cacheKey,
-          payload: { canbus_configuration: canbus },
+          payload: detail,
           fetched_at: new Date().toISOString(),
         },
         { onConflict: 'cache_key' },
       );
 
-    return canbus;
+    return detail;
   } catch (err) {
     console.error('fetchVehicleDetail failed:', err);
-    return null;
+    return empty;
   }
 }
 // Tokens too generic to be discriminative (brand prefixes, abbreviations).
@@ -446,8 +491,10 @@ Deno.serve(async (req) => {
     // Lazily enrich the matched entry with the CANbus Configuration text
     const matchedEntry: RuptelaEntry | null = supported ? { ...best!.entry } : null;
     if (matchedEntry && matchedEntry.vehicle_id) {
-      const canbusText = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
-      matchedEntry.canbus_configuration = canbusText;
+      const detail = await fetchVehicleDetail(supabase, matchedEntry.vehicle_id);
+      matchedEntry.canbus_configuration = detail.canbus_configuration;
+      matchedEntry.obd_configuration = detail.obd_configuration;
+      matchedEntry.canbus_hcv_lcv_configuration = detail.canbus_hcv_lcv_configuration;
     }
 
     return new Response(

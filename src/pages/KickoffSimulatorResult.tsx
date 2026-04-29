@@ -77,6 +77,8 @@ const KickoffSimulatorResult = () => {
             : isHomologated
               ? fb!.configuration
               : "",
+          "OBD Configuration": isRuptela ? matched?.obd_configuration ?? "" : "",
+          "CANbus (HCV/LCV) Configuration": isRuptela ? matched?.canbus_hcv_lcv_configuration ?? "" : "",
           "Dispositivos sugeridos": isRuptela ? (r.response?.suggested_devices ?? []).join(", ") : isHomologated ? (fb!.tracker_model ?? "") : "",
           "Métodos de conexão": isRuptela ? (r.response?.connection_methods ?? []).join(", ") : "",
           Geração: matched?.generation ?? "",
@@ -424,6 +426,32 @@ const ResultCard = ({ result, index }: { result: SimulatorPayload["results"][num
             </p>
             <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs sm:text-sm font-medium text-foreground whitespace-pre-line break-words">
               {response.matched_entry.canbus_configuration}
+            </div>
+          </div>
+        )}
+
+        {/* OBD Configuration: card "OBD Configuration" da página de detalhe Ruptela. */}
+        {response && response.matched_entry?.obd_configuration && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              OBD Configuration
+            </p>
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs sm:text-sm font-medium text-foreground whitespace-pre-line break-words">
+              {response.matched_entry.obd_configuration}
+            </div>
+          </div>
+        )}
+
+        {/* CANbus (HCV/LCV) Configuration: subseção dentro de "Supported Parameters". */}
+        {response && response.matched_entry?.canbus_hcv_lcv_configuration && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              CANbus (HCV/LCV) Configuration
+            </p>
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs sm:text-sm font-medium text-foreground whitespace-pre-line break-words">
+              {response.matched_entry.canbus_hcv_lcv_configuration}
             </div>
           </div>
         )}
