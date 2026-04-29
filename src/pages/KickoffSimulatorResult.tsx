@@ -77,6 +77,8 @@ const KickoffSimulatorResult = () => {
             : isHomologated
               ? fb!.configuration
               : "",
+          "OBD Configuration": isRuptela ? matched?.obd_configuration ?? "" : "",
+          "CANbus (HCV/LCV) Configuration": isRuptela ? matched?.canbus_hcv_lcv_configuration ?? "" : "",
           "Dispositivos sugeridos": isRuptela ? (r.response?.suggested_devices ?? []).join(", ") : isHomologated ? (fb!.tracker_model ?? "") : "",
           "Métodos de conexão": isRuptela ? (r.response?.connection_methods ?? []).join(", ") : "",
           Geração: matched?.generation ?? "",
