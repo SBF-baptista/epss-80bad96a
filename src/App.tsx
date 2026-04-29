@@ -38,7 +38,7 @@ const Installation = lazy(() => import("./pages/Installation"));
 const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
-const RuptelaVehicleCheck = lazy(() => import("./pages/RuptelaVehicleCheck"));
+
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
 const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
 
