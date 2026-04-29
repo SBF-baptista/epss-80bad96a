@@ -410,7 +410,7 @@ const KickoffSimulator = () => {
             }}
           >
             <Upload className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm font-medium break-all">{file ? file.name : "Toque ou arraste a planilha aqui"}</p>
+            <p className="text-sm font-medium break-all">{fileName || "Toque ou arraste a planilha aqui"}</p>
             <p className="text-xs text-muted-foreground mt-1">Formato suportado: .xlsx</p>
             <input
               ref={inputRef}
