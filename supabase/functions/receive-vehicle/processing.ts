@@ -109,42 +109,26 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
       try {
-        // Deduplication check 1: Cross-sale plate check (prevent same plate in different sales)
-        if (vehicleData.plate) {
-          const { data: existingByPlate } = await supabase
-            .from('incoming_vehicles')
-            .select('id, sale_summary_id, processing_notes')
-            .eq('plate', vehicleData.plate)
-            .limit(1)
-            .maybeSingle();
-
-          if (existingByPlate) {
-            console.log(`[${timestamp}][${requestId}] ⚠️ Plate ${vehicleData.plate} already exists in sale ${existingByPlate.sale_summary_id} (id: ${existingByPlate.id}). Skipping cross-sale duplicate.`);
-            groupResult.vehicles_processed.push({
-              vehicle: `${brand} ${vehicle}`,
-              quantity: quantity || 1,
-              incoming_vehicle_id: existingByPlate.id,
-              status: 'already_exists',
-              processing_notes: `Duplicate skipped - plate ${vehicleData.plate} already exists in sale ${existingByPlate.sale_summary_id}`
-            });
-            totalVehiclesProcessed++;
-            continue;
-          }
-        }
-
-        // Deduplication check 2: Same sale_summary_id + brand + vehicle (for vehicles without plate)
-        if (group.sale_summary_id && !vehicleData.plate) {
-          const { data: existingVehicle } = await supabase
+        // Deduplication check: only consider duplicates within the SAME sale_summary_id.
+        // The same plate in different sales is allowed (legitimate case: new sale of accessories/services for an existing vehicle).
+        if (group.sale_summary_id) {
+          let dedupQuery = supabase
             .from('incoming_vehicles')
             .select('id, processing_notes')
             .eq('sale_summary_id', group.sale_summary_id)
             .eq('brand', brand.trim())
-            .eq('vehicle', vehicle.trim())
+            .eq('vehicle', vehicle.trim());
+
+          if (vehicleData.plate) {
+            dedupQuery = dedupQuery.eq('plate', vehicleData.plate);
+          }
+
+          const { data: existingVehicle } = await dedupQuery
             .limit(1)
             .maybeSingle();
 
           if (existingVehicle) {
-            console.log(`[${timestamp}][${requestId}] ⚠️ Vehicle ${brand} ${vehicle} already exists for sale_summary_id ${group.sale_summary_id} (id: ${existingVehicle.id}). Skipping.`);
+            console.log(`[${timestamp}][${requestId}] ⚠️ Vehicle ${brand} ${vehicle}${vehicleData.plate ? ` (plate ${vehicleData.plate})` : ''} already exists for sale_summary_id ${group.sale_summary_id} (id: ${existingVehicle.id}). Skipping intra-sale duplicate.`);
             groupResult.vehicles_processed.push({
               vehicle: `${brand} ${vehicle}`,
               quantity: quantity || 1,
