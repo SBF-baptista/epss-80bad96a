@@ -1414,18 +1414,21 @@ export const KickoffDetailsModal = ({
               />
             </div>
 
-            {/* Observações */}
+            {/* Objetivo principal do cliente */}
             <div className="space-y-3 border rounded-lg p-4 shadow-sm bg-card">
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">Observações</h3>
+                <h3 className="font-bold text-lg">
+                  Objetivo principal do cliente <span className="text-destructive">*</span>
+                </h3>
               </div>
               <Textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observações gerais do kickoff..."
+                placeholder="Descreva o objetivo principal do cliente..."
                 rows={4}
+                required
               />
             </div>
           </form>
