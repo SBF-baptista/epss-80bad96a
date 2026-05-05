@@ -711,7 +711,7 @@ export const KickoffDetailsModal = ({
   // Validation checks
   const hasValidLocations = installationLocations.some((loc) => loc.city.trim() !== "" && loc.state.trim() !== "");
   const hasAtLeastOneValidatedPlate = validatedPlates.size > 0;
-  const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations;
+  const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations && notes.trim() !== "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
