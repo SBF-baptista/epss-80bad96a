@@ -783,22 +783,22 @@ export const KickoffVehiclesTable = ({
         </div>
 
         {/* Desktop Table Layout */}
-        <div className="hidden lg:block rounded-md border">
-          <Table className="w-full table-fixed">
+        <div className="hidden lg:block rounded-md border overflow-x-auto w-full max-w-full">
+          <Table className="table-fixed w-full min-w-[1100px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[6%] border-r border-border">Placa</TableHead>
-                <TableHead className="w-[7%] border-r border-border">Data</TableHead>
-                <TableHead className="w-[9%] border-r border-border">Produto</TableHead>
-                <TableHead className="w-[7%] border-r border-border">Marca</TableHead>
-                <TableHead className="w-[9%] border-r border-border">Modelo</TableHead>
-                <TableHead className="w-[4%] border-r border-border">Ano</TableHead>
-                <TableHead className="w-[14%] border-r border-border">Módulos</TableHead>
-                <TableHead className="w-[12%] border-r border-border">Acessórios</TableHead>
-                <TableHead className="w-[12%] border-r border-border">Bloqueio</TableHead>
-                <TableHead className="w-[8%] border-r border-border">Sirene</TableHead>
-                <TableHead className="w-[10%] border-r border-border">FIPE</TableHead>
-                <TableHead className="w-[8%]">
+                <TableHead className="w-[90px] border-r border-border">Placa</TableHead>
+                <TableHead className="w-[90px] border-r border-border">Data</TableHead>
+                <TableHead className="w-[110px] border-r border-border">Produto</TableHead>
+                <TableHead className="w-[90px] border-r border-border">Marca</TableHead>
+                <TableHead className="w-[110px] border-r border-border">Modelo</TableHead>
+                <TableHead className="w-[60px] border-r border-border">Ano</TableHead>
+                <TableHead className="w-[160px] border-r border-border">Módulos</TableHead>
+                <TableHead className="w-[150px] border-r border-border">Acessórios</TableHead>
+                <TableHead className="w-[140px] border-r border-border">Bloqueio</TableHead>
+                <TableHead className="w-[100px] border-r border-border">Sirene</TableHead>
+                <TableHead className="w-[120px] border-r border-border">FIPE</TableHead>
+                <TableHead className="w-[110px]">
                   <div className="flex items-center gap-2">
                     <span>Validação</span>
                     {onValidateAll && (
