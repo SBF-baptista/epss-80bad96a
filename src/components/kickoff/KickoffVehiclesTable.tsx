@@ -788,7 +788,8 @@ export const KickoffVehiclesTable = ({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[6%] border-r border-border">Placa</TableHead>
-                <TableHead className="w-[10%] border-r border-border">Produto</TableHead>
+                <TableHead className="w-[7%] border-r border-border">Data</TableHead>
+                <TableHead className="w-[9%] border-r border-border">Produto</TableHead>
                 <TableHead className="w-[7%] border-r border-border">Marca</TableHead>
                 <TableHead className="w-[9%] border-r border-border">Modelo</TableHead>
                 <TableHead className="w-[4%] border-r border-border">Ano</TableHead>
@@ -839,6 +840,13 @@ export const KickoffVehiclesTable = ({
                     <TableCell className="border-r border-border">
                       <span className={isPlateValidated ? "text-green-600" : ""}>
                         {vehicle.plate || "Não informada"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="border-r border-border">
+                      <span className="text-xs">
+                        {vehicle.received_at
+                          ? new Date(vehicle.received_at).toLocaleDateString("pt-BR")
+                          : "-"}
                       </span>
                     </TableCell>
                     <TableCell className="border-r border-border">
