@@ -25,6 +25,7 @@ export interface KickoffVehicle {
   usage_type: string;
   quantity: number;
   kickoff_completed: boolean;
+  received_at: string | null;
   modules: KickoffModule[];
 }
 
@@ -169,6 +170,7 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
       usage_type: vehicle.usage_type || 'Não especificado',
       quantity: quantity,
       kickoff_completed: vehicle.kickoff_completed || false,
+      received_at: vehicle.received_at || null,
       modules: modulesMap.get(vehicle.id) || []
     });
   });
