@@ -783,22 +783,22 @@ export const KickoffVehiclesTable = ({
         </div>
 
         {/* Desktop Table Layout */}
-        <div className="hidden lg:block rounded-md border">
-          <Table className="w-full table-fixed">
+        <div className="hidden lg:block rounded-md border overflow-x-auto w-full max-w-full">
+          <Table className="table-fixed w-full min-w-[1100px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[6%] border-r border-border">Placa</TableHead>
-                <TableHead className="w-[7%] border-r border-border">Data</TableHead>
-                <TableHead className="w-[9%] border-r border-border">Produto</TableHead>
-                <TableHead className="w-[7%] border-r border-border">Marca</TableHead>
-                <TableHead className="w-[9%] border-r border-border">Modelo</TableHead>
-                <TableHead className="w-[4%] border-r border-border">Ano</TableHead>
-                <TableHead className="w-[14%] border-r border-border">Módulos</TableHead>
-                <TableHead className="w-[12%] border-r border-border">Acessórios</TableHead>
-                <TableHead className="w-[12%] border-r border-border">Bloqueio</TableHead>
-                <TableHead className="w-[8%] border-r border-border">Sirene</TableHead>
-                <TableHead className="w-[10%] border-r border-border">FIPE</TableHead>
-                <TableHead className="w-[8%]">
+                <TableHead className="w-[90px] border-r border-border">Placa</TableHead>
+                <TableHead className="w-[90px] border-r border-border">Data</TableHead>
+                <TableHead className="w-[110px] border-r border-border">Produto</TableHead>
+                <TableHead className="w-[90px] border-r border-border">Marca</TableHead>
+                <TableHead className="w-[110px] border-r border-border">Modelo</TableHead>
+                <TableHead className="w-[60px] border-r border-border">Ano</TableHead>
+                <TableHead className="w-[160px] border-r border-border">Módulos</TableHead>
+                <TableHead className="w-[150px] border-r border-border">Acessórios</TableHead>
+                <TableHead className="w-[140px] border-r border-border">Bloqueio</TableHead>
+                <TableHead className="w-[100px] border-r border-border">Sirene</TableHead>
+                <TableHead className="w-[120px] border-r border-border">FIPE</TableHead>
+                <TableHead className="w-[110px]">
                   <div className="flex items-center gap-2">
                     <span>Validação</span>
                     {onValidateAll && (
@@ -837,44 +837,44 @@ export const KickoffVehiclesTable = ({
 
                 return (
                   <TableRow key={vehicle.id} className={isPlateValidated ? "opacity-60" : ""}>
-                    <TableCell className="border-r border-border">
-                      <span className={isPlateValidated ? "text-green-600" : ""}>
+                    <TableCell className="border-r border-border overflow-hidden">
+                      <span className={`block truncate ${isPlateValidated ? "text-green-600" : ""}`} title={vehicle.plate || "Não informada"}>
                         {vehicle.plate || "Não informada"}
                       </span>
                     </TableCell>
-                    <TableCell className="border-r border-border">
-                      <span className="text-xs">
+                    <TableCell className="border-r border-border overflow-hidden">
+                      <span className="block truncate text-xs">
                         {vehicle.received_at
                           ? new Date(vehicle.received_at).toLocaleDateString("pt-BR")
                           : "-"}
                       </span>
                     </TableCell>
-                    <TableCell className="border-r border-border">
-                      <span className="text-xs break-words inline-block">
+                    <TableCell className="border-r border-border overflow-hidden">
+                      <span className="block truncate text-xs" title={capitalizeWords(vehicle.usage_type || "")}>
                         {capitalizeWords(vehicle.usage_type || "")}
                       </span>
                     </TableCell>
-                    <TableCell className="border-r border-border">
-                      <div className="flex items-center gap-2">
-                        <span>{vehicle.brand}</span>
+                    <TableCell className="border-r border-border overflow-hidden">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate" title={vehicle.brand}>{vehicle.brand}</span>
                         {vehicle.quantity > 1 && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs shrink-0">
                             {vehicle.quantity}x
                           </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="border-r border-border">
-                      <span>{vehicle.model}</span>
+                    <TableCell className="border-r border-border overflow-hidden">
+                      <span className="block truncate" title={vehicle.model}>{vehicle.model}</span>
                     </TableCell>
-                    <TableCell className="border-r border-border">
-                      {vehicle.year || <span className="text-muted-foreground">-</span>}
+                    <TableCell className="border-r border-border overflow-hidden">
+                      <span className="block truncate">{vehicle.year || <span className="text-muted-foreground">-</span>}</span>
                     </TableCell>
-                    <TableCell className="border-r border-border align-top">
-                      <div className="space-y-1">
+                    <TableCell className="border-r border-border align-top overflow-hidden">
+                      <div className="space-y-1 min-w-0">
                         {modulesList.length > 0 ? (
                           modulesList.map((module, idx) => (
-                            <div key={`mod-${idx}`} className="text-xs break-words">
+                            <div key={`mod-${idx}`} className="text-xs truncate" title={module.name}>
                               {module.name}
                             </div>
                           ))
@@ -883,12 +883,16 @@ export const KickoffVehiclesTable = ({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="border-r border-border align-top">
-                      <div>
+                    <TableCell className="border-r border-border align-top overflow-hidden">
+                      <div className="min-w-0">
                         {accessoriesList.length > 0 ? (
                           <div className="flex gap-1 flex-wrap">
                             {accessoriesList.map((item, idx) => (
-                              <span key={`acc-${idx}`} className="text-xs bg-muted px-1.5 py-0.5 rounded break-words">
+                              <span
+                                key={`acc-${idx}`}
+                                className="text-xs bg-muted px-1.5 py-0.5 rounded max-w-full truncate"
+                                title={cleanItemName(item.name)}
+                              >
                                 {cleanItemName(item.name)}
                               </span>
                             ))}
