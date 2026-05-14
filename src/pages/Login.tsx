@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FolderKanban, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { FullScreenLoader } from "@/components/ui/loading";
+import { LoginTutorial } from "@/components/LoginTutorial";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -50,6 +51,7 @@ const Login = () => {
           </Button>
         </CardContent>
       </Card>
+      <LoginTutorial />
     </div>
   );
 };
