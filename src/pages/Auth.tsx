@@ -467,6 +467,7 @@ const Auth = () => {
             </div>
 
             <ForgotPasswordModal open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
+            <LoginTutorial />
           </div>
         </div>
       </div>
