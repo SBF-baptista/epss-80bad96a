@@ -30,17 +30,11 @@ export function LoginTutorial() {
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">
                       1
                     </span>
-                    <span>Clique em <strong>"Entrar no Sistema"</strong> na tela inicial.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">
-                      2
-                    </span>
                     <span>Digite seu <strong>e-mail corporativo</strong> cadastrado.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">
-                      3
+                      2
                     </span>
                     <span>Digite sua <strong>senha</strong> e clique em <strong>"Entrar no painel"</strong>.</span>
                   </li>
@@ -60,30 +54,19 @@ export function LoginTutorial() {
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[10px] font-bold text-warning mt-0.5">
                       1
                     </span>
-                    <span>Na tela de login, clique em <strong>"Primeiro acesso"</strong>.</span>
+                    <span>Digite o <strong>e-mail corporativo</strong> e a <strong>senha</strong> que deseja utilizar.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[10px] font-bold text-warning mt-0.5">
                       2
                     </span>
-                    <span>Informe seu <strong>e-mail corporativo</strong> e aguarde a verificação.</span>
+                    <span>Clique em <strong>"Primeiro acesso"</strong>. Uma solicitação será enviada ao <strong>administrador</strong> para cadastrar seu e-mail na plataforma, caso ainda não esteja.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[10px] font-bold text-warning mt-0.5">
                       3
                     </span>
-                    <span>
-                      Crie uma <strong>senha segura</strong> seguindo as regras exibidas na tela:
-                      <span className="block mt-1 text-xs text-muted-foreground/80">
-                        mínimo 8 caracteres, 1 maiúscula, 1 número e 1 caractere especial.
-                      </span>
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[10px] font-bold text-warning mt-0.5">
-                      4
-                    </span>
-                    <span>Confirme a senha e clique em <strong>"Definir Senha e Entrar"</strong>.</span>
+                    <span>Após a <strong>verificação do administrador</strong>, você poderá entrar normalmente usando o e-mail e a senha cadastrados.</span>
                   </li>
                 </ol>
               </div>
