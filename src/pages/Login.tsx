@@ -51,6 +51,7 @@ const Login = () => {
           </Button>
         </CardContent>
       </Card>
+      <LoginTutorial />
     </div>
   );
 };
