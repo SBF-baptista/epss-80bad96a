@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, History, Search, FileText, FlaskConical } from "lucide-react";
+import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -13,12 +13,61 @@ import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
+import { KickoffTutorial, type TutorialStep } from "@/components/kickoff/KickoffTutorial";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAuth } from "@/hooks/useAuth";
 
 import { motion } from "framer-motion";
+
+const TUTORIAL_KEY = "kickoff-tutorial-seen";
+
+const KICKOFF_TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    target: "",
+    placement: "center",
+    title: "Bem-vindo ao Kickoff! 👋",
+    description:
+      "Este é o ponto de partida do processo. Aqui você acompanha clientes recém-importados do Segsale, valida frotas e libera os veículos para as próximas etapas (Homologação, Planejamento e Logística). Vamos conhecer cada parte da tela.",
+  },
+  {
+    target: "[data-tour='kickoff-tabs']",
+    title: "Pendentes e Histórico",
+    description:
+      "Alterne entre Pendentes (clientes aguardando kickoff) e Histórico de Aprovações (kickoffs já concluídos, com possibilidade de revisão).",
+  },
+  {
+    target: "[data-tour='kickoff-search']",
+    title: "Busca rápida por cliente",
+    description:
+      "Digite o nome da empresa para filtrar a lista. A busca é instantânea e ignora maiúsculas/minúsculas.",
+  },
+  {
+    target: "[data-tour='kickoff-stats']",
+    title: "Indicadores em tempo real",
+    description:
+      "Veja o total de empresas pendentes, quantidade de veículos, casos que precisam de bloqueio e o tempo médio de espera. Use isso para priorizar o atendimento.",
+  },
+  {
+    target: "[data-tour='kickoff-card']",
+    title: "Card do cliente",
+    description:
+      "Cada card representa uma venda do Segsale. Mostra a empresa, total de veículos, tipos de uso e há quantos dias está pendente. Cores no canto indicam urgência (amarelo ≥5 dias, vermelho >7 dias).",
+  },
+  {
+    target: "[data-tour='kickoff-card']",
+    title: "Editar e validar a frota",
+    description:
+      "Clique no card para abrir o modal de detalhes. Lá você confirma placas, valida acessórios, sugere kits, marca bloqueio e finaliza o kickoff — liberando os veículos para Homologação e Planejamento.",
+  },
+  {
+    target: "[data-tour='kickoff-tutorial-btn']",
+    title: "Pronto! 🎉",
+    description:
+      "Você pode reabrir este tutorial a qualquer momento por este botão. Bom trabalho!",
+  },
+];
 
 const Kickoff = () => {
   const { user } = useAuth();
