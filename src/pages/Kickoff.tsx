@@ -235,10 +235,8 @@ const Kickoff = () => {
           <div data-tour="kickoff-stats">
             <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
           </div>
-          </motion.div>
 
-          {/* Stats */}
-          <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
+
 
           {/* Client grid */}
           {isLoading ? (
