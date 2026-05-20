@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, History, Search, FileText, FlaskConical } from "lucide-react";
+import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getKickoffData } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -13,12 +13,61 @@ import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
+import { KickoffTutorial, type TutorialStep } from "@/components/kickoff/KickoffTutorial";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAuth } from "@/hooks/useAuth";
 
 import { motion } from "framer-motion";
+
+const TUTORIAL_KEY = "kickoff-tutorial-seen";
+
+const KICKOFF_TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    target: "",
+    placement: "center",
+    title: "Bem-vindo ao Kickoff! 👋",
+    description:
+      "Este é o ponto de partida do processo. Aqui você acompanha clientes recém-importados do Segsale, valida frotas e libera os veículos para as próximas etapas (Homologação, Planejamento e Logística). Vamos conhecer cada parte da tela.",
+  },
+  {
+    target: "[data-tour='kickoff-tabs']",
+    title: "Pendentes e Histórico",
+    description:
+      "Alterne entre Pendentes (clientes aguardando kickoff) e Histórico de Aprovações (kickoffs já concluídos, com possibilidade de revisão).",
+  },
+  {
+    target: "[data-tour='kickoff-search']",
+    title: "Busca rápida por cliente",
+    description:
+      "Digite o nome da empresa para filtrar a lista. A busca é instantânea e ignora maiúsculas/minúsculas.",
+  },
+  {
+    target: "[data-tour='kickoff-stats']",
+    title: "Indicadores em tempo real",
+    description:
+      "Veja o total de empresas pendentes, quantidade de veículos, casos que precisam de bloqueio e o tempo médio de espera. Use isso para priorizar o atendimento.",
+  },
+  {
+    target: "[data-tour='kickoff-card']",
+    title: "Card do cliente",
+    description:
+      "Cada card representa uma venda do Segsale. Mostra a empresa, total de veículos, tipos de uso e há quantos dias está pendente. Cores no canto indicam urgência (amarelo ≥5 dias, vermelho >7 dias).",
+  },
+  {
+    target: "[data-tour='kickoff-card']",
+    title: "Editar e validar a frota",
+    description:
+      "Clique no card para abrir o modal de detalhes. Lá você confirma placas, valida acessórios, sugere kits, marca bloqueio e finaliza o kickoff — liberando os veículos para Homologação e Planejamento.",
+  },
+  {
+    target: "[data-tour='kickoff-tutorial-btn']",
+    title: "Pronto! 🎉",
+    description:
+      "Você pode reabrir este tutorial a qualquer momento por este botão. Bom trabalho!",
+  },
+];
 
 const Kickoff = () => {
   const { user } = useAuth();
@@ -27,6 +76,17 @@ const Kickoff = () => {
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!localStorage.getItem(TUTORIAL_KEY)) {
+      const t = setTimeout(() => setTutorialOpen(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, [user]);
+
+
 
 
   const {
@@ -119,11 +179,22 @@ const Kickoff = () => {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
           <p className="text-sm text-muted-foreground"></p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          data-tour="kickoff-tutorial-btn"
+          onClick={() => setTutorialOpen(true)}
+          className="gap-2"
+        >
+          <GraduationCap className="h-4 w-4" />
+          Tutorial
+        </Button>
       </motion.div>
 
       {/* Tabs */}
       <Tabs defaultValue="pending" className="space-y-6">
-        <TabsList className="bg-muted/50 p-1 h-auto">
+        <TabsList data-tour="kickoff-tabs" className="bg-muted/50 p-1 h-auto">
+
           <TabsTrigger
             value="pending"
             className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
@@ -149,7 +220,7 @@ const Kickoff = () => {
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           >
             <h2 className="text-xl font-semibold text-foreground">Clientes Pendentes</h2>
-            <div className="relative w-full sm:w-80">
+            <div data-tour="kickoff-search" className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar por nome do cliente..."
@@ -161,7 +232,11 @@ const Kickoff = () => {
           </motion.div>
 
           {/* Stats */}
-          <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
+          <div data-tour="kickoff-stats">
+            <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
+          </div>
+
+
 
           {/* Client grid */}
           {isLoading ? (
@@ -173,12 +248,13 @@ const Kickoff = () => {
           ) : filteredClients.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredClients.map((client, index) => (
-                <KickoffClientCard
-                  key={client.sale_summary_id}
-                  client={client}
-                  daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
-                  onEditKickoff={handleEditKickoff}
-                />
+                <div key={client.sale_summary_id} data-tour={index === 0 ? "kickoff-card" : undefined}>
+                  <KickoffClientCard
+                    client={client}
+                    daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
+                    onEditKickoff={handleEditKickoff}
+                  />
+                </div>
               ))}
             </div>
           ) : (
@@ -220,6 +296,13 @@ const Kickoff = () => {
           }}
         />
       )}
+
+      <KickoffTutorial
+        open={tutorialOpen}
+        steps={KICKOFF_TUTORIAL_STEPS}
+        onClose={() => setTutorialOpen(false)}
+        storageKey={TUTORIAL_KEY}
+      />
     </div>
   );
 };
