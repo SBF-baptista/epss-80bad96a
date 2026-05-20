@@ -248,12 +248,13 @@ const Kickoff = () => {
           ) : filteredClients.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredClients.map((client, index) => (
-                <KickoffClientCard
-                  key={client.sale_summary_id}
-                  client={client}
-                  daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
-                  onEditKickoff={handleEditKickoff}
-                />
+                <div key={client.sale_summary_id} data-tour={index === 0 ? "kickoff-card" : undefined}>
+                  <KickoffClientCard
+                    client={client}
+                    daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
+                    onEditKickoff={handleEditKickoff}
+                  />
+                </div>
               ))}
             </div>
           ) : (
