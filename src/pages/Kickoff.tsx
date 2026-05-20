@@ -220,7 +220,7 @@ const Kickoff = () => {
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           >
             <h2 className="text-xl font-semibold text-foreground">Clientes Pendentes</h2>
-            <div className="relative w-full sm:w-80">
+            <div data-tour="kickoff-search" className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar por nome do cliente..."
@@ -229,6 +229,12 @@ const Kickoff = () => {
                 className="pl-10 h-10 bg-background border-border/60"
               />
             </div>
+          </motion.div>
+
+          {/* Stats */}
+          <div data-tour="kickoff-stats">
+            <KickoffStats kickoffData={kickoffData} kickoffDates={kickoffDates} />
+          </div>
           </motion.div>
 
           {/* Stats */}
