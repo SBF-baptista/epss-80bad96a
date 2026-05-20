@@ -179,11 +179,22 @@ const Kickoff = () => {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Kickoff</h1>
           <p className="text-sm text-muted-foreground"></p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          data-tour="kickoff-tutorial-btn"
+          onClick={() => setTutorialOpen(true)}
+          className="gap-2"
+        >
+          <GraduationCap className="h-4 w-4" />
+          Tutorial
+        </Button>
       </motion.div>
 
       {/* Tabs */}
       <Tabs defaultValue="pending" className="space-y-6">
-        <TabsList className="bg-muted/50 p-1 h-auto">
+        <TabsList data-tour="kickoff-tabs" className="bg-muted/50 p-1 h-auto">
+
           <TabsTrigger
             value="pending"
             className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
