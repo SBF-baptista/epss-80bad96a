@@ -296,6 +296,13 @@ const Kickoff = () => {
           }}
         />
       )}
+
+      <KickoffTutorial
+        open={tutorialOpen}
+        steps={KICKOFF_TUTORIAL_STEPS}
+        onClose={() => setTutorialOpen(false)}
+        storageKey={TUTORIAL_KEY}
+      />
     </div>
   );
 };
