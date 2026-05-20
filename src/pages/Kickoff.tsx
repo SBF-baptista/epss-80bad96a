@@ -76,6 +76,17 @@ const Kickoff = () => {
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!localStorage.getItem(TUTORIAL_KEY)) {
+      const t = setTimeout(() => setTutorialOpen(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, [user]);
+
+
 
 
   const {
