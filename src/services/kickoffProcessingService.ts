@@ -209,8 +209,8 @@ export const processKickoffVehicles = async (saleSummaryId: number, validatedVeh
           const { data: checkCard } = await supabase
             .from('homologation_cards')
             .select('id')
-            .eq('brand', vehicle.brand)
-            .eq('model', vehicle.vehicle)
+            .ilike('brand', normalizedBrand)
+            .ilike('model', normalizedModel)
             .eq('year', vehicle.year || 0)
             .is('deleted_at', null)
             .maybeSingle();
@@ -230,8 +230,8 @@ export const processKickoffVehicles = async (saleSummaryId: number, validatedVeh
             const { data: newCard, error: createErr } = await supabase
               .from('homologation_cards')
               .insert({
-                brand: vehicle.brand,
-                model: vehicle.vehicle,
+                brand: normalizedBrand,
+                model: normalizedModel,
                 year: vehicle.year || null,
                 status,
                 incoming_vehicle_id: vehicle.id,
