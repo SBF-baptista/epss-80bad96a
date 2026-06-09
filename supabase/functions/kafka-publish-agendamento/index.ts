@@ -134,12 +134,24 @@ Deno.serve(async (req) => {
 
     try {
       await producer.connect();
+      // ID da mensagem: codigoCliente-yyyyMMddHHmmss (America/Sao_Paulo)
+      const fmt = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "America/Sao_Paulo",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: false,
+      }).formatToParts(new Date());
+      const get = (t: string) => fmt.find((p) => p.type === t)?.value ?? "";
+      const localDateTime =
+        `${get("year")}${get("month")}${get("day")}${get("hour")}${get("minute")}${get("second")}`;
+      const messageKey = `${payload.codigoCliente ?? "sem-cliente"}-${localDateTime}`;
+
       await producer.send({
         topic,
         acks: -1,
         messages: [
           {
-            key: schedule.vehicle_plate ?? schedule.id,
+            key: messageKey,
             value: JSON.stringify(payload),
           },
         ],
