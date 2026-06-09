@@ -133,6 +133,14 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
     schedule.id
   );
 
+  // Publica evento no Kafka (DigitalOcean) — não bloqueia o fluxo
+  supabase.functions
+    .invoke('kafka-publish-agendamento', { body: { scheduleId: schedule.id } })
+    .then(({ error }) => {
+      if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
+    })
+    .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
+
   // WhatsApp notification removed - only sent via "Disparar Agenda" button
 
   return {

@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.sync-segsale-auto]
 verify_jwt = false
+
+[functions.kafka-publish-agendamento]
+verify_jwt = false
