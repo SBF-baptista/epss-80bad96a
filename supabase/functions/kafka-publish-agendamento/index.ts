@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     if (schedule.customer_id) {
       const { data } = await supabase
         .from("customers")
-        .select("id, name, company_name, email, sale_summary_id")
+        .select("id, codigo_cliente, name, company_name, email, sale_summary_id")
         .eq("id", schedule.customer_id)
         .maybeSingle();
       customer = data;
