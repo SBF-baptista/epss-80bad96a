@@ -132,8 +132,8 @@ Deno.serve(async (req) => {
     const kafka = new Kafka({
       clientId: "opmss-edge",
       brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
-      ssl: { ca: [caPem], rejectUnauthorized: true, servername: brokers.split(":")[0] },
-      sasl: { mechanism: "scram-sha-256", username, password },
+      ssl: { ca: [caPem], rejectUnauthorized: true },
+      sasl: { mechanism: "scram-sha-512", username, password },
       connectionTimeout: 30_000,
       requestTimeout: 60_000,
       logLevel: logLevel.ERROR,
