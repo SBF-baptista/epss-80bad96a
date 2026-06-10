@@ -116,10 +116,14 @@ Deno.serve(async (req) => {
     };
 
     // 5) Publica no Kafka
+    // Normaliza CA: aceita PEM com \n literal ou quebras reais
+    const caPem = ca.includes("BEGIN CERT") ? ca.replace(/\\n/g, "\n") : ca;
+    console.error(`[kafka-publish] CA len=${caPem.length} hasBeginLine=${caPem.startsWith("-----BEGIN")} hasNewlines=${caPem.includes("\n")} lineCount=${caPem.split("\n").length}`);
+
     const kafka = new Kafka({
       clientId: "opmss-edge",
       brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
-      ssl: { ca: [ca], rejectUnauthorized: true },
+      ssl: { ca: [caPem], rejectUnauthorized: true, servername: brokers.split(":")[0] },
       sasl: { mechanism: "scram-sha-256", username, password },
       connectionTimeout: 30_000,
       requestTimeout: 60_000,
@@ -164,7 +168,20 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    const caDiag = (() => {
+      const c = Deno.env.get("DO_KAFKA_CA_PEM") ?? "";
+      return {
+        len: c.length,
+        startsWithBegin: c.startsWith("-----BEGIN"),
+        endsWithEnd: c.trimEnd().endsWith("-----END CERTIFICATE-----"),
+        hasRealNewlines: c.includes("\n"),
+        hasEscapedNewlines: c.includes("\\n"),
+        lineCount: c.split("\n").length,
+        firstChars: c.slice(0, 30),
+        lastChars: c.trimEnd().slice(-30),
+      };
+    })();
     console.error("[kafka-publish] ERROR", msg);
-    return json({ ok: false, error: msg });
+    return json({ ok: false, error: msg, caDiag });
   }
 });
