@@ -177,20 +177,7 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    const caDiag = (() => {
-      const c = Deno.env.get("DO_KAFKA_CA_PEM") ?? "";
-      return {
-        len: c.length,
-        startsWithBegin: c.startsWith("-----BEGIN"),
-        endsWithEnd: c.trimEnd().endsWith("-----END CERTIFICATE-----"),
-        hasRealNewlines: c.includes("\n"),
-        hasEscapedNewlines: c.includes("\\n"),
-        lineCount: c.split("\n").length,
-        firstChars: c.slice(0, 30),
-        lastChars: c.trimEnd().slice(-30),
-      };
-    })();
     console.error("[kafka-publish] ERROR", msg);
-    return json({ ok: false, error: msg, caDiag });
+    return json({ ok: false, error: msg });
   }
 });
