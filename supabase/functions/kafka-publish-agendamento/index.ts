@@ -116,9 +116,18 @@ Deno.serve(async (req) => {
     };
 
     // 5) Publica no Kafka
-    // Normaliza CA: aceita PEM com \n literal ou quebras reais
-    const caPem = ca.includes("BEGIN CERT") ? ca.replace(/\\n/g, "\n") : ca;
-    console.error(`[kafka-publish] CA len=${caPem.length} hasBeginLine=${caPem.startsWith("-----BEGIN")} hasNewlines=${caPem.includes("\n")} lineCount=${caPem.split("\n").length}`);
+    // Normaliza CA: aceita PEM completo, PEM com \n literal, ou só o corpo base64
+    const normalizeCaPem = (raw: string): string => {
+      let s = raw.trim().replace(/\\n/g, "\n");
+      // Remove headers existentes para reconstruir limpo
+      s = s.replace(/-----BEGIN CERTIFICATE-----/g, "")
+           .replace(/-----END CERTIFICATE-----/g, "")
+           .replace(/\s+/g, "");
+      // Quebra em linhas de 64 chars
+      const lines = s.match(/.{1,64}/g) ?? [];
+      return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----\n`;
+    };
+    const caPem = normalizeCaPem(ca);
 
     const kafka = new Kafka({
       clientId: "opmss-edge",
