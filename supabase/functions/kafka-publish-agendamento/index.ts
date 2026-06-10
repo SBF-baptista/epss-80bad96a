@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 
     // 4) Monta payload no formato solicitado
     const payload = {
-      codigoCliente: customer?.id ?? schedule.customer_id ?? null,
+      codigoCliente: customer?.codigo_cliente ?? null,
       razaoSocial: customer?.company_name ?? schedule.customer_name ?? null,
       nomeFantasia: customer?.name ?? customer?.company_name ?? null,
       email: customer?.email ?? schedule.customer_email ?? null,
@@ -103,16 +103,6 @@ Deno.serve(async (req) => {
           dispositivo,
         },
       ],
-      // metadados úteis para o consumidor
-      _meta: {
-        scheduleId: schedule.id,
-        scheduledDate: schedule.scheduled_date,
-        installationTime: schedule.installation_time,
-        status: schedule.status,
-        saleSummaryId: customer?.sale_summary_id ?? null,
-        eventType: "agendamento.criado",
-        occurredAt: new Date().toISOString(),
-      },
     };
 
     // 5) Publica no Kafka
