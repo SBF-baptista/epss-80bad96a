@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     // 5) Publica no Kafka
     // Normaliza CA: aceita PEM com \n literal ou quebras reais
     const caPem = ca.includes("BEGIN CERT") ? ca.replace(/\\n/g, "\n") : ca;
-    console.log(`[kafka-publish] CA length=${caPem.length} startsWith=${caPem.slice(0, 27)} endsWith=${caPem.slice(-25)}`);
+    console.error(`[kafka-publish] CA len=${caPem.length} hasBeginLine=${caPem.startsWith("-----BEGIN")} hasNewlines=${caPem.includes("\n")} lineCount=${caPem.split("\n").length}`);
 
     const kafka = new Kafka({
       clientId: "opmss-edge",
