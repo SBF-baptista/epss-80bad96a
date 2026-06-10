@@ -116,10 +116,14 @@ Deno.serve(async (req) => {
     };
 
     // 5) Publica no Kafka
+    // Normaliza CA: aceita PEM com \n literal ou quebras reais
+    const caPem = ca.includes("BEGIN CERT") ? ca.replace(/\\n/g, "\n") : ca;
+    console.log(`[kafka-publish] CA length=${caPem.length} startsWith=${caPem.slice(0, 27)} endsWith=${caPem.slice(-25)}`);
+
     const kafka = new Kafka({
       clientId: "opmss-edge",
       brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
-      ssl: { ca: [ca], rejectUnauthorized: true },
+      ssl: { ca: [caPem], rejectUnauthorized: true, servername: brokers.split(":")[0] },
       sasl: { mechanism: "scram-sha-256", username, password },
       connectionTimeout: 30_000,
       requestTimeout: 60_000,
