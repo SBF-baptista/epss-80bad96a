@@ -134,8 +134,11 @@ Deno.serve(async (req) => {
       brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
       ssl: { ca: [caPem], rejectUnauthorized: true },
       sasl: { mechanism: "scram-sha-512", username, password },
-      connectionTimeout: 30_000,
+      // Alinhado com socket.connection.setup.timeout.ms / max.ms do consumer
+      connectionTimeout: 60_000,
+      authenticationTimeout: 30_000,
       requestTimeout: 60_000,
+      enforceRequestTimeout: false,
       logLevel: logLevel.ERROR,
     });
 
