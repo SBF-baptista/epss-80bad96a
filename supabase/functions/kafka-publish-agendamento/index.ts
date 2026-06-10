@@ -116,15 +116,24 @@ Deno.serve(async (req) => {
     };
 
     // 5) Publica no Kafka
-    // Normaliza CA: aceita PEM com \n literal ou quebras reais
-    const caPem = ca.includes("BEGIN CERT") ? ca.replace(/\\n/g, "\n") : ca;
-    console.error(`[kafka-publish] CA len=${caPem.length} hasBeginLine=${caPem.startsWith("-----BEGIN")} hasNewlines=${caPem.includes("\n")} lineCount=${caPem.split("\n").length}`);
+    // Normaliza CA: aceita PEM completo, PEM com \n literal, ou só o corpo base64
+    const normalizeCaPem = (raw: string): string => {
+      let s = raw.trim().replace(/\\n/g, "\n");
+      // Remove headers existentes para reconstruir limpo
+      s = s.replace(/-----BEGIN CERTIFICATE-----/g, "")
+           .replace(/-----END CERTIFICATE-----/g, "")
+           .replace(/\s+/g, "");
+      // Quebra em linhas de 64 chars
+      const lines = s.match(/.{1,64}/g) ?? [];
+      return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----\n`;
+    };
+    const caPem = normalizeCaPem(ca);
 
     const kafka = new Kafka({
       clientId: "opmss-edge",
       brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
-      ssl: { ca: [caPem], rejectUnauthorized: true, servername: brokers.split(":")[0] },
-      sasl: { mechanism: "scram-sha-256", username, password },
+      ssl: { ca: [caPem], rejectUnauthorized: true },
+      sasl: { mechanism: "scram-sha-512", username, password },
       connectionTimeout: 30_000,
       requestTimeout: 60_000,
       logLevel: logLevel.ERROR,
@@ -168,20 +177,7 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    const caDiag = (() => {
-      const c = Deno.env.get("DO_KAFKA_CA_PEM") ?? "";
-      return {
-        len: c.length,
-        startsWithBegin: c.startsWith("-----BEGIN"),
-        endsWithEnd: c.trimEnd().endsWith("-----END CERTIFICATE-----"),
-        hasRealNewlines: c.includes("\n"),
-        hasEscapedNewlines: c.includes("\\n"),
-        lineCount: c.split("\n").length,
-        firstChars: c.slice(0, 30),
-        lastChars: c.trimEnd().slice(-30),
-      };
-    })();
     console.error("[kafka-publish] ERROR", msg);
-    return json({ ok: false, error: msg, caDiag });
+    return json({ ok: false, error: msg });
   }
 });
