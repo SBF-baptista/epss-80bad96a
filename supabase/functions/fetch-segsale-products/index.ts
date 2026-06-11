@@ -336,11 +336,30 @@ Deno.serve(async (req) => {
     // NOTE: receive-vehicle is NO LONGER called from here to prevent circular loops.
     // It should be called explicitly by the webhook or manually.
 
+    // Lookup matching customer in local database
+    let clientId: any = null
+    try {
+      const { data: clientData, error: clientError } = await supabase
+        .from('customers')
+        .select('id, codigo_cliente, name, company_name, email, phone, document_number, sale_summary_id')
+        .eq('sale_summary_id', parseInt(idResumoVenda))
+        .maybeSingle()
+
+      if (!clientError && clientData) {
+        clientId = clientData
+      } else if (clientError) {
+        console.warn('⚠️ Failed to fetch client from customers:', clientError.message)
+      }
+    } catch (e: any) {
+      console.warn('⚠️ Exception fetching client from customers:', e?.message)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Fetched ${enrichedSalesData.length} sales from Segsale`,
         sale_summary_id: idResumoVenda,
+        client_id: clientId,
         sales: enrichedSalesData,
         processing: { forwarded: false, message: 'Processing handled separately' },
       }),
