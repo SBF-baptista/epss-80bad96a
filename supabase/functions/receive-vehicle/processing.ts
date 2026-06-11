@@ -365,6 +365,21 @@ export async function processVehicleGroups(
           }
         }
 
+        // If duplicate, short-circuit after backfilling accessories/modules — do NOT re-run order/homologation pipeline
+        if (duplicateExistingVehicle) {
+          console.log(`[${timestamp}][${requestId}] Duplicate vehicle ${incomingVehicle.id} — accessories/modules backfilled, skipping order/homologation flow`)
+          groupResult.vehicles_processed.push({
+            vehicle: `${brand} ${vehicle}`,
+            quantity: quantity || 1,
+            incoming_vehicle_id: incomingVehicle.id,
+            status: 'already_exists',
+            processing_notes: 'Duplicate vehicle — accessories/modules backfilled to existing record'
+          })
+          totalVehiclesProcessed++
+          continue
+        }
+
+
         // If from Segsale, skip processing until kickoff is completed
         if (isFromSegsale) {
           console.log(`[${timestamp}][${requestId}] Vehicle from Segsale - waiting for kickoff completion`)
