@@ -108,13 +108,16 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] --- Processing vehicle ${vehicleIndex + 1}/${group.vehicles.length} in group ${groupIndex + 1} ---`)
       console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
+      // Track whether this vehicle already existed (duplicate) so we still backfill accessories/modules
+      let duplicateExistingVehicle: any = null;
+
       try {
         // Deduplication check: only consider duplicates within the SAME sale_summary_id.
         // The same plate in different sales is allowed (legitimate case: new sale of accessories/services for an existing vehicle).
         if (group.sale_summary_id) {
           let dedupQuery = supabase
             .from('incoming_vehicles')
-            .select('id, processing_notes')
+            .select('*')
             .eq('sale_summary_id', group.sale_summary_id)
             .eq('brand', brand.trim())
             .eq('vehicle', vehicle.trim());
@@ -128,16 +131,8 @@ export async function processVehicleGroups(
             .maybeSingle();
 
           if (existingVehicle) {
-            console.log(`[${timestamp}][${requestId}] ⚠️ Vehicle ${brand} ${vehicle}${vehicleData.plate ? ` (plate ${vehicleData.plate})` : ''} already exists for sale_summary_id ${group.sale_summary_id} (id: ${existingVehicle.id}). Skipping intra-sale duplicate.`);
-            groupResult.vehicles_processed.push({
-              vehicle: `${brand} ${vehicle}`,
-              quantity: quantity || 1,
-              incoming_vehicle_id: existingVehicle.id,
-              status: 'already_exists',
-              processing_notes: 'Duplicate skipped - vehicle already imported for this sale'
-            });
-            totalVehiclesProcessed++;
-            continue;
+            console.log(`[${timestamp}][${requestId}] ⚠️ Vehicle ${brand} ${vehicle}${vehicleData.plate ? ` (plate ${vehicleData.plate})` : ''} already exists for sale_summary_id ${group.sale_summary_id} (id: ${existingVehicle.id}). Will reuse existing record and backfill accessories/modules.`);
+            duplicateExistingVehicle = existingVehicle;
           }
         }
 
@@ -153,7 +148,10 @@ export async function processVehicleGroups(
         // Vehicles from Segsale should NOT be processed until kickoff is completed
         const isFromSegsale = !!group.sale_summary_id
         
-        let { data: incomingVehicle, error: insertError } = await supabase
+        let incomingVehicle: any = duplicateExistingVehicle;
+        let insertError: any = null;
+        if (!duplicateExistingVehicle) {
+          ({ data: incomingVehicle, error: insertError } = await supabase
           .from('incoming_vehicles')
           .insert({
             vehicle: vehicle.trim(),
@@ -177,7 +175,8 @@ export async function processVehicleGroups(
             kickoff_completed: false // Always start as false, will be marked true when kickoff is completed
           })
           .select()
-          .single()
+          .single());
+        }
 
         if (insertError) {
           // Handle duplicate key violations (vehicle already exists)
@@ -235,7 +234,7 @@ export async function processVehicleGroups(
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
         // Search TomTicket for protocol if vehicle has a plate
-        if (vehicleData.plate) {
+        if (vehicleData.plate && !duplicateExistingVehicle) {
           console.log(`[${timestamp}][${requestId}] Searching TomTicket for plate: ${vehicleData.plate}`)
           const tomticketProtocol = await searchTomTicketByPlate(vehicleData.plate);
           
@@ -365,6 +364,21 @@ export async function processVehicleGroups(
             }
           }
         }
+
+        // If duplicate, short-circuit after backfilling accessories/modules — do NOT re-run order/homologation pipeline
+        if (duplicateExistingVehicle) {
+          console.log(`[${timestamp}][${requestId}] Duplicate vehicle ${incomingVehicle.id} — accessories/modules backfilled, skipping order/homologation flow`)
+          groupResult.vehicles_processed.push({
+            vehicle: `${brand} ${vehicle}`,
+            quantity: quantity || 1,
+            incoming_vehicle_id: incomingVehicle.id,
+            status: 'already_exists',
+            processing_notes: 'Duplicate vehicle — accessories/modules backfilled to existing record'
+          })
+          totalVehiclesProcessed++
+          continue
+        }
+
 
         // If from Segsale, skip processing until kickoff is completed
         if (isFromSegsale) {
