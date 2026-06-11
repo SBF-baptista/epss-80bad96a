@@ -234,7 +234,7 @@ export async function processVehicleGroups(
         console.log(`[${timestamp}][${requestId}] Successfully stored incoming vehicle with ID: ${incomingVehicle.id}`)
 
         // Search TomTicket for protocol if vehicle has a plate
-        if (vehicleData.plate) {
+        if (vehicleData.plate && !duplicateExistingVehicle) {
           console.log(`[${timestamp}][${requestId}] Searching TomTicket for plate: ${vehicleData.plate}`)
           const tomticketProtocol = await searchTomTicketByPlate(vehicleData.plate);
           
