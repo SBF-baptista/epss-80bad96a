@@ -61,6 +61,19 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
 
     const usageType = mapUsageType(sale.usage_type || 'TELEMETRIA GPS');
 
+    // Map contract_items (new Segsale format) to group-level accessories.
+    const groupAccessories: any[] = [];
+    if (Array.isArray(sale.contract_items)) {
+      for (const item of sale.contract_items) {
+        const name = item?.name || item?.nome;
+        if (!name) continue;
+        groupAccessories.push({
+          accessory_name: String(name),
+          quantity: Number(item?.quantity ?? item?.quantidade ?? 1) || 1,
+        });
+      }
+    }
+
     vehicleGroups.push({
       company_name: sale.company_name || 'Não identificado',
       usage_type: usageType,
@@ -69,6 +82,7 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
       cpf: sale.cpf || null,
       phone: sale.phone || null,
       vehicles: transformedVehicles,
+      accessories: groupAccessories.length > 0 ? groupAccessories : undefined,
       address: sale.address || undefined,
     });
   }
