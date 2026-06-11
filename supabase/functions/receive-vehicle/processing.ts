@@ -108,13 +108,16 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] --- Processing vehicle ${vehicleIndex + 1}/${group.vehicles.length} in group ${groupIndex + 1} ---`)
       console.log(`[${timestamp}][${requestId}] Vehicle: ${brand} ${vehicle} (year: ${year || 'N/A'}, quantity: ${quantity || 1})`)
       
+      // Track whether this vehicle already existed (duplicate) so we still backfill accessories/modules
+      let duplicateExistingVehicle: any = null;
+
       try {
         // Deduplication check: only consider duplicates within the SAME sale_summary_id.
         // The same plate in different sales is allowed (legitimate case: new sale of accessories/services for an existing vehicle).
         if (group.sale_summary_id) {
           let dedupQuery = supabase
             .from('incoming_vehicles')
-            .select('id, processing_notes')
+            .select('*')
             .eq('sale_summary_id', group.sale_summary_id)
             .eq('brand', brand.trim())
             .eq('vehicle', vehicle.trim());
@@ -128,16 +131,8 @@ export async function processVehicleGroups(
             .maybeSingle();
 
           if (existingVehicle) {
-            console.log(`[${timestamp}][${requestId}] ⚠️ Vehicle ${brand} ${vehicle}${vehicleData.plate ? ` (plate ${vehicleData.plate})` : ''} already exists for sale_summary_id ${group.sale_summary_id} (id: ${existingVehicle.id}). Skipping intra-sale duplicate.`);
-            groupResult.vehicles_processed.push({
-              vehicle: `${brand} ${vehicle}`,
-              quantity: quantity || 1,
-              incoming_vehicle_id: existingVehicle.id,
-              status: 'already_exists',
-              processing_notes: 'Duplicate skipped - vehicle already imported for this sale'
-            });
-            totalVehiclesProcessed++;
-            continue;
+            console.log(`[${timestamp}][${requestId}] ⚠️ Vehicle ${brand} ${vehicle}${vehicleData.plate ? ` (plate ${vehicleData.plate})` : ''} already exists for sale_summary_id ${group.sale_summary_id} (id: ${existingVehicle.id}). Will reuse existing record and backfill accessories/modules.`);
+            duplicateExistingVehicle = existingVehicle;
           }
         }
 
