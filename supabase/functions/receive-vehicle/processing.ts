@@ -148,7 +148,10 @@ export async function processVehicleGroups(
         // Vehicles from Segsale should NOT be processed until kickoff is completed
         const isFromSegsale = !!group.sale_summary_id
         
-        let { data: incomingVehicle, error: insertError } = await supabase
+        let incomingVehicle: any = duplicateExistingVehicle;
+        let insertError: any = null;
+        if (!duplicateExistingVehicle) {
+          ({ data: incomingVehicle, error: insertError } = await supabase
           .from('incoming_vehicles')
           .insert({
             vehicle: vehicle.trim(),
