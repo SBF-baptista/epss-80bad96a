@@ -175,7 +175,8 @@ export async function processVehicleGroups(
             kickoff_completed: false // Always start as false, will be marked true when kickoff is completed
           })
           .select()
-          .single()
+          .single());
+        }
 
         if (insertError) {
           // Handle duplicate key violations (vehicle already exists)
