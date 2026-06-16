@@ -249,9 +249,13 @@ export async function processVehicleGroups(
           }
         }
 
-        // Process contract_items (from Segsale) if this is the first vehicle in the group
-        if (vehicleIndex === 0 && (group as any).contract_items) {
-          const contractItems = (group as any).contract_items;
+        // Process contract_items (from Segsale) or group-level accessories if this is the first vehicle in the group
+        const rawContractItems = (group as any).contract_items;
+        const contractItems = Array.isArray(rawContractItems) && rawContractItems.length > 0
+          ? rawContractItems
+          : (Array.isArray(groupAccessories) && groupAccessories.length > 0 ? groupAccessories : null);
+
+        if (vehicleIndex === 0 && contractItems) {
           
           if (!Array.isArray(contractItems)) {
             console.log(`[${timestamp}][${requestId}] ⚠️ contract_items is not an array, skipping`);
@@ -263,12 +267,15 @@ export async function processVehicleGroups(
             for (const item of contractItems) {
               try {
                 // Validate item structure
-                if (!item.name || !item.categories) {
-                  console.error(`[${timestamp}][${requestId}] ⚠️ Invalid item structure (missing name or categories):`, JSON.stringify(item));
+                const itemName = item.name || item.nome || item.accessory_name;
+                const itemCategories = item.categories || item.categoria || 'Acessórios';
+
+                if (!itemName) {
+                  console.error(`[${timestamp}][${requestId}] ⚠️ Invalid item structure (missing name):`, JSON.stringify(item));
                   continue;
                 }
                 
-                console.log(`[${timestamp}][${requestId}] Storing contract item: ${item.name} (${item.categories})`)
+                console.log(`[${timestamp}][${requestId}] Storing contract item: ${itemName} (${itemCategories})`)
                 
                 const { error: itemError } = await supabase
                   .from('accessories')
@@ -276,9 +283,9 @@ export async function processVehicleGroups(
                     vehicle_id: incomingVehicle.id,
                     company_name: group.company_name,
                     usage_type: normalizedUsageType,
-                    name: item.name.trim(),
-                    categories: item.categories,
-                    quantity: item.quantity || 1,
+                    name: String(itemName).trim(),
+                    categories: itemCategories,
+                    quantity: Number(item.quantity ?? item.quantidade ?? 1) || 1,
                     received_at: timestamp
                   }, {
                     onConflict: 'vehicle_id,name,categories',
@@ -288,7 +295,7 @@ export async function processVehicleGroups(
                 if (itemError) {
                   console.error(`[${timestamp}][${requestId}] ERROR - Failed to store contract item:`, itemError)
                 } else {
-                  console.log(`[${timestamp}][${requestId}] Successfully stored contract item: ${item.name} (${item.categories})`)
+                  console.log(`[${timestamp}][${requestId}] Successfully stored contract item: ${itemName} (${itemCategories})`)
                 }
               } catch (error) {
                 console.error(`[${timestamp}][${requestId}] UNEXPECTED ERROR storing contract item:`, error)
