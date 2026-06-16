@@ -291,7 +291,8 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
 
     const usageType = mapUsageType(sale.usage_type || 'TELEMETRIA GPS')
 
-    // Map contract_items (new Segsale format) to group-level accessories.
+    // Map contract_items (new Segsale format) to group-level accessories and also
+    // keep the original items so receive-vehicle can persist categories correctly.
     // The Segsale API now returns accessories/modules inside contract_items at the
     // sale level instead of v.accessories / v.modules per vehicle.
     const groupAccessories: any[] = []
@@ -301,6 +302,7 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
         if (!name) continue
         groupAccessories.push({
           accessory_name: String(name),
+          categories: item?.categories || item?.categoria || 'Acessórios',
           quantity: Number(item?.quantity ?? item?.quantidade ?? 1) || 1,
         })
       }
@@ -314,6 +316,7 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
       cpf: sale.cpf || null,
       phone: sale.phone || null,
       vehicles: transformedVehicles,
+      contract_items: Array.isArray(sale.contract_items) ? sale.contract_items : undefined,
       accessories: groupAccessories.length > 0 ? groupAccessories : undefined,
       address: sale.address || undefined,
     })
