@@ -14,6 +14,22 @@ Deno.serve(async (req) => {
   console.log(`[${timestamp}] 🔄 sync-segsale-auto started`)
 
   try {
+    let requestedIds: number[] = []
+    try {
+      const url = new URL(req.url)
+      const idsParam = url.searchParams.get('sale_summary_ids') || url.searchParams.get('ids')
+      if (idsParam) {
+        requestedIds = idsParam.split(',').map(id => parseInt(id.trim())).filter(id => Number.isFinite(id))
+      } else if (req.method !== 'GET') {
+        const body = await req.json().catch(() => null)
+        if (Array.isArray(body?.sale_summary_ids)) {
+          requestedIds = body.sale_summary_ids.map((id: any) => parseInt(String(id))).filter((id: number) => Number.isFinite(id))
+        }
+      }
+    } catch (parseError) {
+      console.warn('⚠️ Could not parse manual sale_summary_ids:', parseError)
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceRoleKey)
@@ -76,8 +92,15 @@ Deno.serve(async (req) => {
       console.log(`🔄 Found ${retryIds.length} IDs in integration_state not yet in incoming_vehicles: ${retryIds.join(', ')}`)
     }
 
-    // Combine both sources, deduplicated, sorted by ID descending (newest first)
-    const allIds = [...new Set([...uniqueIds, ...retryIds])].sort((a, b) => b - a)
+    // Combine both sources, deduplicated, sorted by ID descending (newest first).
+    // If sale_summary_ids are provided manually, process only those IDs.
+    const allIds = (requestedIds.length > 0
+      ? [...new Set(requestedIds)]
+      : [...new Set([...uniqueIds, ...retryIds])]
+    ).sort((a, b) => b - a)
+    if (requestedIds.length > 0) {
+      console.log(`🎯 Manual sale_summary_ids requested: ${allIds.join(', ')}`)
+    }
     console.log(`📊 Total unique IDs to process: ${allIds.length}`)
 
     if (allIds.length === 0) {
