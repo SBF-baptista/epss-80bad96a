@@ -17,7 +17,7 @@ import { SectionSkeleton } from '@/components/ui/loading';
 import {
   Activity, Search, RefreshCw, Plus, Play, FileText, Edit2, Trash2,
   CheckCircle2, AlertTriangle, XCircle, HelpCircle, Clock, Zap, Server,
-  ArrowUpRight, ArrowDownRight, X, Save
+  ArrowUpRight, ArrowDownRight, X, Save, ChevronDown, ChevronRight
 } from 'lucide-react';
 import {
   fetchEndpointWithStats, createEndpoint, updateEndpoint, deleteEndpoint,
