@@ -137,14 +137,61 @@ const ApiMonitoring = () => {
     }
   };
 
+  const extractParams = (rawUrl: string): { key: string; value: string; kind: 'path' | 'query' }[] => {
+    const params: { key: string; value: string; kind: 'path' | 'query' }[] = [];
+    // path placeholders like {idResumoVenda} or :id
+    const braceMatches = Array.from(rawUrl.matchAll(/\{([^}]+)\}/g));
+    braceMatches.forEach(m => params.push({ key: m[1], value: '', kind: 'path' }));
+    const colonMatches = Array.from(rawUrl.matchAll(/:([a-zA-Z_][a-zA-Z0-9_]*)/g));
+    colonMatches.forEach(m => {
+      if (!params.find(p => p.key === m[1])) params.push({ key: m[1], value: '', kind: 'path' });
+    });
+    // query params
+    const qIdx = rawUrl.indexOf('?');
+    if (qIdx >= 0) {
+      const qs = rawUrl.substring(qIdx + 1);
+      qs.split('&').filter(Boolean).forEach(pair => {
+        const [k, v = ''] = pair.split('=');
+        if (k && !params.find(p => p.key === k)) {
+          params.push({ key: decodeURIComponent(k), value: decodeURIComponent(v), kind: 'query' });
+        }
+      });
+    }
+    return params;
+  };
+
+  const buildFinalUrl = (template: string, params: { key: string; value: string; kind: 'path' | 'query' }[]): string => {
+    let url = template;
+    // Replace path placeholders
+    params.filter(p => p.kind === 'path').forEach(p => {
+      url = url.replace(new RegExp(`\\{${p.key}\\}`, 'g'), encodeURIComponent(p.value));
+      url = url.replace(new RegExp(`:${p.key}(?![a-zA-Z0-9_])`, 'g'), encodeURIComponent(p.value));
+    });
+    // Rebuild query string
+    const queryParams = params.filter(p => p.kind === 'query');
+    const qIdx = url.indexOf('?');
+    const base = qIdx >= 0 ? url.substring(0, qIdx) : url;
+    if (queryParams.length > 0) {
+      const qs = queryParams
+        .filter(p => p.key)
+        .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+        .join('&');
+      return qs ? `${base}?${qs}` : base;
+    }
+    return url;
+  };
+
   const handleOpenTest = (endpoint: EndpointWithStats) => {
     setSelectedEndpoint(endpoint);
     setTestMethod(endpoint.method);
+    setTestUrlTemplate(endpoint.url);
     setTestUrl(endpoint.url);
+    setTestParams(extractParams(endpoint.url));
     const headerEntries = Object.entries(endpoint.headers || {}).map(([key, value]) => ({ key, value: value as string }));
     setTestHeaders(headerEntries.length > 0 ? headerEntries : [{ key: '', value: '' }]);
     setTestBody(endpoint.default_body ? JSON.stringify(endpoint.default_body, null, 2) : '');
     setTestResult(null);
+    setShowAdvanced(false);
     setIsTestModalOpen(true);
   };
 
@@ -152,6 +199,9 @@ const ApiMonitoring = () => {
     if (!selectedEndpoint) return;
     setIsTesting(true);
     try {
+      const finalUrl = buildFinalUrl(testUrlTemplate, testParams);
+      setTestUrl(finalUrl);
+
       const headersObj: Record<string, string> = {};
       testHeaders.forEach(h => { if (h.key) headersObj[h.key] = h.value; });
 
@@ -160,7 +210,7 @@ const ApiMonitoring = () => {
         try { bodyToSend = JSON.parse(testBody); } catch { bodyToSend = testBody; }
       }
 
-      const result = await executeEndpointTest(selectedEndpoint.id, testMethod, testUrl, headersObj, bodyToSend);
+      const result = await executeEndpointTest(selectedEndpoint.id, testMethod, finalUrl, headersObj, bodyToSend);
       setTestResult(result);
       queryClient.invalidateQueries({ queryKey: ['api-endpoints-stats'] });
     } catch (err: any) {
