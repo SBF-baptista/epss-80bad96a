@@ -314,20 +314,18 @@ Deno.serve(async (req) => {
 
           if (contractResponse.ok) {
             const rawText = await contractResponse.text()
-            console.log(`🧪 RAW contract response for ${pendingContractId} (len=${rawText.length}): ${rawText.substring(0, 1500)}`)
             let contractItems: any = null
             try { contractItems = JSON.parse(rawText) } catch (_) { contractItems = null }
-            
-            // If API returns null/empty, try to get from database
+
             if (!contractItems || (Array.isArray(contractItems) && contractItems.length === 0)) {
-              console.log(`⚠️ API returned null/empty for contract ${pendingContractId}, skipping DB fallback to avoid timeout`)
+              console.log(`⚠️ Segsale /itens-produtos returned EMPTY for pending_contract_id=${pendingContractId} (sale_summary_id=${idResumoVenda}). Raw: ${rawText.substring(0, 200)}`)
             } else {
               console.log(`✅ Contract items fetched from API for contract ${pendingContractId}: ${contractItems.length} items`)
               enrichedSale.contract_items = contractItems
             }
           } else {
             const errText = await contractResponse.text()
-            console.error(`Failed to fetch contract items for ${pendingContractId}: ${contractResponse.status} - ${errText.substring(0, 500)}`)
+            console.error(`Failed to fetch contract items for ${pendingContractId}: ${contractResponse.status} - ${errText.substring(0, 300)}`)
           }
         } catch (err) {
           console.error(`Error fetching contract items for ${pendingContractId}:`, err.message)
