@@ -17,7 +17,7 @@ import { SectionSkeleton } from '@/components/ui/loading';
 import {
   Activity, Search, RefreshCw, Plus, Play, FileText, Edit2, Trash2,
   CheckCircle2, AlertTriangle, XCircle, HelpCircle, Clock, Zap, Server,
-  ArrowUpRight, ArrowDownRight, X, Save
+  ArrowUpRight, ArrowDownRight, X, Save, ChevronDown, ChevronRight
 } from 'lucide-react';
 import {
   fetchEndpointWithStats, createEndpoint, updateEndpoint, deleteEndpoint,
@@ -56,10 +56,13 @@ const ApiMonitoring = () => {
   // Test state
   const [testMethod, setTestMethod] = useState('GET');
   const [testUrl, setTestUrl] = useState('');
+  const [testUrlTemplate, setTestUrlTemplate] = useState('');
+  const [testParams, setTestParams] = useState<{ key: string; value: string; kind: 'path' | 'query' }[]>([]);
   const [testHeaders, setTestHeaders] = useState<{ key: string; value: string }[]>([{ key: '', value: '' }]);
   const [testBody, setTestBody] = useState('');
   const [testResult, setTestResult] = useState<ApiExecutionLog | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Queries
   const { data: endpoints = [], isLoading, refetch } = useQuery({
@@ -134,14 +137,61 @@ const ApiMonitoring = () => {
     }
   };
 
+  const extractParams = (rawUrl: string): { key: string; value: string; kind: 'path' | 'query' }[] => {
+    const params: { key: string; value: string; kind: 'path' | 'query' }[] = [];
+    // path placeholders like {idResumoVenda} or :id
+    const braceMatches = Array.from(rawUrl.matchAll(/\{([^}]+)\}/g));
+    braceMatches.forEach(m => params.push({ key: m[1], value: '', kind: 'path' }));
+    const colonMatches = Array.from(rawUrl.matchAll(/:([a-zA-Z_][a-zA-Z0-9_]*)/g));
+    colonMatches.forEach(m => {
+      if (!params.find(p => p.key === m[1])) params.push({ key: m[1], value: '', kind: 'path' });
+    });
+    // query params
+    const qIdx = rawUrl.indexOf('?');
+    if (qIdx >= 0) {
+      const qs = rawUrl.substring(qIdx + 1);
+      qs.split('&').filter(Boolean).forEach(pair => {
+        const [k, v = ''] = pair.split('=');
+        if (k && !params.find(p => p.key === k)) {
+          params.push({ key: decodeURIComponent(k), value: decodeURIComponent(v), kind: 'query' });
+        }
+      });
+    }
+    return params;
+  };
+
+  const buildFinalUrl = (template: string, params: { key: string; value: string; kind: 'path' | 'query' }[]): string => {
+    let url = template;
+    // Replace path placeholders
+    params.filter(p => p.kind === 'path').forEach(p => {
+      url = url.replace(new RegExp(`\\{${p.key}\\}`, 'g'), encodeURIComponent(p.value));
+      url = url.replace(new RegExp(`:${p.key}(?![a-zA-Z0-9_])`, 'g'), encodeURIComponent(p.value));
+    });
+    // Rebuild query string
+    const queryParams = params.filter(p => p.kind === 'query');
+    const qIdx = url.indexOf('?');
+    const base = qIdx >= 0 ? url.substring(0, qIdx) : url;
+    if (queryParams.length > 0) {
+      const qs = queryParams
+        .filter(p => p.key)
+        .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+        .join('&');
+      return qs ? `${base}?${qs}` : base;
+    }
+    return url;
+  };
+
   const handleOpenTest = (endpoint: EndpointWithStats) => {
     setSelectedEndpoint(endpoint);
     setTestMethod(endpoint.method);
+    setTestUrlTemplate(endpoint.url);
     setTestUrl(endpoint.url);
+    setTestParams(extractParams(endpoint.url));
     const headerEntries = Object.entries(endpoint.headers || {}).map(([key, value]) => ({ key, value: value as string }));
     setTestHeaders(headerEntries.length > 0 ? headerEntries : [{ key: '', value: '' }]);
     setTestBody(endpoint.default_body ? JSON.stringify(endpoint.default_body, null, 2) : '');
     setTestResult(null);
+    setShowAdvanced(false);
     setIsTestModalOpen(true);
   };
 
@@ -149,6 +199,9 @@ const ApiMonitoring = () => {
     if (!selectedEndpoint) return;
     setIsTesting(true);
     try {
+      const finalUrl = buildFinalUrl(testUrlTemplate, testParams);
+      setTestUrl(finalUrl);
+
       const headersObj: Record<string, string> = {};
       testHeaders.forEach(h => { if (h.key) headersObj[h.key] = h.value; });
 
@@ -157,7 +210,7 @@ const ApiMonitoring = () => {
         try { bodyToSend = JSON.parse(testBody); } catch { bodyToSend = testBody; }
       }
 
-      const result = await executeEndpointTest(selectedEndpoint.id, testMethod, testUrl, headersObj, bodyToSend);
+      const result = await executeEndpointTest(selectedEndpoint.id, testMethod, finalUrl, headersObj, bodyToSend);
       setTestResult(result);
       queryClient.invalidateQueries({ queryKey: ['api-endpoints-stats'] });
     } catch (err: any) {
@@ -465,48 +518,110 @@ const ApiMonitoring = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto space-y-4">
-            {/* Request Config */}
+            {/* Simplified Params */}
             <div className="space-y-3">
-              <div className="flex gap-2">
-                <Select value={testMethod} onValueChange={setTestMethod}>
-                  <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                </Select>
-                <Input value={testUrl} onChange={e => setTestUrl(e.target.value)} className="font-mono text-sm flex-1" />
+              {/* Method badge + preview URL (read-only) */}
+              <div className="flex items-center gap-2">
+                {getMethodBadge(testMethod)}
+                <code className="flex-1 text-xs font-mono bg-muted/50 px-3 py-2 rounded border break-all">
+                  {buildFinalUrl(testUrlTemplate, testParams)}
+                </code>
               </div>
 
-              {/* Headers */}
-              <div>
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Headers</Label>
-                <div className="space-y-2 mt-1">
-                  {testHeaders.map((h, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input placeholder="Chave" value={h.key} onChange={e => { const n = [...testHeaders]; n[i].key = e.target.value; setTestHeaders(n); }} className="text-sm" />
-                      <Input placeholder="Valor" value={h.value} onChange={e => { const n = [...testHeaders]; n[i].value = e.target.value; setTestHeaders(n); }} className="text-sm" />
-                      <Button variant="ghost" size="icon" className="h-10 w-10 flex-shrink-0" onClick={() => setTestHeaders(testHeaders.filter((_, j) => j !== i))}>
-                        <X className="h-4 w-4" />
+              {/* Quick params form */}
+              {testParams.length > 0 ? (
+                <div className="border rounded-lg p-4 bg-muted/20 space-y-3">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Parâmetros ({testParams.length})
+                  </Label>
+                  <div className="space-y-2">
+                    {testParams.map((p, i) => (
+                      <div key={`${p.kind}-${p.key}-${i}`} className="grid grid-cols-[140px,1fr,80px] gap-2 items-center">
+                        <Label className="text-sm font-mono truncate" title={p.key}>{p.key}</Label>
+                        <Input
+                          value={p.value}
+                          onChange={e => {
+                            const n = [...testParams];
+                            n[i] = { ...n[i], value: e.target.value };
+                            setTestParams(n);
+                          }}
+                          placeholder={`Valor para ${p.key}`}
+                          className="text-sm h-9"
+                          autoFocus={i === 0 && !p.value}
+                        />
+                        <Badge variant="outline" className="text-[10px] justify-center">
+                          {p.kind === 'path' ? 'path' : 'query'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">
+                  Este endpoint não tem parâmetros configuráveis — basta executar.
+                </p>
+              )}
+
+              {/* Advanced toggle */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(s => !s)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showAdvanced ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                Avançado (URL completa, headers, body)
+              </button>
+
+              {showAdvanced && (
+                <div className="space-y-3 border-l-2 border-muted pl-4">
+                  <div className="flex gap-2">
+                    <Select value={testMethod} onValueChange={setTestMethod}>
+                      <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>{METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Input
+                      value={testUrlTemplate}
+                      onChange={e => {
+                        setTestUrlTemplate(e.target.value);
+                        setTestParams(extractParams(e.target.value));
+                      }}
+                      className="font-mono text-sm flex-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Headers</Label>
+                    <div className="space-y-2 mt-1">
+                      {testHeaders.map((h, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input placeholder="Chave" value={h.key} onChange={e => { const n = [...testHeaders]; n[i].key = e.target.value; setTestHeaders(n); }} className="text-sm" />
+                          <Input placeholder="Valor" value={h.value} onChange={e => { const n = [...testHeaders]; n[i].value = e.target.value; setTestHeaders(n); }} className="text-sm" />
+                          <Button variant="ghost" size="icon" className="h-10 w-10 flex-shrink-0" onClick={() => setTestHeaders(testHeaders.filter((_, j) => j !== i))}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" onClick={() => setTestHeaders([...testHeaders, { key: '', value: '' }])}>
+                        <Plus className="h-3 w-3 mr-1" /> Header
                       </Button>
                     </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={() => setTestHeaders([...testHeaders, { key: '', value: '' }])}>
-                    <Plus className="h-3 w-3 mr-1" /> Header
-                  </Button>
-                </div>
-              </div>
+                  </div>
 
-              {/* Body */}
-              {!['GET', 'HEAD'].includes(testMethod) && (
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Body (JSON)</Label>
-                  <Textarea value={testBody} onChange={e => setTestBody(e.target.value)} placeholder='{"key": "value"}' className="font-mono text-sm min-h-[100px] mt-1" />
+                  {!['GET', 'HEAD'].includes(testMethod) && (
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Body (JSON)</Label>
+                      <Textarea value={testBody} onChange={e => setTestBody(e.target.value)} placeholder='{"key": "value"}' className="font-mono text-sm min-h-[100px] mt-1" />
+                    </div>
+                  )}
                 </div>
               )}
 
-              <Button onClick={handleExecuteTest} disabled={isTesting} className="w-full">
+              <Button onClick={handleExecuteTest} disabled={isTesting} className="w-full" size="lg">
                 {isTesting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
-                {isTesting ? 'Executando...' : 'Executar Requisição'}
+                {isTesting ? 'Executando...' : 'Executar'}
               </Button>
             </div>
+
 
             {/* Result */}
             {testResult && (
