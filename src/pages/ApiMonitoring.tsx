@@ -56,10 +56,13 @@ const ApiMonitoring = () => {
   // Test state
   const [testMethod, setTestMethod] = useState('GET');
   const [testUrl, setTestUrl] = useState('');
+  const [testUrlTemplate, setTestUrlTemplate] = useState('');
+  const [testParams, setTestParams] = useState<{ key: string; value: string; kind: 'path' | 'query' }[]>([]);
   const [testHeaders, setTestHeaders] = useState<{ key: string; value: string }[]>([{ key: '', value: '' }]);
   const [testBody, setTestBody] = useState('');
   const [testResult, setTestResult] = useState<ApiExecutionLog | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Queries
   const { data: endpoints = [], isLoading, refetch } = useQuery({
