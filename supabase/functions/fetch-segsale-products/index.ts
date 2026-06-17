@@ -281,8 +281,6 @@ Deno.serve(async (req) => {
 
     const salesData: SegsaleSale[] = await segsaleResponse.json()
     console.log(`✅ Received ${salesData.length} sales from Segsale`)
-    console.log(`🧪 RAW produtos-por-veiculo[0] keys: ${salesData[0] ? Object.keys(salesData[0]).join(',') : 'EMPTY'}`)
-    console.log(`🧪 RAW produtos-por-veiculo[0]: ${JSON.stringify(salesData[0] || {}).substring(0, 2000)}`)
     // Fire-and-forget cache write — don't block the response
     writeCachedSegsaleResponse(supabase, idResumoVenda, salesData).catch(e =>
       console.warn('⚠️ Cache write failed (non-blocking):', e?.message ?? e)
