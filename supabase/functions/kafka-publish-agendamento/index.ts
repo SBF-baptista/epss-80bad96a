@@ -134,8 +134,7 @@ Deno.serve(async (req) => {
 
     const razaoSocial = customer?.company_name ?? schedule.customer_name ?? null;
 
-
-    // ============ PAYLOAD 2 (formato rico) ============
+    // ============ PAYLOAD (formato rico) ============
     // Acessórios e módulos consolidados a partir do kickoff_history
     type AccItem = { name: string; category: string; quantity: number };
     const accMap = new Map<string, AccItem>();
