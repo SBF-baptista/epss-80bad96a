@@ -138,23 +138,6 @@ Deno.serve(async (req) => {
     const nomeFantasia = customer?.name ?? customer?.company_name ?? razaoSocial;
     const email = customer?.email ?? schedule.customer_email ?? null;
 
-    // ============ PAYLOAD 1 (formato simples) ============
-    const payloadSimples = {
-      codigoCliente,
-      razaoSocial,
-      nomeFantasia,
-      email,
-      veiculos: [
-        {
-          placa: schedule.vehicle_plate ?? null,
-          modelo: [schedule.vehicle_brand, schedule.vehicle_model]
-            .filter(Boolean)
-            .join(" ")
-            .trim() || null,
-          dispositivo,
-        },
-      ],
-    };
 
     // ============ PAYLOAD 2 (formato rico) ============
     // Acessórios e módulos consolidados a partir do kickoff_history
