@@ -1,6 +1,8 @@
 // Edge Function: kafka-publish-agendamento
-// Publica evento no Kafka da DigitalOcean (SASL_SSL + SCRAM-SHA-256)
-// após a criação de um agendamento (kit_schedules).
+// Publica DOIS eventos no Kafka (SASL_SSL + SCRAM-SHA-256) após a criação
+// de um agendamento (kit_schedules):
+//   1) Payload simples (codigoCliente / razaoSocial / veiculos[placa,modelo,dispositivo])
+//   2) Payload rico  (saleSummaryId, clientCode, eventAt, customerGroups[], accessories[])
 //
 // Body: { scheduleId: string }
 // Sempre retorna 200 (regra do projeto: erros de negócio no corpo).
@@ -19,6 +21,17 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+// Mapeia o usage_type interno para o vocabulário do tópico
+const mapDispositivo = (ut?: string | null): string => {
+  const v = String(ut ?? "").toLowerCase();
+  if (!v) return "rastreador";
+  if (v.includes("camera") || v.includes("câmera") || v.includes("video") || v.includes("vídeo") || v.includes("dashcam")) return "dashcam";
+  if (v.includes("dvr") || v.includes("gravador") || v.includes("nvr")) return "gravador";
+  return "rastreador";
+};
+
+const onlyDigits = (s?: string | null) => String(s ?? "").replace(/\D+/g, "");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -44,11 +57,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // 1) Busca o agendamento
+    // 1) Agendamento
     const { data: schedule, error: sErr } = await supabase
       .from("kit_schedules")
       .select(
-        "id, vehicle_plate, vehicle_model, vehicle_brand, vehicle_year, customer_id, customer_name, customer_email, scheduled_date, installation_time, status",
+        "id, vehicle_plate, vehicle_model, vehicle_brand, vehicle_year, customer_id, customer_name, customer_email, customer_phone, customer_document_number, scheduled_date, installation_time, status, installation_address_street, installation_address_number, installation_address_neighborhood, installation_address_city, installation_address_postal_code, installation_address_complement",
       )
       .eq("id", scheduleId)
       .maybeSingle();
@@ -57,42 +70,75 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: `Agendamento não encontrado: ${sErr?.message ?? "n/a"}` });
     }
 
-    // 2) Busca o cliente (codigoCliente, razão social, email)
+    // 2) Cliente
     let customer: any = null;
     if (schedule.customer_id) {
       const { data } = await supabase
         .from("customers")
-        .select("id, codigo_cliente, name, company_name, email, sale_summary_id")
+        .select(
+          "id, name, company_name, email, phone, document_number, sale_summary_id, address_street, address_number, address_neighborhood, address_city, address_postal_code, address_complement",
+        )
         .eq("id", schedule.customer_id)
         .maybeSingle();
       customer = data;
     }
 
-    // 3) Busca dispositivo do veículo (kickoff_history.vehicles_data por placa+venda)
-    let dispositivo = "rastreador";
-    if (customer?.sale_summary_id && schedule.vehicle_plate) {
+    const saleSummaryId: number | null =
+      (customer?.sale_summary_id as number | undefined) ?? null;
+
+    // 3) Kickoff history (vehicles_data + accessories_sale)
+    let kickoff: any = null;
+    if (saleSummaryId) {
       const { data: kh } = await supabase
         .from("kickoff_history")
-        .select("vehicles_data")
-        .eq("sale_summary_id", customer.sale_summary_id)
+        .select("vehicles_data, accessories_sale, camera_extra_sale, company_name")
+        .eq("sale_summary_id", saleSummaryId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      const arr = (kh?.vehicles_data ?? []) as Array<Record<string, any>>;
-      const match = arr.find(
-        (v) =>
-          String(v?.plate ?? "").toUpperCase() ===
-          String(schedule.vehicle_plate).toUpperCase(),
-      );
-      if (match?.usage_type) dispositivo = String(match.usage_type);
+      kickoff = kh;
     }
 
-    // 4) Monta payload no formato solicitado
-    const payload = {
-      codigoCliente: customer?.codigo_cliente ?? null,
-      razaoSocial: customer?.company_name ?? schedule.customer_name ?? null,
-      nomeFantasia: customer?.name ?? customer?.company_name ?? null,
-      email: customer?.email ?? schedule.customer_email ?? null,
+    const vehiclesData: Array<Record<string, any>> = Array.isArray(kickoff?.vehicles_data)
+      ? kickoff.vehicles_data
+      : [];
+
+    const findVehicle = (plate?: string | null) => {
+      const p = String(plate ?? "").toUpperCase();
+      return vehiclesData.find(
+        (v) => String(v?.plate ?? "").toUpperCase() === p,
+      );
+    };
+    const matchVehicle = findVehicle(schedule.vehicle_plate);
+
+    // 4) Incoming vehicle (para contractCode / chassis / cor — quando existirem)
+    let incoming: any = null;
+    if (saleSummaryId && schedule.vehicle_plate) {
+      const { data: iv } = await supabase
+        .from("incoming_vehicles")
+        .select("plate, brand, vehicle, year, usage_type, pending_contract_id, company_name")
+        .eq("sale_summary_id", saleSummaryId)
+        .eq("plate", schedule.vehicle_plate)
+        .maybeSingle();
+      incoming = iv;
+    }
+
+    const dispositivo = mapDispositivo(matchVehicle?.usage_type ?? incoming?.usage_type);
+
+    // codigoCliente: numérico — usamos sale_summary_id (única chave numérica do cliente)
+    const codigoCliente: number | null = saleSummaryId;
+    const clientCodeStr: string = saleSummaryId != null ? String(saleSummaryId) : "";
+
+    const razaoSocial = customer?.company_name ?? schedule.customer_name ?? null;
+    const nomeFantasia = customer?.name ?? customer?.company_name ?? razaoSocial;
+    const email = customer?.email ?? schedule.customer_email ?? null;
+
+    // ============ PAYLOAD 1 (formato simples) ============
+    const payloadSimples = {
+      codigoCliente,
+      razaoSocial,
+      nomeFantasia,
+      email,
       veiculos: [
         {
           placa: schedule.vehicle_plate ?? null,
@@ -105,15 +151,81 @@ Deno.serve(async (req) => {
       ],
     };
 
-    // 5) Publica no Kafka
-    // Normaliza CA: aceita PEM completo, PEM com \n literal, ou só o corpo base64
+    // ============ PAYLOAD 2 (formato rico) ============
+    // Acessórios e módulos consolidados a partir do kickoff_history
+    type AccItem = { name: string; category: string; quantity: number };
+    const accMap = new Map<string, AccItem>();
+    const pushAcc = (name?: string | null, category = "Acessório", qty = 1) => {
+      const n = String(name ?? "").trim();
+      if (!n) return;
+      const key = `${category}::${n.toLowerCase()}`;
+      const prev = accMap.get(key);
+      if (prev) prev.quantity += qty;
+      else accMap.set(key, { name: n, category, quantity: qty });
+    };
+
+    for (const v of vehiclesData) {
+      const accs = Array.isArray(v?.accessories) ? v.accessories : [];
+      for (const a of accs) {
+        if (typeof a === "string") pushAcc(a, "Acessório", 1);
+        else pushAcc(a?.name ?? a?.accessory_name, "Acessório", Number(a?.quantity ?? 1) || 1);
+      }
+      const mods = Array.isArray(v?.selected_modules) ? v.selected_modules : [];
+      for (const m of mods) {
+        if (typeof m === "string") pushAcc(m, "Módulo", 1);
+        else pushAcc(m?.name, "Módulo", Number(m?.quantity ?? 1) || 1);
+      }
+    }
+    const accessoriesSale = Array.isArray(kickoff?.accessories_sale) ? kickoff.accessories_sale : [];
+    for (const a of accessoriesSale) {
+      pushAcc(a?.name ?? a?.accessory_name, "Acessório", Number(a?.quantity ?? 1) || 1);
+    }
+    const cameraSale = Array.isArray(kickoff?.camera_extra_sale) ? kickoff.camera_extra_sale : [];
+    for (const c of cameraSale) {
+      pushAcc(c?.name ?? "CAMERA EXTRA", "Acessório", Number(c?.quantity ?? 1) || 1);
+    }
+
+    const vehicleRich = {
+      contractCode: incoming?.pending_contract_id != null ? String(incoming.pending_contract_id) : null,
+      productDescription: matchVehicle?.usage_type ?? incoming?.usage_type ?? null,
+      plate: schedule.vehicle_plate ?? null,
+      brand: schedule.vehicle_brand ?? matchVehicle?.brand ?? incoming?.brand ?? null,
+      model: schedule.vehicle_model ?? matchVehicle?.model ?? incoming?.vehicle ?? null,
+      year: schedule.vehicle_year ?? matchVehicle?.year ?? incoming?.year ?? null,
+      chassis: matchVehicle?.chassis ?? null,
+      color: matchVehicle?.color ?? null,
+    };
+
+    const customerGroup = {
+      companyName: razaoSocial,
+      clientCode: clientCodeStr,
+      taxId: onlyDigits(customer?.document_number ?? schedule.customer_document_number) || null,
+      phone: onlyDigits(customer?.phone ?? schedule.customer_phone) || null,
+      address: {
+        city: customer?.address_city ?? schedule.installation_address_city ?? null,
+        district: customer?.address_neighborhood ?? schedule.installation_address_neighborhood ?? null,
+        street: customer?.address_street ?? schedule.installation_address_street ?? null,
+        number: customer?.address_number ?? schedule.installation_address_number ?? null,
+        zipCode: onlyDigits(customer?.address_postal_code ?? schedule.installation_address_postal_code) || null,
+        complement: customer?.address_complement ?? schedule.installation_address_complement ?? "",
+      },
+      vehicles: [vehicleRich],
+    };
+
+    const payloadRico = {
+      saleSummaryId,
+      clientCode: clientCodeStr,
+      eventAt: new Date().toISOString().replace(/\.\d{3}Z$/, ""),
+      customerGroups: [customerGroup],
+      accessories: Array.from(accMap.values()),
+    };
+
+    // 5) Publica no Kafka — duas mensagens no mesmo tópico
     const normalizeCaPem = (raw: string): string => {
       let s = raw.trim().replace(/\\n/g, "\n");
-      // Remove headers existentes para reconstruir limpo
       s = s.replace(/-----BEGIN CERTIFICATE-----/g, "")
            .replace(/-----END CERTIFICATE-----/g, "")
            .replace(/\s+/g, "");
-      // Quebra em linhas de 64 chars
       const lines = s.match(/.{1,64}/g) ?? [];
       return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----\n`;
     };
@@ -124,7 +236,6 @@ Deno.serve(async (req) => {
       brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
       ssl: { ca: [caPem], rejectUnauthorized: true },
       sasl: { mechanism: "scram-sha-512", username, password },
-      // Alinhado com socket.connection.setup.timeout.ms / max.ms do consumer
       connectionTimeout: 60_000,
       authenticationTimeout: 30_000,
       requestTimeout: 60_000,
@@ -140,7 +251,6 @@ Deno.serve(async (req) => {
 
     try {
       await producer.connect();
-      // ID da mensagem: codigoCliente-yyyyMMddHHmmss (America/Sao_Paulo)
       const fmt = new Intl.DateTimeFormat("en-GB", {
         timeZone: "America/Sao_Paulo",
         year: "numeric", month: "2-digit", day: "2-digit",
@@ -150,15 +260,21 @@ Deno.serve(async (req) => {
       const get = (t: string) => fmt.find((p) => p.type === t)?.value ?? "";
       const localDateTime =
         `${get("year")}${get("month")}${get("day")}${get("hour")}${get("minute")}${get("second")}`;
-      const messageKey = `${payload.codigoCliente ?? "sem-cliente"}-${localDateTime}`;
+      const baseKey = `${codigoCliente ?? "sem-cliente"}-${localDateTime}`;
 
       await producer.send({
         topic,
         acks: -1,
         messages: [
           {
-            key: messageKey,
-            value: JSON.stringify(payload),
+            key: `${baseKey}-v1`,
+            value: JSON.stringify(payloadSimples),
+            headers: { "schema-version": "v1-simples" },
+          },
+          {
+            key: `${baseKey}-v2`,
+            value: JSON.stringify(payloadRico),
+            headers: { "schema-version": "v2-rico" },
           },
         ],
       });
@@ -166,8 +282,8 @@ Deno.serve(async (req) => {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic}`);
-    return json({ ok: true });
+    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic} (v1+v2)`);
+    return json({ ok: true, sent: ["v1-simples", "v2-rico"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[kafka-publish] ERROR", msg);
