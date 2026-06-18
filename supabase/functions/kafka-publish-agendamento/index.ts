@@ -128,15 +128,11 @@ Deno.serve(async (req) => {
       incoming = iv;
     }
 
-    const dispositivo = mapDispositivo(matchVehicle?.usage_type ?? incoming?.usage_type);
-
     // codigoCliente: numérico — usamos sale_summary_id (única chave numérica do cliente)
     const codigoCliente: number | null = saleSummaryId;
     const clientCodeStr: string = saleSummaryId != null ? String(saleSummaryId) : "";
 
     const razaoSocial = customer?.company_name ?? schedule.customer_name ?? null;
-    const nomeFantasia = customer?.name ?? customer?.company_name ?? razaoSocial;
-    const email = customer?.email ?? schedule.customer_email ?? null;
 
 
     // ============ PAYLOAD 2 (formato rico) ============
