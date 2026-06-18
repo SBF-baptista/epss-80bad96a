@@ -1,8 +1,7 @@
 // Edge Function: kafka-publish-agendamento
-// Publica DOIS eventos no Kafka (SASL_SSL + SCRAM-SHA-256) após a criação
-// de um agendamento (kit_schedules):
-//   1) Payload simples (codigoCliente / razaoSocial / veiculos[placa,modelo,dispositivo])
-//   2) Payload rico  (saleSummaryId, clientCode, eventAt, customerGroups[], accessories[])
+// Publica o evento no Kafka (SASL_SSL + SCRAM-SHA-256) após a criação
+// de um agendamento (kit_schedules) usando o payload rico:
+//   Payload: saleSummaryId, clientCode, eventAt, customerGroups[], accessories[]
 //
 // Body: { scheduleId: string }
 // Sempre retorna 200 (regra do projeto: erros de negócio no corpo).
