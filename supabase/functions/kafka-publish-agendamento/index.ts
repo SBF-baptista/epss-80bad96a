@@ -1,8 +1,7 @@
 // Edge Function: kafka-publish-agendamento
-// Publica DOIS eventos no Kafka (SASL_SSL + SCRAM-SHA-256) após a criação
-// de um agendamento (kit_schedules):
-//   1) Payload simples (codigoCliente / razaoSocial / veiculos[placa,modelo,dispositivo])
-//   2) Payload rico  (saleSummaryId, clientCode, eventAt, customerGroups[], accessories[])
+// Publica o evento no Kafka (SASL_SSL + SCRAM-SHA-256) após a criação
+// de um agendamento (kit_schedules) usando o payload rico:
+//   Payload: saleSummaryId, clientCode, eventAt, customerGroups[], accessories[]
 //
 // Body: { scheduleId: string }
 // Sempre retorna 200 (regra do projeto: erros de negócio no corpo).
@@ -22,14 +21,6 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Mapeia o usage_type interno para o vocabulário do tópico
-const mapDispositivo = (ut?: string | null): string => {
-  const v = String(ut ?? "").toLowerCase();
-  if (!v) return "rastreador";
-  if (v.includes("camera") || v.includes("câmera") || v.includes("video") || v.includes("vídeo") || v.includes("dashcam")) return "dashcam";
-  if (v.includes("dvr") || v.includes("gravador") || v.includes("nvr")) return "gravador";
-  return "rastreador";
-};
 
 const onlyDigits = (s?: string | null) => String(s ?? "").replace(/\D+/g, "");
 
@@ -123,35 +114,13 @@ Deno.serve(async (req) => {
       incoming = iv;
     }
 
-    const dispositivo = mapDispositivo(matchVehicle?.usage_type ?? incoming?.usage_type);
-
     // codigoCliente: numérico — usamos sale_summary_id (única chave numérica do cliente)
     const codigoCliente: number | null = saleSummaryId;
     const clientCodeStr: string = saleSummaryId != null ? String(saleSummaryId) : "";
 
     const razaoSocial = customer?.company_name ?? schedule.customer_name ?? null;
-    const nomeFantasia = customer?.name ?? customer?.company_name ?? razaoSocial;
-    const email = customer?.email ?? schedule.customer_email ?? null;
 
-    // ============ PAYLOAD 1 (formato simples) ============
-    const payloadSimples = {
-      codigoCliente,
-      razaoSocial,
-      nomeFantasia,
-      email,
-      veiculos: [
-        {
-          placa: schedule.vehicle_plate ?? null,
-          modelo: [schedule.vehicle_brand, schedule.vehicle_model]
-            .filter(Boolean)
-            .join(" ")
-            .trim() || null,
-          dispositivo,
-        },
-      ],
-    };
-
-    // ============ PAYLOAD 2 (formato rico) ============
+    // ============ PAYLOAD (formato rico) ============
     // Acessórios e módulos consolidados a partir do kickoff_history
     type AccItem = { name: string; category: string; quantity: number };
     const accMap = new Map<string, AccItem>();
@@ -220,7 +189,7 @@ Deno.serve(async (req) => {
       accessories: Array.from(accMap.values()),
     };
 
-    // 5) Publica no Kafka — duas mensagens no mesmo tópico
+    // 5) Publica no Kafka — uma mensagem no tópico
     const normalizeCaPem = (raw: string): string => {
       let s = raw.trim().replace(/\\n/g, "\n");
       s = s.replace(/-----BEGIN CERTIFICATE-----/g, "")
@@ -267,11 +236,6 @@ Deno.serve(async (req) => {
         acks: -1,
         messages: [
           {
-            key: `${baseKey}-v1`,
-            value: JSON.stringify(payloadSimples),
-            headers: { "schema-version": "v1-simples" },
-          },
-          {
             key: `${baseKey}-v2`,
             value: JSON.stringify(payloadRico),
             headers: { "schema-version": "v2-rico" },
@@ -282,8 +246,8 @@ Deno.serve(async (req) => {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic} (v1+v2)`);
-    return json({ ok: true, sent: ["v1-simples", "v2-rico"] });
+    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic} (v2-rico)`);
+    return json({ ok: true, sent: ["v2-rico"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[kafka-publish] ERROR", msg);
