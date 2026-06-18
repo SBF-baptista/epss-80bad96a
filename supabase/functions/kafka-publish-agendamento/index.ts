@@ -30,6 +30,12 @@ const mapDispositivo = (ut?: string | null): string => {
   return "rastreador";
 };
 
+// Helper: remove acentos/diacríticos via NFD + regex (acessórios, módulos)
+const stripAccents = (str?: string | null): string => {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
 const onlyDigits = (s?: string | null) => String(s ?? "").replace(/\D+/g, "");
 
 Deno.serve(async (req) => {
