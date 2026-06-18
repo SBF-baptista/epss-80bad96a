@@ -21,20 +21,6 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Mapeia o usage_type interno para o vocabulário do tópico
-const mapDispositivo = (ut?: string | null): string => {
-  const v = String(ut ?? "").toLowerCase();
-  if (!v) return "rastreador";
-  if (v.includes("camera") || v.includes("câmera") || v.includes("video") || v.includes("vídeo") || v.includes("dashcam")) return "dashcam";
-  if (v.includes("dvr") || v.includes("gravador") || v.includes("nvr")) return "gravador";
-  return "rastreador";
-};
-
-// Helper: remove acentos/diacríticos via NFD + regex (acessórios, módulos)
-const stripAccents = (str?: string | null): string => {
-  if (!str) return "";
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-};
 
 const onlyDigits = (s?: string | null) => String(s ?? "").replace(/\D+/g, "");
 
