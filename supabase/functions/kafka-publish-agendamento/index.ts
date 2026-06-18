@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       accessories: Array.from(accMap.values()),
     };
 
-    // 5) Publica no Kafka — duas mensagens no mesmo tópico
+    // 5) Publica no Kafka — uma mensagem no tópico
     const normalizeCaPem = (raw: string): string => {
       let s = raw.trim().replace(/\\n/g, "\n");
       s = s.replace(/-----BEGIN CERTIFICATE-----/g, "")
@@ -250,11 +250,6 @@ Deno.serve(async (req) => {
         acks: -1,
         messages: [
           {
-            key: `${baseKey}-v1`,
-            value: JSON.stringify(payloadSimples),
-            headers: { "schema-version": "v1-simples" },
-          },
-          {
             key: `${baseKey}-v2`,
             value: JSON.stringify(payloadRico),
             headers: { "schema-version": "v2-rico" },
@@ -265,8 +260,8 @@ Deno.serve(async (req) => {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic} (v1+v2)`);
-    return json({ ok: true, sent: ["v1-simples", "v2-rico"] });
+    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic} (v2-rico)`);
+    return json({ ok: true, sent: ["v2-rico"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[kafka-publish] ERROR", msg);
