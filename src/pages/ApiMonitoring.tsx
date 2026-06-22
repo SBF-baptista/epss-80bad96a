@@ -467,6 +467,8 @@ const ApiMonitoring = () => {
             </Table>
           </CardContent>
         </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Endpoint Create/Edit Modal */}
