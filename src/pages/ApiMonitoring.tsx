@@ -24,6 +24,7 @@ import {
   executeEndpointTest, fetchExecutionLogs, maskSensitiveValue,
   type EndpointWithStats, type ApiEndpoint, type ApiExecutionLog
 } from '@/services/apiMonitoringService';
+import ApiReturnsView from '@/components/api-monitoring/ApiReturnsView';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
