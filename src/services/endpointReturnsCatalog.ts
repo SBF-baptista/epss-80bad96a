@@ -480,7 +480,7 @@ export const ENDPOINT_RETURNS_CATALOG: EndpointReturnDoc[] = [
     ],
     dataSource: "kit_schedules + technicians",
     fetchLiveExample: async () => {
-      const techs = (await safe(supabase.from("technicians").select("id, name, phone").eq("active", true).limit(3))).data || [];
+      const techs = (await safe((supabase.from("technicians") as any).select("id, name, phone").eq("active", true).limit(3))).data || [];
       return {
         success: true,
         date: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
