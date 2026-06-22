@@ -291,6 +291,17 @@ const ApiMonitoring = () => {
       </div>
 
       <div className="px-4 sm:px-6 lg:px-8 py-5 max-w-[1920px] mx-auto space-y-5">
+        <Tabs defaultValue="monitor" className="space-y-5">
+          <TabsList>
+            <TabsTrigger value="monitor">Monitoramento</TabsTrigger>
+            <TabsTrigger value="returns">Retornos dos Endpoints</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="returns" className="space-y-5 mt-0">
+            <ApiReturnsView />
+          </TabsContent>
+
+          <TabsContent value="monitor" className="space-y-5 mt-0">
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
