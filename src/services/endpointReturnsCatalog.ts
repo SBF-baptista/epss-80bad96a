@@ -31,13 +31,15 @@ export interface EndpointReturnDoc {
 
 // ---------- helpers para fetch dos exemplos ----------
 
-const safe = async <T>(p: Promise<T>, fallback: any = null): Promise<any> => {
-  try { return await p; } catch { return fallback; }
+const safe = async (p: any, fallback: any = { data: null, count: null }): Promise<any> => {
+  try { return await Promise.resolve(p); } catch { return fallback; }
 };
 
 const first = async (q: any) => {
-  const { data } = await q;
-  return Array.isArray(data) ? data[0] : data;
+  try {
+    const { data } = await Promise.resolve(q);
+    return Array.isArray(data) ? data[0] : data;
+  } catch { return null; }
 };
 
 // ---------- catálogo ----------
