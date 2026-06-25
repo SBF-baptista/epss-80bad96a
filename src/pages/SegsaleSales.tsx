@@ -298,6 +298,132 @@ export default function SegsaleSales() {
           })}
         </div>
       )}
+
+      <Dialog open={detailSaleId !== null} onOpenChange={(o) => { if (!o) { setDetailSaleId(null); setDetailData(null); } }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileJson className="h-5 w-5 text-primary" />
+              Detalhes completos — Venda #{detailSaleId}
+            </DialogTitle>
+            <DialogDescription>
+              Resposta tratada do endpoint <code>fetch-segsale-products</code> (inclui dados da API Segsale + cliente local).
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Buscando dados no Segsale...</span>
+            </div>
+          ) : detailData ? (
+            <Tabs defaultValue="resumo" className="flex-1 overflow-hidden flex flex-col">
+              <TabsList>
+                <TabsTrigger value="resumo">Resumo</TabsTrigger>
+                <TabsTrigger value="veiculos">Veículos & Itens</TabsTrigger>
+                <TabsTrigger value="json">JSON completo</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="resumo" className="overflow-auto space-y-3">
+                {(() => {
+                  const sale = detailData?.sales?.[0] || detailData?.sale || detailData;
+                  const client = detailData?.client_id || sale?.client || {};
+                  const items = sale?.contract_items || [];
+                  return (
+                    <div className="space-y-3 text-sm">
+                      <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm">Cliente</CardTitle></CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-2 text-xs">
+                          <div><strong>Nome/Empresa:</strong> {client?.name || client?.company_name || sale?.customer_name || "—"}</div>
+                          <div><strong>Documento:</strong> {client?.document_number || sale?.cpf_cnpj || "—"}</div>
+                          <div><strong>Código Cliente:</strong> {client?.codigo_cliente || "—"}</div>
+                          <div><strong>Telefone:</strong> {client?.phone || sale?.phone || "—"}</div>
+                          <div className="col-span-2"><strong>Endereço:</strong> {[client?.address_street, client?.address_number, client?.address_city, client?.address_state].filter(Boolean).join(", ") || "—"}</div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm">Venda</CardTitle></CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-2 text-xs">
+                          <div><strong>ID Resumo:</strong> {sale?.id || detailSaleId}</div>
+                          <div><strong>Pending Contract:</strong> {sale?.pending_contract_id || "—"}</div>
+                          <div><strong>Status:</strong> {sale?.status || "—"}</div>
+                          <div><strong>Vendedor:</strong> {sale?.seller || sale?.vendedor || "—"}</div>
+                          <div><strong>Data:</strong> {sale?.date || sale?.created_at || "—"}</div>
+                          <div><strong>Total veículos:</strong> {sale?.vehicles?.length || sale?.products?.length || 0}</div>
+                        </CardContent>
+                      </Card>
+
+                      {items.length > 0 && (
+                        <Card>
+                          <CardHeader className="pb-2"><CardTitle className="text-sm">Itens de Contrato ({items.length})</CardTitle></CardHeader>
+                          <CardContent className="text-xs">
+                            <ul className="list-disc pl-4 space-y-1">
+                              {items.map((it: any, i: number) => (
+                                <li key={i}>{it?.name || it?.description || JSON.stringify(it)} {it?.quantity ? `× ${it.quantity}` : ""}</li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  );
+                })()}
+              </TabsContent>
+
+              <TabsContent value="veiculos" className="overflow-auto">
+                {(() => {
+                  const sale = detailData?.sales?.[0] || detailData?.sale || detailData;
+                  const vehicles = sale?.vehicles || sale?.products || [];
+                  if (!vehicles.length) return <p className="text-sm text-muted-foreground">Nenhum veículo na resposta.</p>;
+                  return (
+                    <div className="space-y-3">
+                      {vehicles.map((v: any, i: number) => (
+                        <Card key={i}>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm">
+                              {v.brand || v.marca || ""} {v.model || v.vehicle || v.modelo || ""} {v.plate ? `— ${v.plate}` : ""}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="text-xs space-y-1">
+                            <div><strong>Ano:</strong> {v.year || v.ano || "—"} | <strong>Uso:</strong> {v.usage_type || v.tipo_uso || "—"}</div>
+                            {(v.accessories?.length || v.modules?.length) ? (
+                              <>
+                                {v.accessories?.length > 0 && (
+                                  <div><strong>Acessórios:</strong> {v.accessories.map((a: any) => a?.name || a).join(", ")}</div>
+                                )}
+                                {v.modules?.length > 0 && (
+                                  <div><strong>Módulos:</strong> {v.modules.map((m: any) => m?.name || m).join(", ")}</div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="text-muted-foreground italic">Sem acessórios/módulos retornados pelo Segsale.</div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </TabsContent>
+
+              <TabsContent value="json" className="overflow-auto flex-1">
+                <div className="flex justify-end mb-2">
+                  <Button size="sm" variant="outline" onClick={copyJson}>
+                    {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                    {copied ? "Copiado!" : "Copiar JSON"}
+                  </Button>
+                </div>
+                <pre className="text-xs bg-muted p-3 rounded overflow-auto whitespace-pre-wrap break-all">
+{JSON.stringify(detailData, null, 2)}
+                </pre>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <p className="text-sm text-muted-foreground py-8 text-center">Sem dados.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
