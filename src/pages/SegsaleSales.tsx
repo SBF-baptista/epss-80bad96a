@@ -5,12 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Package, RefreshCw, Filter } from "lucide-react";
+import { Search, Package, RefreshCw, Filter, FileJson, Loader2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { SectionSkeleton } from "@/components/ui/loading";
+import { fetchSegsaleProductsDirect } from "@/services/segsaleService";
 
 interface IncomingVehicleRow {
   id: string;
