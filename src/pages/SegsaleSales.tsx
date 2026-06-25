@@ -219,9 +219,22 @@ export default function SegsaleSales() {
                       {saleId ? `Venda #${saleId}` : "Sem ID de Venda"} — {first.company_name || "Empresa não informada"}
                       {first.cpf && <span className="text-sm text-muted-foreground font-normal ml-2">({first.cpf})</span>}
                     </CardTitle>
-                    <Badge variant="outline" className="text-xs">
-                      {items.length} veículo{items.length > 1 ? "s" : ""}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {items.length} veículo{items.length > 1 ? "s" : ""}
+                      </Badge>
+                      {saleId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDetails(saleId)}
+                          className="h-7 text-xs"
+                        >
+                          <FileJson className="h-3.5 w-3.5 mr-1" />
+                          Ver JSON completo
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
