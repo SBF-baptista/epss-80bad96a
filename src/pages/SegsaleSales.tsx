@@ -48,6 +48,34 @@ export default function SegsaleSales() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { toast } = useToast();
+  const [detailSaleId, setDetailSaleId] = useState<number | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
+
+  const openDetails = async (saleId: number) => {
+    setDetailSaleId(saleId);
+    setDetailData(null);
+    setDetailLoading(true);
+    try {
+      const result = await fetchSegsaleProductsDirect(saleId);
+      setDetailData(result);
+      if (!(result as any)?.success) {
+        toast({ title: "Falha ao buscar detalhes", description: (result as any)?.error || "Erro desconhecido", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar JSON", description: err?.message, variant: "destructive" });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const copyJson = async () => {
+    if (!detailData) return;
+    await navigator.clipboard.writeText(JSON.stringify(detailData, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const fetchVehicles = async () => {
     setLoading(true);
