@@ -335,25 +335,8 @@ export const KickoffDetailsModal = ({
     quantity: number | "";
     unitPrice: number | "";
   }
-  const [accessoriesSaleItems, setAccessoriesSaleItems] = useState<AccessorySaleItem[]>([
-    { description: "", quantity: "", unitPrice: "" },
-  ]);
+  const [accessoriesSaleItems] = useState<AccessorySaleItem[]>([]);
 
-  const addAccessorySaleItem = () => {
-    setAccessoriesSaleItems((prev) => [...prev, { description: "", quantity: "", unitPrice: "" }]);
-  };
-
-  const removeAccessorySaleItem = (index: number) => {
-    setAccessoriesSaleItems((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateAccessorySaleItem = (index: number, field: keyof AccessorySaleItem, value: string | number | "") => {
-    setAccessoriesSaleItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
 
   // Helper to normalize text for accessory detection
   const normalizeForSearch = (text: string): string => {
