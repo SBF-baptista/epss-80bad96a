@@ -926,14 +926,7 @@ export const KickoffDetailsModal = ({
       // Prepare sales data
       const cameraExtraSaleData = null;
 
-      const accessoriesSaleData = accessoriesSaleItems
-        .filter((item) => item.description.trim() !== "" && (Number(item.quantity) || 0) > 0)
-        .map((item) => ({
-          description: item.description,
-          quantity: Number(item.quantity) || 0,
-          unitPrice: Number(item.unitPrice) || 0,
-          total: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
-        }));
+      const accessoriesSaleData: any[] = [];
 
       // Save to kickoff history
       const { error: historyError } = await supabase.from("kickoff_history").insert({
