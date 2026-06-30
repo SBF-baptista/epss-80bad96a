@@ -141,6 +141,15 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
     })
     .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
 
+  // Cria a unidade na API Frota Segsale (DigitalOcean) — não bloqueia o fluxo
+  supabase.functions
+    .invoke('create-frota-unidade', { body: { scheduleId: schedule.id } })
+    .then(({ data, error }) => {
+      if (error) console.warn('[create-frota-unidade] falhou:', error.message);
+      else console.log('[create-frota-unidade] resultado:', data);
+    })
+    .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+
   // WhatsApp notification removed - only sent via "Disparar Agenda" button
 
   return {
