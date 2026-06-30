@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.kafka-publish-agendamento]
 verify_jwt = false
+
+[functions.create-frota-unidade]
+verify_jwt = false
