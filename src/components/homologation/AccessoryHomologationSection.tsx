@@ -5,7 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 export const AccessoryHomologationSection = () => {
   const { canEditModule, canManageModule } = useUserRole();
-  const canManageHomologationItems = canManageHomologationItems || canManageModule('homologation');
+  const canManageHomologationItems = canEditModule('accessories_supplies') || canManageModule('homologation');
 
   return (
     <Card className="w-full">

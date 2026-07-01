@@ -72,7 +72,7 @@ const initialFormData: KitFormData = {
 
 const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homologationCardId }) => {
   const { canEditModule, canManageModule } = useUserRole();
-  const canManageHomologationKits = canManageHomologationKits || canManageModule('homologation');
+  const canManageHomologationKits = canEditModule('kits') || canManageModule('homologation');
   const [kits, setKits] = useState<HomologationKit[]>([]);
   const [filteredKits, setFilteredKits] = useState<HomologationKit[]>([]);
   const [formData, setFormData] = useState<KitFormData>(initialFormData);

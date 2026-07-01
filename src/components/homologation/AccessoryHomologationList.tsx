@@ -32,7 +32,7 @@ export const AccessoryHomologationList = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin, isGestor, canEditModule, canManageModule } = useUserRole();
-  const canManageHomologationItems = canManageHomologationItems || canManageModule('homologation');
+  const canManageHomologationItems = canEditModule('accessories_supplies') || canManageModule('homologation');
   const [editModalItem, setEditModalItem] = useState<KitItemOption | null>(null);
   const [deleteModalItem, setDeleteModalItem] = useState<KitItemOption | null>(null);
 

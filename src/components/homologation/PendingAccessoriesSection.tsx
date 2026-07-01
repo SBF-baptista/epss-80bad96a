@@ -15,7 +15,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 export const PendingAccessoriesSection = () => {
   const { canEditModule, canManageModule } = useUserRole();
-  const canManageHomologationItems = canManageHomologationItems || canManageModule('homologation');
+  const canManageHomologationItems = canEditModule('accessories_supplies') || canManageModule('homologation');
   const [isOpen, setIsOpen] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const queryClient = useQueryClient();
