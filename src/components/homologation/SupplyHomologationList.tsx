@@ -31,7 +31,8 @@ export const SupplyHomologationList = () => {
   const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin, isGestor, canEditModule } = useUserRole();
+  const { isAdmin, isGestor, canEditModule, canManageModule } = useUserRole();
+  const canManageHomologationItems = canManageHomologationItems || canManageModule('homologation');
   const [editModalItem, setEditModalItem] = useState<KitItemOption | null>(null);
   const [deleteModalItem, setDeleteModalItem] = useState<KitItemOption | null>(null);
 
@@ -239,7 +240,7 @@ export const SupplyHomologationList = () => {
                       </p>
                     </div>
 
-                    {canEditModule('accessories_supplies') && (
+                    {canManageHomologationItems && (
                       <div className="flex gap-2 ml-4">
                         {/* Botão de Solicitação de Edição */}
                         <TooltipProvider>

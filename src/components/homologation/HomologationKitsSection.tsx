@@ -71,7 +71,8 @@ const initialFormData: KitFormData = {
 };
 
 const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homologationCardId }) => {
-  const { canEditModule } = useUserRole();
+  const { canEditModule, canManageModule } = useUserRole();
+  const canManageHomologationKits = canManageHomologationKits || canManageModule('homologation');
   const [kits, setKits] = useState<HomologationKit[]>([]);
   const [filteredKits, setFilteredKits] = useState<HomologationKit[]>([]);
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
@@ -495,7 +496,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
               )}
 
               {/* Add Kit Button */}
-              {!isCreating && canEditModule('kits') && (
+              {!isCreating && canManageHomologationKits && (
                 <Button 
                   onClick={() => setIsKitModalOpen(true)} 
                   className="shrink-0 h-10 px-5 font-medium shadow-sm hover:shadow-md transition-all"
@@ -599,7 +600,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                 </div>
                               </div>
 
-                              {canEditModule('kits') && (
+                              {canManageHomologationKits && (
                                 <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                                   <Button
                                     variant="ghost"

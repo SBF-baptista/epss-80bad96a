@@ -4,7 +4,8 @@ import { AccessoryHomologationList } from "./AccessoryHomologationList";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export const AccessoryHomologationSection = () => {
-  const { canEditModule } = useUserRole();
+  const { canEditModule, canManageModule } = useUserRole();
+  const canManageHomologationItems = canManageHomologationItems || canManageModule('homologation');
 
   return (
     <Card className="w-full">
@@ -17,7 +18,7 @@ export const AccessoryHomologationSection = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {canEditModule('accessories_supplies') && <AccessoryHomologationForm />}
+        {canManageHomologationItems && <AccessoryHomologationForm />}
         <AccessoryHomologationList />
       </CardContent>
     </Card>

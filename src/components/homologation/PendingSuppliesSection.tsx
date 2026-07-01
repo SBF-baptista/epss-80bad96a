@@ -15,7 +15,8 @@ import { findExistingItem } from "@/services/kitItemOptionsService";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export const PendingSuppliesSection = () => {
-  const { canEditModule } = useUserRole();
+  const { canEditModule, canManageModule } = useUserRole();
+  const canManageHomologationItems = canManageHomologationItems || canManageModule('homologation');
   const [isOpen, setIsOpen] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -136,7 +137,7 @@ export const PendingSuppliesSection = () => {
                 <Wrench className="h-5 w-5 text-green-500" />
                 Insumos Pendentes de Homologação
               </CardTitle>
-              {canEditModule('accessories_supplies') && (
+              {canManageHomologationItems && (
                 <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
                   Cadastrar Insumo
@@ -231,7 +232,7 @@ export const PendingSuppliesSection = () => {
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
                           Qtd total: {item.quantity}
                         </Badge>
-                        {canEditModule('accessories_supplies') && (
+                        {canManageHomologationItems && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -296,7 +297,7 @@ export const PendingSuppliesSection = () => {
                   <p>Clique no botão "Homologar" ao lado de cada item ou cadastre um novo insumo.</p>
                 </div>
               </div>
-              {canEditModule('accessories_supplies') && (
+              {canManageHomologationItems && (
                 <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
                   Cadastrar Insumo
