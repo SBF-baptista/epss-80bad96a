@@ -97,7 +97,7 @@ export const KitEditRequestModal = ({ open, onClose, onSuccess, kit, initialMode
   const addItem = (type: 'equipment' | 'accessory' | 'module' | 'supply') => {
     const newItem: HomologationKitItem = {
       item_name: '',
-      item_type: type === 'module' ? 'accessory' : type,
+      item_type: type,
       quantity: 1
     };
     
@@ -227,6 +227,7 @@ export const KitEditRequestModal = ({ open, onClose, onSuccess, kit, initialMode
             category: kit.category,
             equipment: kit.equipment,
             accessories: kit.accessories,
+            modules: kit.modules,
             supplies: kit.supplies
           },
           requested_changes: { action: 'delete' },

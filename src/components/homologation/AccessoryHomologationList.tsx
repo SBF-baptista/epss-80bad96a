@@ -75,6 +75,7 @@ export const AccessoryHomologationList = () => {
       });
       
       setDialogOpen(null);
+      setDeleteModalItem(null);
     } catch (error: any) {
       console.error('Error deleting accessory:', error);
       toast({
@@ -309,7 +310,7 @@ export const AccessoryHomologationList = () => {
       <AlertDialog open={!!deleteModalItem} onOpenChange={(open) => !open && setDeleteModalItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Solicitar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle>{canDirectManageHomologationItems ? 'Excluir Acessório' : 'Solicitar Exclusão'}</AlertDialogTitle>
             <AlertDialogDescription>
               {canDirectManageHomologationItems
                 ? <>Deseja excluir o acessório <strong>{deleteModalItem?.item_name}</strong>? Esta ação será aplicada imediatamente.</>

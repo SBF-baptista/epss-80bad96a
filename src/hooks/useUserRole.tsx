@@ -51,8 +51,27 @@ const mapRawRole = (rawRole: string | null | undefined): UserRole => {
   return null
 }
 
-const mapPermissionEntries = (userId: string, permissionMap: Record<string, string>): ModulePermission[] => {
-  return Object.entries(permissionMap || {})
+const normalizePermissionMap = (permissionMap: unknown): Record<string, string> => {
+  const normalized: Record<string, string> = {}
+
+  Object.entries((permissionMap || {}) as Record<string, unknown>).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      normalized[key] = value
+      return
+    }
+
+    if (value && typeof value === 'object') {
+      Object.entries(value as Record<string, unknown>).forEach(([nestedKey, nestedValue]) => {
+        if (typeof nestedValue === 'string') normalized[nestedKey] = nestedValue
+      })
+    }
+  })
+
+  return normalized
+}
+
+const mapPermissionEntries = (userId: string, permissionMap: unknown): ModulePermission[] => {
+  return Object.entries(normalizePermissionMap(permissionMap))
     .filter(([, permission]) => typeof permission === 'string' && permission !== 'none')
     .map(([module, permission]) => ({
       user_id: userId,
@@ -140,7 +159,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
             console.error('Error fetching access profile permissions:', profileError)
           } else if (profileData) {
             profileRole = mapRawRole(profileData.base_role)
-            profilePermissions = mapPermissionEntries(user.id, (profileData.permissions || {}) as Record<string, string>)
+            profilePermissions = mapPermissionEntries(user.id, profileData.permissions || {})
           }
         }
 
