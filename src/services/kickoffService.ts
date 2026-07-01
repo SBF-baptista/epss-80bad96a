@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logDelete } from "@/services/logService";
 
 export interface KickoffUsageType {
   sale_summary_id: number;
@@ -188,4 +189,49 @@ export const getKickoffData = async (): Promise<KickoffSummary> => {
     total_companies: clientsMap.size,
     clients
   };
+};
+
+export interface DeletePendingKickoffCardResult {
+  success: boolean;
+  message: string;
+  sale_summary_id: number;
+  company_name?: string;
+  deleted_vehicles: number;
+  deleted_accessories: number;
+}
+
+export const deletePendingKickoffCard = async (
+  saleSummaryId: number,
+  companyName: string
+): Promise<DeletePendingKickoffCardResult> => {
+  const { data, error } = await (supabase.rpc as any)("delete_pending_kickoff_card_admin", {
+    p_sale_summary_id: saleSummaryId,
+  });
+
+  if (error) {
+    console.error("Error deleting pending kickoff card:", error);
+    throw error;
+  }
+
+  const result = data as DeletePendingKickoffCardResult;
+
+  if (!result?.success) {
+    throw new Error(result?.message || "Não foi possível excluir o card pendente do Kickoff.");
+  }
+
+  await logDelete(
+    "kickoff",
+    "Card pendente do Kickoff",
+    String(saleSummaryId),
+    companyName,
+    {
+      sale_summary_id: saleSummaryId,
+      company_name: companyName,
+      deleted_vehicles: result.deleted_vehicles,
+      deleted_accessories: result.deleted_accessories,
+    },
+    { isLgpdSensitive: true }
+  );
+
+  return result;
 };
