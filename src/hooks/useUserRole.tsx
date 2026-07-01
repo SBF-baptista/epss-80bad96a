@@ -191,10 +191,6 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
           profilePermissions.forEach(permission => mergeHighestPermission(mergedPermissions, permission))
           legacyPermissions.forEach(permission => mergeHighestPermission(mergedPermissions, permission))
 
-          console.log(
-            `[useUserRole] Source: ${profileRole ? 'ACCESS_PROFILE + LEGACY' : 'LEGACY'}, role=${resolvedRole}, modules=`,
-            Array.from(mergedPermissions.values()).map(p => `${p.module}=${p.permission}`)
-          )
           setPermissions(Array.from(mergedPermissions.values()))
         }
       } catch (error) {
