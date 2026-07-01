@@ -2148,6 +2148,10 @@ export type Database = {
           tracker_model: string
         }[]
       }
+      delete_homologation_kit_admin: {
+        Args: { p_kit_id: string }
+        Returns: undefined
+      }
       generate_auto_order_number: { Args: never; Returns: string }
       get_app_logs_admin: {
         Args: {

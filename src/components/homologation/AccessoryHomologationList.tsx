@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { fetchKitItemOptions, deleteKitItemOption } from "@/services/kitItemOptionsService";
+import { fetchKitItemOptions, deleteKitItemOption, updateKitItemOption } from "@/services/kitItemOptionsService";
 import { Trash2, Package, FileText, ChevronDown, Search, Pencil } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,8 +31,9 @@ export const AccessoryHomologationList = () => {
   const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin, isGestor, canEditModule, canManageModule } = useUserRole();
+  const { canEditModule, canManageModule } = useUserRole();
   const canManageHomologationItems = canEditModule('accessories_supplies') || canManageModule('homologation');
+  const canDirectManageHomologationItems = canManageModule('homologation') || canManageModule('accessories_supplies');
   const [editModalItem, setEditModalItem] = useState<KitItemOption | null>(null);
   const [deleteModalItem, setDeleteModalItem] = useState<KitItemOption | null>(null);
 
@@ -74,6 +75,7 @@ export const AccessoryHomologationList = () => {
       });
       
       setDialogOpen(null);
+      setDeleteModalItem(null);
     } catch (error: any) {
       console.error('Error deleting accessory:', error);
       toast({
@@ -137,6 +139,13 @@ export const AccessoryHomologationList = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleDirectUpdateAccessory = async (accessoryId: string, changes: { item_name: string }) => {
+    await updateKitItemOption(accessoryId, changes);
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options', 'accessory'] });
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+    queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
   };
 
   if (isLoading) {
@@ -255,7 +264,7 @@ export const AccessoryHomologationList = () => {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Solicitar edição ao gestor</p>
+                              <p>{canDirectManageHomologationItems ? 'Editar acessório' : 'Solicitar edição ao gestor'}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -274,7 +283,7 @@ export const AccessoryHomologationList = () => {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Solicitar exclusão ao gestor</p>
+                              <p>{canDirectManageHomologationItems ? 'Excluir acessório' : 'Solicitar exclusão ao gestor'}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -292,6 +301,8 @@ export const AccessoryHomologationList = () => {
       <EditRequestModal
         open={!!editModalItem}
         onClose={() => setEditModalItem(null)}
+        mode={canDirectManageHomologationItems ? 'direct' : 'request'}
+        onDirectSave={(changes) => editModalItem ? handleDirectUpdateAccessory(editModalItem.id, changes) : Promise.resolve()}
         item={editModalItem ? { ...editModalItem, item_type: 'accessory' } : null}
       />
 
@@ -299,16 +310,21 @@ export const AccessoryHomologationList = () => {
       <AlertDialog open={!!deleteModalItem} onOpenChange={(open) => !open && setDeleteModalItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Solicitar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle>{canDirectManageHomologationItems ? 'Excluir Acessório' : 'Solicitar Exclusão'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja solicitar a exclusão do acessório <strong>{deleteModalItem?.item_name}</strong>? 
-              Esta solicitação será enviada para aprovação do gestor.
+              {canDirectManageHomologationItems
+                ? <>Deseja excluir o acessório <strong>{deleteModalItem?.item_name}</strong>? Esta ação será aplicada imediatamente.</>
+                : <>Deseja solicitar a exclusão do acessório <strong>{deleteModalItem?.item_name}</strong>? Esta solicitação será enviada para aprovação do gestor.</>}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmitDeleteRequest} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Solicitar Exclusão
+            <AlertDialogAction
+              onClick={() => deleteModalItem && (canDirectManageHomologationItems ? handleDeleteAccessory(deleteModalItem.id, deleteModalItem.item_name) : handleSubmitDeleteRequest())}
+              disabled={!!deletingId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {canDirectManageHomologationItems ? 'Excluir' : 'Solicitar Exclusão'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

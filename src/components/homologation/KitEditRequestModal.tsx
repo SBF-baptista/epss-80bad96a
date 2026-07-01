@@ -39,12 +39,15 @@ import { toast } from "sonner";
 import { HomologationKit, HomologationKitItem, KitCategory } from "@/types/homologationKit";
 import { SelectOrCreateInput } from "@/components/kit-items";
 import { useSegsaleExtras } from "@/hooks/useSegsaleExtras";
+import { updateHomologationKit } from "@/services/homologationKitService";
 
 interface KitEditRequestModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   kit: HomologationKit | null;
   initialMode?: 'edit' | 'delete';
+  submitMode?: 'request' | 'direct';
 }
 
 const KIT_CATEGORIES = [
@@ -53,7 +56,7 @@ const KIT_CATEGORIES = [
   { value: 'rastreamento', label: 'Rastreamento' },
 ];
 
-export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }: KitEditRequestModalProps) => {
+export const KitEditRequestModal = ({ open, onClose, onSuccess, kit, initialMode = 'edit', submitMode = 'request' }: KitEditRequestModalProps) => {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [observation, setObservation] = useState("");
@@ -76,7 +79,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
       setNewCategory(kit.category || "");
       setNewEquipment(kit.equipment.map(e => ({ ...e })));
       setNewAccessories(kit.accessories.map(a => ({ ...a })));
-      setNewModules([]);
+      setNewModules(kit.modules.map(m => ({ ...m })));
       setNewSupplies(kit.supplies.map(s => ({ ...s })));
       setObservation("");
       setMode(initialMode);
@@ -94,7 +97,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
   const addItem = (type: 'equipment' | 'accessory' | 'module' | 'supply') => {
     const newItem: HomologationKitItem = {
       item_name: '',
-      item_type: type === 'module' ? 'accessory' : type,
+      item_type: type,
       quantity: 1
     };
     
@@ -150,6 +153,11 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
       if (newAccessories[i].item_name !== kit.accessories[i]?.item_name ||
           newAccessories[i].quantity !== kit.accessories[i]?.quantity) return true;
     }
+    if (newModules.length !== kit.modules.length) return true;
+    for (let i = 0; i < newModules.length; i++) {
+      if (newModules[i].item_name !== kit.modules[i]?.item_name ||
+          newModules[i].quantity !== kit.modules[i]?.quantity) return true;
+    }
     if (newSupplies.length !== kit.supplies.length) return true;
     for (let i = 0; i < newSupplies.length; i++) {
       if (newSupplies[i].item_name !== kit.supplies[i]?.item_name ||
@@ -173,6 +181,8 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
     if (eqChanges) changes.push(eqChanges);
     const accChanges = compareItems(kit.accessories, newAccessories, 'Acessórios');
     if (accChanges) changes.push(accChanges);
+    const moduleChanges = compareItems(kit.modules, newModules, 'Módulos');
+    if (moduleChanges) changes.push(moduleChanges);
     const supChanges = compareItems(kit.supplies, newSupplies, 'Insumos');
     if (supChanges) changes.push(supChanges);
     return changes;
@@ -191,13 +201,22 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
     if (!kit) return;
     
     if (mode === 'delete') {
-      if (!observation.trim()) {
+      if (submitMode === 'request' && !observation.trim()) {
         toast.error("Por favor, informe o motivo da exclusão");
         return;
       }
       
       setSubmitting(true);
       try {
+        if (submitMode === 'direct') {
+          const { error } = await supabase.rpc('delete_homologation_kit_admin', { p_kit_id: kit.id! });
+          if (error) throw error;
+          toast.success(`Kit "${kit.name}" excluído com sucesso`);
+          onSuccess?.();
+          handleClose();
+          return;
+        }
+
         const insertData = {
           item_type: 'kit',
           item_name: kit.name,
@@ -208,6 +227,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
             category: kit.category,
             equipment: kit.equipment,
             accessories: kit.accessories,
+            modules: kit.modules,
             supplies: kit.supplies
           },
           requested_changes: { action: 'delete' },
@@ -255,10 +275,21 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
         accessories: newAccessories.filter(a => a.item_name.trim()).map(a => ({
           ...a, item_name: a.item_name.trim().toUpperCase()
         })),
+        modules: newModules.filter(m => m.item_name.trim()).map(m => ({
+          ...m, item_name: m.item_name.trim().toUpperCase(), item_type: 'module' as const
+        })),
         supplies: newSupplies.filter(s => s.item_name.trim()).map(s => ({
           ...s, item_name: s.item_name.trim().toUpperCase()
         }))
       };
+
+      if (submitMode === 'direct') {
+        await updateHomologationKit(kit.id!, requestedChanges);
+        toast.success(`Kit "${newName.trim()}" atualizado com sucesso`);
+        onSuccess?.();
+        handleClose();
+        return;
+      }
 
       const insertData = {
         item_type: 'kit',
@@ -270,6 +301,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
           category: kit.category,
           equipment: kit.equipment,
           accessories: kit.accessories,
+          modules: kit.modules,
           supplies: kit.supplies
         },
         requested_changes: requestedChanges,
@@ -309,7 +341,7 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-semibold text-foreground">
-                Solicitação Enviada!
+            Solicitação Enviada!
               </h3>
               <p className="text-sm text-muted-foreground max-w-xs">
                 {mode === 'delete' 
@@ -443,7 +475,9 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
-            {mode === 'delete' ? 'Solicitar Exclusão de Kit' : 'Solicitar Edição de Kit'}
+            {mode === 'delete'
+              ? submitMode === 'direct' ? 'Excluir Kit' : 'Solicitar Exclusão de Kit'
+              : submitMode === 'direct' ? 'Editar Kit' : 'Solicitar Edição de Kit'}
           </DialogTitle>
         </DialogHeader>
 
@@ -466,18 +500,20 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
               <div className="space-y-4">
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
                   <p className="text-sm text-destructive font-medium">
-                    ⚠️ Você está solicitando a exclusão deste kit. Esta ação será analisada pelo gestor.
+                    {submitMode === 'direct'
+                      ? '⚠️ Você está excluindo este kit. Esta ação será aplicada imediatamente.'
+                      : '⚠️ Você está solicitando a exclusão deste kit. Esta ação será analisada pelo gestor.'}
                   </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="observation" className="text-sm font-medium">
-                    Motivo da Exclusão *
+                    Motivo da Exclusão {submitMode === 'request' ? '*' : ''}
                   </Label>
                   <Textarea
                     id="observation"
                     value={observation}
                     onChange={(e) => setObservation(e.target.value)}
-                    placeholder="Descreva o motivo da solicitação de exclusão..."
+                    placeholder={submitMode === 'direct' ? 'Motivo opcional da exclusão...' : 'Descreva o motivo da solicitação de exclusão...'}
                     rows={3}
                   />
                 </div>
@@ -544,11 +580,13 @@ export const KitEditRequestModal = ({ open, onClose, kit, initialMode = 'edit' }
           <Button variant="outline" onClick={handleClose} disabled={submitting}>Cancelar</Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={submitting || (mode === 'edit' && !hasChanges()) || (mode === 'delete' && !observation.trim())}
+            disabled={submitting || (mode === 'edit' && !hasChanges()) || (submitMode === 'request' && mode === 'delete' && !observation.trim())}
             variant={mode === 'delete' ? 'destructive' : 'default'}
           >
             {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-            {mode === 'delete' ? 'Solicitar Exclusão' : 'Enviar Solicitação'}
+            {mode === 'delete'
+              ? submitMode === 'direct' ? 'Excluir Kit' : 'Solicitar Exclusão'
+              : submitMode === 'direct' ? 'Salvar Alterações' : 'Enviar Solicitação'}
           </Button>
         </DialogFooter>
       </DialogContent>
