@@ -245,6 +245,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     canViewModule,
     canEditModule,
     canApproveModule,
+    canManageModule,
     isAdmin,
     isGestor,
     isOperador,
