@@ -121,6 +121,43 @@ export const deleteKitItemOption = async (optionId: string): Promise<{ count: nu
   }
 };
 
+export const updateKitItemOption = async (
+  optionId: string,
+  optionData: Partial<Pick<CreateKitItemOptionRequest, 'item_name' | 'description'>>
+): Promise<KitItemOption> => {
+  try {
+    const updateData: Record<string, string | null> = {};
+
+    if (typeof optionData.item_name === 'string') {
+      updateData.item_name = optionData.item_name;
+    }
+
+    if ('description' in optionData) {
+      updateData.description = optionData.description || null;
+    }
+
+    const { data, error } = await supabase
+      .from('kit_item_options')
+      .update(updateData)
+      .eq('id', optionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating kit item option:', error);
+      throw error;
+    }
+
+    return {
+      ...data,
+      item_type: data.item_type as ItemType
+    };
+  } catch (error) {
+    console.error('Error in updateKitItemOption:', error);
+    throw error;
+  }
+};
+
 export const checkIfItemExists = async (itemName: string, itemType: ItemType): Promise<boolean> => {
   try {
     const normalizedName = itemName.toLowerCase().trim();
