@@ -15,7 +15,7 @@ interface HomologationCardProps {
 }
 
 const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: HomologationCardProps) => {
-  const { isAdmin } = useUserRole();
+  const { isAdmin, canManageModule, canEditModule } = useUserRole();
   const { toast } = useToast();
 
   const handleDelete = async () => {
@@ -41,9 +41,11 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
   };
 
   const isAdminUser = isAdmin();
+  const canDelete = isAdminUser || canManageModule('homologation');
+  const canDrag = isAdminUser || canEditModule('homologation');
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (!isAdminUser) return;
+    if (!canDrag) return;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', card.id);
     onDragStart(e);
@@ -53,8 +55,8 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
     <Card
       className="cursor-pointer bg-white border-border/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl touch-manipulation active:scale-[0.98]"
       onClick={onClick}
-      draggable={isAdminUser}
-      onDragStart={isAdminUser ? handleDragStart : undefined}
+      draggable={canDrag}
+      onDragStart={canDrag ? handleDragStart : undefined}
     >
       <CardContent className="p-3 md:p-4">
         <div className="space-y-2">
@@ -63,7 +65,7 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
             <h4 className="font-bold text-foreground text-sm md:text-base leading-tight flex-1 min-w-0">
               {card.brand} {card.model}
             </h4>
-            {isAdminUser && (
+            {canDelete && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

@@ -28,6 +28,7 @@ interface UserRoleContextType {
   canViewModule: (module: AppModule) => boolean
   canEditModule: (module: AppModule) => boolean
   canApproveModule: (module: AppModule) => boolean
+  canManageModule: (module: AppModule) => boolean
   isAdmin: () => boolean
   isGestor: () => boolean
   isOperador: () => boolean
@@ -202,6 +203,12 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     return ['approve', 'admin'].includes(level)
   }
 
+  const canManageModule = (module: AppModule): boolean => {
+    if (loading) return false
+    if (!isImpersonating && role === 'admin') return true
+    return getModulePermission(module) === 'admin'
+  }
+
   const isAdmin = (): boolean => realRole === 'admin' || role === 'admin'
   const isGestor = (): boolean => role === 'gestor'
   const isOperador = (): boolean => role === 'operador'
@@ -238,6 +245,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     canViewModule,
     canEditModule,
     canApproveModule,
+    canManageModule,
     isAdmin,
     isGestor,
     isOperador,
