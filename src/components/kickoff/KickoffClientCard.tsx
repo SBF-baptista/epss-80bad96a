@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Car, Edit, Shield } from "lucide-react";
+import { Clock, Car, Edit, Shield, Trash2 } from "lucide-react";
 import type { KickoffClient } from "@/services/kickoffService";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -10,11 +10,13 @@ interface KickoffClientCardProps {
   client: KickoffClient;
   daysInKickoff: number;
   onEditKickoff: (saleSummaryId: number, companyName: string) => void;
+  onDeleteKickoff: (client: KickoffClient) => void;
 }
 
-export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff }: KickoffClientCardProps) => {
-  const { canEditModule } = useUserRole();
+export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDeleteKickoff }: KickoffClientCardProps) => {
+  const { canEditModule, canManageModule } = useUserRole();
   const canEdit = canEditModule('kickoff');
+  const canDelete = canManageModule('kickoff');
   // Get status styling based on days pending
   const getStatusConfig = () => {
     if (daysInKickoff > 7) {
@@ -92,16 +94,31 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff }: Kick
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Action button */}
-          {canEdit && (
-            <Button
-              size="sm"
-              onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Realizar Kickoff
-            </Button>
+          {(canEdit || canDelete) && (
+            <div className="flex gap-2">
+              {canEdit && (
+                <Button
+                  size="sm"
+                  onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Realizar Kickoff
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="destructive"
+                  aria-label={`Excluir card de ${client.company_name}`}
+                  onClick={() => onDeleteKickoff(client)}
+                  className="shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
