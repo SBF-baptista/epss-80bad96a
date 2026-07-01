@@ -61,6 +61,23 @@ const mapPermissionEntries = (userId: string, permissionMap: Record<string, stri
     }))
 }
 
+const permissionRank: Record<PermissionLevel, number> = {
+  none: 0,
+  view: 1,
+  edit: 2,
+  approve: 3,
+  admin: 4,
+}
+
+const mergeHighestPermission = (map: Map<AppModule, ModulePermission>, permission: ModulePermission) => {
+  if (!permission.permission || permission.permission === 'none') return
+
+  const existing = map.get(permission.module)
+  if (!existing || permissionRank[permission.permission] > permissionRank[existing.permission]) {
+    map.set(permission.module, permission)
+  }
+}
+
 export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
   const [role, setRole] = useState<UserRole>(null)
@@ -140,18 +157,20 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
           console.error('Error fetching permissions:', permError)
           setPermissions(profilePermissions)
         } else {
-          const legacyPermissions = (permData || []).map(p => ({
-            id: p.id,
-            user_id: p.user_id,
-            module: p.module as AppModule,
-            permission: p.permission as PermissionLevel,
-            created_at: p.created_at,
-            updated_at: p.updated_at
-          }))
+          const legacyPermissions = (permData || [])
+            .filter(p => p.permission && p.permission !== 'none')
+            .map(p => ({
+              id: p.id,
+              user_id: p.user_id,
+              module: p.module as AppModule,
+              permission: p.permission as PermissionLevel,
+              created_at: p.created_at,
+              updated_at: p.updated_at
+            }))
 
           const mergedPermissions = new Map<AppModule, ModulePermission>()
-          profilePermissions.forEach(permission => mergedPermissions.set(permission.module, permission))
-          legacyPermissions.forEach(permission => mergedPermissions.set(permission.module, permission))
+          profilePermissions.forEach(permission => mergeHighestPermission(mergedPermissions, permission))
+          legacyPermissions.forEach(permission => mergeHighestPermission(mergedPermissions, permission))
 
           console.log(
             `[useUserRole] Source: ${profileRole ? 'ACCESS_PROFILE + LEGACY' : 'LEGACY'}, role=${resolvedRole}, modules=`,
