@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { fetchKitItemOptions, deleteKitItemOption } from "@/services/kitItemOptionsService";
+import { fetchKitItemOptions, deleteKitItemOption, updateKitItemOption } from "@/services/kitItemOptionsService";
 import { Trash2, Wrench, FileText, ChevronDown, Search, Pencil } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,8 +31,9 @@ export const SupplyHomologationList = () => {
   const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin, isGestor, canEditModule, canManageModule } = useUserRole();
+  const { canEditModule, canManageModule } = useUserRole();
   const canManageHomologationItems = canEditModule('accessories_supplies') || canManageModule('homologation');
+  const canDirectManageHomologationItems = canManageModule('homologation') || canManageModule('accessories_supplies');
   const [editModalItem, setEditModalItem] = useState<KitItemOption | null>(null);
   const [deleteModalItem, setDeleteModalItem] = useState<KitItemOption | null>(null);
 
@@ -137,6 +138,13 @@ export const SupplyHomologationList = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleDirectUpdateSupply = async (supplyId: string, changes: { item_name: string }) => {
+    await updateKitItemOption(supplyId, changes);
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options', 'supply'] });
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+    queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
   };
 
   if (isLoading) {
@@ -255,7 +263,7 @@ export const SupplyHomologationList = () => {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Solicitar edição ao gestor</p>
+                              <p>{canDirectManageHomologationItems ? 'Editar insumo' : 'Solicitar edição ao gestor'}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -274,7 +282,7 @@ export const SupplyHomologationList = () => {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Solicitar exclusão ao gestor</p>
+                              <p>{canDirectManageHomologationItems ? 'Excluir insumo' : 'Solicitar exclusão ao gestor'}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -292,6 +300,8 @@ export const SupplyHomologationList = () => {
       <EditRequestModal
         open={!!editModalItem}
         onClose={() => setEditModalItem(null)}
+        mode={canDirectManageHomologationItems ? 'direct' : 'request'}
+        onDirectSave={(changes) => editModalItem ? handleDirectUpdateSupply(editModalItem.id, changes) : Promise.resolve()}
         item={editModalItem ? { ...editModalItem, item_type: 'supply' } : null}
       />
 
@@ -301,14 +311,19 @@ export const SupplyHomologationList = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Solicitar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja solicitar a exclusão do insumo <strong>{deleteModalItem?.item_name}</strong>? 
-              Esta solicitação será enviada para aprovação do gestor.
+              {canDirectManageHomologationItems
+                ? <>Deseja excluir o insumo <strong>{deleteModalItem?.item_name}</strong>? Esta ação será aplicada imediatamente.</>
+                : <>Deseja solicitar a exclusão do insumo <strong>{deleteModalItem?.item_name}</strong>? Esta solicitação será enviada para aprovação do gestor.</>}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmitDeleteRequest} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Solicitar Exclusão
+            <AlertDialogAction
+              onClick={() => deleteModalItem && (canDirectManageHomologationItems ? handleDeleteSupply(deleteModalItem.id, deleteModalItem.item_name) : handleSubmitDeleteRequest())}
+              disabled={!!deletingId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {canDirectManageHomologationItems ? 'Excluir' : 'Solicitar Exclusão'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

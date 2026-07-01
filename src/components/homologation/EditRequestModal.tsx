@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,8 @@ import { toast } from "sonner";
 interface EditRequestModalProps {
   open: boolean;
   onClose: () => void;
+  mode?: 'request' | 'direct';
+  onDirectSave?: (changes: { item_name: string }) => Promise<void>;
   item: {
     id: string;
     item_name: string;
@@ -27,11 +29,18 @@ interface EditRequestModalProps {
   } | null;
 }
 
-export const EditRequestModal = ({ open, onClose, item }: EditRequestModalProps) => {
+export const EditRequestModal = ({ open, onClose, mode = 'request', onDirectSave, item }: EditRequestModalProps) => {
   const { user } = useAuth();
   const [newName, setNewName] = useState("");
   const [observation, setObservation] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open && item) {
+      setNewName(item.item_name);
+      setObservation("");
+    }
+  }, [open, item]);
 
   const handleClose = () => {
     setNewName("");
@@ -41,12 +50,19 @@ export const EditRequestModal = ({ open, onClose, item }: EditRequestModalProps)
 
   const handleSubmit = async () => {
     if (!item || !newName.trim()) {
-      toast.error("Por favor, informe o novo nome desejado");
+      toast.error("Por favor, informe o novo nome");
       return;
     }
 
     setSubmitting(true);
     try {
+      if (mode === 'direct') {
+        await onDirectSave?.({ item_name: newName.trim().toUpperCase() });
+        toast.success("Item atualizado com sucesso");
+        handleClose();
+        return;
+      }
+
       const { error } = await supabase
         .from('item_edit_requests')
         .insert({
@@ -93,7 +109,7 @@ export const EditRequestModal = ({ open, onClose, item }: EditRequestModalProps)
             ) : (
               <Wrench className="h-5 w-5 text-orange-600" />
             )}
-            Solicitar Edição
+            {mode === 'direct' ? 'Editar Item' : 'Solicitar Edição'}
           </DialogTitle>
         </DialogHeader>
 
@@ -133,18 +149,20 @@ export const EditRequestModal = ({ open, onClose, item }: EditRequestModalProps)
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="observation" className="text-sm font-medium">
-              Observação
-            </Label>
-            <Textarea
-              id="observation"
-              value={observation}
-              onChange={(e) => setObservation(e.target.value)}
-              placeholder="Justifique a alteração solicitada..."
-              rows={3}
-            />
-          </div>
+          {mode === 'request' && (
+            <div className="space-y-2">
+              <Label htmlFor="observation" className="text-sm font-medium">
+                Observação
+              </Label>
+              <Textarea
+                id="observation"
+                value={observation}
+                onChange={(e) => setObservation(e.target.value)}
+                placeholder="Justifique a alteração solicitada..."
+                rows={3}
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
@@ -157,7 +175,7 @@ export const EditRequestModal = ({ open, onClose, item }: EditRequestModalProps)
             className="gap-2"
           >
             <Send className="h-4 w-4" />
-            {submitting ? "Enviando..." : "Enviar solicitação para aprovação"}
+            {submitting ? "Salvando..." : mode === 'direct' ? "Salvar alteração" : "Enviar solicitação para aprovação"}
           </Button>
         </DialogFooter>
       </DialogContent>

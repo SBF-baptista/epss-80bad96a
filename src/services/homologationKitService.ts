@@ -186,6 +186,7 @@ export async function updateHomologationKit(kitId: string, updateData: UpdateKit
       .update({
         name: updateData.name,
         description: updateData.description,
+        category: updateData.category,
       })
       .eq('id', kitId)
       .select()

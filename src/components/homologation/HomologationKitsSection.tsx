@@ -73,6 +73,7 @@ const initialFormData: KitFormData = {
 const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homologationCardId }) => {
   const { canEditModule, canManageModule } = useUserRole();
   const canManageHomologationKits = canEditModule('kits') || canManageModule('homologation');
+  const canDirectManageHomologationKits = canManageModule('homologation') || canManageModule('kits');
   const [kits, setKits] = useState<HomologationKit[]>([]);
   const [filteredKits, setFilteredKits] = useState<HomologationKit[]>([]);
   const [formData, setFormData] = useState<KitFormData>(initialFormData);
@@ -615,7 +616,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                                     size="sm"
                                     onClick={() => handleDeleteRequest(kit)}
                                     className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                    title="Solicitar exclusão do kit"
+                                    title={canDirectManageHomologationKits ? "Excluir kit" : "Solicitar exclusão do kit"}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1051,7 +1052,14 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
       />
 
       {/* Kit Edit Request Modal */}
-      <KitEditRequestModal open={!!editRequestKit} onClose={() => setEditRequestKit(null)} kit={editRequestKit} initialMode={editRequestMode} />
+      <KitEditRequestModal
+        open={!!editRequestKit}
+        onClose={() => setEditRequestKit(null)}
+        onSuccess={loadKits}
+        kit={editRequestKit}
+        initialMode={editRequestMode}
+        submitMode={canDirectManageHomologationKits ? 'direct' : 'request'}
+      />
     </Card>
   );
 };

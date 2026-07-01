@@ -49,6 +49,7 @@ export interface CreateKitRequest {
 export interface UpdateKitRequest {
   name?: string;
   description?: string;
+  category?: string | null;
   equipment?: HomologationKitItem[];
   accessories?: HomologationKitItem[];
   modules?: HomologationKitItem[];
