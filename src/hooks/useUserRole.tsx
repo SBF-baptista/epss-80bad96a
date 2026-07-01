@@ -109,6 +109,9 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
           return
         }
 
+        let profileRole: UserRole = null
+        let profilePermissions: ModulePermission[] = []
+
         if (roleData?.access_profile_id) {
           const { data: profileData, error: profileError } = await supabase
             .from('access_profiles')
@@ -119,18 +122,14 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
           if (profileError) {
             console.error('Error fetching access profile permissions:', profileError)
           } else if (profileData) {
-            const resolvedRole = mapRawRole(profileData.base_role)
-            const resolvedPerms = mapPermissionEntries(user.id, (profileData.permissions || {}) as Record<string, string>)
-            console.log(`[useUserRole] Source: ACCESS_PROFILE (id=${roleData.access_profile_id}), role=${resolvedRole}, modules=`, resolvedPerms.map(p => `${p.module}=${p.permission}`))
-            setRole(resolvedRole)
-            setPermissions(resolvedPerms)
-            return
+            profileRole = mapRawRole(profileData.base_role)
+            profilePermissions = mapPermissionEntries(user.id, (profileData.permissions || {}) as Record<string, string>)
           }
         }
 
         const fallbackRole = mapRawRole(roleData?.role)
-        setRole(fallbackRole)
-        console.log(`[useUserRole] Source: LEGACY (user_module_permissions table), role=${fallbackRole}`)
+        const resolvedRole = profileRole || fallbackRole
+        setRole(resolvedRole)
 
         const { data: permData, error: permError } = await supabase
           .from('user_module_permissions')
@@ -139,16 +138,26 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 
         if (permError) {
           console.error('Error fetching permissions:', permError)
-          setPermissions([])
+          setPermissions(profilePermissions)
         } else {
-          setPermissions((permData || []).map(p => ({
+          const legacyPermissions = (permData || []).map(p => ({
             id: p.id,
             user_id: p.user_id,
             module: p.module as AppModule,
             permission: p.permission as PermissionLevel,
             created_at: p.created_at,
             updated_at: p.updated_at
-          })))
+          }))
+
+          const mergedPermissions = new Map<AppModule, ModulePermission>()
+          profilePermissions.forEach(permission => mergedPermissions.set(permission.module, permission))
+          legacyPermissions.forEach(permission => mergedPermissions.set(permission.module, permission))
+
+          console.log(
+            `[useUserRole] Source: ${profileRole ? 'ACCESS_PROFILE + LEGACY' : 'LEGACY'}, role=${resolvedRole}, modules=`,
+            Array.from(mergedPermissions.values()).map(p => `${p.module}=${p.permission}`)
+          )
+          setPermissions(Array.from(mergedPermissions.values()))
         }
       } catch (error) {
         console.error('Error fetching user role:', error)
