@@ -28,6 +28,7 @@ interface UserRoleContextType {
   canViewModule: (module: AppModule) => boolean
   canEditModule: (module: AppModule) => boolean
   canApproveModule: (module: AppModule) => boolean
+  canManageModule: (module: AppModule) => boolean
   isAdmin: () => boolean
   isGestor: () => boolean
   isOperador: () => boolean
