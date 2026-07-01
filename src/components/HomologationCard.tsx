@@ -41,9 +41,11 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
   };
 
   const isAdminUser = isAdmin();
+  const canDelete = isAdminUser || canManageModule('homologation');
+  const canDrag = isAdminUser || canEditModule('homologation');
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (!isAdminUser) return;
+    if (!canDrag) return;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', card.id);
     onDragStart(e);
