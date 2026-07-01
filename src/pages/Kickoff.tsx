@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getKickoffData } from "@/services/kickoffService";
+import { deletePendingKickoffCard, getKickoffData, type KickoffClient } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
 import { checkKickoffIntegrity } from "@/services/kickoffIntegrityCheck";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +18,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 import { motion } from "framer-motion";
 
@@ -77,6 +88,8 @@ const Kickoff = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<KickoffClient | null>(null);
+  const [deletingKickoff, setDeletingKickoff] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -131,6 +144,23 @@ const Kickoff = () => {
     setSelectedSaleSummaryId(saleSummaryId);
     setSelectedCompanyName(companyName);
     setModalOpen(true);
+  };
+
+  const handleDeleteKickoff = async () => {
+    if (!clientToDelete) return;
+
+    setDeletingKickoff(true);
+    try {
+      const result = await deletePendingKickoffCard(clientToDelete.sale_summary_id, clientToDelete.company_name);
+      toast.success(result.message || "Card pendente excluído com sucesso");
+      setClientToDelete(null);
+      refetch();
+      refetchHistory();
+    } catch (error: any) {
+      toast.error(error?.message || "Não foi possível excluir o card do Kickoff");
+    } finally {
+      setDeletingKickoff(false);
+    }
   };
 
   const { data: kickoffDates } = useQuery({
@@ -253,6 +283,7 @@ const Kickoff = () => {
                     client={client}
                     daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
                     onEditKickoff={handleEditKickoff}
+                    onDeleteKickoff={setClientToDelete}
                   />
                 </div>
               ))}
@@ -303,6 +334,27 @@ const Kickoff = () => {
         onClose={() => setTutorialOpen(false)}
         storageKey={TUTORIAL_KEY}
       />
+
+      <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir card do Kickoff?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá o card pendente de {clientToDelete?.company_name} e os veículos pendentes vinculados a esta venda. Kickoffs já finalizados não serão afetados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingKickoff}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteKickoff}
+              disabled={deletingKickoff}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingKickoff ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
