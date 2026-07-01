@@ -14,7 +14,8 @@ import { findExistingItem } from "@/services/kitItemOptionsService";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export const PendingAccessoriesSection = () => {
-  const { canEditModule } = useUserRole();
+  const { canEditModule, canManageModule } = useUserRole();
+  const canManageHomologationItems = canEditModule('accessories_supplies') || canManageModule('homologation');
   const [isOpen, setIsOpen] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -133,7 +134,7 @@ export const PendingAccessoriesSection = () => {
                 <Package className="h-5 w-5 text-green-500" />
                 Acessórios Pendentes de Homologação
               </CardTitle>
-              {canEditModule('accessories_supplies') && (
+              {canManageHomologationItems && (
                 <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
                   Cadastrar Acessório
@@ -230,7 +231,7 @@ export const PendingAccessoriesSection = () => {
                         <Badge variant="outline" className="text-orange-700 border-orange-300">
                           Qtd total: {accessory.quantity}
                         </Badge>
-                        {canEditModule('accessories_supplies') && (
+                        {canManageHomologationItems && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -300,7 +301,7 @@ export const PendingAccessoriesSection = () => {
                   <p>Clique no botão "Homologar" ao lado de cada item ou cadastre um novo acessório.</p>
                 </div>
               </div>
-              {canEditModule('accessories_supplies') && (
+              {canManageHomologationItems && (
                 <Button onClick={() => setIsFormModalOpen(true)} className="bg-primary hover:bg-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
                   Cadastrar Acessório

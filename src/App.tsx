@@ -122,10 +122,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
               
-              {/* Kits - requires kits module access */}
+              {/* Kits - requires kits or homologation module access */}
               <Route path="/kits" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModule="kits">
+                  <RoleProtectedRoute requiredModules={['kits', 'homologation']}>
                     <Layout>
                       <KitManagement />
                     </Layout>
@@ -133,10 +133,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
               
-              {/* Accessories & Supplies - requires accessories_supplies module access */}
+              {/* Accessories & Supplies - requires accessories_supplies or homologation module access */}
               <Route path="/accessories-supplies" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModule="accessories_supplies">
+                  <RoleProtectedRoute requiredModules={['accessories_supplies', 'homologation']}>
                     <Layout>
                       <AccessorySupplyHomologation />
                     </Layout>
@@ -144,10 +144,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
               
-              {/* Edit Requests - requires admin or gestor */}
+              {/* Edit Requests - requires admin/gestor or homologation module access */}
               <Route path="/edit-requests" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['gestor', 'admin']}>
+                  <RoleProtectedRoute requiredModule="homologation">
                     <Layout>
                       <EditRequests />
                     </Layout>
@@ -200,10 +200,10 @@ function AppContent() {
               } />
               
               
-              {/* Configuration - requires scheduling module access */}
+              {/* Configuration - requires scheduling or homologation module access */}
               <Route path="/config" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModule="scheduling">
+                  <RoleProtectedRoute requiredModules={['scheduling', 'homologation']}>
                     <Layout>
                       <ConfigurationManagement />
                     </Layout>
