@@ -2152,6 +2152,10 @@ export type Database = {
         Args: { p_kit_id: string }
         Returns: undefined
       }
+      delete_pending_kickoff_card_admin: {
+        Args: { p_sale_summary_id: number }
+        Returns: Json
+      }
       generate_auto_order_number: { Args: never; Returns: string }
       get_app_logs_admin: {
         Args: {
