@@ -15,7 +15,7 @@ interface HomologationCardProps {
 }
 
 const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: HomologationCardProps) => {
-  const { isAdmin } = useUserRole();
+  const { isAdmin, canManageModule, canEditModule } = useUserRole();
   const { toast } = useToast();
 
   const handleDelete = async () => {
