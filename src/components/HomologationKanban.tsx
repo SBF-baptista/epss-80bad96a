@@ -24,7 +24,7 @@ const columns = [
 
 const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const { showSuccess, showError } = useHomologationToast();
-  const { isAdmin, role, loading: roleLoading } = useUserRole();
+  const { canEditModule, loading: roleLoading } = useUserRole();
   const [draggedCard, setDraggedCard] = useState<HomologationCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -57,9 +57,9 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
       return;
     }
 
-    const canMoveCards = role === "admin";
+    const canMoveCards = canEditModule("homologation");
 
-    // Validação de segurança: apenas admin pode mover cards
+    // Validação de segurança: somente usuários com edição/admin no módulo podem mover cards
     if (!canMoveCards) {
       showError(
         new Error("Permissão negada"),
@@ -67,7 +67,7 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
           action: "drop_card",
           component: "HomologationKanban",
         },
-        "Apenas administradores podem mover cards no Kanban",
+        "Você não tem permissão para mover cards no Kanban de Homologação",
       );
       setDraggedCard(null);
       return;
