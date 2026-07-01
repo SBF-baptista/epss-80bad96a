@@ -52,6 +52,7 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   module: AppModule;
+  modules?: AppModule[];
   showBadge?: boolean;
   adminOnly?: boolean;
   gestorOrAdminOnly?: boolean;
@@ -78,10 +79,10 @@ const navigationGroups: NavGroup[] = [
     icon: CheckSquare,
     items: [
       { to: "/homologation", label: "Homologação de Veículos", icon: CheckSquare, module: "homologation" },
-      { to: "/kits", label: "Kits", icon: Package, module: "kits" },
-      { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies" },
-      { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "homologation", adminOnly: true },
-      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true, gestorOrAdminOnly: true },
+      { to: "/kits", label: "Kits", icon: Package, module: "kits", modules: ["kits", "homologation"] },
+      { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies", modules: ["accessories_supplies", "homologation"] },
+      { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "homologation" },
+      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
     ]
   },
   {
@@ -161,7 +162,8 @@ export function AppNavigation() {
     if (role === 'admin') return true;
     if (item.adminOnly) return false;
     if (item.gestorOrAdminOnly) return role === 'gestor';
-    return canViewModule(item.module);
+    const modulesToCheck = item.modules || [item.module];
+    return modulesToCheck.some(module => canViewModule(module));
   };
 
   // Filter groups to show only those with accessible items
