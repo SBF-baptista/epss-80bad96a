@@ -70,13 +70,24 @@ const normalizePermissionMap = (permissionMap: unknown): Record<string, string> 
   return normalized
 }
 
+const normalizeModulePermission = (module: AppModule, permission: PermissionLevel): ModulePermission => {
+  const normalizedPermission = module === 'homologation' && permission === 'approve'
+    ? 'admin'
+    : permission
+
+  return {
+    user_id: '',
+    module,
+    permission: normalizedPermission,
+  }
+}
+
 const mapPermissionEntries = (userId: string, permissionMap: unknown): ModulePermission[] => {
   return Object.entries(normalizePermissionMap(permissionMap))
     .filter(([, permission]) => typeof permission === 'string' && permission !== 'none')
     .map(([module, permission]) => ({
+      ...normalizeModulePermission(module as AppModule, permission as PermissionLevel),
       user_id: userId,
-      module: module as AppModule,
-      permission: permission as PermissionLevel,
     }))
 }
 
@@ -212,7 +223,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
               id: p.id,
               user_id: p.user_id,
               module: p.module as AppModule,
-              permission: p.permission as PermissionLevel,
+              permission: normalizeModulePermission(p.module as AppModule, p.permission as PermissionLevel).permission,
               created_at: p.created_at,
               updated_at: p.updated_at
             }))
