@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react'
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback, useRef } from 'react'
 import { useAuth } from './useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { AppModule, PermissionLevel, ModulePermission } from '@/types/permissions'
@@ -113,11 +113,13 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   // (e.g. on TOKEN_REFRESHED). This prevents the "verifying permissions" flash
   // that was unmounting protected pages on tab switch.
   const lastFetchedUserId = useRef<string | null>(null)
+  const accessProfileIdRef = useRef<string | null>(null)
+  const refreshTimeoutRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    const fetchUserRoleAndPermissions = async () => {
+  const fetchUserRoleAndPermissions = useCallback(async (options?: { forceLoading?: boolean }) => {
       if (!user) {
         lastFetchedUserId.current = null
+        accessProfileIdRef.current = null
         setRole(null)
         setPermissions([])
         setLoading(false)
@@ -126,7 +128,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 
       // Only show full loader on first load for this user
       const isFirstLoadForUser = lastFetchedUserId.current !== user.id
-      if (isFirstLoadForUser) {
+      if (isFirstLoadForUser || options?.forceLoading) {
         setLoading(true)
       }
       lastFetchedUserId.current = user.id
@@ -148,11 +150,14 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
         let profileRole: UserRole = null
         let profilePermissions: ModulePermission[] = []
 
-        if (roleData?.access_profile_id) {
+        const accessProfileId = roleData?.access_profile_id || null
+        accessProfileIdRef.current = accessProfileId
+
+        if (accessProfileId) {
           const { data: profileData, error: profileError } = await supabase
             .from('access_profiles')
             .select('base_role, permissions')
-            .eq('id', roleData.access_profile_id)
+            .eq('id', accessProfileId)
             .maybeSingle()
 
           if (profileError) {
@@ -164,7 +169,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const fallbackRole = mapRawRole(roleData?.role)
-        const resolvedRole = profileRole || fallbackRole
+        const resolvedRole = fallbackRole === 'admin' ? 'admin' : (profileRole || fallbackRole)
         setRole(resolvedRole)
 
         const { data: permData, error: permError } = await supabase
@@ -200,12 +205,78 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
       } finally {
         setLoading(false)
       }
+    }, [user?.id])
+
+  useEffect(() => {
+    fetchUserRoleAndPermissions({ forceLoading: true })
+  }, [fetchUserRoleAndPermissions])
+
+  useEffect(() => {
+    if (!user) return
+
+    const schedulePermissionRefresh = () => {
+      if (refreshTimeoutRef.current !== null) {
+        window.clearTimeout(refreshTimeoutRef.current)
+      }
+
+      refreshTimeoutRef.current = window.setTimeout(() => {
+        refreshTimeoutRef.current = null
+        fetchUserRoleAndPermissions()
+      }, 250)
     }
 
-    fetchUserRoleAndPermissions()
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        schedulePermissionRefresh()
+      }
+    }
+
+    window.addEventListener('focus', schedulePermissionRefresh)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    const permissionsChannel = supabase
+      .channel(`user-permissions-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_roles', filter: `user_id=eq.${user.id}` },
+        schedulePermissionRefresh,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_module_permissions', filter: `user_id=eq.${user.id}` },
+        schedulePermissionRefresh,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'access_profiles' },
+        (payload) => {
+          const profileId = accessProfileIdRef.current
+          const changedProfileId =
+            (payload.new as { id?: string } | null)?.id ||
+            (payload.old as { id?: string } | null)?.id
+
+          if (profileId && changedProfileId === profileId) {
+            schedulePermissionRefresh()
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      window.removeEventListener('focus', schedulePermissionRefresh)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+
+      if (refreshTimeoutRef.current !== null) {
+        window.clearTimeout(refreshTimeoutRef.current)
+        refreshTimeoutRef.current = null
+      }
+
+      supabase.removeChannel(permissionsChannel)
+    }
+
     // Depend on user id (not the object reference) so token refreshes don't
-    // re-trigger the fetch and unmount protected children.
-  }, [user?.id])
+    // re-trigger the subscription and unmount protected children.
+  }, [user?.id, fetchUserRoleAndPermissions])
 
   // Check if user has a specific base role
   const hasRole = (requiredRole: UserRole): boolean => {
@@ -252,7 +323,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     return getModulePermission(module) === 'admin'
   }
 
-  const isAdmin = (): boolean => realRole === 'admin' || role === 'admin'
+  const isAdmin = (): boolean => !isImpersonating && (realRole === 'admin' || role === 'admin')
   const isGestor = (): boolean => role === 'gestor'
   const isOperador = (): boolean => role === 'operador'
   const isVisualizador = (): boolean => role === 'visualizador'
