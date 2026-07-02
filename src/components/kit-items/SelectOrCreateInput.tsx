@@ -35,7 +35,8 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const { isAdmin } = useUserRole();
+  const { isAdmin, canManageModule } = useUserRole();
+  const canDeleteOptions = isAdmin() || canManageModule('homologation') || canManageModule('accessories_supplies');
 
   // Load options when component mounts or itemType changes
   useEffect(() => {
@@ -200,7 +201,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
                       </div>
                     </div>
                     
-                    {isAdmin && (
+                    {canDeleteOptions && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
