@@ -115,6 +115,11 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const lastFetchedUserId = useRef<string | null>(null)
   const accessProfileIdRef = useRef<string | null>(null)
   const refreshTimeoutRef = useRef<number | null>(null)
+  const isImpersonatingRef = useRef(false)
+
+  useEffect(() => {
+    isImpersonatingRef.current = isImpersonating
+  }, [isImpersonating])
 
   const fetchUserRoleAndPermissions = useCallback(async (options?: { forceLoading?: boolean }) => {
       if (!user) {
@@ -215,6 +220,8 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return
 
     const schedulePermissionRefresh = () => {
+      if (isImpersonatingRef.current) return
+
       if (refreshTimeoutRef.current !== null) {
         window.clearTimeout(refreshTimeoutRef.current)
       }
