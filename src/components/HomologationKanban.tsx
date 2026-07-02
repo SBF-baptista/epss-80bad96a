@@ -32,7 +32,12 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   // Na matriz de permissões, o perfil "Gestor de Homologação" normalmente recebe
   // o nível "Aprovar". Para a página de Homologação, esse nível precisa ser tratado
   // como acesso total operacional, incluindo excluir cards.
-  const canDeleteCards = !roleLoading && (isAdmin() || canManageModule("homologation") || canApproveModule("homologation"));
+  const canDeleteCards = !roleLoading && (
+    isAdmin() ||
+    canManageModule("homologation") ||
+    canApproveModule("homologation") ||
+    canEditModule("homologation")
+  );
 
   // Navegação lateral com botões
   const scrollContainerRef = useRef<HTMLDivElement>(null);
