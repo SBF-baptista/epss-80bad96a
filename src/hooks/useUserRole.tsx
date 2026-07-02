@@ -70,13 +70,24 @@ const normalizePermissionMap = (permissionMap: unknown): Record<string, string> 
   return normalized
 }
 
+const normalizeModulePermission = (module: AppModule, permission: PermissionLevel): ModulePermission => {
+  const normalizedPermission = module === 'homologation' && permission === 'approve'
+    ? 'admin'
+    : permission
+
+  return {
+    user_id: '',
+    module,
+    permission: normalizedPermission,
+  }
+}
+
 const mapPermissionEntries = (userId: string, permissionMap: unknown): ModulePermission[] => {
   return Object.entries(normalizePermissionMap(permissionMap))
     .filter(([, permission]) => typeof permission === 'string' && permission !== 'none')
     .map(([module, permission]) => ({
+      ...normalizeModulePermission(module as AppModule, permission as PermissionLevel),
       user_id: userId,
-      module: module as AppModule,
-      permission: permission as PermissionLevel,
     }))
 }
 
@@ -86,6 +97,21 @@ const permissionRank: Record<PermissionLevel, number> = {
   edit: 2,
   approve: 3,
   admin: 4,
+}
+
+const roleRank: Record<Exclude<UserRole, null>, number> = {
+  visualizador: 1,
+  operador: 2,
+  gestor: 3,
+  admin: 4,
+}
+
+const pickHighestRole = (roles: UserRole[]): UserRole => {
+  return roles.reduce<UserRole>((highest, current) => {
+    if (!current) return highest
+    if (!highest) return current
+    return roleRank[current] > roleRank[highest] ? current : highest
+  }, null)
 }
 
 const mergeHighestPermission = (map: Map<AppModule, ModulePermission>, permission: ModulePermission) => {
@@ -113,7 +139,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   // (e.g. on TOKEN_REFRESHED). This prevents the "verifying permissions" flash
   // that was unmounting protected pages on tab switch.
   const lastFetchedUserId = useRef<string | null>(null)
-  const accessProfileIdRef = useRef<string | null>(null)
+  const accessProfileIdsRef = useRef<Set<string>>(new Set())
   const refreshTimeoutRef = useRef<number | null>(null)
   const isImpersonatingRef = useRef(false)
 
@@ -124,7 +150,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserRoleAndPermissions = useCallback(async (options?: { forceLoading?: boolean }) => {
       if (!user) {
         lastFetchedUserId.current = null
-        accessProfileIdRef.current = null
+        accessProfileIdsRef.current = new Set()
         setRole(null)
         setPermissions([])
         setLoading(false)
@@ -139,11 +165,10 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
       lastFetchedUserId.current = user.id
 
       try {
-        const { data: roleData, error: roleError } = await supabase
+        const { data: roleRows, error: roleError } = await supabase
           .from('user_roles')
           .select('role, access_profile_id')
           .eq('user_id', user.id)
-          .maybeSingle()
 
         if (roleError) {
           console.error('Error fetching user role:', roleError)
@@ -152,28 +177,34 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
           return
         }
 
+        const fallbackRole = pickHighestRole((roleRows || []).map(row => mapRawRole(row.role)))
+
+        const accessProfileIds = Array.from(
+          new Set(
+            (roleRows || [])
+              .map(row => row.access_profile_id)
+              .filter((id): id is string => Boolean(id)),
+          ),
+        )
+        accessProfileIdsRef.current = new Set(accessProfileIds)
+
         let profileRole: UserRole = null
         let profilePermissions: ModulePermission[] = []
 
-        const accessProfileId = roleData?.access_profile_id || null
-        accessProfileIdRef.current = accessProfileId
-
-        if (accessProfileId) {
+        if (accessProfileIds.length > 0) {
           const { data: profileData, error: profileError } = await supabase
             .from('access_profiles')
             .select('base_role, permissions')
-            .eq('id', accessProfileId)
-            .maybeSingle()
+            .in('id', accessProfileIds)
 
           if (profileError) {
             console.error('Error fetching access profile permissions:', profileError)
-          } else if (profileData) {
-            profileRole = mapRawRole(profileData.base_role)
-            profilePermissions = mapPermissionEntries(user.id, profileData.permissions || {})
+          } else if (profileData?.length) {
+            profileRole = pickHighestRole(profileData.map(profile => mapRawRole(profile.base_role)))
+            profilePermissions = profileData.flatMap(profile => mapPermissionEntries(user.id, profile.permissions || {}))
           }
         }
 
-        const fallbackRole = mapRawRole(roleData?.role)
         const resolvedRole = fallbackRole === 'admin' ? 'admin' : (profileRole || fallbackRole)
         setRole(resolvedRole)
 
@@ -192,7 +223,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
               id: p.id,
               user_id: p.user_id,
               module: p.module as AppModule,
-              permission: p.permission as PermissionLevel,
+              permission: normalizeModulePermission(p.module as AppModule, p.permission as PermissionLevel).permission,
               created_at: p.created_at,
               updated_at: p.updated_at
             }))
@@ -257,12 +288,12 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'access_profiles' },
         (payload) => {
-          const profileId = accessProfileIdRef.current
+          const profileIds = accessProfileIdsRef.current
           const changedProfileId =
             (payload.new as { id?: string } | null)?.id ||
             (payload.old as { id?: string } | null)?.id
 
-          if (profileId && changedProfileId === profileId) {
+          if (changedProfileId && profileIds.has(changedProfileId)) {
             schedulePermissionRefresh()
           }
         },

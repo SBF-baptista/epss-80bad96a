@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Link, Package, Trash2, Calendar } from "lucide-react";
 import { HomologationCard, softDeleteHomologationCard } from "@/services/homologationService";
-import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 
 interface HomologationCardProps {
@@ -12,10 +11,11 @@ interface HomologationCardProps {
   onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onUpdate: () => void;
+  canDelete: boolean;
+  canDrag: boolean;
 }
 
-const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: HomologationCardProps) => {
-  const { isAdmin, canManageModule, canEditModule } = useUserRole();
+const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate, canDelete, canDrag }: HomologationCardProps) => {
   const { toast } = useToast();
 
   const handleDelete = async () => {
@@ -39,10 +39,6 @@ const HomologationCardComponent = ({ card, onClick, onDragStart, onUpdate }: Hom
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
-
-  const isAdminUser = isAdmin();
-  const canDelete = isAdminUser || canManageModule('homologation');
-  const canDrag = isAdminUser || canEditModule('homologation');
 
   const handleDragStart = (e: React.DragEvent) => {
     if (!canDrag) return;
