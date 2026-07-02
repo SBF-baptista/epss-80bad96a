@@ -24,10 +24,12 @@ const columns = [
 
 const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
   const { showSuccess, showError } = useHomologationToast();
-  const { canEditModule, loading: roleLoading } = useUserRole();
+  const { canEditModule, canManageModule, isAdmin, loading: roleLoading } = useUserRole();
   const [draggedCard, setDraggedCard] = useState<HomologationCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<HomologationCard | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const canDragCards = !roleLoading && canEditModule("homologation");
+  const canDeleteCards = !roleLoading && (isAdmin() || canManageModule("homologation"));
 
   // Navegação lateral com botões
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -276,6 +278,8 @@ const HomologationKanban = ({ cards, onUpdate }: HomologationKanbanProps) => {
                 onCardClick={handleCardClick}
                 onDragStart={handleDragStart}
                 onUpdate={handleUpdate}
+                canDelete={canDeleteCards}
+                canDrag={canDragCards}
                 isUpdating={isUpdating}
               />
             ))}
