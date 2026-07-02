@@ -2260,6 +2260,10 @@ export type Database = {
         Returns: string
       }
       relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
+      sync_user_permissions_from_profile: {
+        Args: { _access_profile_id: string; _user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_module:
