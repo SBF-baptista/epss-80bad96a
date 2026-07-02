@@ -20,6 +20,7 @@ export type LegacyRole =
 
 interface UserRoleContextType {
   role: UserRole
+  accessProfileName: string | null
   permissions: ModulePermission[]
   loading: boolean
   hasRole: (requiredRole: UserRole) => boolean
@@ -126,6 +127,7 @@ const mergeHighestPermission = (map: Map<AppModule, ModulePermission>, permissio
 export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
   const [role, setRole] = useState<UserRole>(null)
+  const [accessProfileName, setAccessProfileName] = useState<string | null>(null)
   const [permissions, setPermissions] = useState<ModulePermission[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -152,6 +154,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
         lastFetchedUserId.current = null
         accessProfileIdsRef.current = new Set()
         setRole(null)
+        setAccessProfileName(null)
         setPermissions([])
         setLoading(false)
         return
@@ -189,24 +192,27 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
         accessProfileIdsRef.current = new Set(accessProfileIds)
 
         let profileRole: UserRole = null
+        let profileName: string | null = null
         let profilePermissions: ModulePermission[] = []
 
         if (accessProfileIds.length > 0) {
           const { data: profileData, error: profileError } = await supabase
             .from('access_profiles')
-            .select('base_role, permissions')
+            .select('name, base_role, permissions')
             .in('id', accessProfileIds)
 
           if (profileError) {
             console.error('Error fetching access profile permissions:', profileError)
           } else if (profileData?.length) {
             profileRole = pickHighestRole(profileData.map(profile => mapRawRole(profile.base_role)))
+            profileName = profileData[0]?.name || null
             profilePermissions = profileData.flatMap(profile => mapPermissionEntries(user.id, profile.permissions || {}))
           }
         }
 
         const resolvedRole = fallbackRole === 'admin' ? 'admin' : (profileRole || fallbackRole)
         setRole(resolvedRole)
+        setAccessProfileName(profileName)
 
         const { data: permData, error: permError } = await supabase
           .from('user_module_permissions')
@@ -237,6 +243,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error('Error fetching user role:', error)
         setRole(null)
+        setAccessProfileName(null)
         setPermissions([])
       } finally {
         setLoading(false)
@@ -389,6 +396,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 
   const value: UserRoleContextType = {
     role,
+    accessProfileName,
     permissions,
     loading,
     hasRole,

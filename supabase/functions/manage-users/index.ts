@@ -505,6 +505,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: roles, error: rolesErr } = await supabaseAdmin.from('user_roles').select('user_id, role, access_profile_id');
     if (rolesErr) console.error('Error fetching roles:', rolesErr);
+
+    const profileIds = Array.from(new Set((roles || []).map((r: any) => r.access_profile_id).filter(Boolean)));
+    const { data: accessProfiles, error: profilesErr } = profileIds.length > 0
+      ? await supabaseAdmin.from('access_profiles').select('id, name, base_role').in('id', profileIds)
+      : { data: [], error: null };
+    if (profilesErr) console.error('Error fetching access profiles:', profilesErr);
+
+    const profileMap = new Map((accessProfiles || []).map((profile: any) => [profile.id, profile]));
     
     const { data: allPermissions, error: permsErr } = await supabaseAdmin.from('user_module_permissions').select('*');
     if (permsErr) console.error('Error fetching permissions:', permsErr);
@@ -532,6 +540,10 @@ const handler = async (req: Request): Promise<Response> => {
       if (isBanned) status = 'banned';
       else if (!lastAccess || isInactive) status = 'inactive';
 
+      const userRoleRows = roles?.filter(r => r.user_id === u.id) || [];
+      const primaryRole = userRoleRows[0];
+      const accessProfile = primaryRole?.access_profile_id ? profileMap.get(primaryRole.access_profile_id) : null;
+
       return {
         id: u.id,
         email: u.email,
@@ -542,7 +554,10 @@ const handler = async (req: Request): Promise<Response> => {
         banned_until: u.banned_until,
         updated_at: u.updated_at,
         status,
-        roles: roles?.filter(r => r.user_id === u.id).map(r => r.role) || [],
+        roles: userRoleRows.map(r => r.role) || [],
+        access_profile_id: primaryRole?.access_profile_id || null,
+        access_profile_name: accessProfile?.name || null,
+        access_profile_base_role: accessProfile?.base_role || null,
         permissions: allPermissions?.filter(p => p.user_id === u.id) || []
       };
     });

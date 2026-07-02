@@ -52,6 +52,7 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
 
   const statusConfig = getStatusConfig(user.status)
   const StatusIcon = statusConfig.icon
+  const profileName = user.access_profile_name || null
 
   const handleAction = async (action: string) => {
     setIsLoading(action)
@@ -154,11 +155,15 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
                 <Badge className={`${statusConfig.bg} ${statusConfig.color} border ${statusConfig.border} hover:${statusConfig.bg}`}>
                   {statusConfig.label}
                 </Badge>
-                {user.roles.map(role => (
-                  <Badge key={role} variant={getRoleBadgeVariant(role as any) as any}>
-                    {getRoleLabel(role as any)}
-                  </Badge>
-                ))}
+                {profileName ? (
+                  <Badge variant="secondary">{profileName}</Badge>
+                ) : (
+                  user.roles.map(role => (
+                    <Badge key={role} variant={getRoleBadgeVariant(role as any) as any}>
+                      {getRoleLabel(role as any)}
+                    </Badge>
+                  ))
+                )}
               </SheetDescription>
             </div>
           </div>
@@ -335,7 +340,11 @@ export const UserDetailDrawer = ({ user, open, onOpenChange, onUserUpdated }: Us
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">Perfis Vinculados</h4>
               <div className="flex flex-wrap gap-2">
-                {user.roles.length > 0 ? (
+                {profileName ? (
+                  <Badge variant="secondary" className="text-sm py-1 px-3">
+                    {profileName}
+                  </Badge>
+                ) : user.roles.length > 0 ? (
                   user.roles.map(role => (
                     <Badge key={role} variant={getRoleBadgeVariant(role as any) as any} className="text-sm py-1 px-3">
                       {getRoleLabel(role as any)}

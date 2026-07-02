@@ -12,6 +12,9 @@ export interface User {
   updated_at?: string
   status: 'active' | 'banned' | 'inactive'
   roles: string[]
+  access_profile_id?: string | null
+  access_profile_name?: string | null
+  access_profile_base_role?: string | null
   permissions?: { module: string; permission: string }[]
 }
 
