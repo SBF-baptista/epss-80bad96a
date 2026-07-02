@@ -129,7 +129,7 @@ export function AppNavigation() {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const { user, signOut } = useAuth();
-  const { role, canViewModule, loading } = useUserRole();
+  const { role, accessProfileName, canViewModule, loading } = useUserRole();
   const { count: editRequestsCount } = useEditRequestsCount();
   
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -517,7 +517,7 @@ export function AppNavigation() {
                 <div className="mb-2">
                   <div className="font-medium truncate">{user?.email}</div>
                   <div className="text-gray-500 capitalize">
-                    {getRoleLabel(role)}
+                    {accessProfileName || getRoleLabel(role)}
                   </div>
                 </div>
               </div>
