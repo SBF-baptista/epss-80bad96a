@@ -14,6 +14,8 @@ interface HomologationColumnProps {
   onCardClick: (card: HomologationCard) => void;
   onDragStart: (card: HomologationCard, e: React.DragEvent) => void;
   onUpdate: () => void;
+  canDelete: boolean;
+  canDrag: boolean;
   isUpdating?: string | null;
 }
 
@@ -62,6 +64,8 @@ const HomologationColumn = ({
   onCardClick, 
   onDragStart, 
   onUpdate,
+  canDelete,
+  canDrag,
   isUpdating 
 }: HomologationColumnProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -153,6 +157,8 @@ const HomologationColumn = ({
               onClick={() => onCardClick(card)}
               onDragStart={(e) => onDragStart(card, e)}
               onUpdate={onUpdate}
+              canDelete={canDelete}
+              canDrag={canDrag}
             />
             {isUpdating === card.id && (
               <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-xl">
