@@ -1830,6 +1830,36 @@ export type Database = {
         }
         Relationships: []
       }
+      teams: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          permissions: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       technicians: {
         Row: {
           address_city: string | null
@@ -1926,6 +1956,7 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          team_id: string | null
           user_id: string
         }
         Insert: {
@@ -1933,6 +1964,7 @@ export type Database = {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          team_id?: string | null
           user_id: string
         }
         Update: {
@@ -1940,6 +1972,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          team_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1948,6 +1981,13 @@ export type Database = {
             columns: ["access_profile_id"]
             isOneToOne: false
             referencedRelation: "access_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
