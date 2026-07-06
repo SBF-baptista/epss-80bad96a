@@ -133,22 +133,29 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
     schedule.id
   );
 
-  // Publica evento no Kafka (DigitalOcean) — não bloqueia o fluxo
-  supabase.functions
-    .invoke('kafka-publish-agendamento', { body: { scheduleId: schedule.id } })
-    .then(({ error }) => {
-      if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
-    })
-    .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
+  // Dispara integrações externas (Kafka + Frota Segsale) SOMENTE para agendamentos
+  // originados do Segsale (que sempre chegam como "Instalação"). Identificamos pela
+  // presença de incoming_vehicle_id — agendamentos manuais não têm esse vínculo.
+  if (schedule.incoming_vehicle_id) {
+    // Publica evento no Kafka (DigitalOcean) — não bloqueia o fluxo
+    supabase.functions
+      .invoke('kafka-publish-agendamento', { body: { scheduleId: schedule.id } })
+      .then(({ error }) => {
+        if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
+      })
+      .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
 
-  // Cria a unidade na API Frota Segsale (DigitalOcean) — não bloqueia o fluxo
-  supabase.functions
-    .invoke('create-frota-unidade', { body: { scheduleId: schedule.id } })
-    .then(({ data, error }) => {
-      if (error) console.warn('[create-frota-unidade] falhou:', error.message);
-      else console.log('[create-frota-unidade] resultado:', data);
-    })
-    .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+    // Cria a unidade na API Frota Segsale (DigitalOcean) — não bloqueia o fluxo
+    supabase.functions
+      .invoke('create-frota-unidade', { body: { scheduleId: schedule.id } })
+      .then(({ data, error }) => {
+        if (error) console.warn('[create-frota-unidade] falhou:', error.message);
+        else console.log('[create-frota-unidade] resultado:', data);
+      })
+      .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+  } else {
+    console.log('[kitScheduleService] Agendamento não-Segsale (sem incoming_vehicle_id) — Kafka/Frota não acionados');
+  }
 
   // WhatsApp notification removed - only sent via "Disparar Agenda" button
 
