@@ -195,10 +195,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       const { baseRole: resolvedBaseRole, permissions: resolvedPermissions, accessProfileId: resolvedAccessProfileId } = resolvedPayload;
 
-      // Generate random internal password
-      const array = new Uint8Array(32);
-      crypto.getRandomValues(array);
-      const internalPassword = Array.from(array, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 24);
+      // Default password for new users - they will be forced to change on first login
+      const internalPassword = '12345678';
 
       const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
