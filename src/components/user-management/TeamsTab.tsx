@@ -32,7 +32,7 @@ export const TeamsTab = ({ canEdit }: Props) => {
       const list = await teamService.list()
       setTeams(list)
       // Get member counts
-      const { data } = await supabase.from('user_roles').select('team_id, user_id').not('team_id' as any, 'is', null)
+      const { data } = await (supabase as any).from('user_roles').select('team_id, user_id').not('team_id', 'is', null)
       const counts: Record<string, Set<string>> = {}
       ;((data as any[]) || []).forEach((r) => {
         if (!r.team_id) return
