@@ -371,6 +371,7 @@ const Auth = () => {
                     <Label htmlFor="email" className="text-xs font-medium text-foreground">E-mail</Label>
                     <Input
                       id="email"
+                      data-tutorial="email"
                       type="email"
                       placeholder="seu.email@empresa.com"
                       value={email}
