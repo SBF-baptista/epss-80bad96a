@@ -56,13 +56,13 @@ class TeamService {
   }
 
   async update(id: string, payload: Partial<CreateTeamData>): Promise<{ success: boolean; error?: string }> {
-    const { error } = await supabase
-      .from('teams' as any)
-      .update({
-        ...payload,
-        updated_at: new Date().toISOString(),
-      } as any)
+    const { error } = await (supabase.from('teams' as any) as any)
+      .update({ ...payload, updated_at: new Date().toISOString() })
       .eq('id', id)
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  }
+
     if (error) return { success: false, error: error.message }
     return { success: true }
   }
