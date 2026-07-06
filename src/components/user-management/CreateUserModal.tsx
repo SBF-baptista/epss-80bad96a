@@ -155,7 +155,7 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
             <Alert className="bg-muted/50">
               <Info className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                O usuário definirá sua própria senha ao acessar o sistema pela primeira vez clicando em "Primeiro acesso" na tela de login.
+                O usuário fará login com a senha padrão <strong>12345678</strong> e será automaticamente direcionado para uma tela de definição de nova senha no primeiro acesso.
               </AlertDescription>
             </Alert>
 
