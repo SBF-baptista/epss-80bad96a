@@ -106,16 +106,22 @@ export interface CreateKitScheduleData {
   accessories?: string[];
   supplies?: string[];
   incoming_vehicle_id?: string;
+  /** Tipo de serviço do formulário (Instalação, Manutenção, Retirada, etc.).
+   *  Não é persistido no banco — usado apenas para decidir se dispara Kafka/Frota. */
+  service?: string;
 }
 
 // Create a new kit schedule
 export const createKitSchedule = async (data: CreateKitScheduleData): Promise<KitSchedule> => {
   const { data: user } = await supabase.auth.getUser();
-  
+
+  // Extrai service do payload (não é coluna do banco)
+  const { service, ...insertData } = data;
+
   const { data: schedule, error } = await supabase
     .from('kit_schedules')
     .insert([{
-      ...data,
+      ...insertData,
       created_by: user.user?.id
     }])
     .select()
@@ -133,11 +139,12 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
     schedule.id
   );
 
-  // Dispara integrações externas (Kafka + Frota Segsale) SOMENTE para agendamentos
-  // originados do Segsale (que sempre chegam como "Instalação"). Identificamos pela
-  // presença de incoming_vehicle_id — agendamentos manuais não têm esse vínculo.
-  if (schedule.incoming_vehicle_id) {
-    // Publica evento no Kafka (DigitalOcean) — não bloqueia o fluxo
+  // Dispara integrações externas (Kafka + Frota Segsale) SOMENTE quando o
+  // Serviço selecionado no formulário for "Instalação".
+  const isInstalacao = (service ?? '').trim().toLowerCase() === 'instalação'
+    || (service ?? '').trim().toLowerCase() === 'instalacao';
+
+  if (isInstalacao) {
     supabase.functions
       .invoke('kafka-publish-agendamento', { body: { scheduleId: schedule.id } })
       .then(({ error }) => {
@@ -145,7 +152,6 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
       })
       .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
 
-    // Cria a unidade na API Frota Segsale (DigitalOcean) — não bloqueia o fluxo
     supabase.functions
       .invoke('create-frota-unidade', { body: { scheduleId: schedule.id } })
       .then(({ data, error }) => {
@@ -154,7 +160,7 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
       })
       .catch((e) => console.warn('[create-frota-unidade] erro:', e));
   } else {
-    console.log('[kitScheduleService] Agendamento não-Segsale (sem incoming_vehicle_id) — Kafka/Frota não acionados');
+    console.log(`[kitScheduleService] Serviço "${service ?? '(não informado)'}" — Kafka/Frota não acionados (só dispara para Instalação)`);
   }
 
   // WhatsApp notification removed - only sent via "Disparar Agenda" button
