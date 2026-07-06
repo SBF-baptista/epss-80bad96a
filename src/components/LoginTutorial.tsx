@@ -33,11 +33,12 @@ interface Step {
 const STEPS: Step[] = [
   {
     id: "welcome",
-    title: "Bem-vindo à plataforma OPM",
+    title: "Bem-vindo! Vamos fazer seu primeiro acesso",
     body: (
       <>
-        Vamos te guiar em <strong>6 passos rápidos</strong> para você fazer seu
-        primeiro acesso com segurança. Você pode pular a qualquer momento.
+        Este é um guia rápido de <strong>4 passos</strong> para você criar sua
+        senha e entrar na plataforma pela primeira vez. Você pode pular a
+        qualquer momento.
       </>
     ),
     icon: Sparkles,
@@ -50,8 +51,9 @@ const STEPS: Step[] = [
     title: "1. Digite seu e-mail corporativo",
     body: (
       <>
-        Use o mesmo e-mail que foi cadastrado pelo <strong>administrador</strong>.
-        Sem ele, o sistema não consegue te identificar.
+        Use exatamente o e-mail que o <strong>administrador</strong> cadastrou
+        para você. É por ele que o sistema vai reconhecer sua conta e liberar a
+        criação da senha.
       </>
     ),
     icon: Mail,
@@ -64,9 +66,9 @@ const STEPS: Step[] = [
     title: "2. Clique em “Primeiro acesso”",
     body: (
       <>
-        Se é a primeira vez que entra, clique neste botão após informar o e-mail.
-        O sistema vai reconhecer sua conta e abrir a tela para você{" "}
-        <strong>criar sua senha</strong>.
+        Com o e-mail preenchido, clique neste botão. O sistema vai identificar
+        sua conta e abrir automaticamente a tela para você{" "}
+        <strong>cadastrar a sua senha</strong>.
       </>
     ),
     icon: UserPlus,
@@ -75,13 +77,14 @@ const STEPS: Step[] = [
   },
   {
     id: "password-setup",
-    title: "3. Crie uma senha segura",
+    target: '[data-tutorial="password"]',
+    title: "3. Cadastre sua senha",
     body: (
       <>
-        Sua nova senha precisa ter:
+        Na próxima tela, crie uma senha que atenda a estas regras:
         <ul className="mt-2 space-y-1 text-xs">
           <li className="flex items-center gap-1.5">
-            <span className="h-1 w-1 rounded-full bg-primary" /> Mínimo 8 caracteres
+            <span className="h-1 w-1 rounded-full bg-primary" /> Mínimo de 8 caracteres
           </li>
           <li className="flex items-center gap-1.5">
             <span className="h-1 w-1 rounded-full bg-primary" /> Ao menos 1 letra maiúscula
@@ -93,49 +96,22 @@ const STEPS: Step[] = [
             <span className="h-1 w-1 rounded-full bg-primary" /> Ao menos 1 caractere especial (!@#$%)
           </li>
         </ul>
+        Confirme a senha e clique em <strong>“Cadastrar senha”</strong>.
       </>
     ),
     icon: KeyRound,
     accent: "warning",
-    placement: "center",
-  },
-  {
-    id: "login",
-    target: '[data-tutorial="password"]',
-    title: "4. Nos próximos acessos",
-    body: (
-      <>
-        Após definir sua senha, basta digitar e-mail + senha aqui e clicar em{" "}
-        <strong>“Entrar no painel”</strong>. Você será redirecionado ao Kanban
-        automaticamente.
-      </>
-    ),
-    icon: Lock,
-    accent: "primary",
     placement: "right",
   },
   {
-    id: "forgot",
-    target: '[data-tutorial="forgot"]',
-    title: "5. Esqueceu a senha?",
-    body: (
-      <>
-        Sem pânico. Clique em <strong>“Esqueci minha senha”</strong> e você
-        receberá um link no seu e-mail para redefinir com segurança.
-      </>
-    ),
-    icon: ShieldCheck,
-    accent: "info",
-    placement: "top",
-  },
-  {
     id: "done",
-    title: "Tudo pronto!",
+    title: "4. Pronto! Você já pode entrar",
     body: (
       <>
-        Agora é só seguir o passo 1 e 2 para acessar. Se precisar rever este
-        tutorial, use o botão <strong>“Ver tutorial guiado”</strong> abaixo do
-        formulário de login.
+        Depois de cadastrar a senha, você volta para esta tela e entra
+        normalmente com <strong>e-mail + senha</strong>. Se um dia esquecer,
+        use o link <strong>“Esqueci minha senha”</strong> logo abaixo do
+        formulário.
       </>
     ),
     icon: PartyPopper,
