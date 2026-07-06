@@ -15,6 +15,7 @@ import {
   X,
   HelpCircle,
   Info,
+  MousePointer2,
 } from "lucide-react";
 
 type Placement = "top" | "bottom" | "left" | "right" | "center";
@@ -312,6 +313,56 @@ export function LoginTutorial() {
             />
           )}
         </div>
+
+        {/* Animated click indicator pointing to the target */}
+        {rect && (
+          <motion.div
+            key={step.id + "-pointer"}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.6 }}
+            transition={{ type: "spring", stiffness: 240, damping: 20 }}
+            className="pointer-events-none absolute z-[110]"
+            style={{
+              top: rect.top + rect.height / 2 - 6,
+              left: rect.left + rect.width / 2 - 6,
+            }}
+          >
+            {/* Pulsing ripple rings emanating from click point */}
+            <span className="absolute -inset-3 flex items-center justify-center">
+              <motion.span
+                className="absolute h-8 w-8 rounded-full bg-primary/30"
+                animate={{ scale: [1, 2.2], opacity: [0.6, 0] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+              />
+              <motion.span
+                className="absolute h-8 w-8 rounded-full bg-primary/30"
+                animate={{ scale: [1, 2.2], opacity: [0.6, 0] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut", delay: 0.7 }}
+              />
+              <span className="relative h-3 w-3 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" />
+            </span>
+
+            {/* Animated cursor arrow tapping the target */}
+            <motion.div
+              className="absolute"
+              style={{ top: 10, left: 10 }}
+              animate={{ x: [0, -6, 0], y: [0, -6, 0], scale: [1, 0.88, 1] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <div className="relative">
+                <MousePointer2
+                  className="h-7 w-7 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+                  strokeWidth={1.5}
+                  fill="hsl(var(--primary))"
+                />
+                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground shadow-lg">
+                  Clique aqui
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         {/* Floating card */}
         <AnimatePresence mode="wait">
