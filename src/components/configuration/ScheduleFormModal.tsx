@@ -243,14 +243,11 @@ export const ScheduleFormModal = ({
         // Observação vazia para o usuário preencher
         form.setValue('observation', '');
         
-        // Set service based on usage type (frota from Segsale = fixed "Instalação")
-        // For now, we'll check if incomingVehicleId exists (meaning it came from Segsale pipeline)
-        if (initialVehicleData.incomingVehicleId) {
-          form.setValue('service', 'Instalação');
-          setIsFromSegsale(true);
-        } else {
-          setIsFromSegsale(false);
-        }
+        // Todo veículo aberto pela seção "Veículos Pendentes de Agendamento"
+        // (initialVehicleData presente) entra sempre como Serviço = "Instalação"
+        // e o campo fica bloqueado.
+        form.setValue('service', 'Instalação');
+        setIsFromSegsale(true);
       } else {
         setIsFromSegsale(false);
       }
