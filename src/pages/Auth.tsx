@@ -392,6 +392,7 @@ const Auth = () => {
                     <div className="relative">
                       <Input
                         id="password"
+                        data-tutorial="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Digite sua senha"
                         value={password}
