@@ -11,6 +11,8 @@ import { UserList } from '@/components/user-management/UserList'
 import { UserManagementStats } from '@/components/user-management/UserManagementStats'
 import { UserFilters, type UserFilterState } from '@/components/user-management/UserFilters'
 import { AccessProfileModal } from '@/components/access-profiles/AccessProfileModal'
+import { TeamsTab } from '@/components/user-management/TeamsTab'
+
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -206,7 +208,9 @@ const UserManagement = () => {
           <TabsList className="bg-muted/60">
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="profiles">Perfis de Acesso</TabsTrigger>
+            <TabsTrigger value="teams">Times</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="users" className="mt-4 space-y-4">
             {/* Filters + Actions */}
@@ -350,7 +354,12 @@ const UserManagement = () => {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="teams" className="mt-4">
+            <TeamsTab canEdit={isRealAdmin} />
+          </TabsContent>
         </Tabs>
+
 
         <CreateUserModal
           open={showCreateModal}
