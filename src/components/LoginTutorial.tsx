@@ -15,6 +15,7 @@ import {
   X,
   HelpCircle,
   Info,
+  MousePointer2,
 } from "lucide-react";
 
 type Placement = "top" | "bottom" | "left" | "right" | "center";
