@@ -371,6 +371,7 @@ const Auth = () => {
                     <Label htmlFor="email" className="text-xs font-medium text-foreground">E-mail</Label>
                     <Input
                       id="email"
+                      data-tutorial="email"
                       type="email"
                       placeholder="seu.email@empresa.com"
                       value={email}
@@ -391,6 +392,7 @@ const Auth = () => {
                     <div className="relative">
                       <Input
                         id="password"
+                        data-tutorial="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Digite sua senha"
                         value={password}
@@ -436,6 +438,7 @@ const Auth = () => {
                   <div className="flex items-center justify-between pt-1">
                     <Button
                       type="button"
+                      data-tutorial="first-access"
                       variant="ghost"
                       className="text-xs font-medium text-primary hover:text-primary/80 hover:bg-primary/5 gap-1.5 px-2 h-8"
                       onClick={handleCheckEmail}
@@ -449,6 +452,7 @@ const Auth = () => {
                       <TooltipTrigger asChild>
                         <Button
                           type="button"
+                          data-tutorial="forgot"
                           variant="ghost"
                           className="text-xs text-muted-foreground hover:text-foreground px-2 h-8"
                           onClick={() => setForgotOpen(true)}
