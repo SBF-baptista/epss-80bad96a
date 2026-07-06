@@ -285,7 +285,7 @@ export function LoginTutorial() {
       >
         {/* Backdrop with spotlight cutout via massive box-shadow */}
         <div
-          className="absolute inset-0 backdrop-blur-[2px]"
+          className="absolute inset-0"
           onClick={close}
         >
           {rect ? (
