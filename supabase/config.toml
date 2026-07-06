@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.create-frota-unidade]
 verify_jwt = false
+
+[functions.kafka-test-publish]
+verify_jwt = false
