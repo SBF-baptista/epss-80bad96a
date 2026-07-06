@@ -92,11 +92,73 @@ Deno.serve(async (req) => {
       console.log(`🔄 Found ${retryIds.length} IDs in integration_state not yet in incoming_vehicles: ${retryIds.join(', ')}`)
     }
 
-    // Combine both sources, deduplicated, sorted by ID descending (newest first).
+    // 🔎 DISCOVERY: scan forward from the max known sale_summary_id to catch new IDs
+    // that the Segsale webhook did not deliver. Stops after N consecutive empty responses.
+    let discoveredIds: number[] = []
+    if (requestedIds.length === 0) {
+      try {
+        const { data: maxRow } = await supabase
+          .from('incoming_vehicles')
+          .select('sale_summary_id')
+          .not('sale_summary_id', 'is', null)
+          .order('sale_summary_id', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        const startId = Math.max((maxRow?.sale_summary_id ?? MIN_SALE_SUMMARY_ID) + 1, MIN_SALE_SUMMARY_ID)
+        const MAX_CONSECUTIVE_EMPTY = 8
+        const MAX_SCAN = 40 // hard cap per execution
+        let consecutiveEmpty = 0
+        let scanned = 0
+        let cursor = startId
+
+        console.log(`🔎 Discovery scan starting at sale_summary_id=${startId} (stop after ${MAX_CONSECUTIVE_EMPTY} consecutive empty, max ${MAX_SCAN} probes)`)
+
+        while (consecutiveEmpty < MAX_CONSECUTIVE_EMPTY && scanned < MAX_SCAN) {
+          const probeUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${cursor}&forceRefresh=true`
+          try {
+            const probeResp = await fetch(probeUrl, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'apikey': serviceRoleKey,
+              },
+            })
+            if (probeResp.ok) {
+              const probeData = await probeResp.json().catch(() => null)
+              const sales = probeData?.sales || []
+              if (sales.length > 0) {
+                discoveredIds.push(cursor)
+                consecutiveEmpty = 0
+                console.log(`✨ Discovered new sale_summary_id=${cursor} (${sales.length} sale(s))`)
+              } else {
+                consecutiveEmpty++
+              }
+            } else {
+              consecutiveEmpty++
+            }
+          } catch (probeErr: any) {
+            console.warn(`⚠️ Probe failed for ${cursor}: ${probeErr?.message}`)
+            consecutiveEmpty++
+          }
+          cursor++
+          scanned++
+          // small delay to be gentle with Segsale
+          await new Promise(r => setTimeout(r, 300))
+        }
+
+        console.log(`🔎 Discovery complete: probed ${scanned} IDs, found ${discoveredIds.length} new (${discoveredIds.join(', ') || 'none'})`)
+      } catch (discErr: any) {
+        console.warn('⚠️ Discovery scan error:', discErr?.message)
+      }
+    }
+
+    // Combine all sources, deduplicated, sorted by ID descending (newest first).
     // If sale_summary_ids are provided manually, process only those IDs.
     const allIds = (requestedIds.length > 0
       ? [...new Set(requestedIds)]
-      : [...new Set([...uniqueIds, ...retryIds])]
+      : [...new Set([...uniqueIds, ...retryIds, ...discoveredIds])]
     ).sort((a, b) => b - a)
     if (requestedIds.length > 0) {
       console.log(`🎯 Manual sale_summary_ids requested: ${allIds.join(', ')}`)
