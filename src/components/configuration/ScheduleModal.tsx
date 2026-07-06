@@ -1886,7 +1886,8 @@ export const ScheduleModal = ({
               selected_kit_ids: pendingVehicleData?.selectedKitIds,
               incoming_vehicle_id: incomingVehicleId,
               configuration: pendingVehicleData?.configuration,
-              accessories: pendingVehicleData?.accessories
+              accessories: pendingVehicleData?.accessories,
+              service: formData.service
             });
 
             // Send WhatsApp notification
