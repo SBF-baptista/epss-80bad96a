@@ -106,18 +106,6 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDele
                   Realizar Kickoff
                 </Button>
               )}
-              {canDelete && (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="destructive"
-                  aria-label={`Excluir card de ${client.company_name}`}
-                  onClick={() => onDeleteKickoff(client)}
-                  className="shrink-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
             </div>
           )}
         </CardContent>
