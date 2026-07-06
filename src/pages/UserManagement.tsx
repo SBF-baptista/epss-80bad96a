@@ -207,7 +207,6 @@ const UserManagement = () => {
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="bg-muted/60">
             <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="profiles">Perfis de Acesso</TabsTrigger>
             <TabsTrigger value="teams">Times</TabsTrigger>
           </TabsList>
 
@@ -247,116 +246,125 @@ const UserManagement = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="profiles" className="mt-4">
-            <div className="flex justify-end gap-2 mb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshProfiles}
-                disabled={isRefreshingProfiles}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingProfiles ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-              {canEditUsers && (
-                <Button size="sm" onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Perfil
-                </Button>
-              )}
-            </div>
+          <TabsContent value="teams" className="mt-4">
+            <Tabs defaultValue="teams-list" className="w-full">
+              <TabsList className="bg-muted/40">
+                <TabsTrigger value="teams-list">Times</TabsTrigger>
+                <TabsTrigger value="profiles">Perfis de Acesso</TabsTrigger>
+              </TabsList>
 
-            {profiles.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Shield className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum perfil cadastrado</h3>
-                  <p className="text-muted-foreground text-center mb-4">
-                    Crie perfis de acesso para definir as permissões que serão atribuídas aos usuários.
-                  </p>
+              <TabsContent value="teams-list" className="mt-4">
+                <TeamsTab canEdit={isRealAdmin} />
+              </TabsContent>
+
+              <TabsContent value="profiles" className="mt-4">
+                <div className="flex justify-end gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefreshProfiles}
+                    disabled={isRefreshingProfiles}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingProfiles ? 'animate-spin' : ''}`} />
+                    Atualizar
+                  </Button>
                   {canEditUsers && (
-                    <Button onClick={() => setShowProfileModal(true)}>
+                    <Button size="sm" onClick={() => { setEditingProfile(null); setShowProfileModal(true) }}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Criar Primeiro Perfil
+                      Novo Perfil
                     </Button>
                   )}
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {profiles.map((profile) => (
-                  <Card key={profile.id} className="group hover:shadow-md transition-shadow border-none shadow-sm">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{profile.name}</CardTitle>
-                          {profile.description && (
-                            <CardDescription className="mt-1">{profile.description}</CardDescription>
-                          )}
-                        </div>
-                        <Badge variant={getRoleBadgeVariant(profile.base_role)}>
-                          {BASE_ROLE_LABELS[profile.base_role]}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="text-sm text-muted-foreground">
-                          {countPermissions(profile.permissions)} módulos com permissão
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-1">
-                          {Object.entries(profile.permissions)
-                            .filter(([_, level]) => level !== 'none')
-                            .slice(0, 4)
-                            .map(([module, level]) => {
-                              const moduleConfig = Object.values(MODULE_GROUPS)
-                                .flatMap(g => g.modules)
-                                .find(m => m.key === module)
-                              return (
-                                <Badge key={module} variant="outline" className="text-xs">
-                                  {moduleConfig?.label || module}
-                                </Badge>
-                              )
-                            })}
-                          {Object.entries(profile.permissions).filter(([_, l]) => l !== 'none').length > 4 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{Object.entries(profile.permissions).filter(([_, l]) => l !== 'none').length - 4}
-                            </Badge>
-                          )}
-                        </div>
+                </div>
 
-                        {canEditUsers && (
-                          <div className="flex gap-2 pt-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => { setEditingProfile(profile); setShowProfileModal(true) }}
-                            >
-                              <Pencil className="h-4 w-4 mr-1" />
-                              Editar
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => setDeletingProfile(profile)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                {profiles.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Shield className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Nenhum perfil cadastrado</h3>
+                      <p className="text-muted-foreground text-center mb-4">
+                        Crie perfis de acesso para definir as permissões que serão atribuídas aos usuários.
+                      </p>
+                      {canEditUsers && (
+                        <Button onClick={() => setShowProfileModal(true)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Criar Primeiro Perfil
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {profiles.map((profile) => (
+                      <Card key={profile.id} className="group hover:shadow-md transition-shadow border-none shadow-sm">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-lg">{profile.name}</CardTitle>
+                              {profile.description && (
+                                <CardDescription className="mt-1">{profile.description}</CardDescription>
+                              )}
+                            </div>
+                            <Badge variant={getRoleBadgeVariant(profile.base_role)}>
+                              {BASE_ROLE_LABELS[profile.base_role]}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div className="text-sm text-muted-foreground">
+                              {countPermissions(profile.permissions)} módulos com permissão
+                            </div>
 
-          <TabsContent value="teams" className="mt-4">
-            <TeamsTab canEdit={isRealAdmin} />
+                            <div className="flex flex-wrap gap-1">
+                              {Object.entries(profile.permissions)
+                                .filter(([_, level]) => level !== 'none')
+                                .slice(0, 4)
+                                .map(([module, level]) => {
+                                  const moduleConfig = Object.values(MODULE_GROUPS)
+                                    .flatMap(g => g.modules)
+                                    .find(m => m.key === module)
+                                  return (
+                                    <Badge key={module} variant="outline" className="text-xs">
+                                      {moduleConfig?.label || module}
+                                    </Badge>
+                                  )
+                                })}
+                              {Object.entries(profile.permissions).filter(([_, l]) => l !== 'none').length > 4 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{Object.entries(profile.permissions).filter(([_, l]) => l !== 'none').length - 4}
+                                </Badge>
+                              )}
+                            </div>
+
+                            {canEditUsers && (
+                              <div className="flex gap-2 pt-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => { setEditingProfile(profile); setShowProfileModal(true) }}
+                                >
+                                  <Pencil className="h-4 w-4 mr-1" />
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setDeletingProfile(profile)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
 
