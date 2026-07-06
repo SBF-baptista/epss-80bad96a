@@ -72,7 +72,7 @@ export const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUse
       })
 
       if (response.success) {
-        toast({ title: 'Usuário criado', description: 'O usuário poderá definir sua senha no primeiro acesso.' })
+        toast({ title: 'Usuário criado', description: 'Senha padrão: 12345678. O usuário será solicitado a definir uma nova senha no primeiro acesso.' })
         onUserCreated()
         handleClose()
       } else {
