@@ -87,16 +87,27 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
           ) : (
             <ul className="divide-y divide-slate-100 border border-slate-200 rounded-md overflow-hidden bg-white">
               {sorted.map((a) => {
-                const Icon = ICONS[a.type];
+                const stage = STAGES[a.type];
+                const Icon = stage.icon;
                 const overdue = getOverdue(a);
                 return (
                   <li key={a.id} className="flex items-center gap-3 px-3 py-4">
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500 ring-1 ring-slate-200 shrink-0">
                       <Icon className="h-[22px] w-[22px]" />
                     </span>
-                    <div className="min-w-0 flex-1 flex flex-col gap-1">
+                    <div className="min-w-0 flex-1 flex flex-col gap-1.5">
                       <div className="text-[16px] font-semibold text-slate-900 leading-tight truncate">
                         {a.customerName}
+                      </div>
+                      <div>
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-medium",
+                            stage.tag,
+                          )}
+                        >
+                          {stage.label}
+                        </span>
                       </div>
                       {a.plate && (
                         <div className="text-[13px] text-slate-600 truncate">
@@ -104,9 +115,10 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
                         </div>
                       )}
                       <div className="text-[12px] text-slate-400">
-                        {a.stageLabel} · parado há {a.daysStalled}d (limite {LIMITS[a.type]}d)
+                        parado há {a.daysStalled}d (limite {LIMITS[a.type]}d)
                       </div>
                     </div>
+
                     <span
                       className={cn(
                         "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold shrink-0",
