@@ -115,7 +115,7 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
                         </div>
                       )}
                       <div className="text-[12px] text-slate-400">
-                        parado há {a.daysStalled}d (limite {LIMITS[a.type]}d)
+                        parado há {a.daysStalled}d
                       </div>
                     </div>
 
