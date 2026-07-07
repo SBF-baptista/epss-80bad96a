@@ -912,20 +912,25 @@ export const KickoffDetailsModal = ({
       const accessoriesSaleData: any[] = [];
 
       // Save to kickoff history
-      const { error: historyError } = await supabase.from("kickoff_history").insert({
-        sale_summary_id: saleSummaryId,
-        company_name: companyName,
-        total_vehicles: validatedVehicles.length,
-        contacts: contacts.filter((c) => c.name) as any,
-        installation_locations: installationLocations.filter((loc) => loc.city) as any,
-        has_installation_particularity: !!particularityDetails,
-        installation_particularity_details: particularityDetails || null,
-        kickoff_notes: notes || null,
-        vehicles_data: vehiclesData as any,
-        approved_by: user?.id || null,
-        camera_extra_sale: cameraExtraSaleData as any,
-        accessories_sale: (accessoriesSaleData.length > 0 ? accessoriesSaleData : null) as any,
-      });
+      const { error: historyError } = await supabase
+        .from("kickoff_history")
+        .upsert(
+          {
+            sale_summary_id: saleSummaryId,
+            company_name: companyName,
+            total_vehicles: validatedVehicles.length,
+            contacts: contacts.filter((c) => c.name) as any,
+            installation_locations: installationLocations.filter((loc) => loc.city) as any,
+            has_installation_particularity: !!particularityDetails,
+            installation_particularity_details: particularityDetails || null,
+            kickoff_notes: notes || null,
+            vehicles_data: vehiclesData as any,
+            approved_by: user?.id || null,
+            camera_extra_sale: cameraExtraSaleData as any,
+            accessories_sale: (accessoriesSaleData.length > 0 ? accessoriesSaleData : null) as any,
+          },
+          { onConflict: "sale_summary_id", ignoreDuplicates: false },
+        );
 
       if (historyError) throw historyError;
 
