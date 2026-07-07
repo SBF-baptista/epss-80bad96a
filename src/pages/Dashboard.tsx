@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, BarChart3, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { StalledAlertsBanner } from "@/components/alerts/StalledAlertsBanner";
+import { StalledAlertsPopup } from "@/components/alerts/StalledAlertsPopup";
 
 const Dashboard = () => {
   const { user } = useAuth();
