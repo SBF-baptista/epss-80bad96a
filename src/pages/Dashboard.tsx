@@ -105,6 +105,10 @@ const Dashboard = () => {
           </Button>
         </div>
 
+        {/* Alertas de itens parados */}
+        <StalledAlertsBanner />
+        <StalledAlertsPopup storageKey="stalled-alerts-popup-dashboard" />
+
         {/* Filters */}
         <DashboardFilters
           dateRange={dateRange}
