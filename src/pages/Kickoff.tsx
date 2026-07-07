@@ -31,6 +31,8 @@ import {
 import { toast } from "sonner";
 
 import { motion } from "framer-motion";
+import { StalledAlertsBanner } from "@/components/alerts/StalledAlertsBanner";
+import { StalledAlertsPopup } from "@/components/alerts/StalledAlertsPopup";
 
 const TUTORIAL_KEY = "kickoff-tutorial-seen";
 
