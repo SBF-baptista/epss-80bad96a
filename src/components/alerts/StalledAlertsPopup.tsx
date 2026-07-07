@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { useStalledAlerts } from "@/hooks/useStalledAlerts";
 import { StalledAlertsList } from "./StalledAlertsList";
+import { MOCK_STALLED_ALERTS } from "@/services/mockStalledAlerts";
 
 interface Props {
   /** Chave única por página para evitar reabrir na mesma sessão. */
@@ -11,7 +12,8 @@ interface Props {
 }
 
 export const StalledAlertsPopup = ({ storageKey }: Props) => {
-  const { data: alerts = [], isLoading } = useStalledAlerts();
+  const { data: realAlerts = [], isLoading } = useStalledAlerts();
+  const alerts = [...MOCK_STALLED_ALERTS, ...realAlerts];
   const [open, setOpen] = useState(false);
 
   useEffect(() => {

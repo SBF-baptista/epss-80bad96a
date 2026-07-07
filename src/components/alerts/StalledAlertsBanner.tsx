@@ -4,9 +4,11 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useStalledAlerts } from "@/hooks/useStalledAlerts";
 import { StalledAlertsList } from "./StalledAlertsList";
+import { MOCK_STALLED_ALERTS } from "@/services/mockStalledAlerts";
 
 export const StalledAlertsBanner = () => {
-  const { data: alerts = [] } = useStalledAlerts();
+  const { data: realAlerts = [] } = useStalledAlerts();
+  const alerts = [...MOCK_STALLED_ALERTS, ...realAlerts];
   const [open, setOpen] = useState(false);
 
   if (!alerts.length) return null;
