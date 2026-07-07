@@ -95,11 +95,9 @@ const Kickoff = () => {
 
   useEffect(() => {
     if (!user) return;
-    if (!localStorage.getItem(TUTORIAL_KEY)) {
-      const t = setTimeout(() => setTutorialOpen(true), 600);
-      return () => clearTimeout(t);
-    }
+    // Tutorial é opcional — só abre manualmente pelo botão.
   }, [user]);
+
 
 
 

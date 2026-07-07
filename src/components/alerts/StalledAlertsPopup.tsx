@@ -19,11 +19,9 @@ export const StalledAlertsPopup = ({ storageKey }: Props) => {
   useEffect(() => {
     if (isLoading) return;
     if (!alerts.length) return;
-    const seen = sessionStorage.getItem(storageKey);
-    if (seen) return;
     setOpen(true);
-    sessionStorage.setItem(storageKey, String(Date.now()));
   }, [isLoading, alerts.length, storageKey]);
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
