@@ -37,27 +37,19 @@ async function getPlanningStalled(): Promise<StalledAlert[]> {
   if (error || !customers) return [];
 
   // Excluir clientes que já têm kit_schedules (avançaram para agendamento)
-  const saleIds = customers.map((c) => c.sale_summary_id).filter((v): v is number => !!v);
-  let scheduledSaleIds = new Set<number>();
-  if (saleIds.length) {
-    const { data: sched } = await supabase
-      .from("customers")
-      .select("sale_summary_id")
-      .in("sale_summary_id", saleIds);
-    // Placeholder — kit_schedules linka por customer_id; buscar direto:
+  let scheduledCustomerIds = new Set<string>();
+  if (customers.length) {
     const { data: ks } = await supabase
       .from("kit_schedules")
       .select("customer_id")
       .in("customer_id", customers.map((c) => c.id));
     (ks ?? []).forEach((r) => {
-      const cust = customers.find((c) => c.id === r.customer_id);
-      if (cust?.sale_summary_id) scheduledSaleIds.add(cust.sale_summary_id);
+      if (r.customer_id) scheduledCustomerIds.add(r.customer_id);
     });
-    void sched;
   }
 
   return customers
-    .filter((c) => !c.sale_summary_id || !scheduledSaleIds.has(c.sale_summary_id))
+    .filter((c) => !scheduledCustomerIds.has(c.id))
     .map<StalledAlert>((c) => {
       const vehicles = Array.isArray(c.vehicles) ? (c.vehicles as any[]) : [];
       const plate = vehicles[0]?.plate ?? undefined;
