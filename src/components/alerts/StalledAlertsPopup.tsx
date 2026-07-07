@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ArrowRight, CalendarClock, ClipboardList, Truck } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarCheck, FileText, Package } from "lucide-react";
 import { useStalledAlerts } from "@/hooks/useStalledAlerts";
 import { MOCK_STALLED_ALERTS } from "@/services/mockStalledAlerts";
 import type { StalledAlert, StalledAlertType } from "@/services/stalledAlertsService";
@@ -18,11 +18,27 @@ const LIMITS: Record<StalledAlertType, number> = {
   scheduling: 3,
 };
 
-const ICONS: Record<StalledAlertType, React.ComponentType<{ className?: string }>> = {
-  planning: ClipboardList,
-  production: Truck,
-  scheduling: CalendarClock,
+const STAGES: Record<
+  StalledAlertType,
+  { icon: React.ComponentType<{ className?: string }>; label: string; tag: string }
+> = {
+  planning: {
+    icon: FileText,
+    label: "Planejamento",
+    tag: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
+  },
+  production: {
+    icon: Package,
+    label: "Em Produção (Logística)",
+    tag: "bg-teal-50 text-teal-700 ring-1 ring-teal-200",
+  },
+  scheduling: {
+    icon: CalendarCheck,
+    label: "Agendamento",
+    tag: "bg-orange-50 text-orange-700 ring-1 ring-orange-200",
+  },
 };
+
 
 const getOverdue = (a: StalledAlert) => a.daysStalled - LIMITS[a.type];
 
