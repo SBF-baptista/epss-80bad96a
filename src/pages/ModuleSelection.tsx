@@ -17,6 +17,9 @@ import {
   Clock,
   ShoppingCart,
 } from "lucide-react";
+import { StalledAlertsBanner } from "@/components/alerts/StalledAlertsBanner";
+import { StalledAlertsPopup } from "@/components/alerts/StalledAlertsPopup";
+
 
 interface ModuleCard {
   title: string;
