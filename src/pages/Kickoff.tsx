@@ -31,6 +31,8 @@ import {
 import { toast } from "sonner";
 
 import { motion } from "framer-motion";
+import { StalledAlertsBanner } from "@/components/alerts/StalledAlertsBanner";
+import { StalledAlertsPopup } from "@/components/alerts/StalledAlertsPopup";
 
 const TUTORIAL_KEY = "kickoff-tutorial-seen";
 
@@ -221,8 +223,13 @@ const Kickoff = () => {
         </Button>
       </motion.div>
 
+      {/* Alertas de itens parados */}
+      <StalledAlertsBanner />
+      <StalledAlertsPopup storageKey="stalled-alerts-popup-kickoff" />
+
       {/* Tabs */}
       <Tabs defaultValue="pending" className="space-y-6">
+
         <TabsList data-tour="kickoff-tabs" className="bg-muted/50 p-1 h-auto">
 
           <TabsTrigger

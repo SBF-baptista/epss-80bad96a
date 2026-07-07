@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, BarChart3, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { StalledAlertsBanner } from "@/components/alerts/StalledAlertsBanner";
+import { StalledAlertsPopup } from "@/components/alerts/StalledAlertsPopup";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -102,6 +104,10 @@ const Dashboard = () => {
             <RefreshCw className="h-3 w-3" /> Atualizar
           </Button>
         </div>
+
+        {/* Alertas de itens parados */}
+        <StalledAlertsBanner />
+        <StalledAlertsPopup storageKey="stalled-alerts-popup-dashboard" />
 
         {/* Filters */}
         <DashboardFilters
