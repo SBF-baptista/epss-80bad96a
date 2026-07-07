@@ -238,6 +238,8 @@ const ModuleSelection = () => {
 
   return (
     <div className="space-y-10 max-w-7xl mx-auto">
+      <StalledAlertsBanner />
+      <StalledAlertsPopup storageKey="stalled-alerts-popup-modules" />
       <motion.div
         className="text-center space-y-3"
         initial={{ opacity: 0, y: -20 }}
@@ -251,6 +253,7 @@ const ModuleSelection = () => {
           Selecione o módulo que deseja acessar
         </p>
       </motion.div>
+
 
       {primaryModules.length > 0 && (
         <motion.div
