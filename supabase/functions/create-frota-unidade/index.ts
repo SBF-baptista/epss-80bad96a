@@ -139,7 +139,12 @@ Deno.serve(async (req) => {
       usageType = iv2?.usage_type ?? null;
     }
 
-    const tipoContrato = mapTipoContrato(usageType);
+    // Override manual via body.tipoContrato ("TELEMETRIA" | "MENSALISTA")
+    const overrideTipo = String(reqBody?.tipoContrato ?? "").toUpperCase();
+    const tipoContrato =
+      overrideTipo === "TELEMETRIA" || overrideTipo === "MENSALISTA"
+        ? (overrideTipo as "TELEMETRIA" | "MENSALISTA")
+        : mapTipoContrato(usageType);
 
     const payload = {
       placa: plate,
