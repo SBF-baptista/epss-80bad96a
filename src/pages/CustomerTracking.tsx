@@ -11,6 +11,8 @@ import { checkMultipleKitsHomologation } from "@/services/kitHomologationService
 import { fetchAccessoriesByVehicleIds, aggregateAccessoriesWithoutModulesToObjects, VehicleAccessory } from "@/services/vehicleAccessoryService";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Users } from "lucide-react";
+import { StalledAlertsBanner } from "@/components/alerts/StalledAlertsBanner";
+import { StalledAlertsPopup } from "@/components/alerts/StalledAlertsPopup";
 
 export type CustomerTrackingStage = 'kickoff' | 'homologation' | 'planning' | 'scheduled' | 'installed';
 
