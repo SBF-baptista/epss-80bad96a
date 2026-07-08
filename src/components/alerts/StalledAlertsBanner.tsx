@@ -37,7 +37,6 @@ export const StalledAlertsBanner = () => {
     window.dispatchEvent(new CustomEvent("open-stalled-alerts-popup"));
   };
 
-  return (
   const hasCritical = alerts.some((a) => a.daysStalled >= 7);
 
   return (
