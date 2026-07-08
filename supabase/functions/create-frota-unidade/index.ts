@@ -53,9 +53,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const scheduleId: string | undefined = body?.scheduleId;
-    const installationScheduleId: string | undefined = body?.installationScheduleId;
+    const reqBody = await req.json().catch(() => ({}));
+    const scheduleId: string | undefined = reqBody?.scheduleId;
+    const installationScheduleId: string | undefined = reqBody?.installationScheduleId;
 
     if ((!scheduleId || typeof scheduleId !== "string") &&
         (!installationScheduleId || typeof installationScheduleId !== "string")) {
