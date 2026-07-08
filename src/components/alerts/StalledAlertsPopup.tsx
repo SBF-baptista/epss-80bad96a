@@ -48,11 +48,6 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
   const alerts = useMemo(() => [...MOCK_STALLED_ALERTS, ...realAlerts], [realAlerts]);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!alerts.length) return;
-    setOpen(true);
-  }, [isLoading, alerts.length]);
 
   useEffect(() => {
     const handler = () => setOpen(true);
