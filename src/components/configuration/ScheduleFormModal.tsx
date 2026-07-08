@@ -123,6 +123,7 @@ export const ScheduleFormModal = ({
       technician_whatsapp: '',
       time: '',
       service: '',
+      tipo_contrato: 'TELEMETRIA',
       plate: '',
       vehicle_model: '',
       vehicle_year: '',
