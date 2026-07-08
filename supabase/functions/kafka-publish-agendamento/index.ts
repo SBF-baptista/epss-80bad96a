@@ -28,9 +28,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { scheduleId } = await req.json().catch(() => ({}));
-    if (!scheduleId || typeof scheduleId !== "string") {
-      return json({ ok: false, error: "scheduleId obrigatório" });
+    const body = await req.json().catch(() => ({}));
+    const scheduleId: string | undefined = body?.scheduleId;
+    const installationScheduleId: string | undefined = body?.installationScheduleId;
+
+    if ((!scheduleId || typeof scheduleId !== "string") &&
+        (!installationScheduleId || typeof installationScheduleId !== "string")) {
+      return json({ ok: false, error: "scheduleId ou installationScheduleId obrigatório" });
     }
 
     const brokers = Deno.env.get("DO_KAFKA_BROKERS");
@@ -48,21 +52,60 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // 1) Agendamento
-    const { data: schedule, error: sErr } = await supabase
-      .from("kit_schedules")
-      .select(
-        "id, vehicle_plate, vehicle_model, vehicle_brand, vehicle_year, customer_id, customer_name, customer_email, customer_phone, customer_document_number, scheduled_date, installation_time, status, installation_address_street, installation_address_number, installation_address_neighborhood, installation_address_city, installation_address_postal_code, installation_address_complement",
-      )
-      .eq("id", scheduleId)
-      .maybeSingle();
+    // 1) Agendamento — aceita kit_schedules OU installation_schedules
+    let schedule: any = null;
+    let sourceLabel = "";
 
-    if (sErr || !schedule) {
-      return json({ ok: false, error: `Agendamento não encontrado: ${sErr?.message ?? "n/a"}` });
+    if (scheduleId) {
+      const { data, error: sErr } = await supabase
+        .from("kit_schedules")
+        .select(
+          "id, vehicle_plate, vehicle_model, vehicle_brand, vehicle_year, customer_id, customer_name, customer_email, customer_phone, customer_document_number, scheduled_date, installation_time, status, installation_address_street, installation_address_number, installation_address_neighborhood, installation_address_city, installation_address_postal_code, installation_address_complement",
+        )
+        .eq("id", scheduleId)
+        .maybeSingle();
+      if (sErr || !data) {
+        return json({ ok: false, error: `Agendamento (kit) não encontrado: ${sErr?.message ?? "n/a"}` });
+      }
+      schedule = data;
+      sourceLabel = `kit:${scheduleId}`;
+    } else {
+      const { data, error: iErr } = await supabase
+        .from("installation_schedules")
+        .select("id, plate, vehicle_model, customer, address, phone, scheduled_date, scheduled_time")
+        .eq("id", installationScheduleId!)
+        .maybeSingle();
+      if (iErr || !data) {
+        return json({ ok: false, error: `Agendamento (installation) não encontrado: ${iErr?.message ?? "n/a"}` });
+      }
+      schedule = {
+        id: data.id,
+        vehicle_plate: data.plate,
+        vehicle_model: data.vehicle_model,
+        vehicle_brand: null,
+        vehicle_year: null,
+        customer_id: null,
+        customer_name: data.customer,
+        customer_email: null,
+        customer_phone: data.phone,
+        customer_document_number: null,
+        scheduled_date: data.scheduled_date,
+        installation_time: data.scheduled_time,
+        status: null,
+        installation_address_street: data.address,
+        installation_address_number: null,
+        installation_address_neighborhood: null,
+        installation_address_city: null,
+        installation_address_postal_code: null,
+        installation_address_complement: null,
+      };
+      sourceLabel = `installation:${installationScheduleId}`;
     }
 
-    // 2) Cliente
+    // 2) Cliente — via customer_id OU (para installation_schedules) via placa em incoming_vehicles → sale_summary_id
     let customer: any = null;
+    let saleSummaryIdFromPlate: number | null = null;
+
     if (schedule.customer_id) {
       const { data } = await supabase
         .from("customers")
@@ -72,10 +115,32 @@ Deno.serve(async (req) => {
         .eq("id", schedule.customer_id)
         .maybeSingle();
       customer = data;
+    } else if (schedule.vehicle_plate) {
+      // Busca via placa: primeiro incoming_vehicles para achar sale_summary_id
+      const { data: ivp } = await supabase
+        .from("incoming_vehicles")
+        .select("sale_summary_id")
+        .eq("plate", schedule.vehicle_plate)
+        .not("sale_summary_id", "is", null)
+        .order("received_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      saleSummaryIdFromPlate = (ivp?.sale_summary_id as number | undefined) ?? null;
+
+      if (saleSummaryIdFromPlate) {
+        const { data } = await supabase
+          .from("customers")
+          .select(
+            "id, name, company_name, email, phone, document_number, sale_summary_id, address_street, address_number, address_neighborhood, address_city, address_postal_code, address_complement",
+          )
+          .eq("sale_summary_id", saleSummaryIdFromPlate)
+          .maybeSingle();
+        customer = data;
+      }
     }
 
     const saleSummaryId: number | null =
-      (customer?.sale_summary_id as number | undefined) ?? null;
+      (customer?.sale_summary_id as number | undefined) ?? saleSummaryIdFromPlate ?? null;
 
     // 3) Kickoff history (vehicles_data + accessories_sale)
     let kickoff: any = null;
@@ -246,7 +311,7 @@ Deno.serve(async (req) => {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic} (v2-rico)`);
+    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico)`);
     return json({ ok: true, sent: ["v2-rico"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

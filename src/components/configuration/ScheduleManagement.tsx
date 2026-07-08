@@ -215,7 +215,7 @@ export const ScheduleManagement = () => {
       observation: data.observation || null,
     };
 
-    const { error } = await supabase.from("installation_schedules").insert(scheduleData).select().single();
+    const { data: inserted, error } = await supabase.from("installation_schedules").insert(scheduleData).select().single();
 
     if (error) {
       console.error("Error creating schedule:", error);
@@ -225,6 +225,25 @@ export const ScheduleManagement = () => {
 
     await fetchSchedules();
     toast.success("Agendamento criado com sucesso!");
+
+    // Dispara integrações externas (Kafka + Frota Segsale) para agendamento manual
+    if (inserted?.id) {
+      console.log(`[ScheduleManagement] Disparando Kafka + Frota para installation_schedule=${inserted.id}`);
+      supabase.functions
+        .invoke('kafka-publish-agendamento', { body: { installationScheduleId: inserted.id } })
+        .then(({ error }) => {
+          if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
+        })
+        .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
+
+      supabase.functions
+        .invoke('create-frota-unidade', { body: { installationScheduleId: inserted.id } })
+        .then(({ data, error }) => {
+          if (error) console.warn('[create-frota-unidade] falhou:', error.message);
+          else console.log('[create-frota-unidade] resultado:', data);
+        })
+        .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+    }
 
     // Send WhatsApp notification to technician with feedback
     if (data.technician_id) {
