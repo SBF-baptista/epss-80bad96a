@@ -311,7 +311,7 @@ Deno.serve(async (req) => {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK schedule=${schedule.id} topic=${topic} (v2-rico)`);
+    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico)`);
     return json({ ok: true, sent: ["v2-rico"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
