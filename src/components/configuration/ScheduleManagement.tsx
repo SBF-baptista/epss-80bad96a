@@ -49,7 +49,10 @@ const sendTechnicianWhatsApp = async (
       return { success: false, error: "Técnico sem telefone cadastrado" };
     }
 
-    const formattedDate = format(new Date(scheduleData.date + "T12:00:00"), "dd/MM/yyyy (EEEE)", { locale: ptBR });
+    // Twilio ContentVariables rejeita espaços/caracteres em determinados slots
+    // (ex.: quando a variável é usada em parâmetro de URL do template). Enviar
+    // somente "dd/MM/yyyy" evita o erro 21656 ao usar o dia da semana.
+    const formattedDate = format(new Date(scheduleData.date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR });
 
     console.log("[WhatsApp Template] Sending template to:", technician.phone);
 
