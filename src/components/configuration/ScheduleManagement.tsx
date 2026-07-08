@@ -226,24 +226,35 @@ export const ScheduleManagement = () => {
     await fetchSchedules();
     toast.success("Agendamento criado com sucesso!");
 
-    // Dispara integrações externas (Kafka + Frota Segsale) para agendamento manual
+    // Dispara integração externa conforme tipo de contrato escolhido no formulário:
+    // - TELEMETRIA -> POST no Frota (create-frota-unidade)
+    // - MENSALISTA -> publica no Kafka (kafka-publish-agendamento)
     if (inserted?.id) {
-      console.log(`[ScheduleManagement] Disparando Kafka + Frota para installation_schedule=${inserted.id}`);
-      supabase.functions
-        .invoke('kafka-publish-agendamento', { body: { installationScheduleId: inserted.id } })
-        .then(({ error }) => {
-          if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
-        })
-        .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
+      const tipoContrato = data.tipo_contrato === 'MENSALISTA' ? 'MENSALISTA' : 'TELEMETRIA';
+      console.log(`[ScheduleManagement] installation_schedule=${inserted.id} tipoContrato=${tipoContrato}`);
 
-      supabase.functions
-        .invoke('create-frota-unidade', { body: { installationScheduleId: inserted.id } })
-        .then(({ data, error }) => {
-          if (error) console.warn('[create-frota-unidade] falhou:', error.message);
-          else console.log('[create-frota-unidade] resultado:', data);
-        })
-        .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+      if (tipoContrato === 'TELEMETRIA') {
+        supabase.functions
+          .invoke('create-frota-unidade', {
+            body: { installationScheduleId: inserted.id, tipoContrato: 'TELEMETRIA' },
+          })
+          .then(({ data: fData, error }) => {
+            if (error) console.warn('[create-frota-unidade] falhou:', error.message);
+            else console.log('[create-frota-unidade] resultado:', fData);
+          })
+          .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+      } else {
+        supabase.functions
+          .invoke('kafka-publish-agendamento', {
+            body: { installationScheduleId: inserted.id, tipoContrato: 'MENSALISTA' },
+          })
+          .then(({ error }) => {
+            if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
+          })
+          .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
+      }
     }
+
 
     // Send WhatsApp notification to technician with feedback
     if (data.technician_id) {

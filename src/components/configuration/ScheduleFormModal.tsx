@@ -51,6 +51,7 @@ const scheduleFormSchema = z.object({
   technician_whatsapp: z.string().optional(),
   time: z.string().min(1, 'Horário é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
+  tipo_contrato: z.enum(['TELEMETRIA', 'MENSALISTA'], { required_error: 'Tipo de contrato é obrigatório' }),
   plate: z.string().min(1, 'Placa é obrigatória'),
   vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
   vehicle_year: z.string().optional(),
@@ -122,6 +123,7 @@ export const ScheduleFormModal = ({
       technician_whatsapp: '',
       time: '',
       service: '',
+      tipo_contrato: 'TELEMETRIA',
       plate: '',
       vehicle_model: '',
       vehicle_year: '',
@@ -513,6 +515,32 @@ export const ScheduleFormModal = ({
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="tipo_contrato"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Tipo de Contrato *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Selecione o tipo de contrato" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background">
+                        <SelectItem value="TELEMETRIA">Telemetria</SelectItem>
+                        <SelectItem value="MENSALISTA">Mensalista</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Telemetria: envia para o Frota. Mensalista: envia para o Kafka.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <FormField
