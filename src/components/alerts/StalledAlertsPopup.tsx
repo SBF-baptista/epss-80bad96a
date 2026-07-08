@@ -68,14 +68,33 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-xl bg-white text-slate-900 border border-slate-200 rounded-xl p-0 gap-0 shadow-sm">
         <DialogHeader className="p-5 pb-3 border-b border-slate-200">
-          <DialogTitle className="flex items-center gap-2 text-slate-900">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-200">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <DialogTitle className="flex items-center gap-3 text-slate-900">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-50 ring-1 ring-red-200 shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
             </span>
-            Itens parados no processo
+            <span className="flex items-baseline gap-2">
+              <span className="text-[26px] font-semibold text-red-600 leading-none">{alerts.length}</span>
+              <span className="text-[14px] font-medium text-slate-700">
+                {alerts.length === 1 ? "item parado" : "itens parados"}
+              </span>
+            </span>
           </DialogTitle>
-          <DialogDescription className="text-slate-500">
-            {alerts.length} {alerts.length === 1 ? "item" : "itens"} além do prazo esperado
+          <DialogDescription className="text-slate-500 pt-1">
+            {(() => {
+              const present = (Object.keys(STAGES) as StalledAlertType[]).filter((t) =>
+                alerts.some((a) => a.type === t),
+              );
+              const labels = present.map((t) => STAGES[t].label);
+              let joined = "";
+              if (labels.length === 1) joined = labels[0];
+              else if (labels.length === 2) joined = `${labels[0]} e ${labels[1]}`;
+              else if (labels.length >= 3)
+                joined = `${labels.slice(0, -1).join(", ")} e ${labels[labels.length - 1]}`;
+              const prefix = labels.length === 1 ? "na etapa de" : "nas etapas de";
+              return labels.length
+                ? `Existem veículos parados fora do prazo estabelecido ${prefix} ${joined}.`
+                : "Nenhum item parado no momento.";
+            })()}
           </DialogDescription>
         </DialogHeader>
 
