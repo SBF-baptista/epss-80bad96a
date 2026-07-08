@@ -54,6 +54,13 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
     setOpen(true);
   }, [isLoading, alerts.length]);
 
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("open-stalled-alerts-popup", handler);
+    return () => window.removeEventListener("open-stalled-alerts-popup", handler);
+  }, []);
+
+
   const sorted = useMemo(
     () => [...alerts].sort((a, b) => getOverdue(b) - getOverdue(a)),
     [alerts],
