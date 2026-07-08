@@ -38,7 +38,13 @@ export const StalledAlertsBanner = () => {
   };
 
   return (
-    <Alert variant="destructive" className="border-destructive/40">
+  const hasCritical = alerts.some((a) => a.daysStalled >= 7);
+
+  return (
+    <Alert
+      variant="destructive"
+      className={`border-destructive/40 ${hasCritical ? "banner-critico" : ""}`}
+    >
       <div className="flex items-start justify-between gap-3 w-full">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
