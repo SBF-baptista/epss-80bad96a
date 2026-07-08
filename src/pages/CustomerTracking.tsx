@@ -341,6 +341,12 @@ const CustomerTracking = () => {
         </div>
       </div>
 
+      {/* Alertas de itens parados */}
+      <div className="mb-6">
+        <StalledAlertsBanner />
+        <StalledAlertsPopup storageKey="stalled-alerts-popup-customer-tracking" />
+      </div>
+
       {/* Filters */}
       <div className="mb-6">
         <CustomerTrackingFilters
