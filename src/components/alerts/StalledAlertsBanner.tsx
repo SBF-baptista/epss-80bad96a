@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useStalledAlerts } from "@/hooks/useStalledAlerts";
-import { StalledAlertsList } from "./StalledAlertsList";
 import { MOCK_STALLED_ALERTS } from "@/services/mockStalledAlerts";
 import type { StalledAlertType } from "@/services/stalledAlertsService";
 
@@ -16,7 +14,6 @@ const STAGE_LABELS: Record<StalledAlertType, string> = {
 export const StalledAlertsBanner = () => {
   const { data: realAlerts = [] } = useStalledAlerts();
   const alerts = [...MOCK_STALLED_ALERTS, ...realAlerts];
-  const [open, setOpen] = useState(false);
 
   if (!alerts.length) return null;
 
@@ -36,6 +33,10 @@ export const StalledAlertsBanner = () => {
 
   const isSingular = alerts.length === 1;
 
+  const handleOpen = () => {
+    window.dispatchEvent(new CustomEvent("open-stalled-alerts-popup"));
+  };
+
   return (
     <Alert variant="destructive" className="border-destructive/40">
       <div className="flex items-start justify-between gap-3 w-full">
@@ -53,15 +54,10 @@ export const StalledAlertsBanner = () => {
             <AlertDescription className="mt-1">{sentence}</AlertDescription>
           )}
         </div>
-        <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)} className="shrink-0">
-          {open ? <>Ocultar <ChevronUp className="h-3 w-3 ml-1" /></> : <>Ver detalhes <ChevronDown className="h-3 w-3 ml-1" /></>}
+        <Button size="sm" variant="outline" onClick={handleOpen} className="shrink-0">
+          Ver detalhes
         </Button>
       </div>
-      {open && (
-        <div className="mt-3">
-          <StalledAlertsList alerts={alerts} compact />
-        </div>
-      )}
     </Alert>
   );
 };
