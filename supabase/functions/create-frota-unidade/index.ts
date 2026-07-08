@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     try { respJson = JSON.parse(respText); } catch (_) { /* keep text */ }
 
     console.log(
-      `[create-frota-unidade] schedule=${scheduleId} plate=${plate} tipo=${tipoContrato} status=${resp.status}`,
+      `[create-frota-unidade] source=${sourceId} plate=${plate} tipo=${tipoContrato} status=${resp.status}`,
     );
 
     if (!resp.ok) {
