@@ -53,9 +53,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { scheduleId } = await req.json().catch(() => ({}));
-    if (!scheduleId || typeof scheduleId !== "string") {
-      return json({ ok: false, error: "scheduleId obrigatório" });
+    const body = await req.json().catch(() => ({}));
+    const scheduleId: string | undefined = body?.scheduleId;
+    const installationScheduleId: string | undefined = body?.installationScheduleId;
+
+    if ((!scheduleId || typeof scheduleId !== "string") &&
+        (!installationScheduleId || typeof installationScheduleId !== "string")) {
+      return json({ ok: false, error: "scheduleId ou installationScheduleId obrigatório" });
     }
 
     const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY");
@@ -68,28 +72,47 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: schedule, error: sErr } = await supabase
-      .from("kit_schedules")
-      .select("id, vehicle_plate, customer_id")
-      .eq("id", scheduleId)
-      .maybeSingle();
+    // Resolve placa + customer_id a partir de qualquer origem
+    let plate = "";
+    let customerId: string | null = null;
+    let sourceId = "";
 
-    if (sErr || !schedule) {
-      return json({ ok: false, error: `Agendamento não encontrado: ${sErr?.message ?? "n/a"}` });
+    if (scheduleId) {
+      const { data: schedule, error: sErr } = await supabase
+        .from("kit_schedules")
+        .select("id, vehicle_plate, customer_id")
+        .eq("id", scheduleId)
+        .maybeSingle();
+      if (sErr || !schedule) {
+        return json({ ok: false, error: `Agendamento (kit) não encontrado: ${sErr?.message ?? "n/a"}` });
+      }
+      plate = String(schedule.vehicle_plate ?? "").trim().toUpperCase();
+      customerId = (schedule.customer_id as string | null) ?? null;
+      sourceId = `kit:${scheduleId}`;
+    } else {
+      const { data: inst, error: iErr } = await supabase
+        .from("installation_schedules")
+        .select("id, plate, customer")
+        .eq("id", installationScheduleId!)
+        .maybeSingle();
+      if (iErr || !inst) {
+        return json({ ok: false, error: `Agendamento (installation) não encontrado: ${iErr?.message ?? "n/a"}` });
+      }
+      plate = String(inst.plate ?? "").trim().toUpperCase();
+      sourceId = `installation:${installationScheduleId}`;
     }
 
-    const plate = String(schedule.vehicle_plate ?? "").trim().toUpperCase();
     if (!plate) return json({ ok: false, error: "Agendamento sem placa" });
 
     // Descobrir tipoContrato a partir do incoming_vehicles (usage_type vem do Segsale)
     let usageType: string | null = null;
     let saleSummaryId: number | null = null;
 
-    if (schedule.customer_id) {
+    if (customerId) {
       const { data: c } = await supabase
         .from("customers")
         .select("sale_summary_id")
-        .eq("id", schedule.customer_id)
+        .eq("id", customerId)
         .maybeSingle();
       saleSummaryId = (c?.sale_summary_id as number | undefined) ?? null;
     }
