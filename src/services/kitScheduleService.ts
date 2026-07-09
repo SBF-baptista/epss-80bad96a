@@ -139,26 +139,37 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
     schedule.id
   );
 
-  // Dispara integrações externas (Kafka + Frota Segsale) SEMPRE que um
-  // agendamento manual for criado. Serviços que não sejam "Instalação"
-  // ainda dão origem a uma unidade — o edge function trata idempotência.
-  const serviceLabel = (service ?? '(não informado)').toString();
-  console.log(`[kitScheduleService] Disparando Kafka + Frota para schedule=${schedule.id} (serviço="${serviceLabel}")`);
+  // Dispara integrações externas (Kafka + Frota Segsale) APENAS quando o
+  // serviço for "Instalação". Outros serviços (Manutenção, Retirada, etc.)
+  // não devem criar unidade no Frota. O fluxo automático do Segsale
+  // (kickoff → agendamento) já dispara via edge function separada.
+  const serviceLabel = (service ?? '').toString();
+  const isInstalacao = serviceLabel
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim() === 'instalacao';
 
-  supabase.functions
-    .invoke('kafka-publish-agendamento', { body: { scheduleId: schedule.id } })
-    .then(({ error }) => {
-      if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
-    })
-    .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
+  if (isInstalacao) {
+    console.log(`[kitScheduleService] Disparando Kafka + Frota para schedule=${schedule.id} (serviço="${serviceLabel}")`);
 
-  supabase.functions
-    .invoke('create-frota-unidade', { body: { scheduleId: schedule.id } })
-    .then(({ data, error }) => {
-      if (error) console.warn('[create-frota-unidade] falhou:', error.message);
-      else console.log('[create-frota-unidade] resultado:', data);
-    })
-    .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+    supabase.functions
+      .invoke('kafka-publish-agendamento', { body: { scheduleId: schedule.id } })
+      .then(({ error }) => {
+        if (error) console.warn('[kafka-publish-agendamento] falhou:', error.message);
+      })
+      .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
+
+    supabase.functions
+      .invoke('create-frota-unidade', { body: { scheduleId: schedule.id } })
+      .then(({ data, error }) => {
+        if (error) console.warn('[create-frota-unidade] falhou:', error.message);
+        else console.log('[create-frota-unidade] resultado:', data);
+      })
+      .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+  } else {
+    console.log(`[kitScheduleService] Serviço "${serviceLabel}" ≠ Instalação — Kafka/Frota NÃO disparados para schedule=${schedule.id}`);
+  }
 
   // WhatsApp notification removed - only sent via "Disparar Agenda" button
 
