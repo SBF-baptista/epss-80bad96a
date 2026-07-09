@@ -123,7 +123,7 @@ export const ScheduleFormModal = ({
       technician_whatsapp: '',
       time: '',
       service: '',
-      tipo_contrato: 'TELEMETRIA',
+      tipo_contrato: undefined as unknown as 'TELEMETRIA' | 'MENSALISTA',
       plate: '',
       vehicle_model: '',
       vehicle_year: '',
