@@ -307,12 +307,56 @@ Deno.serve(async (req) => {
           },
         ],
       });
+
+      // ===== Payload FROTA CONTRACT (segsale-frota-contract-prd) =====
+      // Envia todos os veículos da venda, sem veiculoChassi e sem veiculoCor.
+      const frotaContractTopic =
+        Deno.env.get("DO_KAFKA_TOPIC_FROTA_CONTRACT") || "segsale-frota-contract-prd";
+      if (saleSummaryId) {
+        const { data: allIv } = await supabase
+          .from("incoming_vehicles")
+          .select("plate, brand, vehicle, year, pending_contract_id, company_name")
+          .eq("sale_summary_id", saleSummaryId);
+
+        const veiculos = (allIv ?? []).map((v: any) => ({
+          placa: String(v.plate ?? "").toUpperCase(),
+          veiculoFilial: "001",
+          veiculoContrato: v.pending_contract_id != null ? String(v.pending_contract_id) : null,
+          veiculoAno: v.year ?? null,
+          veiculoChassi: null,
+          veiculoCor: null,
+          veiculoMarca: v.brand ?? null,
+          veiculoModelo: v.vehicle ?? null,
+        })).filter((v) => v.placa);
+
+        const razao = customer?.company_name ?? razaoSocial ?? (allIv?.[0]?.company_name ?? null);
+        const frotaContractPayload = {
+          razaoSocial: razao,
+          nomeFantasia: razao,
+          codigoCliente: clientCodeStr,
+          veiculos,
+        };
+
+        if (veiculos.length > 0) {
+          await producer.send({
+            topic: frotaContractTopic,
+            acks: -1,
+            messages: [
+              {
+                key: `${baseKey}-frota-contract`,
+                value: JSON.stringify(frotaContractPayload),
+                headers: { "schema-version": "frota-contract-v1" },
+              },
+            ],
+          });
+        }
+      }
     } finally {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico)`);
-    return json({ ok: true, sent: ["v2-rico"] });
+    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico + frota-contract)`);
+    return json({ ok: true, sent: ["v2-rico", "frota-contract"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[kafka-publish] ERROR", msg);
