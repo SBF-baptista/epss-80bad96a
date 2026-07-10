@@ -2,7 +2,6 @@ import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useStalledAlerts } from "@/hooks/useStalledAlerts";
-import { MOCK_STALLED_ALERTS } from "@/services/mockStalledAlerts";
 import type { StalledAlertType } from "@/services/stalledAlertsService";
 
 const STAGE_LABELS: Record<StalledAlertType, string> = {
@@ -13,7 +12,7 @@ const STAGE_LABELS: Record<StalledAlertType, string> = {
 
 export const StalledAlertsBanner = () => {
   const { data: realAlerts = [] } = useStalledAlerts();
-  const alerts = [...MOCK_STALLED_ALERTS, ...realAlerts];
+  const alerts = realAlerts;
 
   if (!alerts.length) return null;
 
