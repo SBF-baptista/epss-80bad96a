@@ -23,6 +23,7 @@ export const ROUTE_TO_MODULE: Record<string, AppModule> = {
   '/dashboard': 'dashboard',
   '/technicians': 'technicians',
   '/users': 'users',
+  '/schedule-deletion-requests': 'schedule_deletion_approval',
   '/modules': 'kickoff', // Allow access to module selection
 }
 
