@@ -82,7 +82,6 @@ const navigationGroups: NavGroup[] = [
       { to: "/kits", label: "Kits", icon: Package, module: "kits", modules: ["kits", "homologation"] },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies", modules: ["accessories_supplies", "homologation"] },
       { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "homologation" },
-      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
     ]
   },
   {
@@ -91,6 +90,14 @@ const navigationGroups: NavGroup[] = [
     items: [
       { to: "/kanban", label: "Kanban", icon: Kanban, module: "kanban" },
       { to: "/dashboard", label: "Dash Logística", icon: BarChart3, module: "dashboard" },
+    ]
+  },
+  {
+    label: "Solicitações",
+    icon: FileEdit,
+    items: [
+      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
+      { to: "/schedule-deletion-requests", label: "Solicitações de Agendamento", icon: Clock, module: "schedule_deletion_approval" },
     ]
   },
   {
@@ -103,7 +110,6 @@ const navigationGroups: NavGroup[] = [
       { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling", adminOnly: true },
       { to: "/api-monitoring", label: "Monitoramento de APIs", icon: Activity, module: "users", adminOnly: true },
       { to: "/plate-verification", label: "Verificação de Placa", icon: Search, module: "users", adminOnly: true },
-      { to: "/schedule-deletion-requests", label: "Solicitações de Agendamento", icon: Clock, module: "schedule_deletion_approval" },
       { to: "/segsale-sales", label: "Vendas Segsale", icon: Package, module: "scheduling", adminOnly: true },
       { to: "/segsale-search", label: "Busca Segsale", icon: Search, module: "scheduling", adminOnly: true },
     ]
@@ -454,6 +460,65 @@ export function AppNavigation() {
                         {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                       </NavLink>
                     </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+
+              {/* Solicitações Group */}
+              {visibleGroups.filter(g => g.label === "Solicitações").map((group) => {
+                const GroupIcon = group.icon;
+                const isOpen = openGroups[group.label] || false;
+                const groupActive = isGroupActive(group.items);
+
+                return (
+                  <SidebarMenuItem key={group.label}>
+                    <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={isCollapsed ? group.label : undefined}
+                          className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
+                        >
+                          <GroupIcon className="h-4 w-4 flex-shrink-0" />
+                          {!isCollapsed && (
+                            <>
+                              <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
+                              {isOpen ? (
+                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                              )}
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-4">
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                {!isCollapsed && (
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <span className="font-medium text-sm truncate">{item.label}</span>
+                                    {item.showBadge && editRequestsCount > 0 && (
+                                      <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                                        {editRequestsCount}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </Collapsible>
                   </SidebarMenuItem>
                 );
               })}
