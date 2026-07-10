@@ -360,8 +360,8 @@ export const ScheduleManagement = () => {
           filial_contrato: null,
           tipo_contrato: tipoContrato,
           solicitado_por: userId,
-          snapshot: schedule as unknown as Record<string, unknown>,
-        }]);
+          snapshot: JSON.parse(JSON.stringify(schedule)),
+        }] as never);
 
       if (insErr) {
         console.error("Error creating deletion request:", insErr);
