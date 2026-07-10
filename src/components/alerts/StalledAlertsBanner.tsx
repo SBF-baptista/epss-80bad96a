@@ -12,7 +12,7 @@ const STAGE_LABELS: Record<StalledAlertType, string> = {
 
 export const StalledAlertsBanner = () => {
   const { data: realAlerts = [] } = useStalledAlerts();
-  const alerts = [...MOCK_STALLED_ALERTS, ...realAlerts];
+  const alerts = realAlerts;
 
   if (!alerts.length) return null;
 
