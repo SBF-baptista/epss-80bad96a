@@ -88,7 +88,7 @@ interface ScheduleEditModalProps {
   onOpenChange: (open: boolean) => void;
   schedule: ScheduleEntry | null;
   onUpdate: (id: string, data: ScheduleEditFormData) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onDelete: (id: string, motivo?: string) => Promise<void>;
   isLoading?: boolean;
 }
 
