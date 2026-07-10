@@ -88,7 +88,7 @@ interface ScheduleEditModalProps {
   onOpenChange: (open: boolean) => void;
   schedule: ScheduleEntry | null;
   onUpdate: (id: string, data: ScheduleEditFormData) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onDelete: (id: string, motivo?: string) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -102,6 +102,8 @@ export const ScheduleEditModal = ({
 }: ScheduleEditModalProps) => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [deleteMotivo, setDeleteMotivo] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const form = useForm<ScheduleEditFormData>({
     resolver: zodResolver(scheduleFormSchema),
@@ -182,8 +184,10 @@ export const ScheduleEditModal = ({
   };
 
   const handleDelete = async () => {
-    if (schedule) {
-      await onDelete(schedule.id);
+    if (schedule && deleteMotivo.trim()) {
+      await onDelete(schedule.id, deleteMotivo.trim());
+      setDeleteMotivo('');
+      setDeleteDialogOpen(false);
       onOpenChange(false);
     }
   };
@@ -218,7 +222,7 @@ export const ScheduleEditModal = ({
                 </Button>
               )}
               {isEditMode && (
-                <AlertDialog>
+                <AlertDialog open={deleteDialogOpen} onOpenChange={(o) => { setDeleteDialogOpen(o); if (!o) setDeleteMotivo(''); }}>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm" className="h-8">
                       <Trash2 className="h-4 w-4 sm:mr-1" />
@@ -229,12 +233,32 @@ export const ScheduleEditModal = ({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Solicitar exclusão</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta ação enviará o item para aprovação de exclusão. Deseja continuar?
+                        Esta ação enviará o item para aprovação de exclusão. Informe o motivo abaixo.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+                    <div className="space-y-2 py-2">
+                      <label className="text-sm font-medium">
+                        Motivo da exclusão <span className="text-destructive">*</span>
+                      </label>
+                      <Textarea
+                        value={deleteMotivo}
+                        onChange={(e) => setDeleteMotivo(e.target.value)}
+                        placeholder="Descreva o motivo da solicitação de exclusão"
+                        rows={4}
+                        maxLength={500}
+                        autoFocus
+                      />
+                      <p className="text-xs text-muted-foreground text-right">
+                        {deleteMotivo.trim().length}/500
+                      </p>
+                    </div>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={!deleteMotivo.trim()}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:pointer-events-none"
+                      >
                         Enviar para aprovação
                       </AlertDialogAction>
                     </AlertDialogFooter>
