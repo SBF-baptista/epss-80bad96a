@@ -1018,6 +1018,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer: string
+          deletion_request_status: string | null
           id: string
           kit_schedule_id: string | null
           local_contact: string | null
@@ -1040,6 +1041,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer: string
+          deletion_request_status?: string | null
           id?: string
           kit_schedule_id?: string | null
           local_contact?: string | null
@@ -1062,6 +1064,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer?: string
+          deletion_request_status?: string | null
           id?: string
           kit_schedule_id?: string | null
           local_contact?: string | null
@@ -1830,6 +1833,68 @@ export type Database = {
         }
         Relationships: []
       }
+      solicitacoes_exclusao_agendamento: {
+        Row: {
+          agendamento_id: string | null
+          created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
+          filial_contrato: string | null
+          id: string
+          motivo: string | null
+          resultado_api: Json | null
+          snapshot: Json | null
+          solicitado_em: string
+          solicitado_por: string
+          status: string
+          tipo_contrato: string | null
+          updated_at: string
+          veiculo: string | null
+        }
+        Insert: {
+          agendamento_id?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          filial_contrato?: string | null
+          id?: string
+          motivo?: string | null
+          resultado_api?: Json | null
+          snapshot?: Json | null
+          solicitado_em?: string
+          solicitado_por: string
+          status?: string
+          tipo_contrato?: string | null
+          updated_at?: string
+          veiculo?: string | null
+        }
+        Update: {
+          agendamento_id?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          filial_contrato?: string | null
+          id?: string
+          motivo?: string | null
+          resultado_api?: Json | null
+          snapshot?: Json | null
+          solicitado_em?: string
+          solicitado_por?: string
+          status?: string
+          tipo_contrato?: string | null
+          updated_at?: string
+          veiculo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_exclusao_agendamento_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "installation_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string
@@ -2319,6 +2384,7 @@ export type Database = {
         | "dashboard"
         | "technicians"
         | "users"
+        | "schedule_deletion_approval"
       app_role:
         | "admin"
         | "gestor"
@@ -2509,6 +2575,7 @@ export const Constants = {
         "dashboard",
         "technicians",
         "users",
+        "schedule_deletion_approval",
       ],
       app_role: [
         "admin",

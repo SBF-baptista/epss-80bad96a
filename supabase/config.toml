@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.kickoff-process-vehicles]
 verify_jwt = true
+
+[functions.approve-schedule-deletion]
+verify_jwt = true

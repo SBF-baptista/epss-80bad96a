@@ -227,15 +227,15 @@ export const ScheduleEditModal = ({
                   </AlertDialogTrigger>
                   <AlertDialogContent className="w-[90vw] max-w-md">
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                      <AlertDialogTitle>Solicitar exclusão</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
+                        Esta ação enviará o item para aprovação de exclusão. Deseja continuar?
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Excluir
+                        Enviar para aprovação
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

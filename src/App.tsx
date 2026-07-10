@@ -39,6 +39,7 @@ const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
 const PlateVerification = lazy(() => import("./pages/PlateVerification"));
+const ScheduleDeletionRequests = lazy(() => import("./pages/ScheduleDeletionRequests"));
 
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
 const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
@@ -304,6 +305,18 @@ function AppContent() {
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+
+              {/* Schedule Deletion Requests - permissão específica */}
+              <Route path="/schedule-deletion-requests" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="schedule_deletion_approval">
+                    <Layout>
+                      <ScheduleDeletionRequests />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
 
               {/* Segsale Sales - admin only */}
               <Route path="/segsale-sales" element={

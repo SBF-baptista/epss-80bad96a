@@ -14,7 +14,8 @@ export type AppModule =
   | 'orders'
   | 'dashboard'
   | 'technicians'
-  | 'users';
+  | 'users'
+  | 'schedule_deletion_approval';
 
 // Base role that determines default permissions
 export type BaseRole = 'visualizador' | 'operador' | 'gestor' | 'admin';
@@ -225,6 +226,18 @@ export const MODULE_GROUPS: Record<string, { label: string; modules: ModuleConfi
           admin: 'Acesso total: excluir usuários, gerenciar permissões'
         }
       },
+      { 
+        key: 'schedule_deletion_approval', 
+        label: 'Solicitações de Agendamento', 
+        description: 'Aprovar/rejeitar solicitações de exclusão de agendamento', 
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver solicitações de exclusão de agendamento',
+          edit: 'Ver solicitações (sem decidir)',
+          approve: 'Aprovar ou rejeitar solicitações de exclusão',
+          admin: 'Acesso total às solicitações'
+        }
+      },
     ]
   }
 };
@@ -263,7 +276,8 @@ export const getDefaultPermissionsForRole = (role: BaseRole): Record<AppModule, 
     orders: 'none',
     dashboard: 'none',
     technicians: 'none',
-    users: 'none'
+    users: 'none',
+    schedule_deletion_approval: 'none'
   };
 
   switch (role) {

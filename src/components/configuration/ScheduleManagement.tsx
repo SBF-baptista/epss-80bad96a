@@ -131,6 +131,7 @@ interface ScheduleEntry {
   local_contact: string;
   observation: string;
   kit_schedule_id?: string | null;
+  deletion_request_status?: string | null;
 }
 
 export const ScheduleManagement = () => {
@@ -317,41 +318,67 @@ export const ScheduleManagement = () => {
 
   const handleDeleteSchedule = async (id: string) => {
     setIsLoading(true);
-
-    // First, get the kit_schedule_id from the schedule being deleted
-    const { data: scheduleToDelete } = await supabase
-      .from("installation_schedules")
-      .select("kit_schedule_id")
-      .eq("id", id)
-      .single();
-
-    const { error } = await supabase.from("installation_schedules").delete().eq("id", id);
-
-    setIsLoading(false);
-
-    if (error) {
-      console.error("Error deleting schedule:", error);
-      toast.error("Erro ao excluir agendamento");
-      return;
-    }
-
-    // If this schedule had a kit_schedule_id, revert its status to 'shipped'
-    if (scheduleToDelete?.kit_schedule_id) {
-      const { error: revertError } = await supabase
-        .from("kit_schedules")
-        .update({ status: "shipped" })
-        .eq("id", scheduleToDelete.kit_schedule_id);
-
-      if (revertError) {
-        console.error("Error reverting kit_schedule status:", revertError);
-        toast.warning("Agendamento excluído, mas veículo pode não reaparecer em pendentes.");
-      } else {
-        console.log("[Scheduling] kit_schedule status reverted to shipped:", scheduleToDelete.kit_schedule_id);
+    try {
+      const schedule = schedules.find((s) => s.id === id);
+      if (!schedule) {
+        toast.error("Agendamento não encontrado");
+        return;
       }
-    }
 
-    await fetchSchedules();
-    toast.success("Agendamento excluído com sucesso!");
+      if (schedule.deletion_request_status === "pending") {
+        toast.info("Este agendamento já possui uma solicitação de exclusão pendente.");
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) {
+        toast.error("Sessão inválida");
+        return;
+      }
+
+      // Descobrir tipo_contrato via usage_type do incoming_vehicle da placa (se existir)
+      let tipoContrato: string | null = null;
+      if (schedule.plate) {
+        const { data: iv } = await supabase
+          .from("incoming_vehicles")
+          .select("usage_type")
+          .eq("plate", schedule.plate.trim().toUpperCase())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const u = String(iv?.usage_type ?? "").toLowerCase();
+        if (u.includes("telemetr")) tipoContrato = "TELEMETRIA";
+        else if (u) tipoContrato = "MENSALISTA";
+      }
+
+      const { error: insErr } = await supabase
+        .from("solicitacoes_exclusao_agendamento")
+        .insert([{
+          agendamento_id: id,
+          veiculo: schedule.plate ?? null,
+          filial_contrato: null,
+          tipo_contrato: tipoContrato,
+          solicitado_por: userId,
+          snapshot: JSON.parse(JSON.stringify(schedule)),
+        }] as never);
+
+      if (insErr) {
+        console.error("Error creating deletion request:", insErr);
+        toast.error("Erro ao registrar solicitação de exclusão");
+        return;
+      }
+
+      await supabase
+        .from("installation_schedules")
+        .update({ deletion_request_status: "pending" })
+        .eq("id", id);
+
+      await fetchSchedules();
+      toast.success("Solicitação de exclusão enviada para aprovação.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getSchedulesForDateAndTime = (date: Date, timeSlot: string) => {
@@ -618,20 +645,33 @@ export const ScheduleManagement = () => {
                           onDrop={(e) => handleDrop(e, day, time)}
                         >
                           <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted/50">
-                            {daySchedules.map((schedule) => (
+                            {daySchedules.map((schedule) => {
+                              const pendingDeletion = schedule.deletion_request_status === "pending";
+                              return (
                               <div
                                 key={schedule.id}
-                                draggable
+                                draggable={!pendingDeletion}
                                 onDragStart={(e) => handleDragStart(e, schedule)}
                                 onDragEnd={handleDragEnd}
                                 className={cn(
-                                  "bg-primary/85 text-primary-foreground rounded-lg p-2 text-[10px] sm:text-xs mb-1.5 cursor-grab active:cursor-grabbing hover:bg-primary/95 transition-all shadow-sm hover:shadow-md border border-primary/20",
+                                  "rounded-lg p-2 text-[10px] sm:text-xs mb-1.5 cursor-grab active:cursor-grabbing transition-all shadow-sm hover:shadow-md border",
+                                  pendingDeletion
+                                    ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200"
+                                    : "bg-primary/85 text-primary-foreground border-primary/20 hover:bg-primary/95",
                                   draggedSchedule?.id === schedule.id && "opacity-50 scale-95",
                                 )}
                                 onClick={(e) => handleScheduleClick(schedule, e)}
                               >
+                                {pendingDeletion && (
+                                  <div className="mb-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide">
+                                    Aguardando aprovação de exclusão
+                                  </div>
+                                )}
                                 {/* Drag handle and technician name as title */}
-                                <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-primary-foreground/20">
+                                <div className={cn(
+                                  "flex items-center gap-1.5 mb-1.5 pb-1 border-b",
+                                  pendingDeletion ? "border-amber-300" : "border-primary-foreground/20"
+                                )}>
                                   <GripVertical className="h-3 w-3 opacity-60 flex-shrink-0" />
                                   <span className="font-bold text-xs sm:text-sm truncate">
                                     {schedule.technician_name}
@@ -658,7 +698,8 @@ export const ScheduleManagement = () => {
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </td>
                       );
