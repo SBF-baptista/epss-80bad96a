@@ -102,6 +102,8 @@ export const ScheduleEditModal = ({
 }: ScheduleEditModalProps) => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [deleteMotivo, setDeleteMotivo] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const form = useForm<ScheduleEditFormData>({
     resolver: zodResolver(scheduleFormSchema),
