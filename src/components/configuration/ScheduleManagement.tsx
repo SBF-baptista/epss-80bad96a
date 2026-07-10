@@ -186,9 +186,13 @@ export const ScheduleManagement = () => {
 
   // Filter schedules by selected technician
   const filteredSchedules = useMemo(() => {
-    if (selectedTechnicianFilter === "all") return schedules;
-    return schedules.filter((s) => s.technician_name === selectedTechnicianFilter);
-  }, [schedules, selectedTechnicianFilter]);
+    const plate = plateSearch.trim().toLowerCase();
+    return schedules.filter((s) => {
+      if (selectedTechnicianFilter !== "all" && s.technician_name !== selectedTechnicianFilter) return false;
+      if (plate && !(s.plate ?? "").toLowerCase().includes(plate)) return false;
+      return true;
+    });
+  }, [schedules, selectedTechnicianFilter, plateSearch]);
 
   const handleDateSelect = (date: Date, time?: string) => {
     setSelectedDate(date);
