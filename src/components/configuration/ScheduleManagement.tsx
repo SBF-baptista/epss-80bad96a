@@ -645,20 +645,33 @@ export const ScheduleManagement = () => {
                           onDrop={(e) => handleDrop(e, day, time)}
                         >
                           <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted/50">
-                            {daySchedules.map((schedule) => (
+                            {daySchedules.map((schedule) => {
+                              const pendingDeletion = schedule.deletion_request_status === "pending";
+                              return (
                               <div
                                 key={schedule.id}
-                                draggable
+                                draggable={!pendingDeletion}
                                 onDragStart={(e) => handleDragStart(e, schedule)}
                                 onDragEnd={handleDragEnd}
                                 className={cn(
-                                  "bg-primary/85 text-primary-foreground rounded-lg p-2 text-[10px] sm:text-xs mb-1.5 cursor-grab active:cursor-grabbing hover:bg-primary/95 transition-all shadow-sm hover:shadow-md border border-primary/20",
+                                  "rounded-lg p-2 text-[10px] sm:text-xs mb-1.5 cursor-grab active:cursor-grabbing transition-all shadow-sm hover:shadow-md border",
+                                  pendingDeletion
+                                    ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200"
+                                    : "bg-primary/85 text-primary-foreground border-primary/20 hover:bg-primary/95",
                                   draggedSchedule?.id === schedule.id && "opacity-50 scale-95",
                                 )}
                                 onClick={(e) => handleScheduleClick(schedule, e)}
                               >
+                                {pendingDeletion && (
+                                  <div className="mb-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide">
+                                    Aguardando aprovação de exclusão
+                                  </div>
+                                )}
                                 {/* Drag handle and technician name as title */}
-                                <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-primary-foreground/20">
+                                <div className={cn(
+                                  "flex items-center gap-1.5 mb-1.5 pb-1 border-b",
+                                  pendingDeletion ? "border-amber-300" : "border-primary-foreground/20"
+                                )}>
                                   <GripVertical className="h-3 w-3 opacity-60 flex-shrink-0" />
                                   <span className="font-bold text-xs sm:text-sm truncate">
                                     {schedule.technician_name}
@@ -685,7 +698,8 @@ export const ScheduleManagement = () => {
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </td>
                       );
