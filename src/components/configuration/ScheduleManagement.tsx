@@ -147,6 +147,7 @@ export const ScheduleManagement = () => {
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>("all");
+  const [plateSearch, setPlateSearch] = useState<string>("");
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
 
   const { isAdmin, isGestor, canEditModule } = useUserRole();
