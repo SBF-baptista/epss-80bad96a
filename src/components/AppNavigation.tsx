@@ -82,7 +82,6 @@ const navigationGroups: NavGroup[] = [
       { to: "/kits", label: "Kits", icon: Package, module: "kits", modules: ["kits", "homologation"] },
       { to: "/accessories-supplies", label: "Acessórios & Insumos", icon: Cog, module: "accessories_supplies", modules: ["accessories_supplies", "homologation"] },
       { to: "/config", label: "Gestão de Configurações", icon: Settings, module: "homologation" },
-      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
     ]
   },
   {
