@@ -39,6 +39,7 @@ const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
 const PlateVerification = lazy(() => import("./pages/PlateVerification"));
+const ScheduleDeletionRequests = lazy(() => import("./pages/ScheduleDeletionRequests"));
 
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
 const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
