@@ -45,7 +45,7 @@ const getOverdue = (a: StalledAlert) => a.daysStalled - LIMITS[a.type];
 export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
   const navigate = useNavigate();
   const { data: realAlerts = [], isLoading } = useStalledAlerts();
-  const alerts = useMemo(() => [...MOCK_STALLED_ALERTS, ...realAlerts], [realAlerts]);
+  const alerts = useMemo(() => [...realAlerts], [realAlerts]);
   const [open, setOpen] = useState(false);
 
 
