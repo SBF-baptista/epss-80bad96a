@@ -306,6 +306,18 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
+              {/* Schedule Deletion Requests - permissão específica */}
+              <Route path="/schedule-deletion-requests" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="schedule_deletion_approval">
+                    <Layout>
+                      <ScheduleDeletionRequests />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+
               {/* Segsale Sales - admin only */}
               <Route path="/segsale-sales" element={
                 <ProtectedRoute>
