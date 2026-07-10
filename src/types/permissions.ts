@@ -14,7 +14,8 @@ export type AppModule =
   | 'orders'
   | 'dashboard'
   | 'technicians'
-  | 'users';
+  | 'users'
+  | 'schedule_deletion_approval';
 
 // Base role that determines default permissions
 export type BaseRole = 'visualizador' | 'operador' | 'gestor' | 'admin';
