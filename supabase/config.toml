@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.kafka-test-publish]
 verify_jwt = false
+
+[functions.kickoff-process-vehicles]
+verify_jwt = true
