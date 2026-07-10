@@ -354,14 +354,14 @@ export const ScheduleManagement = () => {
 
       const { error: insErr } = await supabase
         .from("solicitacoes_exclusao_agendamento")
-        .insert({
+        .insert([{
           agendamento_id: id,
           veiculo: schedule.plate ?? null,
           filial_contrato: null,
           tipo_contrato: tipoContrato,
           solicitado_por: userId,
           snapshot: schedule as unknown as Record<string, unknown>,
-        });
+        }]);
 
       if (insErr) {
         console.error("Error creating deletion request:", insErr);
