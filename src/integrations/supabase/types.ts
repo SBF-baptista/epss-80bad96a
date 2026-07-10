@@ -2319,6 +2319,7 @@ export type Database = {
         | "dashboard"
         | "technicians"
         | "users"
+        | "schedule_deletion_approval"
       app_role:
         | "admin"
         | "gestor"
@@ -2509,6 +2510,7 @@ export const Constants = {
         "dashboard",
         "technicians",
         "users",
+        "schedule_deletion_approval",
       ],
       app_role: [
         "admin",
