@@ -24,17 +24,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { accessProfileService, AccessProfile } from '@/services/accessProfileService'
 import { PermissionMatrix } from '@/components/user-management/PermissionMatrix'
-import { 
-  AppModule, 
-  PermissionLevel, 
-  ALL_MODULES
-} from '@/types/permissions'
+import { AccessProfileHistoryModal } from '@/components/access-profiles/AccessProfileHistoryModal'
+import { AppModule, PermissionLevel, ALL_MODULES } from '@/types/permissions'
 import { supabase } from '@/integrations/supabase/client'
+import { History, Users } from 'lucide-react'
 
 const getEmptyPermissions = (): Record<AppModule, PermissionLevel> => {
-  const permissions = {} as Record<AppModule, PermissionLevel>;
-  ALL_MODULES.forEach(m => { permissions[m.key] = 'none'; });
-  return permissions;
+  const permissions = {} as Record<AppModule, PermissionLevel>
+  ALL_MODULES.forEach((m) => {
+    permissions[m.key] = 'none'
+  })
+  return permissions
 }
 
 interface AccessProfileModalProps {
@@ -46,17 +46,20 @@ interface AccessProfileModalProps {
 
 export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: AccessProfileModalProps) => {
   const isEditing = !!profile
-  
+
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [permissions, setPermissions] = useState<Record<AppModule, PermissionLevel>>(() => 
+  const [permissions, setPermissions] = useState<Record<AppModule, PermissionLevel>>(() =>
     getEmptyPermissions()
   )
   const [isLoading, setIsLoading] = useState(false)
   const [showNoPermissionsAlert, setShowNoPermissionsAlert] = useState(false)
+  const [showImpactConfirm, setShowImpactConfirm] = useState(false)
+  const [linkedCount, setLinkedCount] = useState(0)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const { toast } = useToast()
 
-  const hasAnyPermission = Object.values(permissions).some(p => p !== 'none')
+  const hasAnyPermission = Object.values(permissions).some((p) => p !== 'none')
 
   // Reset form when modal opens
   useEffect(() => {
@@ -65,22 +68,42 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
         setName(profile.name)
         setDescription(profile.description || '')
         setPermissions(profile.permissions)
+        // Load linked users count
+        supabase
+          .from('user_roles')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('access_profile_id', profile.id)
+          .then(({ count }) => setLinkedCount(count || 0))
       } else {
         setName('')
         setDescription('')
         setPermissions(getEmptyPermissions())
+        setLinkedCount(0)
       }
     }
   }, [open, profile])
 
+  const buildChanges = () => {
+    if (!profile) return []
+    const changes: { module: string; from: string; to: string }[] = []
+    ALL_MODULES.forEach((m) => {
+      const before = (profile.permissions[m.key] || 'none') as string
+      const after = (permissions[m.key] || 'none') as string
+      if (before !== after) {
+        changes.push({ module: m.key, from: before, to: after })
+      }
+    })
+    return changes
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name.trim()) {
       toast({
         title: 'Campo obrigatório',
         description: 'Por favor, informe o nome do perfil',
-        variant: 'destructive'
+        variant: 'destructive',
       })
       return
     }
@@ -90,28 +113,38 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
       return
     }
 
+    // If editing and profile has linked users, ask for confirmation
+    if (isEditing && linkedCount > 0) {
+      setShowImpactConfirm(true)
+      return
+    }
+
     await saveProfile()
   }
 
   const saveProfile = async () => {
     setIsLoading(true)
-    
+
     try {
+      const changes = buildChanges()
+      const nameChanged = profile ? profile.name !== name : false
+      const descChanged = profile ? (profile.description || '') !== description : false
+
       let result
-      
+
       if (isEditing) {
         result = await accessProfileService.updateProfile(profile.id, {
           name,
           description: description || undefined,
           base_role: 'operador',
-          permissions
+          permissions,
         })
       } else {
         result = await accessProfileService.createProfile({
           name,
           description: description || undefined,
           base_role: 'operador',
-          permissions
+          permissions,
         })
       }
 
@@ -125,7 +158,6 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
               .eq('access_profile_id', profile.id)
 
             if (linkedUsers && linkedUsers.length > 0) {
-              console.log(`[AccessProfile] Syncing ${linkedUsers.length} linked users for profile ${profile.id}`)
               for (const { user_id } of linkedUsers) {
                 await supabase.functions.invoke('manage-users', {
                   body: {
@@ -133,19 +165,38 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
                     userId: user_id,
                     baseRole: 'operador',
                     permissions,
-                    accessProfileId: profile.id
-                  }
+                    accessProfileId: profile.id,
+                  },
                 })
               }
             }
           } catch (syncError) {
             console.error('[AccessProfile] Error syncing linked users:', syncError)
           }
+
+          // Record history entry if anything changed
+          if (changes.length > 0 || nameChanged || descChanged) {
+            try {
+              const { data: userData } = await supabase.auth.getUser()
+              await supabase.from('access_profile_history').insert({
+                profile_id: profile.id,
+                changed_by: userData.user?.id,
+                changed_by_email: userData.user?.email,
+                changes,
+                name_before: profile.name,
+                name_after: name,
+                description_before: profile.description,
+                description_after: description,
+              })
+            } catch (histErr) {
+              console.error('[AccessProfile] Error saving history:', histErr)
+            }
+          }
         }
 
         toast({
           title: 'Sucesso',
-          description: isEditing ? 'Perfil atualizado com sucesso' : 'Perfil criado com sucesso'
+          description: isEditing ? 'Perfil atualizado com sucesso' : 'Perfil criado com sucesso',
         })
         onSaved()
         onOpenChange(false)
@@ -153,33 +204,34 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
         toast({
           title: 'Erro',
           description: result.error || 'Falha ao salvar perfil',
-          variant: 'destructive'
+          variant: 'destructive',
         })
       }
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: error.message || 'Erro inesperado',
-        variant: 'destructive'
+        variant: 'destructive',
       })
     } finally {
       setIsLoading(false)
+      setShowImpactConfirm(false)
     }
   }
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Editar Perfil' : 'Novo Perfil de Acesso'}</DialogTitle>
             <DialogDescription>
-              {isEditing 
+              {isEditing
                 ? 'Edite as configurações do perfil de acesso.'
                 : 'Crie um novo perfil de acesso. Selecione manualmente as permissões desejadas — nenhuma vem ativa por padrão.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -204,15 +256,30 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
               </div>
             </div>
 
+            {isEditing && (
+              <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>
+                    <strong>{linkedCount}</strong> {linkedCount === 1 ? 'usuário usa' : 'usuários usam'} este perfil
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setHistoryOpen(true)}
+                  className="gap-1 text-xs"
+                >
+                  <History className="h-3.5 w-3.5" />
+                  Ver histórico de alterações
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Permissões por Módulo</Label>
-              <p className="text-xs text-muted-foreground">
-                Selecione manualmente as permissões desejadas para este perfil. Nenhuma permissão é concedida automaticamente.
-              </p>
-              <PermissionMatrix 
-                permissions={permissions} 
-                onChange={setPermissions}
-              />
+              <PermissionMatrix permissions={permissions} onChange={setPermissions} />
             </div>
 
             <DialogFooter>
@@ -220,7 +287,7 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
                 Cancelar
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Criar Perfil')}
+                {isLoading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Criar Perfil'}
               </Button>
             </DialogFooter>
           </form>
@@ -232,17 +299,54 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
           <AlertDialogHeader>
             <AlertDialogTitle>Perfil sem permissões</AlertDialogTitle>
             <AlertDialogDescription>
-              Este perfil será {isEditing ? 'salvo' : 'criado'} sem nenhuma permissão de acesso. Usuários vinculados a ele não terão acesso a nenhum módulo. Deseja continuar?
+              Este perfil será {isEditing ? 'salvo' : 'criado'} sem nenhuma permissão de acesso. Usuários
+              vinculados a ele não terão acesso a nenhum módulo. Deseja continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setShowNoPermissionsAlert(false); saveProfile(); }}>
+            <AlertDialogAction
+              onClick={() => {
+                setShowNoPermissionsAlert(false)
+                if (isEditing && linkedCount > 0) {
+                  setShowImpactConfirm(true)
+                } else {
+                  saveProfile()
+                }
+              }}
+            >
               Continuar sem permissões
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={showImpactConfirm} onOpenChange={setShowImpactConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar alteração</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta alteração afeta <strong>{linkedCount}</strong>{' '}
+              {linkedCount === 1 ? 'usuário' : 'usuários'} imediatamente. Confirmar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={saveProfile} disabled={isLoading}>
+              {isLoading ? 'Salvando...' : 'Confirmar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {isEditing && profile && (
+        <AccessProfileHistoryModal
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          profileId={profile.id}
+          profileName={profile.name}
+        />
+      )}
     </>
   )
 }
