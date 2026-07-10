@@ -521,6 +521,17 @@ export const ScheduleManagement = () => {
               </Button>
             )}
 
+            {/* Filtro por placa */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+              <Input
+                placeholder="Buscar por placa..."
+                value={plateSearch}
+                onChange={(e) => setPlateSearch(e.target.value.toUpperCase())}
+                className="pl-9 h-10 w-[160px] sm:w-[200px] border-border/60 focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
             {/* Filtro de técnico - improved styling */}
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground/70" />
