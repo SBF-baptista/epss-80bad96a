@@ -184,8 +184,10 @@ export const ScheduleEditModal = ({
   };
 
   const handleDelete = async () => {
-    if (schedule) {
-      await onDelete(schedule.id);
+    if (schedule && deleteMotivo.trim()) {
+      await onDelete(schedule.id, deleteMotivo.trim());
+      setDeleteMotivo('');
+      setDeleteDialogOpen(false);
       onOpenChange(false);
     }
   };
