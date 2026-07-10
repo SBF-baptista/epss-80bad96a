@@ -10,7 +10,8 @@ import { ScheduleEditModal, ScheduleEditFormData } from "./ScheduleEditModal";
 import { CustomerScheduleSection } from "./CustomerScheduleSection";
 import { TechnicianAgendaModal } from "./TechnicianAgendaModal";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter, Plus, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter, Plus, Send, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { getTechnicians, Technician } from "@/services/technicianService";
@@ -146,6 +147,7 @@ export const ScheduleManagement = () => {
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleEntry | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>("all");
+  const [plateSearch, setPlateSearch] = useState<string>("");
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
 
   const { isAdmin, isGestor, canEditModule } = useUserRole();
@@ -184,9 +186,13 @@ export const ScheduleManagement = () => {
 
   // Filter schedules by selected technician
   const filteredSchedules = useMemo(() => {
-    if (selectedTechnicianFilter === "all") return schedules;
-    return schedules.filter((s) => s.technician_name === selectedTechnicianFilter);
-  }, [schedules, selectedTechnicianFilter]);
+    const plate = plateSearch.trim().toLowerCase();
+    return schedules.filter((s) => {
+      if (selectedTechnicianFilter !== "all" && s.technician_name !== selectedTechnicianFilter) return false;
+      if (plate && !(s.plate ?? "").toLowerCase().includes(plate)) return false;
+      return true;
+    });
+  }, [schedules, selectedTechnicianFilter, plateSearch]);
 
   const handleDateSelect = (date: Date, time?: string) => {
     setSelectedDate(date);
@@ -514,6 +520,17 @@ export const ScheduleManagement = () => {
                 Criar Agendamento
               </Button>
             )}
+
+            {/* Filtro por placa */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+              <Input
+                placeholder="Buscar por placa..."
+                value={plateSearch}
+                onChange={(e) => setPlateSearch(e.target.value.toUpperCase())}
+                className="pl-9 h-10 w-[160px] sm:w-[200px] border-border/60 focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
 
             {/* Filtro de técnico - improved styling */}
             <div className="flex items-center gap-2">
