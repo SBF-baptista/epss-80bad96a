@@ -131,6 +131,7 @@ interface ScheduleEntry {
   local_contact: string;
   observation: string;
   kit_schedule_id?: string | null;
+  deletion_request_status?: string | null;
 }
 
 export const ScheduleManagement = () => {
