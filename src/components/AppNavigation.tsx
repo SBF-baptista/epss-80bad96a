@@ -94,6 +94,14 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   {
+    label: "Solicitações",
+    icon: FileEdit,
+    items: [
+      { to: "/edit-requests", label: "Solicitações de Edição", icon: FileEdit, module: "homologation", showBadge: true },
+      { to: "/schedule-deletion-requests", label: "Solicitações de Agendamento", icon: Clock, module: "schedule_deletion_approval" },
+    ]
+  },
+  {
     label: "Configuração",
     icon: Settings,
     items: [
@@ -103,7 +111,6 @@ const navigationGroups: NavGroup[] = [
       { to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, module: "scheduling", adminOnly: true },
       { to: "/api-monitoring", label: "Monitoramento de APIs", icon: Activity, module: "users", adminOnly: true },
       { to: "/plate-verification", label: "Verificação de Placa", icon: Search, module: "users", adminOnly: true },
-      { to: "/schedule-deletion-requests", label: "Solicitações de Agendamento", icon: Clock, module: "schedule_deletion_approval" },
       { to: "/segsale-sales", label: "Vendas Segsale", icon: Package, module: "scheduling", adminOnly: true },
       { to: "/segsale-search", label: "Busca Segsale", icon: Search, module: "scheduling", adminOnly: true },
     ]
