@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_profile_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_email: string | null
+          changes: Json
+          created_at: string
+          description_after: string | null
+          description_before: string | null
+          id: string
+          name_after: string | null
+          name_before: string | null
+          profile_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_email?: string | null
+          changes?: Json
+          created_at?: string
+          description_after?: string | null
+          description_before?: string | null
+          id?: string
+          name_after?: string | null
+          name_before?: string | null
+          profile_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_email?: string | null
+          changes?: Json
+          created_at?: string
+          description_after?: string | null
+          description_before?: string | null
+          id?: string
+          name_after?: string | null
+          name_before?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_profile_history_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "access_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       access_profiles: {
         Row: {
           base_role: Database["public"]["Enums"]["app_role"]
