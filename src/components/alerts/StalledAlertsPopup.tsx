@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowRight, CalendarCheck, FileText, Package } from "lucide-react";
 import { useStalledAlerts } from "@/hooks/useStalledAlerts";
-import { MOCK_STALLED_ALERTS } from "@/services/mockStalledAlerts";
+
 import type { StalledAlert, StalledAlertType } from "@/services/stalledAlertsService";
 import { cn } from "@/lib/utils";
 
