@@ -352,6 +352,12 @@ export const ScheduleManagement = () => {
         else if (u) tipoContrato = "MENSALISTA";
       }
 
+      const motivoTrim = (motivo ?? "").trim();
+      if (!motivoTrim) {
+        toast.error("Informe o motivo da exclusão.");
+        return;
+      }
+
       const { error: insErr } = await supabase
         .from("solicitacoes_exclusao_agendamento")
         .insert([{
@@ -360,6 +366,7 @@ export const ScheduleManagement = () => {
           filial_contrato: null,
           tipo_contrato: tipoContrato,
           solicitado_por: userId,
+          motivo: motivoTrim,
           snapshot: JSON.parse(JSON.stringify(schedule)),
         }] as never);
 
