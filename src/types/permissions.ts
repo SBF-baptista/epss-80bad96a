@@ -226,6 +226,18 @@ export const MODULE_GROUPS: Record<string, { label: string; modules: ModuleConfi
           admin: 'Acesso total: excluir usuários, gerenciar permissões'
         }
       },
+      { 
+        key: 'schedule_deletion_approval', 
+        label: 'Solicitações de Agendamento', 
+        description: 'Aprovar/rejeitar solicitações de exclusão de agendamento', 
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver solicitações de exclusão de agendamento',
+          edit: 'Ver solicitações (sem decidir)',
+          approve: 'Aprovar ou rejeitar solicitações de exclusão',
+          admin: 'Acesso total às solicitações'
+        }
+      },
     ]
   }
 };
