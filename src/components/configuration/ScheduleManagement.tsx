@@ -316,7 +316,7 @@ export const ScheduleManagement = () => {
     toast.success("Agendamento atualizado com sucesso!");
   };
 
-  const handleDeleteSchedule = async (id: string) => {
+  const handleDeleteSchedule = async (id: string, motivo?: string) => {
     setIsLoading(true);
     try {
       const schedule = schedules.find((s) => s.id === id);
