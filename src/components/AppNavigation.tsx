@@ -464,6 +464,65 @@ export function AppNavigation() {
                 );
               })}
 
+              {/* Solicitações Group */}
+              {visibleGroups.filter(g => g.label === "Solicitações").map((group) => {
+                const GroupIcon = group.icon;
+                const isOpen = openGroups[group.label] || false;
+                const groupActive = isGroupActive(group.items);
+
+                return (
+                  <SidebarMenuItem key={group.label}>
+                    <Collapsible open={isOpen} onOpenChange={() => handleGroupToggle(group.label)}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={isCollapsed ? group.label : undefined}
+                          className={`touch-manipulation tap-target ${groupActive ? 'bg-accent' : ''}`}
+                        >
+                          <GroupIcon className="h-4 w-4 flex-shrink-0" />
+                          {!isCollapsed && (
+                            <>
+                              <span className="font-medium text-sm flex-1 truncate">{group.label}</span>
+                              {isOpen ? (
+                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                              )}
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-4">
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={item.to}
+                              asChild
+                              isActive={isActive(item.to)}
+                              className="touch-manipulation tap-target"
+                            >
+                              <NavLink to={item.to} className="flex items-center gap-3 px-2 py-2">
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                {!isCollapsed && (
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <span className="font-medium text-sm truncate">{item.label}</span>
+                                    {item.showBadge && editRequestsCount > 0 && (
+                                      <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                                        {editRequestsCount}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </NavLink>
+                            </SidebarMenuButton>
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </SidebarMenuItem>
+                );
+              })}
+
               {/* Configuração Group - With Histórico inside */}
               {visibleGroups.filter(g => g.label === "Configuração").map((group) => {
                 const GroupIcon = group.icon;
