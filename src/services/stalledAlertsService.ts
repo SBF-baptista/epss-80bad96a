@@ -118,12 +118,7 @@ async function getSchedulingStalled(): Promise<StalledAlert[]> {
 }
 
 export async function getStalledAlerts(): Promise<StalledAlert[]> {
-  const [planning, production, scheduling] = await Promise.all([
-    getPlanningStalled(),
-    getProductionStalled(),
-    getSchedulingStalled(),
-  ]);
-  return [...planning, ...production, ...scheduling].sort(
-    (a, b) => b.daysStalled - a.daysStalled,
-  );
+  const production = await getProductionStalled();
+  return production.sort((a, b) => b.daysStalled - a.daysStalled);
 }
+
