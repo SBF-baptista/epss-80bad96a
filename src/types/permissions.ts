@@ -264,7 +264,8 @@ export const getDefaultPermissionsForRole = (role: BaseRole): Record<AppModule, 
     orders: 'none',
     dashboard: 'none',
     technicians: 'none',
-    users: 'none'
+    users: 'none',
+    schedule_deletion_approval: 'none'
   };
 
   switch (role) {
