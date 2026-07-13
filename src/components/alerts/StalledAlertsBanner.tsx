@@ -43,22 +43,27 @@ export const StalledAlertsBanner = () => {
       variant="destructive"
       className={`border-destructive/40 ${hasCritical ? "banner-critico" : ""}`}
     >
-      <div className="flex items-start justify-between gap-3 w-full">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 w-full">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
-            <span className="text-[26px] font-semibold leading-none text-destructive">
+            <span className="text-[clamp(1.25rem,4vw,1.625rem)] font-semibold leading-none text-destructive">
               {alerts.length}
             </span>
-            <span className="text-[14px] font-medium">
+            <span className="text-fluid-body font-medium">
               {isSingular ? "item parado" : "itens parados"}
             </span>
           </div>
           {sentence && (
-            <AlertDescription className="mt-1">{sentence}</AlertDescription>
+            <AlertDescription className="mt-1 text-fluid-body">{sentence}</AlertDescription>
           )}
         </div>
-        <Button size="sm" variant="outline" onClick={handleOpen} className="shrink-0">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleOpen}
+          className="w-full sm:w-auto shrink-0"
+        >
           Ver detalhes
         </Button>
       </div>
