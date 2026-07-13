@@ -412,12 +412,66 @@ Deno.serve(async (req) => {
           });
         }
       }
+
+      // ===== Payload COPILOTO CONTRACT (segsale-copiloto-contract-prd) =====
+      // Envia apenas veículos cujo usage_type indica Copiloto.
+      // Mapa: COPILOTO 2 CAMERAS => "dashcam"; COPILOTO 4 CAMERAS => "gravador".
+      const copilotoContractTopic =
+        Deno.env.get("DO_KAFKA_TOPIC_COPILOTO_CONTRACT") || "segsale-copiloto-contract-prd";
+      if (saleSummaryId) {
+        const { data: allIvCop } = await supabase
+          .from("incoming_vehicles")
+          .select("plate, vehicle, usage_type, company_name")
+          .eq("sale_summary_id", saleSummaryId);
+
+        const mapDispositivo = (ut?: string | null): string | null => {
+          const u = String(ut ?? "").toLowerCase();
+          if (!u.includes("copiloto")) return null;
+          if (u.includes("4")) return "gravador";
+          if (u.includes("2")) return "dashcam";
+          return "gravador";
+        };
+
+        const veiculosCop = (allIvCop ?? [])
+          .map((v: any) => {
+            const disp = mapDispositivo(v.usage_type);
+            if (!disp) return null;
+            return {
+              dispositivo: disp,
+              modelo: v.vehicle ?? null,
+              placa: String(v.plate ?? "").toUpperCase(),
+            };
+          })
+          .filter((v: any) => v && v.placa);
+
+        if (veiculosCop.length > 0) {
+          const razaoCop = customer?.company_name ?? razaoSocial ?? (allIvCop?.[0]?.company_name ?? null);
+          const copilotoPayload = {
+            codigoCliente: codigoCliente ?? 0,
+            email: customer?.email ?? "",
+            nomeFantasia: razaoCop,
+            razaoSocial: razaoCop,
+            veiculos: veiculosCop,
+            vip: false,
+          };
+
+          await producer.send({
+            topic: copilotoContractTopic,
+            acks: -1,
+            messages: [{
+              key: `${baseKey}-copiloto-contract`,
+              value: JSON.stringify(copilotoPayload),
+              headers: { "schema-version": "copiloto-contract-v1" },
+            }],
+          });
+        }
+      }
     } finally {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico + frota-contract)`);
-    return json({ ok: true, sent: ["v2-rico", "frota-contract"] });
+    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico + frota-contract + copiloto-contract)`);
+    return json({ ok: true, sent: ["v2-rico", "frota-contract", "copiloto-contract"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[kafka-publish] ERROR", msg);
