@@ -1021,6 +1021,147 @@ export type Database = {
         }
         Relationships: []
       }
+      instalacoes_recebidas: {
+        Row: {
+          accessories: Json
+          address_city: string | null
+          address_complement: string | null
+          address_district: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          checklist: Json
+          company_name: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          external_reference: string | null
+          id: string
+          installation_date: string | null
+          installation_type: string | null
+          metadata: Json
+          observations: string | null
+          photos: Json
+          raw_payload: Json
+          request_id: string | null
+          service_order: string | null
+          sim_iccid: string | null
+          sim_operator: string | null
+          sim_phone: string | null
+          source: string | null
+          status: string
+          technician_document: string | null
+          technician_name: string | null
+          technician_phone: string | null
+          tracker_imei: string | null
+          tracker_model: string | null
+          tracker_serial: string | null
+          updated_at: string
+          vehicle_brand: string | null
+          vehicle_chassis: string | null
+          vehicle_color: string | null
+          vehicle_model: string | null
+          vehicle_plate: string | null
+          vehicle_renavam: string | null
+          vehicle_year: number | null
+        }
+        Insert: {
+          accessories?: Json
+          address_city?: string | null
+          address_complement?: string | null
+          address_district?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          checklist?: Json
+          company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          external_reference?: string | null
+          id?: string
+          installation_date?: string | null
+          installation_type?: string | null
+          metadata?: Json
+          observations?: string | null
+          photos?: Json
+          raw_payload: Json
+          request_id?: string | null
+          service_order?: string | null
+          sim_iccid?: string | null
+          sim_operator?: string | null
+          sim_phone?: string | null
+          source?: string | null
+          status?: string
+          technician_document?: string | null
+          technician_name?: string | null
+          technician_phone?: string | null
+          tracker_imei?: string | null
+          tracker_model?: string | null
+          tracker_serial?: string | null
+          updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_chassis?: string | null
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_renavam?: string | null
+          vehicle_year?: number | null
+        }
+        Update: {
+          accessories?: Json
+          address_city?: string | null
+          address_complement?: string | null
+          address_district?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          checklist?: Json
+          company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          external_reference?: string | null
+          id?: string
+          installation_date?: string | null
+          installation_type?: string | null
+          metadata?: Json
+          observations?: string | null
+          photos?: Json
+          raw_payload?: Json
+          request_id?: string | null
+          service_order?: string | null
+          sim_iccid?: string | null
+          sim_operator?: string | null
+          sim_phone?: string | null
+          source?: string | null
+          status?: string
+          technician_document?: string | null
+          technician_name?: string | null
+          technician_phone?: string | null
+          tracker_imei?: string | null
+          tracker_model?: string | null
+          tracker_serial?: string | null
+          updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_chassis?: string | null
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_renavam?: string | null
+          vehicle_year?: number | null
+        }
+        Relationships: []
+      }
       installation_confirmations: {
         Row: {
           created_at: string | null

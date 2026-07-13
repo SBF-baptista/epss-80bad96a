@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.approve-schedule-deletion]
 verify_jwt = true
+
+[functions.instalacao]
+verify_jwt = false
