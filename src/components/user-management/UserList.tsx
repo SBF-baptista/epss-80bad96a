@@ -328,9 +328,6 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                         <DropdownMenuItem onClick={() => setViewingUser(user)}>
                           <Eye className="mr-2 h-4 w-4" />Ver detalhes
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                          <UserCog className="mr-2 h-4 w-4" />Editar permissões
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setProfileEditUser(user)}>
                           <Shield className="mr-2 h-4 w-4" />Editar perfil de acesso
                         </DropdownMenuItem>
