@@ -226,14 +226,16 @@ const ScheduleDeletionRequests = () => {
           </div>
         ) : (
           <Tabs defaultValue="pendentes">
-            <TabsList>
-              <TabsTrigger value="pendentes">
-                Pendentes ({pendentes.length})
-              </TabsTrigger>
-              <TabsTrigger value="historico">
-                Histórico ({decididos.length})
-              </TabsTrigger>
-            </TabsList>
+            <div className="scroll-x-mobile">
+              <TabsList className="w-max sm:w-auto">
+                <TabsTrigger value="pendentes" className="whitespace-nowrap">
+                  Pendentes ({pendentes.length})
+                </TabsTrigger>
+                <TabsTrigger value="historico" className="whitespace-nowrap">
+                  Histórico ({decididos.length})
+                </TabsTrigger>
+              </TabsList>
+            </div>
             <TabsContent value="pendentes" className="mt-4">
               {pendentes.length === 0 ? (
                 <Card>
