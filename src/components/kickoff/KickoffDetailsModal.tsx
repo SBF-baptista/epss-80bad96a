@@ -936,6 +936,16 @@ export const KickoffDetailsModal = ({
 
       if (historyError) throw historyError;
 
+      // Invalidar cache imediatamente para evitar exibição de dados parciais/stale
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["kickoff-history"] }),
+        queryClient.invalidateQueries({ queryKey: ["kickoff-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["kickoff-integrity"] }),
+        queryClient.invalidateQueries({ queryKey: ["kickoff-dates"] }),
+      ]);
+
+
+
       // Process vehicles for homologation after kickoff completion (apenas veículos validados)
       console.log("Processing kickoff vehicles for homologation...");
       const validatedVehicleIds = Array.from(validatedPlates);
