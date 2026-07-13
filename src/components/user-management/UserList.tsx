@@ -14,13 +14,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  MoreHorizontal, Key, UserCog, Eye, Ban, Unlock, Trash2,
+  MoreHorizontal, Key, Eye, Ban, Unlock, Trash2,
   UserCheck, Clock, AlertTriangle, Shield, RotateCcw
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { userManagementService, type User } from '@/services/userManagementService'
-import { EditUserModal } from './EditUserModal'
 import { EditAccessProfileModal } from './EditAccessProfileModal'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { getRoleLabel, getRoleBadgeVariant } from '@/services/permissionsService'
@@ -35,7 +34,6 @@ interface UserListProps {
 }
 
 export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
-  const [editingUser, setEditingUser] = useState<User | null>(null)
   const [viewingUser, setViewingUser] = useState<User | null>(null)
   const [isResettingPassword, setIsResettingPassword] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -330,9 +328,6 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
                         <DropdownMenuItem onClick={() => setViewingUser(user)}>
                           <Eye className="mr-2 h-4 w-4" />Ver detalhes
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                          <UserCog className="mr-2 h-4 w-4" />Editar permissões
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setProfileEditUser(user)}>
                           <Shield className="mr-2 h-4 w-4" />Editar perfil de acesso
                         </DropdownMenuItem>
@@ -493,15 +488,6 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {editingUser && (
-        <EditUserModal
-          user={{ id: editingUser.id, email: editingUser.email, roles: editingUser.roles, permissions: editingUser.permissions }}
-          open={!!editingUser}
-          onOpenChange={(open) => !open && setEditingUser(null)}
-          onUserUpdated={() => { onUserUpdated(); setEditingUser(null) }}
-        />
-      )}
 
       {profileEditUser && (
         <EditAccessProfileModal
