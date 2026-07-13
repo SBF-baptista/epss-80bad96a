@@ -93,21 +93,25 @@ export const PermissionMatrix = ({
         </div>
 
         <Tabs defaultValue={firstGroupKey} className="w-full">
-          <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
-            {groupEntries.map(([groupKey, group]) => (
-              <TabsTrigger
-                key={groupKey}
-                value={groupKey}
-                className="flex-1 min-w-[100px] text-xs sm:text-sm"
-              >
-                {group.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          {/* Regra 3 — Abas com scroll horizontal no mobile em vez de wrap */}
+          <div className="scroll-x-mobile -mx-1 px-1">
+            <TabsList className="w-max sm:w-full flex-nowrap sm:flex-wrap h-auto gap-1 bg-muted p-1">
+              {groupEntries.map(([groupKey, group]) => (
+                <TabsTrigger
+                  key={groupKey}
+                  value={groupKey}
+                  className="sm:flex-1 sm:min-w-[100px] text-xs sm:text-sm whitespace-nowrap px-3"
+                >
+                  {group.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           {groupEntries.map(([groupKey, group]) => (
             <TabsContent key={groupKey} value={groupKey} className="mt-3">
-              <div className="border rounded-md overflow-hidden">
+              {/* Desktop: tabela / Mobile: cards empilhados (Regra 4) */}
+              <div className="hidden md:block border rounded-md overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50">
                     <tr>
@@ -164,6 +168,47 @@ export const PermissionMatrix = ({
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile: cada módulo vira um card empilhado */}
+              <div className="md:hidden space-y-2">
+                {group.modules.map((module) => {
+                  const currentLevel = permissions[module.key] || 'none';
+                  const currentDesc =
+                    currentLevel === 'none'
+                      ? LEVEL_DESCRIPTIONS.none
+                      : module.levelDescriptions[currentLevel] || LEVEL_DESCRIPTIONS[currentLevel];
+                  return (
+                    <div key={module.key} className="rounded-md border p-3 space-y-2 bg-card">
+                      <div>
+                        <div className="font-medium text-sm">{module.label}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">{module.description}</div>
+                      </div>
+                      <Select
+                        value={currentLevel}
+                        onValueChange={(v) => handleChange(module.key, v as PermissionLevel)}
+                        disabled={disabled}
+                      >
+                        <SelectTrigger className="h-11 w-full text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LEVEL_ORDER.map((lvl) => (
+                            <SelectItem key={lvl} value={lvl}>
+                              <span className="flex items-center gap-2">
+                                {LEVEL_ICONS[lvl]}
+                                {PERMISSION_LABELS[lvl]}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        {currentDesc}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </TabsContent>
           ))}
