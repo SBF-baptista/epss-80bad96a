@@ -1913,6 +1913,57 @@ export type Database = {
           },
         ]
       }
+      retiradas_recebidas: {
+        Row: {
+          contrato: string | null
+          created_at: string
+          filial: string | null
+          id: string
+          imei: string | null
+          motivo: string | null
+          observacoes: string | null
+          placa: string | null
+          raw_payload: Json | null
+          request_id: string | null
+          source: string | null
+          status: string
+          tecnico_retirada: string | null
+          updated_at: string
+        }
+        Insert: {
+          contrato?: string | null
+          created_at?: string
+          filial?: string | null
+          id?: string
+          imei?: string | null
+          motivo?: string | null
+          observacoes?: string | null
+          placa?: string | null
+          raw_payload?: Json | null
+          request_id?: string | null
+          source?: string | null
+          status?: string
+          tecnico_retirada?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contrato?: string | null
+          created_at?: string
+          filial?: string | null
+          id?: string
+          imei?: string | null
+          motivo?: string | null
+          observacoes?: string | null
+          placa?: string | null
+          raw_payload?: Json | null
+          request_id?: string | null
+          source?: string | null
+          status?: string
+          tecnico_retirada?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ruptela_vehicles_cache: {
         Row: {
           cache_key: string
