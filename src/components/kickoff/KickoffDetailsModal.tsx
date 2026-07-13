@@ -969,6 +969,9 @@ export const KickoffDetailsModal = ({
         toast.success(`Kickoff finalizado com sucesso! ${messages.join(", ")}`);
       }
 
+      // Refetch final após processamento dos veículos
+      await queryClient.invalidateQueries({ queryKey: ["kickoff-history"] });
+
       onSuccess();
       onOpenChange(false);
     } catch (error) {
