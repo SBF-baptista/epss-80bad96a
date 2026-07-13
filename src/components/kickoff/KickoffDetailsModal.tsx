@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -255,6 +256,7 @@ export const KickoffDetailsModal = ({
   vehicles,
   onSuccess,
 }: KickoffDetailsModalProps) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [hasParticularity, setHasParticularity] = useState(false);
   const [kickoffCreatedAt, setKickoffCreatedAt] = useState<Date | null>(null);
@@ -934,6 +936,16 @@ export const KickoffDetailsModal = ({
 
       if (historyError) throw historyError;
 
+      // Invalidar cache imediatamente para evitar exibição de dados parciais/stale
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["kickoff-history"] }),
+        queryClient.invalidateQueries({ queryKey: ["kickoff-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["kickoff-integrity"] }),
+        queryClient.invalidateQueries({ queryKey: ["kickoff-dates"] }),
+      ]);
+
+
+
       // Process vehicles for homologation after kickoff completion (apenas veículos validados)
       console.log("Processing kickoff vehicles for homologation...");
       const validatedVehicleIds = Array.from(validatedPlates);
@@ -956,6 +968,9 @@ export const KickoffDetailsModal = ({
 
         toast.success(`Kickoff finalizado com sucesso! ${messages.join(", ")}`);
       }
+
+      // Refetch final após processamento dos veículos
+      await queryClient.invalidateQueries({ queryKey: ["kickoff-history"] });
 
       onSuccess();
       onOpenChange(false);
