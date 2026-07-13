@@ -14,13 +14,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  MoreHorizontal, Key, UserCog, Eye, Ban, Unlock, Trash2,
+  MoreHorizontal, Key, Eye, Ban, Unlock, Trash2,
   UserCheck, Clock, AlertTriangle, Shield, RotateCcw
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { userManagementService, type User } from '@/services/userManagementService'
-import { EditUserModal } from './EditUserModal'
 import { EditAccessProfileModal } from './EditAccessProfileModal'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { getRoleLabel, getRoleBadgeVariant } from '@/services/permissionsService'
