@@ -191,7 +191,7 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <TabsContent value="info" className="m-0 p-6 space-y-6 focus-visible:outline-none">
+            <TabsContent value="info" className="m-0 p-4 sm:p-6 space-y-6 focus-visible:outline-none">
               <div className="grid gap-6 max-w-2xl">
                 <div className="space-y-2">
                   <Label htmlFor="team-name" className="text-sm font-medium">
@@ -233,7 +233,7 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
               </div>
             </TabsContent>
 
-            <TabsContent value="permissions" className="m-0 p-6 focus-visible:outline-none">
+            <TabsContent value="permissions" className="m-0 p-4 sm:p-6 focus-visible:outline-none">
               <div className="mb-4 flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
                 <ShieldCheck className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground">
@@ -244,7 +244,7 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
               <PermissionMatrix permissions={permissions} onChange={setPermissions} />
             </TabsContent>
 
-            <TabsContent value="members" className="m-0 p-6 space-y-4 focus-visible:outline-none">
+            <TabsContent value="members" className="m-0 p-4 sm:p-6 space-y-4 focus-visible:outline-none">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
