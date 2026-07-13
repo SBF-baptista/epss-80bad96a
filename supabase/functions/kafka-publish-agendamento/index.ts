@@ -31,8 +31,11 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const scheduleId: string | undefined = body?.scheduleId;
     const installationScheduleId: string | undefined = body?.installationScheduleId;
+    const testCopiloto: boolean = body?.testCopiloto === true;
+    const topicOverride: string | undefined = body?.topicOverride;
 
-    if ((!scheduleId || typeof scheduleId !== "string") &&
+    if (!testCopiloto &&
+        (!scheduleId || typeof scheduleId !== "string") &&
         (!installationScheduleId || typeof installationScheduleId !== "string")) {
       return json({ ok: false, error: "scheduleId ou installationScheduleId obrigatório" });
     }
@@ -45,6 +48,64 @@ Deno.serve(async (req) => {
 
     if (!brokers || !username || !password || !ca || !topic) {
       return json({ ok: false, error: "Secrets do Kafka ausentes" });
+    }
+
+    // Helpers Kafka (compartilhados entre modo teste e fluxo normal)
+    const normalizeCaPemFn = (raw: string): string => {
+      let s = raw.trim().replace(/\\n/g, "\n");
+      s = s.replace(/-----BEGIN CERTIFICATE-----/g, "")
+           .replace(/-----END CERTIFICATE-----/g, "")
+           .replace(/\s+/g, "");
+      const lines = s.match(/.{1,64}/g) ?? [];
+      return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----\n`;
+    };
+
+    const buildKafka = () => new Kafka({
+      clientId: "opmss-edge",
+      brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
+      ssl: { ca: [normalizeCaPemFn(ca)], rejectUnauthorized: true },
+      sasl: { mechanism: "scram-sha-512", username, password },
+      connectionTimeout: 60_000,
+      authenticationTimeout: 30_000,
+      requestTimeout: 60_000,
+      enforceRequestTimeout: false,
+      logLevel: logLevel.ERROR,
+    });
+
+    // ============ MODO TESTE: envia payload Copiloto para tópico HML ============
+    if (testCopiloto) {
+      const copilotoTopic = topicOverride || "segsale-copiloto-contract-hml";
+      const samplePayload = body?.samplePayload ?? {
+        codigoCliente: 1233210,
+        email: "teste@int.com.br",
+        nomeFantasia: "Test Int",
+        razaoSocial: "Teste Int LTDA",
+        veiculos: [
+          { dispositivo: "dashcam", modelo: "Volvo FH 540", placa: "ZZZ8A21" },
+          { dispositivo: "gravador", modelo: "Mercedes-Benz Actros 2651", placa: "RRR4B56" },
+          { dispositivo: "gravador", modelo: "Scania R450", placa: "PPP2C19" },
+        ],
+        vip: true,
+      };
+
+      const kafkaT = buildKafka();
+      const producerT = kafkaT.producer({ idempotent: true, maxInFlightRequests: 5, retry: { retries: 3, initialRetryTime: 300 } });
+      try {
+        await producerT.connect();
+        await producerT.send({
+          topic: copilotoTopic,
+          acks: -1,
+          messages: [{
+            key: `test-copiloto-${Date.now()}`,
+            value: JSON.stringify(samplePayload),
+            headers: { "schema-version": "copiloto-contract-v1", "test": "true" },
+          }],
+        });
+        console.log(`[kafka-publish][TEST] Copiloto enviado topic=${copilotoTopic}`);
+        return json({ ok: true, mode: "test", topic: copilotoTopic, payload: samplePayload });
+      } finally {
+        try { await producerT.disconnect(); } catch (_) { /* noop */ }
+      }
     }
 
     const supabase = createClient(
@@ -351,12 +412,66 @@ Deno.serve(async (req) => {
           });
         }
       }
+
+      // ===== Payload COPILOTO CONTRACT (segsale-copiloto-contract-prd) =====
+      // Envia apenas veículos cujo usage_type indica Copiloto.
+      // Mapa: COPILOTO 2 CAMERAS => "dashcam"; COPILOTO 4 CAMERAS => "gravador".
+      const copilotoContractTopic =
+        Deno.env.get("DO_KAFKA_TOPIC_COPILOTO_CONTRACT") || "segsale-copiloto-contract-prd";
+      if (saleSummaryId) {
+        const { data: allIvCop } = await supabase
+          .from("incoming_vehicles")
+          .select("plate, vehicle, usage_type, company_name")
+          .eq("sale_summary_id", saleSummaryId);
+
+        const mapDispositivo = (ut?: string | null): string | null => {
+          const u = String(ut ?? "").toLowerCase();
+          if (!u.includes("copiloto")) return null;
+          if (u.includes("4")) return "gravador";
+          if (u.includes("2")) return "dashcam";
+          return "gravador";
+        };
+
+        const veiculosCop = (allIvCop ?? [])
+          .map((v: any) => {
+            const disp = mapDispositivo(v.usage_type);
+            if (!disp) return null;
+            return {
+              dispositivo: disp,
+              modelo: v.vehicle ?? null,
+              placa: String(v.plate ?? "").toUpperCase(),
+            };
+          })
+          .filter((v: any) => v && v.placa);
+
+        if (veiculosCop.length > 0) {
+          const razaoCop = customer?.company_name ?? razaoSocial ?? (allIvCop?.[0]?.company_name ?? null);
+          const copilotoPayload = {
+            codigoCliente: codigoCliente ?? 0,
+            email: customer?.email ?? "",
+            nomeFantasia: razaoCop,
+            razaoSocial: razaoCop,
+            veiculos: veiculosCop,
+            vip: false,
+          };
+
+          await producer.send({
+            topic: copilotoContractTopic,
+            acks: -1,
+            messages: [{
+              key: `${baseKey}-copiloto-contract`,
+              value: JSON.stringify(copilotoPayload),
+              headers: { "schema-version": "copiloto-contract-v1" },
+            }],
+          });
+        }
+      }
     } finally {
       try { await producer.disconnect(); } catch (_) { /* noop */ }
     }
 
-    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico + frota-contract)`);
-    return json({ ok: true, sent: ["v2-rico", "frota-contract"] });
+    console.log(`[kafka-publish] OK source=${sourceLabel} topic=${topic} (v2-rico + frota-contract + copiloto-contract)`);
+    return json({ ok: true, sent: ["v2-rico", "frota-contract", "copiloto-contract"] });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[kafka-publish] ERROR", msg);
