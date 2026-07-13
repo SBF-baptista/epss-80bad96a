@@ -489,15 +489,6 @@ export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {editingUser && (
-        <EditUserModal
-          user={{ id: editingUser.id, email: editingUser.email, roles: editingUser.roles, permissions: editingUser.permissions }}
-          open={!!editingUser}
-          onOpenChange={(open) => !open && setEditingUser(null)}
-          onUserUpdated={() => { onUserUpdated(); setEditingUser(null) }}
-        />
-      )}
-
       {profileEditUser && (
         <EditAccessProfileModal
           user={{ id: profileEditUser.id, email: profileEditUser.email, roles: profileEditUser.roles }}
