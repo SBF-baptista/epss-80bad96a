@@ -183,10 +183,10 @@ const ScheduleDeletionRequests = () => {
             )}
           </div>
           {r.status === "pendente" && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
                 onClick={() => openAction(r, "aprovar")}
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -196,6 +196,7 @@ const ScheduleDeletionRequests = () => {
                 size="sm"
                 variant="destructive"
                 onClick={() => openAction(r, "rejeitar")}
+                className="w-full sm:w-auto"
               >
                 <XCircle className="h-4 w-4 mr-1" />
                 Rejeitar
@@ -209,12 +210,12 @@ const ScheduleDeletionRequests = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-4">
+      <div className="p-3 sm:p-4 md:p-6 max-w-5xl mx-auto space-y-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <h1 className="text-fluid-h1 font-bold tracking-tight">
             Solicitações de agendamento
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-fluid-body text-muted-foreground">
             Aprovar ou rejeitar solicitações de exclusão de agendamento.
           </p>
         </div>
