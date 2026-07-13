@@ -59,3 +59,6 @@ verify_jwt = true
 
 [functions.instalacao]
 verify_jwt = false
+
+[functions.retirada]
+verify_jwt = false
