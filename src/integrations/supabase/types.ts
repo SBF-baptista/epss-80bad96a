@@ -1036,15 +1036,19 @@ export type Database = {
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
+          contrato: string | null
           cpf_cnpj: string | null
           created_at: string
           external_reference: string | null
+          filial: string | null
           id: string
+          imei: string | null
           installation_date: string | null
           installation_type: string | null
           metadata: Json
           observations: string | null
           photos: Json
+          placa: string | null
           raw_payload: Json
           request_id: string | null
           service_order: string | null
@@ -1056,6 +1060,7 @@ export type Database = {
           technician_document: string | null
           technician_name: string | null
           technician_phone: string | null
+          tecnico_instalador: string | null
           tracker_imei: string | null
           tracker_model: string | null
           tracker_serial: string | null
@@ -1082,15 +1087,19 @@ export type Database = {
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          contrato?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           external_reference?: string | null
+          filial?: string | null
           id?: string
+          imei?: string | null
           installation_date?: string | null
           installation_type?: string | null
           metadata?: Json
           observations?: string | null
           photos?: Json
+          placa?: string | null
           raw_payload: Json
           request_id?: string | null
           service_order?: string | null
@@ -1102,6 +1111,7 @@ export type Database = {
           technician_document?: string | null
           technician_name?: string | null
           technician_phone?: string | null
+          tecnico_instalador?: string | null
           tracker_imei?: string | null
           tracker_model?: string | null
           tracker_serial?: string | null
@@ -1128,15 +1138,19 @@ export type Database = {
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          contrato?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           external_reference?: string | null
+          filial?: string | null
           id?: string
+          imei?: string | null
           installation_date?: string | null
           installation_type?: string | null
           metadata?: Json
           observations?: string | null
           photos?: Json
+          placa?: string | null
           raw_payload?: Json
           request_id?: string | null
           service_order?: string | null
@@ -1148,6 +1162,7 @@ export type Database = {
           technician_document?: string | null
           technician_name?: string | null
           technician_phone?: string | null
+          tecnico_instalador?: string | null
           tracker_imei?: string | null
           tracker_model?: string | null
           tracker_serial?: string | null
