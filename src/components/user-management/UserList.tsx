@@ -34,7 +34,6 @@ interface UserListProps {
 }
 
 export const UserList = ({ users, onUserUpdated, filters }: UserListProps) => {
-  const [editingUser, setEditingUser] = useState<User | null>(null)
   const [viewingUser, setViewingUser] = useState<User | null>(null)
   const [isResettingPassword, setIsResettingPassword] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
