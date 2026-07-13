@@ -323,9 +323,9 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
         </Tabs>
 
         <Separator />
-        <DialogFooter className="px-6 py-4 bg-muted/20">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
+        <DialogFooter className="px-4 sm:px-6 py-4 bg-muted/20 sticky bottom-0 z-10 flex-col-reverse sm:flex-row gap-2 sm:gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving} className="min-w-[120px] w-full sm:w-auto">
             {saving ? 'Salvando...' : team ? 'Salvar alterações' : 'Criar time'}
           </Button>
         </DialogFooter>
