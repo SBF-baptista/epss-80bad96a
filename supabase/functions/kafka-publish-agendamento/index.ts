@@ -31,8 +31,11 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const scheduleId: string | undefined = body?.scheduleId;
     const installationScheduleId: string | undefined = body?.installationScheduleId;
+    const testCopiloto: boolean = body?.testCopiloto === true;
+    const topicOverride: string | undefined = body?.topicOverride;
 
-    if ((!scheduleId || typeof scheduleId !== "string") &&
+    if (!testCopiloto &&
+        (!scheduleId || typeof scheduleId !== "string") &&
         (!installationScheduleId || typeof installationScheduleId !== "string")) {
       return json({ ok: false, error: "scheduleId ou installationScheduleId obrigatório" });
     }
@@ -45,6 +48,64 @@ Deno.serve(async (req) => {
 
     if (!brokers || !username || !password || !ca || !topic) {
       return json({ ok: false, error: "Secrets do Kafka ausentes" });
+    }
+
+    // Helpers Kafka (compartilhados entre modo teste e fluxo normal)
+    const normalizeCaPemFn = (raw: string): string => {
+      let s = raw.trim().replace(/\\n/g, "\n");
+      s = s.replace(/-----BEGIN CERTIFICATE-----/g, "")
+           .replace(/-----END CERTIFICATE-----/g, "")
+           .replace(/\s+/g, "");
+      const lines = s.match(/.{1,64}/g) ?? [];
+      return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----\n`;
+    };
+
+    const buildKafka = () => new Kafka({
+      clientId: "opmss-edge",
+      brokers: brokers.split(",").map((b) => b.trim()).filter(Boolean),
+      ssl: { ca: [normalizeCaPemFn(ca)], rejectUnauthorized: true },
+      sasl: { mechanism: "scram-sha-512", username, password },
+      connectionTimeout: 60_000,
+      authenticationTimeout: 30_000,
+      requestTimeout: 60_000,
+      enforceRequestTimeout: false,
+      logLevel: logLevel.ERROR,
+    });
+
+    // ============ MODO TESTE: envia payload Copiloto para tópico HML ============
+    if (testCopiloto) {
+      const copilotoTopic = topicOverride || "segsale-copiloto-contract-hml";
+      const samplePayload = body?.samplePayload ?? {
+        codigoCliente: 1233210,
+        email: "teste@int.com.br",
+        nomeFantasia: "Test Int",
+        razaoSocial: "Teste Int LTDA",
+        veiculos: [
+          { dispositivo: "dashcam", modelo: "Volvo FH 540", placa: "ZZZ8A21" },
+          { dispositivo: "gravador", modelo: "Mercedes-Benz Actros 2651", placa: "RRR4B56" },
+          { dispositivo: "gravador", modelo: "Scania R450", placa: "PPP2C19" },
+        ],
+        vip: true,
+      };
+
+      const kafkaT = buildKafka();
+      const producerT = kafkaT.producer({ idempotent: true, maxInFlightRequests: 5, retry: { retries: 3, initialRetryTime: 300 } });
+      try {
+        await producerT.connect();
+        await producerT.send({
+          topic: copilotoTopic,
+          acks: -1,
+          messages: [{
+            key: `test-copiloto-${Date.now()}`,
+            value: JSON.stringify(samplePayload),
+            headers: { "schema-version": "copiloto-contract-v1", "test": "true" },
+          }],
+        });
+        console.log(`[kafka-publish][TEST] Copiloto enviado topic=${copilotoTopic}`);
+        return json({ ok: true, mode: "test", topic: copilotoTopic, payload: samplePayload });
+      } finally {
+        try { await producerT.disconnect(); } catch (_) { /* noop */ }
+      }
     }
 
     const supabase = createClient(
