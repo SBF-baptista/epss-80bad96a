@@ -284,16 +284,16 @@ const ScheduleDeletionRequests = () => {
               rows={4}
             />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeAction} disabled={submitting}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={closeAction} disabled={submitting} className="w-full sm:w-auto">
               Cancelar
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={submitting || !motivo.trim()}
-              className={
+              className={`w-full sm:w-auto ${
                 action === "aprovar" ? "bg-emerald-600 hover:bg-emerald-700" : ""
-              }
+              }`}
               variant={action === "rejeitar" ? "destructive" : "default"}
             >
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
