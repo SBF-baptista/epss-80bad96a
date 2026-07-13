@@ -22,7 +22,7 @@ serve(async (req) => {
         ok: true,
         endpoint: "retirada",
         method: "POST",
-        auth: "Header x-api-key obrigatório",
+        auth: "público (sem autenticação)",
         example_payload: {
           contrato: "077529",
           filial: "300",
@@ -44,21 +44,7 @@ serve(async (req) => {
     );
   }
 
-  const apiKey = req.headers.get("x-api-key");
-  const expected = Deno.env.get("VEHICLE_API_KEY");
-  if (!expected) {
-    console.error(`[${requestId}] VEHICLE_API_KEY não configurada`);
-    return new Response(
-      JSON.stringify({ error: "Server configuration error", request_id: requestId }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-  if (!apiKey || apiKey !== expected) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized", message: "x-api-key inválida ou ausente", request_id: requestId }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+  // Endpoint público — sem autenticação
 
   let body: any;
   try {
