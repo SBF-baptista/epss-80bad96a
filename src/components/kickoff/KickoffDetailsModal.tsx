@@ -256,6 +256,7 @@ export const KickoffDetailsModal = ({
   vehicles,
   onSuccess,
 }: KickoffDetailsModalProps) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [hasParticularity, setHasParticularity] = useState(false);
   const [kickoffCreatedAt, setKickoffCreatedAt] = useState<Date | null>(null);
