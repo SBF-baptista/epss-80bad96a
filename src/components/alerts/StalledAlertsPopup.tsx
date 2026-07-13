@@ -68,20 +68,20 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-xl bg-white text-slate-900 border border-slate-200 rounded-xl p-0 gap-0 shadow-sm">
-        <DialogHeader className="p-5 pb-3 border-b border-slate-200">
+      <DialogContent className="max-w-xl bg-white text-slate-900 border border-slate-200 rounded-xl p-0 gap-0 shadow-sm max-sm:!p-0 flex flex-col max-h-[92vh] max-sm:!max-h-none">
+        <DialogHeader className="p-4 sm:p-5 pb-3 border-b border-slate-200 sticky top-0 bg-white z-10 max-sm:rounded-none">
           <DialogTitle className="flex items-center gap-3 text-slate-900">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-50 ring-1 ring-red-200 shrink-0">
               <AlertTriangle className="h-5 w-5 text-red-600" />
             </span>
-            <span className="flex items-baseline gap-2">
-              <span className="text-[26px] font-semibold text-red-600 leading-none">{alerts.length}</span>
-              <span className="text-[14px] font-medium text-slate-700">
+            <span className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-[clamp(1.25rem,4vw,1.625rem)] font-semibold text-red-600 leading-none">{alerts.length}</span>
+              <span className="text-fluid-body font-medium text-slate-700">
                 {alerts.length === 1 ? "item parado" : "itens parados"}
               </span>
             </span>
           </DialogTitle>
-          <DialogDescription className="text-slate-500 pt-1">
+          <DialogDescription className="text-slate-500 pt-1 text-fluid-body">
             {(() => {
               const present = (Object.keys(STAGES) as StalledAlertType[]).filter((t) =>
                 alerts.some((a) => a.type === t),
@@ -100,7 +100,7 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4">
           {sorted.length === 0 ? (
             <div className="text-sm text-slate-500 py-8 text-center">
               Nenhum item parado no momento.
@@ -112,49 +112,53 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
                 const Icon = stage.icon;
                 const overdue = getOverdue(a);
                 return (
-                  <li key={a.id} className="flex items-center gap-3 px-3 py-4">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500 ring-1 ring-slate-200 shrink-0">
-                      <Icon className="h-[22px] w-[22px]" />
-                    </span>
-                    <div className="min-w-0 flex-1 flex flex-col gap-1.5">
-                      <div className="text-[16px] font-semibold text-slate-900 leading-tight truncate">
-                        {a.customerName}
-                      </div>
-                      <div>
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-medium",
-                            stage.tag,
-                          )}
-                        >
-                          {stage.label}
-                        </span>
-                      </div>
-                      {a.plate && (
-                        <div className="text-[13px] text-slate-600 truncate">
-                          {/^placa/i.test(a.plate) ? a.plate : `Placa ${a.plate}`}
+                  <li
+                    key={a.id}
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 px-3 py-4"
+                  >
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500 ring-1 ring-slate-200 shrink-0">
+                        <Icon className="h-[22px] w-[22px]" />
+                      </span>
+                      <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                        <div className="text-[15px] sm:text-[16px] font-semibold text-slate-900 leading-tight break-words">
+                          {a.customerName}
                         </div>
-                      )}
-                      <div className="text-[12px] text-slate-400">
-                        parado há {a.daysStalled}d
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-medium",
+                              stage.tag,
+                            )}
+                          >
+                            {stage.label}
+                          </span>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold",
+                              "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+                            )}
+                          >
+                            +{overdue}d
+                          </span>
+                        </div>
+                        {a.plate && (
+                          <div className="text-[13px] text-slate-600 break-words">
+                            {/^placa/i.test(a.plate) ? a.plate : `Placa ${a.plate}`}
+                          </div>
+                        )}
+                        <div className="text-[12px] text-slate-400">
+                          parado há {a.daysStalled}d
+                        </div>
                       </div>
                     </div>
-
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold shrink-0",
-                        "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
-                      )}
-                    >
-                      +{overdue}d
-                    </span>
 
                     <button
                       type="button"
                       onClick={() => handleNavigate(a.link)}
-                      className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-600 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-50 shrink-0"
+                      className="inline-flex items-center justify-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md hover:bg-slate-50 border border-slate-200 sm:border-0 w-full sm:w-auto touch-target"
                     >
-                      Ver <ArrowRight className="h-3 w-3" />
+                      Ver <ArrowRight className="h-4 w-4" />
                     </button>
                   </li>
                 );
@@ -163,11 +167,11 @@ export const StalledAlertsPopup = ({ storageKey: _sk }: Props) => {
           )}
         </div>
 
-        <DialogFooter className="p-4 border-t border-slate-200">
+        <DialogFooter className="p-4 border-t border-slate-200 sticky bottom-0 bg-white z-10 max-sm:rounded-none">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}
-            className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+            className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 w-full sm:w-auto"
           >
             Fechar
           </Button>
