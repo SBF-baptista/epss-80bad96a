@@ -120,19 +120,19 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl max-h-[92vh] max-sm:!max-h-none overflow-hidden flex flex-col p-0 gap-0 max-sm:!p-0">
         {/* Cabeçalho com gradiente */}
-        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-5 border-b">
+        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-5 border-b sticky top-0 z-10 bg-background">
           <DialogHeader className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center ring-1 ring-primary/20">
+              <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center ring-1 ring-primary/20 shrink-0">
                 <Sparkles className="h-5 w-5 text-primary" />
               </div>
-              <div className="flex-1">
-                <DialogTitle className="text-xl font-semibold tracking-tight">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-fluid-h3 font-semibold tracking-tight">
                   {team ? 'Editar Time' : 'Novo Time'}
                 </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+                <DialogDescription className="text-fluid-body text-muted-foreground mt-0.5">
                   Configure o nome, permissões de acesso e os membros deste time.
                 </DialogDescription>
               </div>
@@ -147,7 +147,7 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
                 <ShieldCheck className="h-3 w-3" /> {activePermissionsCount} {activePermissionsCount === 1 ? 'permissão ativa' : 'permissões ativas'}
               </Badge>
               {name && (
-                <Badge variant="outline" className="gap-1.5">
+                <Badge variant="outline" className="gap-1.5 max-w-full truncate">
                   {name}
                 </Badge>
               )}
@@ -156,40 +156,42 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <div className="px-6 pt-4 border-b bg-muted/30">
-            <TabsList className="h-11 bg-transparent p-0 gap-1 w-full justify-start rounded-none">
-              <TabsTrigger
-                value="info"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md gap-2 px-4 h-9"
-              >
-                <Info className="h-4 w-4" />
-                Informações
-              </TabsTrigger>
-              <TabsTrigger
-                value="permissions"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md gap-2 px-4 h-9"
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Permissões
-                {activePermissionsCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activePermissionsCount}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="members"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md gap-2 px-4 h-9"
-              >
-                <Users className="h-4 w-4" />
-                Membros
-                {selectedMembers.size > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{selectedMembers.size}</Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
+          <div className="px-4 sm:px-6 pt-4 border-b bg-muted/30">
+            <div className="scroll-x-mobile">
+              <TabsList className="h-11 bg-transparent p-0 gap-1 w-max sm:w-full justify-start rounded-none flex-nowrap">
+                <TabsTrigger
+                  value="info"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md gap-2 px-4 h-9 whitespace-nowrap"
+                >
+                  <Info className="h-4 w-4" />
+                  Informações
+                </TabsTrigger>
+                <TabsTrigger
+                  value="permissions"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md gap-2 px-4 h-9 whitespace-nowrap"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Permissões
+                  {activePermissionsCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activePermissionsCount}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="members"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md gap-2 px-4 h-9 whitespace-nowrap"
+                >
+                  <Users className="h-4 w-4" />
+                  Membros
+                  {selectedMembers.size > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{selectedMembers.size}</Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <TabsContent value="info" className="m-0 p-6 space-y-6 focus-visible:outline-none">
+            <TabsContent value="info" className="m-0 p-4 sm:p-6 space-y-6 focus-visible:outline-none">
               <div className="grid gap-6 max-w-2xl">
                 <div className="space-y-2">
                   <Label htmlFor="team-name" className="text-sm font-medium">
@@ -231,7 +233,7 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
               </div>
             </TabsContent>
 
-            <TabsContent value="permissions" className="m-0 p-6 focus-visible:outline-none">
+            <TabsContent value="permissions" className="m-0 p-4 sm:p-6 focus-visible:outline-none">
               <div className="mb-4 flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
                 <ShieldCheck className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground">
@@ -242,7 +244,7 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
               <PermissionMatrix permissions={permissions} onChange={setPermissions} />
             </TabsContent>
 
-            <TabsContent value="members" className="m-0 p-6 space-y-4 focus-visible:outline-none">
+            <TabsContent value="members" className="m-0 p-4 sm:p-6 space-y-4 focus-visible:outline-none">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -321,9 +323,9 @@ export const TeamModal = ({ open, onOpenChange, team, onSaved }: Props) => {
         </Tabs>
 
         <Separator />
-        <DialogFooter className="px-6 py-4 bg-muted/20">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
+        <DialogFooter className="px-4 sm:px-6 py-4 bg-muted/20 sticky bottom-0 z-10 flex-col-reverse sm:flex-row gap-2 sm:gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving} className="min-w-[120px] w-full sm:w-auto">
             {saving ? 'Salvando...' : team ? 'Salvar alterações' : 'Criar time'}
           </Button>
         </DialogFooter>
