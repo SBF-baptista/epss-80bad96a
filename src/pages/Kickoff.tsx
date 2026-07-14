@@ -321,8 +321,12 @@ const Kickoff = () => {
 
       {selectedSaleSummaryId && (
         <KickoffDetailsModal
+          key={selectedSaleSummaryId}
           open={modalOpen}
-          onOpenChange={setModalOpen}
+          onOpenChange={(open) => {
+            setModalOpen(open);
+            if (!open) setSelectedSaleSummaryId(null);
+          }}
           saleSummaryId={selectedSaleSummaryId}
           companyName={selectedCompanyName}
           vehicles={kickoffData?.clients.find((c) => c.sale_summary_id === selectedSaleSummaryId)?.vehicles || []}
