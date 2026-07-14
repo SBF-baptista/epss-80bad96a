@@ -35,7 +35,8 @@ Deno.serve(async (req) => {
     const timestamp = String(Math.floor(Date.now() / 1000));
     const nonce = crypto.randomUUID();
     const bodyHash = await sha256Hex("");
-    const canonical = `GET\n${path}\n${timestamp}\n${nonce}\n${bodyHash}`;
+    const canonicalPath = "/api/unidade/pendente/listar";
+    const canonical = `GET\n${canonicalPath}\n${timestamp}\n${nonce}\n${bodyHash}`;
     const signature = await hmacSha256Hex(apiKey, canonical);
 
     const resp = await fetch(`${baseUrl}${path}`, {
