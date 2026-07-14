@@ -11,7 +11,7 @@ import { UserList } from '@/components/user-management/UserList'
 import { UserManagementStats } from '@/components/user-management/UserManagementStats'
 import { UserFilters, type UserFilterState } from '@/components/user-management/UserFilters'
 import { AccessProfileModal } from '@/components/access-profiles/AccessProfileModal'
-import { TeamsTab } from '@/components/user-management/TeamsTab'
+
 
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
