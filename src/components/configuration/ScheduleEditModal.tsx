@@ -328,16 +328,19 @@ export const ScheduleEditModal = ({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="bg-background z-50">
-                            {technicians.map((tech) => (
-                              <SelectItem key={tech.id} value={tech.id}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{tech.name}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {getTechnicianLocation(tech)}
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
+                            {technicians
+                              .filter((tech) => !!tech.id)
+                              .map((tech) => {
+                                const loc = getTechnicianLocation(tech);
+                                const label = loc && loc !== 'Sem localização'
+                                  ? `${tech.name} — ${loc}`
+                                  : tech.name;
+                                return (
+                                  <SelectItem key={tech.id} value={tech.id!}>
+                                    {label}
+                                  </SelectItem>
+                                );
+                              })}
                           </SelectContent>
                         </Select>
                       ) : (
