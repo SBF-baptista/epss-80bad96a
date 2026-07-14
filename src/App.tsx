@@ -13,7 +13,7 @@ import { UserRoleProvider } from "@/hooks/useUserRole";
 import { FullScreenLoader } from "@/components/ui/loading";
 import ScrollToTop from "@/components/ScrollToTop";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Kanban = lazy(() => import("./pages/Kanban"));
+import Kanban from "./pages/Kanban";
 const Homologation = lazy(() => import("./pages/Homologation"));
 const KitManagement = lazy(() => import("./pages/KitManagement"));
 const CustomerTracking = lazy(() => import("./pages/CustomerTracking"));
