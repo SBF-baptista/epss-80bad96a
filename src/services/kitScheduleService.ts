@@ -118,6 +118,30 @@ export const createKitSchedule = async (data: CreateKitScheduleData): Promise<Ki
   // Extrai service do payload (não é coluna do banco)
   const { service, ...insertData } = data;
 
+  // Validação obrigatória: placa deve estar na base de pendências do Frota (Segsale).
+  // Se não estiver, bloqueia a criação do agendamento.
+  const plateForCheck = String(insertData.vehicle_plate ?? "").trim().toUpperCase();
+  if (plateForCheck) {
+    try {
+      const { data: checkRes, error: checkErr } = await supabase.functions.invoke(
+        'frota-check-placa-pendente',
+        { body: { placa: plateForCheck } },
+      );
+      if (checkErr) {
+        console.warn('[createKitSchedule] falha ao validar placa pendente:', checkErr.message);
+        throw new Error(`Não foi possível validar a placa ${plateForCheck} na base de pendências do Segsale. Tente novamente.`);
+      }
+      if (!checkRes?.pendente) {
+        throw new Error(
+          `A placa ${plateForCheck} não está na base de pendências do Segsale. Insira essa placa no Segsale para que o processo siga normalmente.`,
+        );
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e;
+      throw new Error(String(e));
+    }
+  }
+
   const { data: schedule, error } = await supabase
     .from('kit_schedules')
     .insert([{
