@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -330,6 +331,7 @@ export const KickoffDetailsModal = ({
   const [cameraExtraLocations, setCameraExtraLocations] = useState<Map<string, string>>(new Map());
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Accessories sale state - supports multiple items
   interface AccessorySaleItem {
@@ -1349,12 +1351,47 @@ export const KickoffDetailsModal = ({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button type="submit" form="kickoff-form" disabled={loading || !isFormValid}>
+          <Button
+            type="button"
+            disabled={loading || !isFormValid}
+            onClick={() => {
+              if (!isFormValid) return;
+              setConfirmOpen(true);
+            }}
+          >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Package className="h-4 w-4 mr-2" />
             Realizar Kickoff
           </Button>
         </div>
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar conclusão do Kickoff</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você está prestes a finalizar o Kickoff de <strong>{companyName}</strong> com{" "}
+                <strong>{validatedPlates.size}</strong> veículo(s) validado(s).
+                <br />
+                Após a confirmação, os veículos sairão da tela de Kickoff Pendente e serão enviados
+                para homologação. Deseja continuar?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={loading}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setConfirmOpen(false);
+                  handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+                }}
+              >
+                Sim, concluir Kickoff
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
