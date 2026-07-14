@@ -158,7 +158,7 @@ export const EnhancedKitScheduleModal = ({
 
       toast({
         title: "Agendamento criado",
-        description: `Kit "${kit.name}" agendado com sucesso para ${selectedCustomer.name}.`
+        description: `Kit "${kit.name}" agendado com sucesso para ${selectedCustomer.name}. A unidade será criada no Frota (Segsale).`
       });
 
       onSuccess();
