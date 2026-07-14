@@ -390,17 +390,19 @@ export const ScheduleFormModal = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background">
-                        {technicians.map((technician) => (
-                          <SelectItem key={technician.id} value={technician.id!}>
-                            <div className="flex flex-col items-start">
-                              <span className="font-medium">{technician.name}</span>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {getTechnicianLocation(technician)}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {technicians
+                          .filter((technician) => !!technician.id)
+                          .map((technician) => {
+                            const location = getTechnicianLocation(technician);
+                            const label = location && location !== 'Sem localização'
+                              ? `${technician.name} — ${location}`
+                              : technician.name;
+                            return (
+                              <SelectItem key={technician.id} value={technician.id!}>
+                                {label}
+                              </SelectItem>
+                            );
+                          })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
