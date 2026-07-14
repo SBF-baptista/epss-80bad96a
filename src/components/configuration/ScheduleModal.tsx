@@ -1904,9 +1904,9 @@ export const ScheduleModal = ({
             );
 
             if (whatsappResult.success) {
-              toast.success(`Agendamento criado e notificação enviada para ${whatsappResult.technicianName}`);
+              toast.success(`Agendamento criado e notificação enviada para ${whatsappResult.technicianName}. A unidade será criada no Frota (Segsale).`);
             } else {
-              toast.success('Agendamento criado com sucesso!');
+              toast.success('Agendamento criado com sucesso! A unidade será criada no Frota (Segsale).');
               if (whatsappResult.error) {
                 toast.warning(`Aviso: Notificação não enviada - ${whatsappResult.error}`);
               }
