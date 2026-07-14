@@ -331,6 +331,7 @@ export const KickoffDetailsModal = ({
   const [cameraExtraLocations, setCameraExtraLocations] = useState<Map<string, string>>(new Map());
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Accessories sale state - supports multiple items
   interface AccessorySaleItem {
