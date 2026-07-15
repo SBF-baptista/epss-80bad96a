@@ -294,24 +294,29 @@ export const ScheduleManagement = () => {
   const handleUpdateSchedule = async (id: string, data: ScheduleEditFormData) => {
     setIsLoading(true);
 
+    const updatePayload: any = {
+      technician_name: data.technician_name,
+      technician_whatsapp: data.technician_whatsapp,
+      scheduled_date: data.scheduled_date,
+      scheduled_time: data.scheduled_time,
+      scheduled_by: data.scheduled_by,
+      service: data.service,
+      tipo_contrato: data.tipo_contrato || null,
+      plate: data.plate,
+      vehicle_model: data.vehicle_model,
+      vehicle_year: data.vehicle_year || null,
+      tracker_model: data.tracker_model,
+      customer: data.customer,
+      address: data.address,
+      reference_point: data.reference_point || null,
+      phone: data.phone || null,
+      local_contact: data.local_contact || null,
+      observation: data.observation || null,
+    };
+
     const { error } = await supabase
       .from("installation_schedules")
-      .update({
-        technician_name: data.technician_name,
-        technician_whatsapp: data.technician_whatsapp,
-        scheduled_time: data.scheduled_time,
-        scheduled_by: data.scheduled_by,
-        service: data.service,
-        plate: data.plate,
-        vehicle_model: data.vehicle_model,
-        tracker_model: data.tracker_model,
-        customer: data.customer,
-        address: data.address,
-        reference_point: data.reference_point || null,
-        phone: data.phone || null,
-        local_contact: data.local_contact || null,
-        observation: data.observation || null,
-      })
+      .update(updatePayload)
       .eq("id", id);
 
     setIsLoading(false);
