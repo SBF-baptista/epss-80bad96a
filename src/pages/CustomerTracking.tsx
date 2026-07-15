@@ -231,7 +231,8 @@ const CustomerTracking = () => {
         // Check kit schedules
         if (customerIdsWithMatchingPlate.includes(customer.id!)) return true;
         // Check kickoff vehicles
-        if ((customer as CustomerWithStage).trackingStage === 'kickoff' && customer.vehicles) {
+        const stage = (customer as CustomerWithStage).trackingStage;
+        if ((stage === 'kickoff' || stage === 'planning') && customer.vehicles) {
           return customer.vehicles.some(v => v.plate?.toUpperCase().includes(plateUpper));
         }
         return false;
