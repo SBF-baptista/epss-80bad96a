@@ -222,8 +222,8 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] sm:max-w-[980px] max-h-[92vh] overflow-y-auto overflow-x-hidden">
+          <DialogHeader className="pr-8">
             <DialogTitle>{isEditing ? 'Editar Perfil' : 'Novo Perfil de Acesso'}</DialogTitle>
             <DialogDescription>
               {isEditing
@@ -232,7 +232,7 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 min-w-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Perfil *</Label>
@@ -257,10 +257,10 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
             </div>
 
             {isEditing && (
-              <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
-                <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-col gap-2 rounded-md border bg-muted/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm min-w-0">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>
+                  <span className="break-words">
                     <strong>{linkedCount}</strong> {linkedCount === 1 ? 'usuário usa' : 'usuários usam'} este perfil
                   </span>
                 </div>
@@ -269,7 +269,7 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
                   variant="ghost"
                   size="sm"
                   onClick={() => setHistoryOpen(true)}
-                  className="gap-1 text-xs"
+                  className="gap-1 text-xs sm:self-auto self-start"
                 >
                   <History className="h-3.5 w-3.5" />
                   Ver histórico de alterações
@@ -277,12 +277,12 @@ export const AccessProfileModal = ({ open, onOpenChange, profile, onSaved }: Acc
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <Label>Permissões por Módulo</Label>
               <PermissionMatrix permissions={permissions} onChange={setPermissions} />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
