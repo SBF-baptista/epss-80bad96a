@@ -37,13 +37,20 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
                       Em Kickoff
                     </Badge>
                   )}
+                  {isPlanning && (
+                    <Badge variant="outline" className="text-xs font-medium shrink-0 bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-800">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Aguardando Agendamento
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  {isKickoff ? (
+                  {isVehicleList ? (
                     <>
                       <Car className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70" />
                       <span className="truncate text-foreground/60 text-xs sm:text-sm">
-                        {customer.kickoffVehicleCount} {customer.kickoffVehicleCount === 1 ? 'veículo' : 'veículos'} pendentes de kickoff
+                        {customer.kickoffVehicleCount} {customer.kickoffVehicleCount === 1 ? 'veículo' : 'veículos'}
+                        {isKickoff ? ' pendentes de kickoff' : ' aguardando agendamento'}
                       </span>
                     </>
                   ) : (
