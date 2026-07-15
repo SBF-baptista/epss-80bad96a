@@ -301,10 +301,10 @@ const CustomerTracking = () => {
     });
   };
 
-  // Include kickoff customers (no kits) AND customers with kits
+  // Include kickoff/planning virtual customers AND customers with kits
   const customersToShow = filteredCustomers.filter(customer => {
     const cws = customer as CustomerWithStage;
-    if (cws.trackingStage === 'kickoff') return true;
+    if (cws.trackingStage === 'kickoff' || cws.trackingStage === 'planning') return true;
     return getCustomerKits(customer.id!).length > 0;
   });
 
