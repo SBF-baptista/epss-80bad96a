@@ -35,11 +35,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trash2, Car, Cpu, Package, Pencil } from 'lucide-react';
+import { Trash2, Car, Cpu, Package, Pencil, CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { getTechnicians, Technician } from '@/services/technicianService';
 
@@ -47,11 +54,14 @@ const scheduleFormSchema = z.object({
   technician_id: z.string().min(1, 'Técnico é obrigatório'),
   technician_name: z.string().min(1, 'Nome do técnico é obrigatório'),
   technician_whatsapp: z.string().optional(),
+  scheduled_date: z.string().min(1, 'Data é obrigatória'),
   scheduled_time: z.string().min(1, 'Horário é obrigatório'),
   scheduled_by: z.string().min(1, 'Quem agendou é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
+  tipo_contrato: z.string().optional(),
   plate: z.string().min(1, 'Placa é obrigatória'),
   vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
+  vehicle_year: z.string().optional(),
   tracker_model: z.string().min(1, 'Modelo do rastreador é obrigatório'),
   customer: z.string().min(1, 'Cliente é obrigatório'),
   address: z.string().min(1, 'Endereço é obrigatório'),
@@ -74,7 +84,9 @@ interface ScheduleEntry {
   address: string;
   plate: string;
   service: string;
+  tipo_contrato?: string | null;
   vehicle_model: string;
+  vehicle_year?: string | null;
   tracker_model: string;
   scheduled_by: string;
   reference_point: string;
@@ -111,11 +123,14 @@ export const ScheduleEditModal = ({
       technician_id: '',
       technician_name: '',
       technician_whatsapp: '',
+      scheduled_date: '',
       scheduled_time: '',
       scheduled_by: '',
       service: '',
+      tipo_contrato: '',
       plate: '',
       vehicle_model: '',
+      vehicle_year: '',
       tracker_model: '',
       customer: '',
       address: '',
@@ -145,11 +160,14 @@ export const ScheduleEditModal = ({
         technician_id: matchingTech?.id || schedule.technician_id || '',
         technician_name: schedule.technician_name,
         technician_whatsapp: schedule.technician_whatsapp || '',
+        scheduled_date: schedule.scheduled_date,
         scheduled_time: schedule.scheduled_time,
         scheduled_by: schedule.scheduled_by,
         service: schedule.service,
+        tipo_contrato: schedule.tipo_contrato || '',
         plate: schedule.plate,
         vehicle_model: schedule.vehicle_model,
+        vehicle_year: schedule.vehicle_year || '',
         tracker_model: schedule.tracker_model,
         customer: schedule.customer,
         address: schedule.address,
@@ -313,6 +331,51 @@ export const ScheduleEditModal = ({
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              {/* Data do Agendamento */}
+              <FormField
+                control={form.control}
+                name="scheduled_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data do Agendamento *</FormLabel>
+                    {isEditMode ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? format(new Date(field.value + 'T12:00:00'), "PPP", { locale: ptBR })
+                                : <span>Selecione uma data</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value + 'T12:00:00') : undefined}
+                            onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')}
+                            initialFocus
+                            locale={ptBR}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                        {field.value ? format(new Date(field.value + 'T12:00:00'), "PPP", { locale: ptBR }) : '-'}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -382,6 +445,71 @@ export const ScheduleEditModal = ({
                       <FormControl>
                         {isEditMode ? (
                           <Input placeholder="Nome de quem agendou" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* WhatsApp do técnico (somente leitura) */}
+              {form.watch('technician_whatsapp') && (
+                <div className="p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">WhatsApp do técnico:</span>
+                    <span className="font-medium text-primary">
+                      {(() => {
+                        const p = form.watch('technician_whatsapp') || '';
+                        return p.startsWith('+') ? p : `+55${p}`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="tipo_contrato"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Contrato</FormLabel>
+                      {isEditMode ? (
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="TELEMETRIA">TELEMETRIA</SelectItem>
+                            <SelectItem value="MENSALISTA">MENSALISTA</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                          {field.value || '-'}
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="vehicle_year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ano do Veículo</FormLabel>
+                      <FormControl>
+                        {isEditMode ? (
+                          <Input placeholder="Ano do veículo" {...field} />
                         ) : (
                           <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
                             {field.value || '-'}

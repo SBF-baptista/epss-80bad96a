@@ -1235,9 +1235,11 @@ export type Database = {
           service: string
           technician_name: string
           technician_whatsapp: string
+          tipo_contrato: string | null
           tracker_model: string
           updated_at: string
           vehicle_model: string
+          vehicle_year: string | null
         }
         Insert: {
           address: string
@@ -1258,9 +1260,11 @@ export type Database = {
           service: string
           technician_name: string
           technician_whatsapp: string
+          tipo_contrato?: string | null
           tracker_model: string
           updated_at?: string
           vehicle_model: string
+          vehicle_year?: string | null
         }
         Update: {
           address?: string
@@ -1281,9 +1285,11 @@ export type Database = {
           service?: string
           technician_name?: string
           technician_whatsapp?: string
+          tipo_contrato?: string | null
           tracker_model?: string
           updated_at?: string
           vehicle_model?: string
+          vehicle_year?: string | null
         }
         Relationships: [
           {
