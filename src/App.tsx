@@ -206,7 +206,7 @@ function AppContent() {
               {/* Configuration - requires scheduling or homologation module access */}
               <Route path="/config" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModules={['scheduling', 'homologation']}>
+                  <RoleProtectedRoute requiredModules={['configuration', 'scheduling', 'homologation']}>
                     <Layout>
                       <ConfigurationManagement />
                     </Layout>
@@ -252,10 +252,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
               
-              {/* History - requires admin */}
+              {/* History */}
               <Route path="/history" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="history">
                     <Layout>
                       <History />
                     </Layout>
@@ -263,10 +263,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
               
-              {/* WhatsApp Message Control - under Configuração */}
+              {/* WhatsApp Message Control */}
               <Route path="/whatsapp-control" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModule="scheduling">
+                  <RoleProtectedRoute requiredModules={['whatsapp_control', 'scheduling']}>
                     <Layout>
                       <WhatsAppMessageControl />
                     </Layout>
@@ -274,10 +274,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Installation - admin only */}
+              {/* Installation */}
               <Route path="/installation" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="installation">
                     <Layout>
                       <Installation />
                     </Layout>
@@ -285,10 +285,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* API Monitoring - admin only */}
+              {/* API Monitoring */}
               <Route path="/api-monitoring" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="api_monitoring">
                     <Layout>
                       <ApiMonitoring />
                     </Layout>
@@ -296,10 +296,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Plate Verification (Frota/Kafka) - admin only */}
+              {/* Plate Verification (Frota/Kafka) */}
               <Route path="/plate-verification" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="plate_verification">
                     <Layout>
                       <PlateVerification />
                     </Layout>
@@ -307,7 +307,7 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Schedule Deletion Requests - permissão específica */}
+              {/* Schedule Deletion Requests */}
               <Route path="/schedule-deletion-requests" element={
                 <ProtectedRoute>
                   <RoleProtectedRoute requiredModule="schedule_deletion_approval">
@@ -318,10 +318,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Frota Pendentes - admin only */}
+              {/* Frota Pendentes */}
               <Route path="/frota-pendentes" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="frota_pendentes">
                     <Layout>
                       <FrotaPendentes />
                     </Layout>
@@ -330,10 +330,10 @@ function AppContent() {
               } />
 
 
-              {/* Segsale Sales - admin only */}
+              {/* Segsale Sales */}
               <Route path="/segsale-sales" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="segsale_sales">
                     <Layout>
                       <SegsaleSales />
                     </Layout>
@@ -341,10 +341,10 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Segsale Search - admin only */}
+              {/* Segsale Search */}
               <Route path="/segsale-search" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RoleProtectedRoute requiredModule="segsale_search">
                     <Layout>
                       <SegsaleSearch />
                     </Layout>

@@ -10,21 +10,31 @@ export interface PageAccess {
 // Map routes to modules
 export const ROUTE_TO_MODULE: Record<string, AppModule> = {
   '/kickoff': 'kickoff',
+  '/kickoff/simulador': 'kickoff_simulator',
+  '/kickoff/simulador/resultado': 'kickoff_simulator',
   '/customer-tracking': 'customer_tracking',
   '/homologation': 'homologation',
   '/kits': 'kits',
   '/accessories-supplies': 'accessories_supplies',
   '/planning': 'planning',
   '/scheduling': 'scheduling',
-  '/config': 'scheduling',
-  '/whatsapp-control': 'scheduling',
+  '/config': 'configuration',
+  '/whatsapp-control': 'whatsapp_control',
   '/kanban': 'kanban',
   '/orders': 'orders',
   '/dashboard': 'dashboard',
   '/technicians': 'technicians',
   '/users': 'users',
   '/schedule-deletion-requests': 'schedule_deletion_approval',
-  '/modules': 'kickoff', // Allow access to module selection
+  '/history': 'history',
+  '/edit-requests': 'edit_requests',
+  '/installation': 'installation',
+  '/api-monitoring': 'api_monitoring',
+  '/plate-verification': 'plate_verification',
+  '/frota-pendentes': 'frota_pendentes',
+  '/segsale-sales': 'segsale_sales',
+  '/segsale-search': 'segsale_search',
+  '/modules': 'kickoff',
 }
 
 export const getPageAccess = (
