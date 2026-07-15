@@ -15,7 +15,18 @@ export type AppModule =
   | 'dashboard'
   | 'technicians'
   | 'users'
-  | 'schedule_deletion_approval';
+  | 'schedule_deletion_approval'
+  | 'history'
+  | 'edit_requests'
+  | 'installation'
+  | 'api_monitoring'
+  | 'plate_verification'
+  | 'frota_pendentes'
+  | 'segsale_sales'
+  | 'segsale_search'
+  | 'whatsapp_control'
+  | 'configuration'
+  | 'kickoff_simulator';
 
 // Base role that determines default permissions
 export type BaseRole = 'visualizador' | 'operador' | 'gestor' | 'admin';
