@@ -331,6 +331,51 @@ export const ScheduleEditModal = ({
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              {/* Data do Agendamento */}
+              <FormField
+                control={form.control}
+                name="scheduled_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data do Agendamento *</FormLabel>
+                    {isEditMode ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? format(new Date(field.value + 'T12:00:00'), "PPP", { locale: ptBR })
+                                : <span>Selecione uma data</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value + 'T12:00:00') : undefined}
+                            onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')}
+                            initialFocus
+                            locale={ptBR}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                        {field.value ? format(new Date(field.value + 'T12:00:00'), "PPP", { locale: ptBR }) : '-'}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
