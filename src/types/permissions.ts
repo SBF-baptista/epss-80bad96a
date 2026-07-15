@@ -425,7 +425,18 @@ export const getDefaultPermissionsForRole = (role: BaseRole): Record<AppModule, 
     dashboard: 'none',
     technicians: 'none',
     users: 'none',
-    schedule_deletion_approval: 'none'
+    schedule_deletion_approval: 'none',
+    history: 'none',
+    edit_requests: 'none',
+    installation: 'none',
+    api_monitoring: 'none',
+    plate_verification: 'none',
+    frota_pendentes: 'none',
+    segsale_sales: 'none',
+    segsale_search: 'none',
+    whatsapp_control: 'none',
+    configuration: 'none',
+    kickoff_simulator: 'none'
   };
 
   switch (role) {
