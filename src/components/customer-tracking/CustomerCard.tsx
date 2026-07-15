@@ -17,6 +17,8 @@ interface CustomerCardProps {
 export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isKickoff = customer.trackingStage === 'kickoff';
+  const isPlanning = customer.trackingStage === 'planning';
+  const isVehicleList = isKickoff || isPlanning;
 
   return (
     <Card className="w-full rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
@@ -35,13 +37,20 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
                       Em Kickoff
                     </Badge>
                   )}
+                  {isPlanning && (
+                    <Badge variant="outline" className="text-xs font-medium shrink-0 bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-800">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Aguardando Agendamento
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  {isKickoff ? (
+                  {isVehicleList ? (
                     <>
                       <Car className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70" />
                       <span className="truncate text-foreground/60 text-xs sm:text-sm">
-                        {customer.kickoffVehicleCount} {customer.kickoffVehicleCount === 1 ? 'veículo' : 'veículos'} pendentes de kickoff
+                        {customer.kickoffVehicleCount} {customer.kickoffVehicleCount === 1 ? 'veículo' : 'veículos'}
+                        {isKickoff ? ' pendentes de kickoff' : ' aguardando agendamento'}
                       </span>
                     </>
                   ) : (
@@ -73,7 +82,7 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
         <CollapsibleContent>
           <CardContent className="pt-0 px-4 sm:px-5 pb-4 sm:pb-5">
             <div className="space-y-4">
-              {isKickoff && customer.kickoffVehicles ? (
+              {isVehicleList && customer.kickoffVehicles ? (
                 <>
                   <h4 className="font-medium text-foreground/80 text-sm border-b border-border/50 pb-2">
                     Veículos ({customer.kickoffVehicleCount})
