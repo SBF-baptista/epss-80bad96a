@@ -2645,6 +2645,17 @@ export type Database = {
         | "technicians"
         | "users"
         | "schedule_deletion_approval"
+        | "history"
+        | "edit_requests"
+        | "installation"
+        | "api_monitoring"
+        | "plate_verification"
+        | "frota_pendentes"
+        | "segsale_sales"
+        | "segsale_search"
+        | "whatsapp_control"
+        | "configuration"
+        | "kickoff_simulator"
       app_role:
         | "admin"
         | "gestor"
@@ -2836,6 +2847,17 @@ export const Constants = {
         "technicians",
         "users",
         "schedule_deletion_approval",
+        "history",
+        "edit_requests",
+        "installation",
+        "api_monitoring",
+        "plate_verification",
+        "frota_pendentes",
+        "segsale_sales",
+        "segsale_search",
+        "whatsapp_control",
+        "configuration",
+        "kickoff_simulator",
       ],
       app_role: [
         "admin",
