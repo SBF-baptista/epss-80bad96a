@@ -92,15 +92,15 @@ export const PermissionMatrix = ({
           </div>
         </div>
 
-        <Tabs defaultValue={firstGroupKey} className="w-full">
-          {/* Regra 3 — Abas com scroll horizontal no mobile em vez de wrap */}
-          <div className="scroll-x-mobile -mx-1 px-1">
-            <TabsList className="w-max sm:w-full flex-nowrap sm:flex-wrap h-auto gap-1 bg-muted p-1">
+        <Tabs defaultValue={firstGroupKey} className="w-full min-w-0">
+          {/* Abas sempre scrolláveis para evitar sobreposição em modais estreitos */}
+          <div className="scroll-x-mobile -mx-1 px-1 pb-1">
+            <TabsList className="w-max min-w-full flex-nowrap justify-start h-auto gap-1 bg-muted p-1">
               {groupEntries.map(([groupKey, group]) => (
                 <TabsTrigger
                   key={groupKey}
                   value={groupKey}
-                  className="sm:flex-1 sm:min-w-[100px] text-xs sm:text-sm whitespace-nowrap px-3"
+                  className="flex-none whitespace-nowrap px-3 text-xs sm:text-sm"
                 >
                   {group.label}
                 </TabsTrigger>
@@ -128,12 +128,12 @@ export const PermissionMatrix = ({
                           : module.levelDescriptions[currentLevel] || LEVEL_DESCRIPTIONS[currentLevel];
                       return (
                         <tr key={module.key} className="border-t hover:bg-muted/20">
-                          <td className="px-3 py-2 align-top">
-                            <div className="font-medium text-sm">{module.label}</div>
-                            <div className="text-[11px] text-muted-foreground">{module.description}</div>
+                          <td className="px-3 py-2 align-top min-w-0">
+                            <div className="font-medium text-sm break-words">{module.label}</div>
+                            <div className="text-[11px] text-muted-foreground break-words">{module.description}</div>
                           </td>
                           <td className="px-3 py-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-[190px]">
                               <Select
                                 value={currentLevel}
                                 onValueChange={(v) => handleChange(module.key, v as PermissionLevel)}
@@ -179,10 +179,10 @@ export const PermissionMatrix = ({
                       ? LEVEL_DESCRIPTIONS.none
                       : module.levelDescriptions[currentLevel] || LEVEL_DESCRIPTIONS[currentLevel];
                   return (
-                    <div key={module.key} className="rounded-md border p-3 space-y-2 bg-card">
-                      <div>
-                        <div className="font-medium text-sm">{module.label}</div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">{module.description}</div>
+                    <div key={module.key} className="rounded-md border p-3 space-y-2 bg-card min-w-0">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm break-words">{module.label}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5 break-words">{module.description}</div>
                       </div>
                       <Select
                         value={currentLevel}
