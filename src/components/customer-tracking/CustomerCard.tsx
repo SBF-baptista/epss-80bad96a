@@ -17,6 +17,8 @@ interface CustomerCardProps {
 export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isKickoff = customer.trackingStage === 'kickoff';
+  const isPlanning = customer.trackingStage === 'planning';
+  const isVehicleList = isKickoff || isPlanning;
 
   return (
     <Card className="w-full rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
