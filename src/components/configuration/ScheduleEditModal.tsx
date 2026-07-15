@@ -457,6 +457,71 @@ export const ScheduleEditModal = ({
                 />
               </div>
 
+              {/* WhatsApp do técnico (somente leitura) */}
+              {form.watch('technician_whatsapp') && (
+                <div className="p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">WhatsApp do técnico:</span>
+                    <span className="font-medium text-primary">
+                      {(() => {
+                        const p = form.watch('technician_whatsapp') || '';
+                        return p.startsWith('+') ? p : `+55${p}`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="tipo_contrato"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Contrato</FormLabel>
+                      {isEditMode ? (
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="TELEMETRIA">TELEMETRIA</SelectItem>
+                            <SelectItem value="MENSALISTA">MENSALISTA</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                          {field.value || '-'}
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="vehicle_year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ano do Veículo</FormLabel>
+                      <FormControl>
+                        {isEditMode ? (
+                          <Input placeholder="Ano do veículo" {...field} />
+                        ) : (
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                            {field.value || '-'}
+                          </div>
+                        )}
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
