@@ -39,6 +39,7 @@ const ApiMonitoring = lazy(() => import("./pages/ApiMonitoring"));
 const SegsaleSales = lazy(() => import("./pages/SegsaleSales"));
 const SegsaleSearch = lazy(() => import("./pages/SegsaleSearch"));
 const PlateVerification = lazy(() => import("./pages/PlateVerification"));
+const FrotaPendentes = lazy(() => import("./pages/FrotaPendentes"));
 const ScheduleDeletionRequests = lazy(() => import("./pages/ScheduleDeletionRequests"));
 
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
@@ -312,6 +313,17 @@ function AppContent() {
                   <RoleProtectedRoute requiredModule="schedule_deletion_approval">
                     <Layout>
                       <ScheduleDeletionRequests />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Frota Pendentes - admin only */}
+              <Route path="/frota-pendentes" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <FrotaPendentes />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>
