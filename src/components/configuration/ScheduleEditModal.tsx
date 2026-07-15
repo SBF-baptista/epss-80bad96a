@@ -35,11 +35,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trash2, Car, Cpu, Package, Pencil } from 'lucide-react';
+import { Trash2, Car, Cpu, Package, Pencil, CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { getTechnicians, Technician } from '@/services/technicianService';
 
@@ -47,11 +54,14 @@ const scheduleFormSchema = z.object({
   technician_id: z.string().min(1, 'Técnico é obrigatório'),
   technician_name: z.string().min(1, 'Nome do técnico é obrigatório'),
   technician_whatsapp: z.string().optional(),
+  scheduled_date: z.string().min(1, 'Data é obrigatória'),
   scheduled_time: z.string().min(1, 'Horário é obrigatório'),
   scheduled_by: z.string().min(1, 'Quem agendou é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
+  tipo_contrato: z.string().optional(),
   plate: z.string().min(1, 'Placa é obrigatória'),
   vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
+  vehicle_year: z.string().optional(),
   tracker_model: z.string().min(1, 'Modelo do rastreador é obrigatório'),
   customer: z.string().min(1, 'Cliente é obrigatório'),
   address: z.string().min(1, 'Endereço é obrigatório'),
@@ -74,7 +84,9 @@ interface ScheduleEntry {
   address: string;
   plate: string;
   service: string;
+  tipo_contrato?: string | null;
   vehicle_model: string;
+  vehicle_year?: string | null;
   tracker_model: string;
   scheduled_by: string;
   reference_point: string;
