@@ -82,7 +82,7 @@ export const CustomerCard = ({ customer, customerKits, onUpdate }: CustomerCardP
         <CollapsibleContent>
           <CardContent className="pt-0 px-4 sm:px-5 pb-4 sm:pb-5">
             <div className="space-y-4">
-              {isKickoff && customer.kickoffVehicles ? (
+              {isVehicleList && customer.kickoffVehicles ? (
                 <>
                   <h4 className="font-medium text-foreground/80 text-sm border-b border-border/50 pb-2">
                     Veículos ({customer.kickoffVehicleCount})
