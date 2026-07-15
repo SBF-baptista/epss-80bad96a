@@ -209,7 +209,7 @@ export const ScheduleManagement = () => {
   };
 
   const handleFormSubmit = async (data: any) => {
-    const scheduleData = {
+    const scheduleData: any = {
       scheduled_date: format(data.date, "yyyy-MM-dd"),
       scheduled_time: data.time,
       technician_name: data.technician_name,
@@ -219,7 +219,9 @@ export const ScheduleManagement = () => {
       plate: data.plate,
       service: data.service,
       vehicle_model: data.vehicle_model,
+      vehicle_year: data.vehicle_year || null,
       tracker_model: data.tracker_model,
+      tipo_contrato: data.tipo_contrato || null,
       scheduled_by: "Sistema", // Auto-filled since field was removed
       reference_point: data.reference_point || null,
       phone: data.phone || null,
