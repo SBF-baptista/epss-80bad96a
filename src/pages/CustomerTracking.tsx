@@ -80,7 +80,7 @@ const CustomerTracking = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [customersData, schedulesData, kitsData, kickoffResult] = await Promise.all([
+      const [customersData, schedulesData, kitsData, vehiclesResult] = await Promise.all([
         getCustomers(),
         getKitSchedules(),
         fetchHomologationKits(),
@@ -88,80 +88,80 @@ const CustomerTracking = () => {
           .from('incoming_vehicles')
           .select('id, sale_summary_id, company_name, brand, vehicle, year, plate, kickoff_completed, received_at')
           .not('sale_summary_id', 'is', null)
-          .eq('kickoff_completed', false)
       ]);
 
       // Add safety checks for undefined data
       const safeCustomersData: CustomerWithStage[] = (customersData || []).map(c => ({ ...c }));
       const safeSchedulesData = schedulesData || [];
       const safeKitsData = kitsData || [];
-      const kickoffVehicles = kickoffResult.data || [];
+      const allVehicles = vehiclesResult.data || [];
 
-      // Group kickoff vehicles by company_name (consolidate same client across sales)
-      const kickoffByCompany = new Map<string, typeof kickoffVehicles>();
-      kickoffVehicles.forEach(v => {
-        const key = (v.company_name || 'Não identificado').trim().toLowerCase();
-        if (!kickoffByCompany.has(key)) {
-          kickoffByCompany.set(key, []);
-        }
-        kickoffByCompany.get(key)!.push(v);
-      });
+      // Vehicles already linked to a kit schedule (via incoming_vehicle_id) are shown through KitSection
+      const scheduledVehicleIds = new Set(
+        safeSchedulesData.map(s => s.incoming_vehicle_id).filter(Boolean) as string[]
+      );
 
-      // Track which sale_summary_ids already exist in customers
-      const existingSaleIds = new Set(safeCustomersData.filter(c => c.sale_summary_id).map(c => c.sale_summary_id));
+      const kickoffPending = allVehicles.filter(v => !v.kickoff_completed);
+      const kickoffDoneUnscheduled = allVehicles.filter(
+        v => v.kickoff_completed && !scheduledVehicleIds.has(v.id)
+      );
 
-      // For each company group, check if ALL their sales already exist as customers
-      kickoffByCompany.forEach((vehicles, _companyKey) => {
-        // Filter out vehicles whose sale_summary_id already exists in customers
-        const newVehicles = vehicles.filter(v => !existingSaleIds.has(v.sale_summary_id!));
-        if (newVehicles.length === 0) return;
+      const addVirtualGroup = (
+        vehicles: typeof allVehicles,
+        stage: CustomerTrackingStage,
+        idPrefix: string,
+      ) => {
+        const byCompany = new Map<string, typeof vehicles>();
+        vehicles.forEach(v => {
+          const key = (v.company_name || 'Não identificado').trim().toLowerCase();
+          if (!byCompany.has(key)) byCompany.set(key, []);
+          byCompany.get(key)!.push(v);
+        });
 
-        const companyName = newVehicles[0].company_name || 'Não identificado';
-        
-        // Check if there's already a virtual kickoff customer for this company (merge)
-        const existingKickoff = safeCustomersData.find(
-          c => c.trackingStage === 'kickoff' && c.name?.trim().toLowerCase() === _companyKey
-        );
-
-        if (existingKickoff) {
-          // Merge vehicles into existing entry
-          const mapped = newVehicles.map(v => ({
+        byCompany.forEach((groupVehicles, companyKey) => {
+          const companyName = groupVehicles[0].company_name || 'Não identificado';
+          const existing = safeCustomersData.find(
+            c => c.trackingStage === stage && c.name?.trim().toLowerCase() === companyKey
+          );
+          const mapped = groupVehicles.map(v => ({
             id: v.id, brand: v.brand, model: v.vehicle,
             year: v.year, plate: v.plate, received_at: v.received_at,
           }));
-          existingKickoff.kickoffVehicles = [...(existingKickoff.kickoffVehicles || []), ...mapped];
-          existingKickoff.kickoffVehicleCount = existingKickoff.kickoffVehicles.length;
-          existingKickoff.vehicles = existingKickoff.kickoffVehicles.map(v => ({
-            brand: v.brand, model: v.model, year: v.year || 0, plate: v.plate || 'Pendente',
-          }));
-        } else {
-          const saleIds = [...new Set(newVehicles.map(v => v.sale_summary_id))];
-          safeCustomersData.push({
-            id: `kickoff-${saleIds.join('-')}`,
-            name: companyName,
-            company_name: companyName,
-            document_number: '',
-            document_type: 'cnpj',
-            phone: '',
-            email: '',
-            address_street: 'Pendente',
-            address_number: '-',
-            address_neighborhood: '-',
-            address_city: '-',
-            address_state: '-',
-            address_postal_code: '-',
-            trackingStage: 'kickoff',
-            kickoffVehicleCount: newVehicles.length,
-            kickoffVehicles: newVehicles.map(v => ({
-              id: v.id, brand: v.brand, model: v.vehicle,
-              year: v.year, plate: v.plate, received_at: v.received_at,
-            })),
-            vehicles: newVehicles.map(v => ({
-              brand: v.brand, model: v.vehicle, year: v.year || 0, plate: v.plate || 'Pendente',
-            })),
-          });
-        }
-      });
+          if (existing) {
+            existing.kickoffVehicles = [...(existing.kickoffVehicles || []), ...mapped];
+            existing.kickoffVehicleCount = existing.kickoffVehicles.length;
+            existing.vehicles = existing.kickoffVehicles.map(v => ({
+              brand: v.brand, model: v.model, year: v.year || 0, plate: v.plate || 'Pendente',
+            }));
+          } else {
+            const saleIds = [...new Set(groupVehicles.map(v => v.sale_summary_id))];
+            safeCustomersData.push({
+              id: `${idPrefix}-${saleIds.join('-')}`,
+              name: companyName,
+              company_name: companyName,
+              document_number: '',
+              document_type: 'cnpj',
+              phone: '',
+              email: '',
+              address_street: 'Pendente',
+              address_number: '-',
+              address_neighborhood: '-',
+              address_city: '-',
+              address_state: '-',
+              address_postal_code: '-',
+              trackingStage: stage,
+              kickoffVehicleCount: groupVehicles.length,
+              kickoffVehicles: mapped,
+              vehicles: mapped.map(v => ({
+                brand: v.brand, model: v.model, year: v.year || 0, plate: v.plate || 'Pendente',
+              })),
+            });
+          }
+        });
+      };
+
+      addVirtualGroup(kickoffPending, 'kickoff', 'kickoff');
+      addVirtualGroup(kickoffDoneUnscheduled, 'planning', 'planning');
 
       setCustomers(safeCustomersData);
       setFilteredCustomers(safeCustomersData);
