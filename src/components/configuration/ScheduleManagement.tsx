@@ -125,7 +125,9 @@ interface ScheduleEntry {
   plate: string;
   service: string;
   vehicle_model: string;
+  vehicle_year?: string | null;
   tracker_model: string;
+  tipo_contrato?: string | null;
   scheduled_by: string;
   reference_point: string;
   phone: string;
