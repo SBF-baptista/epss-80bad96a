@@ -206,7 +206,7 @@ function AppContent() {
               {/* Configuration - requires scheduling or homologation module access */}
               <Route path="/config" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute requiredModules={['scheduling', 'homologation']}>
+                  <RoleProtectedRoute requiredModules={['configuration', 'scheduling', 'homologation']}>
                     <Layout>
                       <ConfigurationManagement />
                     </Layout>
