@@ -249,6 +249,143 @@ export const MODULE_GROUPS: Record<string, { label: string; modules: ModuleConfi
           admin: 'Acesso total às solicitações'
         }
       },
+      {
+        key: 'history',
+        label: 'Histórico',
+        description: 'Histórico geral do sistema',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver histórico de ações do sistema',
+          edit: 'Exportar histórico e aplicar filtros avançados',
+          approve: 'Acessar detalhes de logs sensíveis',
+          admin: 'Acesso total ao histórico'
+        }
+      },
+      {
+        key: 'edit_requests',
+        label: 'Solicitações de Edição',
+        description: 'Solicitações de edição de itens',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver solicitações de edição pendentes',
+          edit: 'Criar solicitações de edição',
+          approve: 'Aprovar/rejeitar solicitações de edição',
+          admin: 'Acesso total às solicitações de edição'
+        }
+      },
+      {
+        key: 'configuration',
+        label: 'Configurações',
+        description: 'Configurações gerais do sistema',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver configurações gerais',
+          edit: 'Editar configurações do sistema',
+          approve: 'Aprovar mudanças de configuração',
+          admin: 'Acesso total às configurações'
+        }
+      },
+    ]
+  },
+  integrations: {
+    label: 'Integrações & Ferramentas',
+    modules: [
+      {
+        key: 'installation',
+        label: 'Instalação',
+        description: 'Página de instalação/retirada externa',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver instalações externas',
+          edit: 'Registrar instalações',
+          approve: 'Aprovar instalações externas',
+          admin: 'Acesso total à instalação'
+        }
+      },
+      {
+        key: 'api_monitoring',
+        label: 'Monitoramento de APIs',
+        description: 'Monitorar retornos das APIs externas',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver logs e retornos de APIs',
+          edit: 'Reexecutar chamadas de API',
+          approve: 'Analisar falhas de API',
+          admin: 'Acesso total ao monitoramento de APIs'
+        }
+      },
+      {
+        key: 'plate_verification',
+        label: 'Verificação de Placa (Frota/Kafka)',
+        description: 'Verificação de placas via Frota/Kafka',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Consultar placas via Frota/Kafka',
+          edit: 'Publicar eventos de placa',
+          approve: 'Reenviar eventos de placa',
+          admin: 'Acesso total à verificação de placa'
+        }
+      },
+      {
+        key: 'frota_pendentes',
+        label: 'Pendências Segsale',
+        description: 'Placas pendentes no Segsale',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Consultar placas pendentes no Segsale',
+          edit: 'Consultar e listar pendências',
+          approve: 'Ver todos os contratos pendentes',
+          admin: 'Acesso total às pendências Segsale'
+        }
+      },
+      {
+        key: 'segsale_sales',
+        label: 'Vendas Segsale',
+        description: 'Vendas do Segsale',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver vendas Segsale',
+          edit: 'Sincronizar vendas Segsale',
+          approve: 'Aprovar sincronizações',
+          admin: 'Acesso total às vendas Segsale'
+        }
+      },
+      {
+        key: 'segsale_search',
+        label: 'Busca Segsale',
+        description: 'Busca no Segsale',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Buscar registros no Segsale',
+          edit: 'Executar buscas avançadas',
+          approve: 'Ver detalhes completos',
+          admin: 'Acesso total à busca Segsale'
+        }
+      },
+      {
+        key: 'whatsapp_control',
+        label: 'Controle de WhatsApp',
+        description: 'Envio e monitoramento de mensagens WhatsApp',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver mensagens WhatsApp enviadas',
+          edit: 'Reenviar mensagens',
+          approve: 'Cancelar/pausar envios',
+          admin: 'Acesso total ao controle de WhatsApp'
+        }
+      },
+      {
+        key: 'kickoff_simulator',
+        label: 'Simulador de Kickoff',
+        description: 'Simulador de kickoff',
+        group: 'kickoff',
+        levelDescriptions: {
+          view: 'Executar simulações de kickoff',
+          edit: 'Editar simulações',
+          approve: 'Salvar simulações persistentes',
+          admin: 'Acesso total ao simulador'
+        }
+      },
     ]
   }
 };
