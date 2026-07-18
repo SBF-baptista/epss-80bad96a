@@ -10,6 +10,7 @@ import { getKickoffHistory } from "@/services/kickoffHistoryService";
 import { checkKickoffIntegrity } from "@/services/kickoffIntegrityCheck";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
+import { BypassKickoffModal } from "@/components/kickoff/BypassKickoffModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
