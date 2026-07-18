@@ -340,6 +340,21 @@ const Kickoff = () => {
         />
       )}
 
+      {bypassClient && (
+        <BypassKickoffModal
+          key={`bypass-${bypassClient.sale_summary_id}`}
+          open={!!bypassClient}
+          onOpenChange={(open) => !open && setBypassClient(null)}
+          saleSummaryId={bypassClient.sale_summary_id}
+          companyName={bypassClient.company_name}
+          vehicles={bypassClient.vehicles}
+          onSuccess={() => {
+            refetch();
+            refetchHistory();
+          }}
+        />
+      )}
+
       <KickoffTutorial
         open={tutorialOpen}
         steps={KICKOFF_TUTORIAL_STEPS}
