@@ -1459,6 +1459,80 @@ export type Database = {
         }
         Relationships: []
       }
+      kickoff_bypass_log: {
+        Row: {
+          brand: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          incoming_vehicle_id: string | null
+          justification: string
+          model: string | null
+          performed_by: string | null
+          performed_by_email: string | null
+          plate: string | null
+          resulting_customer_id: string | null
+          resulting_kit_schedule_id: string | null
+        }
+        Insert: {
+          brand?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          incoming_vehicle_id?: string | null
+          justification: string
+          model?: string | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          plate?: string | null
+          resulting_customer_id?: string | null
+          resulting_kit_schedule_id?: string | null
+        }
+        Update: {
+          brand?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          incoming_vehicle_id?: string | null
+          justification?: string
+          model?: string | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          plate?: string | null
+          resulting_customer_id?: string | null
+          resulting_kit_schedule_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kickoff_bypass_log_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kickoff_bypass_log_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["incoming_vehicle_id"]
+          },
+          {
+            foreignKeyName: "kickoff_bypass_log_resulting_customer_id_fkey"
+            columns: ["resulting_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kickoff_bypass_log_resulting_kit_schedule_id_fkey"
+            columns: ["resulting_kit_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "kit_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kickoff_history: {
         Row: {
           accessories_sale: Json | null
