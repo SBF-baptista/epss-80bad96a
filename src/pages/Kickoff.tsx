@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap } from "lucide-react";
+import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { deletePendingKickoffCard, getKickoffData, type KickoffClient } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { BypassKickoffModal } from "@/components/kickoff/BypassKickoffModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
+import { KickoffBypassAuditTable } from "@/components/kickoff/KickoffBypassAuditTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { KickoffTutorial, type TutorialStep } from "@/components/kickoff/KickoffTutorial";
@@ -19,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,6 +87,8 @@ const KICKOFF_TUTORIAL_STEPS: TutorialStep[] = [
 
 const Kickoff = () => {
   const { user } = useAuth();
+  const { canViewModule } = useUserRole();
+  const canViewBypassAudit = canViewModule("kickoff_bypass");
   const navigate = useNavigate();
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
@@ -246,6 +250,15 @@ const Kickoff = () => {
             <History className="h-4 w-4 mr-2" />
             Histórico de Aprovações
           </TabsTrigger>
+          {canViewBypassAudit && (
+            <TabsTrigger
+              value="bypass-audit"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
+            >
+              <FastForward className="h-4 w-4 mr-2" />
+              Auditoria de Bypass
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="pending" className="space-y-6 mt-0">
@@ -320,6 +333,22 @@ const Kickoff = () => {
             <KickoffHistoryTable history={kickoffHistory || []} onRefresh={refetchHistory} />
           )}
         </TabsContent>
+
+        {canViewBypassAudit && (
+          <TabsContent value="bypass-audit" className="space-y-6 mt-0">
+            <div className="flex items-center gap-2">
+              <FastForward className="h-5 w-5 text-amber-600" />
+              <h2 className="text-xl font-semibold text-foreground">
+                Auditoria de Bypass
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Registro imutável de todos os kickoffs que pularam Homologação,
+              Kits e Planejamento e foram diretamente para Agendamento.
+            </p>
+            <KickoffBypassAuditTable />
+          </TabsContent>
+        )}
       </Tabs>
 
       {selectedSaleSummaryId && (
