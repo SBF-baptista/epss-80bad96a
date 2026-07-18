@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Car, Edit, Shield, Trash2 } from "lucide-react";
+import { Clock, Car, Edit, Shield, Trash2, FastForward } from "lucide-react";
 import type { KickoffClient } from "@/services/kickoffService";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -11,12 +11,14 @@ interface KickoffClientCardProps {
   daysInKickoff: number;
   onEditKickoff: (saleSummaryId: number, companyName: string) => void;
   onDeleteKickoff: (client: KickoffClient) => void;
+  onBypassKickoff?: (client: KickoffClient) => void;
 }
 
-export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDeleteKickoff }: KickoffClientCardProps) => {
+export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDeleteKickoff, onBypassKickoff }: KickoffClientCardProps) => {
   const { canEditModule, canManageModule } = useUserRole();
   const canEdit = canEditModule('kickoff');
   const canDelete = canManageModule('kickoff');
+  const canBypass = canEditModule('kickoff_bypass');
   // Get status styling based on days pending
   const getStatusConfig = () => {
     if (daysInKickoff > 7) {
