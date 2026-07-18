@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Car, Edit, Shield, Trash2 } from "lucide-react";
+import { Clock, Car, Edit, Shield, Trash2, FastForward } from "lucide-react";
 import type { KickoffClient } from "@/services/kickoffService";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -11,12 +11,14 @@ interface KickoffClientCardProps {
   daysInKickoff: number;
   onEditKickoff: (saleSummaryId: number, companyName: string) => void;
   onDeleteKickoff: (client: KickoffClient) => void;
+  onBypassKickoff?: (client: KickoffClient) => void;
 }
 
-export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDeleteKickoff }: KickoffClientCardProps) => {
+export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDeleteKickoff, onBypassKickoff }: KickoffClientCardProps) => {
   const { canEditModule, canManageModule } = useUserRole();
   const canEdit = canEditModule('kickoff');
   const canDelete = canManageModule('kickoff');
+  const canBypass = canEditModule('kickoff_bypass');
   // Get status styling based on days pending
   const getStatusConfig = () => {
     if (daysInKickoff > 7) {
@@ -94,16 +96,27 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDele
           {/* Spacer */}
           <div className="flex-1" />
 
-          {(canEdit || canDelete) && (
-            <div className="flex gap-2">
+          {(canEdit || canDelete || canBypass) && (
+            <div className="flex flex-col gap-2">
               {canEdit && (
                 <Button
                   size="sm"
                   onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Realizar Kickoff
+                </Button>
+              )}
+              {canBypass && onBypassKickoff && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onBypassKickoff(client)}
+                  className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 dark:text-amber-400"
+                >
+                  <FastForward className="h-4 w-4 mr-2" />
+                  Pular para Agendamento
                 </Button>
               )}
             </div>

@@ -10,6 +10,7 @@ import { getKickoffHistory } from "@/services/kickoffHistoryService";
 import { checkKickoffIntegrity } from "@/services/kickoffIntegrityCheck";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
+import { BypassKickoffModal } from "@/components/kickoff/BypassKickoffModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
@@ -92,6 +93,7 @@ const Kickoff = () => {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<KickoffClient | null>(null);
   const [deletingKickoff, setDeletingKickoff] = useState(false);
+  const [bypassClient, setBypassClient] = useState<KickoffClient | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -289,6 +291,7 @@ const Kickoff = () => {
                     daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
                     onEditKickoff={handleEditKickoff}
                     onDeleteKickoff={setClientToDelete}
+                    onBypassKickoff={setBypassClient}
                   />
                 </div>
               ))}
@@ -330,6 +333,21 @@ const Kickoff = () => {
           saleSummaryId={selectedSaleSummaryId}
           companyName={selectedCompanyName}
           vehicles={kickoffData?.clients.find((c) => c.sale_summary_id === selectedSaleSummaryId)?.vehicles || []}
+          onSuccess={() => {
+            refetch();
+            refetchHistory();
+          }}
+        />
+      )}
+
+      {bypassClient && (
+        <BypassKickoffModal
+          key={`bypass-${bypassClient.sale_summary_id}`}
+          open={!!bypassClient}
+          onOpenChange={(open) => !open && setBypassClient(null)}
+          saleSummaryId={bypassClient.sale_summary_id}
+          companyName={bypassClient.company_name}
+          vehicles={bypassClient.vehicles}
           onSuccess={() => {
             refetch();
             refetchHistory();
