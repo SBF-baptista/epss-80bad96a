@@ -96,16 +96,27 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDele
           {/* Spacer */}
           <div className="flex-1" />
 
-          {(canEdit || canDelete) && (
-            <div className="flex gap-2">
+          {(canEdit || canDelete || canBypass) && (
+            <div className="flex flex-col gap-2">
               {canEdit && (
                 <Button
                   size="sm"
                   onClick={() => onEditKickoff(client.sale_summary_id, client.company_name)}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 group-hover:shadow-sm"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Realizar Kickoff
+                </Button>
+              )}
+              {canBypass && onBypassKickoff && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onBypassKickoff(client)}
+                  className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 dark:text-amber-400"
+                >
+                  <FastForward className="h-4 w-4 mr-2" />
+                  Pular para Agendamento
                 </Button>
               )}
             </div>
