@@ -333,6 +333,22 @@ const Kickoff = () => {
             <KickoffHistoryTable history={kickoffHistory || []} onRefresh={refetchHistory} />
           )}
         </TabsContent>
+
+        {canViewBypassAudit && (
+          <TabsContent value="bypass-audit" className="space-y-6 mt-0">
+            <div className="flex items-center gap-2">
+              <FastForward className="h-5 w-5 text-amber-600" />
+              <h2 className="text-xl font-semibold text-foreground">
+                Auditoria de Bypass
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Registro imutável de todos os kickoffs que pularam Homologação,
+              Kits e Planejamento e foram diretamente para Agendamento.
+            </p>
+            <KickoffBypassAuditTable />
+          </TabsContent>
+        )}
       </Tabs>
 
       {selectedSaleSummaryId && (
