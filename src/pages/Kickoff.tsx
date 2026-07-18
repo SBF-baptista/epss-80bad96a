@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { BypassKickoffModal } from "@/components/kickoff/BypassKickoffModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
+import { KickoffBypassAuditTable } from "@/components/kickoff/KickoffBypassAuditTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { KickoffTutorial, type TutorialStep } from "@/components/kickoff/KickoffTutorial";
