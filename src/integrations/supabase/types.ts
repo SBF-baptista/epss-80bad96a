@@ -2656,6 +2656,7 @@ export type Database = {
         | "whatsapp_control"
         | "configuration"
         | "kickoff_simulator"
+        | "kickoff_bypass"
       app_role:
         | "admin"
         | "gestor"
@@ -2858,6 +2859,7 @@ export const Constants = {
         "whatsapp_control",
         "configuration",
         "kickoff_simulator",
+        "kickoff_bypass",
       ],
       app_role: [
         "admin",
