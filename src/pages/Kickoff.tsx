@@ -250,6 +250,15 @@ const Kickoff = () => {
             <History className="h-4 w-4 mr-2" />
             Histórico de Aprovações
           </TabsTrigger>
+          {canViewBypassAudit && (
+            <TabsTrigger
+              value="bypass-audit"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
+            >
+              <FastForward className="h-4 w-4 mr-2" />
+              Auditoria de Bypass
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="pending" className="space-y-6 mt-0">
