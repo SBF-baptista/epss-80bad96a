@@ -93,6 +93,7 @@ const Kickoff = () => {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<KickoffClient | null>(null);
   const [deletingKickoff, setDeletingKickoff] = useState(false);
+  const [bypassClient, setBypassClient] = useState<KickoffClient | null>(null);
 
   useEffect(() => {
     if (!user) return;
