@@ -87,6 +87,8 @@ const KICKOFF_TUTORIAL_STEPS: TutorialStep[] = [
 
 const Kickoff = () => {
   const { user } = useAuth();
+  const { canViewModule } = useUserRole();
+  const canViewBypassAudit = canViewModule("kickoff_bypass");
   const navigate = useNavigate();
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
