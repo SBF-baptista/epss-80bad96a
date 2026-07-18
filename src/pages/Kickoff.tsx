@@ -291,6 +291,7 @@ const Kickoff = () => {
                     daysInKickoff={getDaysInKickoff(client.sale_summary_id)}
                     onEditKickoff={handleEditKickoff}
                     onDeleteKickoff={setClientToDelete}
+                    onBypassKickoff={setBypassClient}
                   />
                 </div>
               ))}
