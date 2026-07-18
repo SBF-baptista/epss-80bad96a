@@ -26,7 +26,8 @@ export type AppModule =
   | 'segsale_search'
   | 'whatsapp_control'
   | 'configuration'
-  | 'kickoff_simulator';
+  | 'kickoff_simulator'
+  | 'kickoff_bypass';
 
 // Base role that determines default permissions
 export type BaseRole = 'visualizador' | 'operador' | 'gestor' | 'admin';
@@ -95,6 +96,18 @@ export const MODULE_GROUPS: Record<string, { label: string; modules: ModuleConfi
           edit: 'Editar dados de clientes, reagendar instalações',
           approve: 'Aprovar alterações de status, cancelar agendamentos',
           admin: 'Acesso total: excluir clientes, gerenciar todos os dados'
+        }
+      },
+      {
+        key: 'kickoff_bypass',
+        label: 'Kickoff → Agendamento (Bypass)',
+        description: 'Pular Homologação, Kits e Planejamento indo direto do Kickoff para o Agendamento',
+        group: 'kickoff',
+        levelDescriptions: {
+          view: 'Ver a aba de auditoria dos bypasses realizados',
+          edit: 'Executar o bypass do Kickoff direto para Agendamento (exige justificativa)',
+          approve: 'Executar bypass e revisar auditoria',
+          admin: 'Acesso total ao bypass e auditoria'
         }
       },
     ]
@@ -436,7 +449,8 @@ export const getDefaultPermissionsForRole = (role: BaseRole): Record<AppModule, 
     segsale_search: 'none',
     whatsapp_control: 'none',
     configuration: 'none',
-    kickoff_simulator: 'none'
+    kickoff_simulator: 'none',
+    kickoff_bypass: 'none'
   };
 
   switch (role) {
