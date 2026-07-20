@@ -330,6 +330,19 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
+              {/* Frota Unit Status (admin only) */}
+              <Route path="/frota-unit-status" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <FrotaUnitStatus />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+
+
 
               {/* Segsale Sales */}
               <Route path="/segsale-sales" element={
