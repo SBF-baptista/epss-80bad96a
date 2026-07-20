@@ -2,8 +2,11 @@
 // POST https://frota-auto-aityd.ondigitalocean.app/api/unidade com headers HMAC
 // (X-Timestamp, X-Nonce, X-Signature). Acionado após criação de agendamento.
 //
-// Body: { scheduleId: string }
+// Body: { scheduleId?: string, installationScheduleId?: string, tipoContrato?: 'TELEMETRIA'|'MENSALISTA', force?: boolean }
 // Sempre retorna 200 (regra do projeto: erros no corpo).
+//
+// Rastreia o status em kit_schedules.frota_unit_status/error/attempts/created_at/last_attempt_at.
+// Idempotente: se já foi criado (status='created'), não recria, a menos que body.force === true.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -52,10 +55,35 @@ function mapTipoContrato(usage?: string | null): "TELEMETRIA" | "MENSALISTA" {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // Marca falha em kit_schedules (best-effort)
+  const markFailure = async (id: string | undefined, message: string) => {
+    if (!id) return;
+    try {
+      await supabase
+        .from("kit_schedules")
+        .update({
+          frota_unit_status: "failed",
+          frota_unit_error: message?.slice(0, 2000) ?? "erro desconhecido",
+          frota_unit_last_attempt_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+    } catch (e) {
+      console.error("[create-frota-unidade] markFailure error", e);
+    }
+  };
+
+  let scheduleId: string | undefined;
+
   try {
     const reqBody = await req.json().catch(() => ({}));
-    const scheduleId: string | undefined = reqBody?.scheduleId;
+    scheduleId = reqBody?.scheduleId;
     const installationScheduleId: string | undefined = reqBody?.installationScheduleId;
+    const force: boolean = reqBody?.force === true;
 
     if ((!scheduleId || typeof scheduleId !== "string") &&
         (!installationScheduleId || typeof installationScheduleId !== "string")) {
@@ -65,22 +93,23 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY");
     const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") ||
       "https://frota-auto-aityd.ondigitalocean.app";
-    if (!apiKey) return json({ ok: false, error: "FROTA_SEGSALE_API_KEY ausente" });
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    if (!apiKey) {
+      const msg = "FROTA_SEGSALE_API_KEY ausente";
+      await markFailure(scheduleId, msg);
+      return json({ ok: false, error: msg });
+    }
 
     // Resolve placa + customer_id a partir de qualquer origem
     let plate = "";
     let customerId: string | null = null;
     let sourceId = "";
+    let currentStatus: string | null = null;
+    let currentAttempts = 0;
 
     if (scheduleId) {
       const { data: schedule, error: sErr } = await supabase
         .from("kit_schedules")
-        .select("id, vehicle_plate, customer_id")
+        .select("id, vehicle_plate, customer_id, frota_unit_status, frota_unit_attempts")
         .eq("id", scheduleId)
         .maybeSingle();
       if (sErr || !schedule) {
@@ -88,7 +117,18 @@ Deno.serve(async (req) => {
       }
       plate = String(schedule.vehicle_plate ?? "").trim().toUpperCase();
       customerId = (schedule.customer_id as string | null) ?? null;
+      currentStatus = (schedule as any).frota_unit_status ?? null;
+      currentAttempts = Number((schedule as any).frota_unit_attempts ?? 0);
       sourceId = `kit:${scheduleId}`;
+
+      // Idempotência: se já criado com sucesso, não recriar (a menos que force)
+      if (currentStatus === "created" && !force) {
+        return json({
+          ok: true,
+          skipped: true,
+          reason: "Unidade já criada previamente para este agendamento",
+        });
+      }
     } else {
       const { data: inst, error: iErr } = await supabase
         .from("installation_schedules")
@@ -102,9 +142,28 @@ Deno.serve(async (req) => {
       sourceId = `installation:${installationScheduleId}`;
     }
 
-    if (!plate) return json({ ok: false, error: "Agendamento sem placa" });
+    if (!plate) {
+      const msg = "Agendamento sem placa";
+      await markFailure(scheduleId, msg);
+      return json({ ok: false, error: msg });
+    }
 
-    // Descobrir tipoContrato a partir do incoming_vehicles (usage_type vem do Segsale)
+    // Marcar tentativa (best-effort) antes da chamada
+    if (scheduleId) {
+      try {
+        await supabase
+          .from("kit_schedules")
+          .update({
+            frota_unit_attempts: currentAttempts + 1,
+            frota_unit_last_attempt_at: new Date().toISOString(),
+          })
+          .eq("id", scheduleId);
+      } catch (e) {
+        console.error("[create-frota-unidade] pre-update attempts error", e);
+      }
+    }
+
+    // Descobrir tipoContrato
     let usageType: string | null = null;
     let saleSummaryId: number | null = null;
 
@@ -128,7 +187,6 @@ Deno.serve(async (req) => {
     }
 
     if (!usageType) {
-      // fallback: qualquer incoming_vehicle daquela placa
       const { data: iv2 } = await supabase
         .from("incoming_vehicles")
         .select("usage_type")
@@ -139,7 +197,6 @@ Deno.serve(async (req) => {
       usageType = iv2?.usage_type ?? null;
     }
 
-    // Override manual via body.tipoContrato ("TELEMETRIA" | "MENSALISTA")
     const overrideTipo = String(reqBody?.tipoContrato ?? "").toUpperCase();
     const tipoContrato =
       overrideTipo === "TELEMETRIA" || overrideTipo === "MENSALISTA"
@@ -160,16 +217,24 @@ Deno.serve(async (req) => {
     const signature = await hmacSha256Hex(apiKey, canonical);
 
     const url = `${baseUrl}${CRIAR_VEICULO_PATH}`;
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Timestamp": timestamp,
-        "X-Nonce": nonce,
-        "X-Signature": signature,
-      },
-      body,
-    });
+
+    let resp: Response;
+    try {
+      resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Timestamp": timestamp,
+          "X-Nonce": nonce,
+          "X-Signature": signature,
+        },
+        body,
+      });
+    } catch (netErr) {
+      const msg = `Erro de rede ao chamar Frota API: ${netErr instanceof Error ? netErr.message : String(netErr)}`;
+      await markFailure(scheduleId, msg);
+      return json({ ok: false, error: msg });
+    }
 
     const respText = await resp.text();
     let respJson: unknown = respText;
@@ -180,19 +245,38 @@ Deno.serve(async (req) => {
     );
 
     if (!resp.ok) {
+      const errMsg = `Frota API ${resp.status}: ${typeof respJson === "string" ? respJson : JSON.stringify(respJson)}`;
+      await markFailure(scheduleId, errMsg);
       return json({
         ok: false,
         status: resp.status,
-        error: `Frota API ${resp.status}`,
+        error: errMsg,
         response: respJson,
         request: payload,
       });
+    }
+
+    // Sucesso
+    if (scheduleId) {
+      try {
+        await supabase
+          .from("kit_schedules")
+          .update({
+            frota_unit_status: "created",
+            frota_unit_created_at: new Date().toISOString(),
+            frota_unit_error: null,
+          })
+          .eq("id", scheduleId);
+      } catch (e) {
+        console.error("[create-frota-unidade] success-update error", e);
+      }
     }
 
     return json({ ok: true, status: resp.status, response: respJson, request: payload });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[create-frota-unidade] ERROR", msg);
+    await markFailure(scheduleId, msg);
     return json({ ok: false, error: msg });
   }
 });
