@@ -1672,6 +1672,11 @@ export type Database = {
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
+          frota_unit_attempts: number
+          frota_unit_created_at: string | null
+          frota_unit_error: string | null
+          frota_unit_last_attempt_at: string | null
+          frota_unit_status: Database["public"]["Enums"]["frota_unit_status_type"]
           id: string
           incoming_vehicle_id: string | null
           installation_address_city: string | null
@@ -1706,6 +1711,11 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          frota_unit_attempts?: number
+          frota_unit_created_at?: string | null
+          frota_unit_error?: string | null
+          frota_unit_last_attempt_at?: string | null
+          frota_unit_status?: Database["public"]["Enums"]["frota_unit_status_type"]
           id?: string
           incoming_vehicle_id?: string | null
           installation_address_city?: string | null
@@ -1740,6 +1750,11 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          frota_unit_attempts?: number
+          frota_unit_created_at?: string | null
+          frota_unit_error?: string | null
+          frota_unit_last_attempt_at?: string | null
+          frota_unit_status?: Database["public"]["Enums"]["frota_unit_status_type"]
           id?: string
           incoming_vehicle_id?: string | null
           installation_address_city?: string | null
@@ -2740,6 +2755,7 @@ export type Database = {
         | "operador_suprimentos"
         | "visualizador"
         | "operador"
+      frota_unit_status_type: "pending" | "created" | "failed"
       homologation_status:
         | "homologar"
         | "em_homologacao"
@@ -2945,6 +2961,7 @@ export const Constants = {
         "visualizador",
         "operador",
       ],
+      frota_unit_status_type: ["pending", "created", "failed"],
       homologation_status: [
         "homologar",
         "em_homologacao",
