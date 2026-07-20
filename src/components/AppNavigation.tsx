@@ -328,9 +328,9 @@ export function AppNavigation() {
                                 {!isCollapsed && (
                                   <div className="flex items-center gap-2 flex-1">
                                     <span className="font-medium text-sm truncate">{item.label}</span>
-                                    {item.showBadge && editRequestsCount > 0 && (
+                                    {item.showBadge && (item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount) > 0 && (
                                       <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                        {editRequestsCount}
+                                        {item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount}
                                       </Badge>
                                     )}
                                   </div>
@@ -511,9 +511,9 @@ export function AppNavigation() {
                                 {!isCollapsed && (
                                   <div className="flex items-center gap-2 flex-1">
                                     <span className="font-medium text-sm truncate">{item.label}</span>
-                                    {item.showBadge && editRequestsCount > 0 && (
+                                    {item.showBadge && (item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount) > 0 && (
                                       <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                        {editRequestsCount}
+                                        {item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount}
                                       </Badge>
                                     )}
                                   </div>
