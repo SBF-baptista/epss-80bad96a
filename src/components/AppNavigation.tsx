@@ -44,6 +44,7 @@ import { Badge } from "@/components/ui/badge";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useEditRequestsCount } from "@/hooks/useEditRequestsCount";
+import { useFrotaUnitFailedCount } from "@/hooks/useFrotaUnitFailedCount";
 import { AppModule } from "@/types/permissions";
 
 // Navigation items with module-based permissions
@@ -54,6 +55,7 @@ interface NavItem {
   module: AppModule;
   modules?: AppModule[];
   showBadge?: boolean;
+  badgeKind?: "edit-requests" | "frota-unit-failed";
   adminOnly?: boolean;
   gestorOrAdminOnly?: boolean;
 }
@@ -113,6 +115,7 @@ const navigationGroups: NavGroup[] = [
       { to: "/segsale-sales", label: "Vendas Segsale", icon: Package, module: "scheduling", adminOnly: true },
       { to: "/segsale-search", label: "Busca Segsale", icon: Search, module: "scheduling", adminOnly: true },
       { to: "/frota-pendentes", label: "Pendências Segsale", icon: Search, module: "scheduling", adminOnly: true },
+      { to: "/frota-unit-status", label: "Status Unidades Frota", icon: Activity, module: "scheduling", adminOnly: true, showBadge: true, badgeKind: "frota-unit-failed" },
     ]
   },
 ];
@@ -140,6 +143,7 @@ export function AppNavigation() {
   const { user, signOut } = useAuth();
   const { role, accessProfileName, canViewModule, loading } = useUserRole();
   const { count: editRequestsCount } = useEditRequestsCount();
+  const { count: frotaFailedCount } = useFrotaUnitFailedCount();
   
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -324,9 +328,9 @@ export function AppNavigation() {
                                 {!isCollapsed && (
                                   <div className="flex items-center gap-2 flex-1">
                                     <span className="font-medium text-sm truncate">{item.label}</span>
-                                    {item.showBadge && editRequestsCount > 0 && (
+                                    {item.showBadge && (item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount) > 0 && (
                                       <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                        {editRequestsCount}
+                                        {item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount}
                                       </Badge>
                                     )}
                                   </div>
@@ -507,9 +511,9 @@ export function AppNavigation() {
                                 {!isCollapsed && (
                                   <div className="flex items-center gap-2 flex-1">
                                     <span className="font-medium text-sm truncate">{item.label}</span>
-                                    {item.showBadge && editRequestsCount > 0 && (
+                                    {item.showBadge && (item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount) > 0 && (
                                       <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                        {editRequestsCount}
+                                        {item.badgeKind === "frota-unit-failed" ? frotaFailedCount : editRequestsCount}
                                       </Badge>
                                     )}
                                   </div>
