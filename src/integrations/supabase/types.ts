@@ -621,6 +621,72 @@ export type Database = {
         }
         Relationships: []
       }
+      frota_units_pending_imei: {
+        Row: {
+          brand: string | null
+          company_name: string | null
+          created_at: string
+          created_by: string | null
+          frota_response: Json | null
+          id: string
+          imei: string | null
+          incoming_vehicle_id: string | null
+          linked_at: string | null
+          linked_by: string | null
+          model: string | null
+          plate: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          frota_response?: Json | null
+          id?: string
+          imei?: string | null
+          incoming_vehicle_id?: string | null
+          linked_at?: string | null
+          linked_by?: string | null
+          model?: string | null
+          plate?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          frota_response?: Json | null
+          id?: string
+          imei?: string | null
+          incoming_vehicle_id?: string | null
+          linked_at?: string | null
+          linked_by?: string | null
+          model?: string | null
+          plate?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "frota_units_pending_imei_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frota_units_pending_imei_incoming_vehicle_id_fkey"
+            columns: ["incoming_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_chain"
+            referencedColumns: ["incoming_vehicle_id"]
+          },
+        ]
+      }
       homologation_cards: {
         Row: {
           brand: string
