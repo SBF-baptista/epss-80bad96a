@@ -253,7 +253,7 @@ export const BypassKickoffModal = ({
             ) : (
               <>
                 <FastForward className="h-4 w-4 mr-2" />
-                Confirmar Bypass
+                Criar Unidade na Frota
               </>
             )}
           </Button>
