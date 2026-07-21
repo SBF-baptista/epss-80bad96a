@@ -106,9 +106,9 @@ export const BypassKickoffModal = ({
 
       if (successes > 0) {
         toast.success(
-          `Bypass realizado para ${successes} ${
+          `Unidade criada na Frota para ${successes} ${
             successes === 1 ? "veículo" : "veículos"
-          }. Cliente liberado para Agendamento.`,
+          }. Aguardando vínculo de IMEI.`,
         );
       }
       if (errors.length > 0) {
