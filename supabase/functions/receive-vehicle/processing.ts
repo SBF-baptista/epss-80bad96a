@@ -77,12 +77,13 @@ export async function processVehicleGroups(
   const processedGroups: GroupResult[] = []
   let totalVehiclesProcessed = 0
 
-  // Process each vehicle group
+  // Process each vehicle group — wrapped in try/catch so a failure in one group
+  // (even multiple groups sharing the same sale_summary_id) never kills the rest.
   for (let groupIndex = 0; groupIndex < requestBody.length; groupIndex++) {
     const group = requestBody[groupIndex]
     console.log(`[${timestamp}][${requestId}] ===== GROUP ${groupIndex + 1}/${requestBody.length} START =====`)
-    console.log(`[${timestamp}][${requestId}] Group details: ${group.company_name} - ${group.usage_type} (${group.vehicles.length} vehicles)`)
-    
+    console.log(`[${timestamp}][${requestId}] Group details: ${group.company_name} - ${group.usage_type} (${group.vehicles.length} vehicles) sale_summary_id=${group.sale_summary_id ?? 'n/a'} pending_contract_id=${group.pending_contract_id ?? 'n/a'}`)
+
     const groupResult: GroupResult = {
       group_index: groupIndex,
       company_name: group.company_name,
@@ -99,6 +100,9 @@ export async function processVehicleGroups(
     // Collect accessories for this group (will be inserted once per group, not per vehicle)
     const groupAccessories = group.accessories || []
     let groupAccessoriesProcessed = false
+
+    try {
+
 
     // Process each vehicle in the group
     for (let vehicleIndex = 0; vehicleIndex < group.vehicles.length; vehicleIndex++) {
