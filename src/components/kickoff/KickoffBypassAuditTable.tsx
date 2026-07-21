@@ -34,8 +34,8 @@ interface BypassLogRow {
 
 export const KickoffBypassAuditTable = () => {
   const { user } = useAuth();
-  const { canViewModule } = useUserRole();
-  const canView = canViewModule("kickoff_bypass");
+  const { isAdmin } = useUserRole();
+  const canView = isAdmin();
 
   const { data, isLoading } = useQuery({
     queryKey: ["kickoff-bypass-log"],

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, Car, Edit, Shield, Trash2, FastForward } from "lucide-react";
 import type { KickoffClient } from "@/services/kickoffService";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useKickoffBypassPermission } from "@/hooks/useKickoffBypassPermission";
 
 interface KickoffClientCardProps {
   client: KickoffClient;
@@ -18,7 +19,7 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDele
   const { canEditModule, canManageModule } = useUserRole();
   const canEdit = canEditModule('kickoff');
   const canDelete = canManageModule('kickoff');
-  const canBypass = canEditModule('kickoff_bypass');
+  const { canBypass } = useKickoffBypassPermission();
   // Get status styling based on days pending
   const getStatusConfig = () => {
     if (daysInKickoff > 7) {

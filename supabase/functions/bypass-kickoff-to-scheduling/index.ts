@@ -55,17 +55,32 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    // ---------- Authorization check (backend, do not trust frontend) ----------
-    const { data: hasAccess, error: accessErr } = await admin.rpc('has_module_access', {
+    // ---------- Authorization check (backend, source of truth) ----------
+    // Allowed if: (a) user has admin role, OR (b) user email is in kickoff_bypass_allowed_users.
+    const { data: isAdmin, error: adminErr } = await admin.rpc('has_role', {
       _user_id: userId,
-      _module: 'kickoff_bypass',
-      _min_permission: 'edit',
+      _role: 'admin',
     })
-    if (accessErr) {
-      console.error('has_module_access error', accessErr)
+    if (adminErr) {
+      console.error('has_role error', adminErr)
       return json({ error: 'Falha ao verificar permissão' }, 500)
     }
-    if (!hasAccess) {
+
+    let emailAllowed = false
+    if (!isAdmin && userEmail) {
+      const { data: allowedRow, error: allowedErr } = await admin
+        .from('kickoff_bypass_allowed_users')
+        .select('email')
+        .ilike('email', userEmail)
+        .maybeSingle()
+      if (allowedErr) {
+        console.error('kickoff_bypass_allowed_users lookup error', allowedErr)
+        return json({ error: 'Falha ao verificar permissão' }, 500)
+      }
+      emailAllowed = !!allowedRow
+    }
+
+    if (!isAdmin && !emailAllowed) {
       return json({ error: 'Você não tem permissão para executar o bypass do Kickoff.' }, 403)
     }
 

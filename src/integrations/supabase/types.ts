@@ -1459,6 +1459,21 @@ export type Database = {
         }
         Relationships: []
       }
+      kickoff_bypass_allowed_users: {
+        Row: {
+          added_at: string
+          email: string
+        }
+        Insert: {
+          added_at?: string
+          email: string
+        }
+        Update: {
+          added_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
       kickoff_bypass_log: {
         Row: {
           brand: string | null
