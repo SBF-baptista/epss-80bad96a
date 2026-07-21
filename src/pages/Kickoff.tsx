@@ -236,9 +236,9 @@ const Kickoff = () => {
       <StalledAlertsPopup storageKey="stalled-alerts-popup-kickoff" />
 
       {/* Tabs */}
-      <Tabs defaultValue="pending" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
-        <TabsList data-tour="kickoff-tabs" className="bg-muted/50 p-1 h-auto">
+        <TabsList data-tour="kickoff-tabs" className="bg-muted/50 p-1 h-auto flex-wrap">
 
           <TabsTrigger
             value="pending"
@@ -254,6 +254,15 @@ const Kickoff = () => {
             <History className="h-4 w-4 mr-2" />
             Histórico de Aprovações
           </TabsTrigger>
+          {canBypass && (
+            <TabsTrigger
+              value="pending-imei"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
+            >
+              <RadioTower className="h-4 w-4 mr-2" />
+              Unidades Pendentes de IMEI
+            </TabsTrigger>
+          )}
           {canViewBypassAudit && (
             <TabsTrigger
               value="bypass-audit"
