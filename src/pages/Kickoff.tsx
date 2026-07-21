@@ -13,6 +13,7 @@ import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { BypassKickoffModal } from "@/components/kickoff/BypassKickoffModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { KickoffBypassAuditTable } from "@/components/kickoff/KickoffBypassAuditTable";
+import { FrotaUnitsPendingImeiTable } from "@/components/kickoff/FrotaUnitsPendingImeiTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { KickoffTutorial, type TutorialStep } from "@/components/kickoff/KickoffTutorial";
@@ -21,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useKickoffBypassPermission } from "@/hooks/useKickoffBypassPermission";
 import {
   AlertDialog,
   AlertDialogAction,
