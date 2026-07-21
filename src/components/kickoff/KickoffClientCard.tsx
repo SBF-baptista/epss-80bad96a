@@ -117,7 +117,7 @@ export const KickoffClientCard = ({ client, daysInKickoff, onEditKickoff, onDele
                   className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 dark:text-amber-400"
                 >
                   <FastForward className="h-4 w-4 mr-2" />
-                  Pular para Agendamento
+                  Pular e Criar Unidade
                 </Button>
               )}
             </div>
