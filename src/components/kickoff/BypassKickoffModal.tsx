@@ -138,7 +138,7 @@ export const BypassKickoffModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FastForward className="h-5 w-5 text-amber-600" />
-            Pular direto para Agendamento
+            Pular Kickoff e Criar Unidade na Frota
           </DialogTitle>
           <DialogDescription>
             {companyName} — venda #{saleSummaryId}
@@ -151,9 +151,10 @@ export const BypassKickoffModal = ({
         >
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-sm text-amber-900 dark:text-amber-200">
-            Esta ação <strong>ignora Homologação, Kits e Planejamento</strong> e
-            envia os veículos selecionados direto para Agendamento. É restrita a
-            Gestores, exige justificativa e fica registrada em auditoria.
+            Esta ação <strong>ignora Homologação, Kits, Planejamento e Agendamento</strong>{" "}
+            e cria a unidade diretamente na Frota. A unidade ficará listada em
+            "Unidades Pendentes de IMEI" até que o rastreador seja vinculado. É
+            restrita, exige justificativa e fica registrada em auditoria.
           </AlertDescription>
         </Alert>
 
