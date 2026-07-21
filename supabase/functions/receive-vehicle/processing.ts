@@ -615,10 +615,52 @@ export async function processVehicleGroups(
       console.log(`[${timestamp}][${requestId}] Accessories already processed with automatic order creation for group ${groupIndex + 1}`)
     }
 
-    processedGroups.push(groupResult)
-    console.log(`[${timestamp}][${requestId}] ===== GROUP ${groupIndex + 1} COMPLETED =====`)
-    console.log(`[${timestamp}][${requestId}] Group ${groupIndex + 1} summary: ${groupResult.processing_summary.orders_created} orders, ${groupResult.processing_summary.homologations_created} homologations, ${groupResult.processing_summary.errors} errors`)
+      processedGroups.push(groupResult)
+      console.log(`[${timestamp}][${requestId}] ===== GROUP ${groupIndex + 1} COMPLETED =====`)
+      console.log(`[${timestamp}][${requestId}] Group ${groupIndex + 1} summary: ${groupResult.processing_summary.orders_created} orders, ${groupResult.processing_summary.homologations_created} homologations, ${groupResult.processing_summary.errors} errors`)
+    } catch (groupError: any) {
+      // A failure in one group MUST NOT prevent the remaining groups (even those
+      // sharing the same sale_summary_id) from being processed. Log to app_logs
+      // with impact_level='critical' so the failure is never silent again.
+      const errMsg = groupError?.message || String(groupError)
+      console.error(`[${timestamp}][${requestId}] 🔥 UNHANDLED ERROR in group ${groupIndex + 1} (sale_summary_id=${group.sale_summary_id ?? 'n/a'}, pending_contract_id=${group.pending_contract_id ?? 'n/a'}):`, errMsg)
+      console.error(`[${timestamp}][${requestId}] Stack:`, groupError?.stack)
+
+      groupResult.processing_summary.errors++
+      processedGroups.push(groupResult)
+
+      try {
+        await supabase.from('app_logs').insert({
+          action: 'receive_vehicle_group_failure',
+          module: 'segsale',
+          impact_level: 'critical',
+          status: 'error',
+          action_type: 'system',
+          origin: 'edge_function',
+          entity_type: 'incoming_vehicles',
+          entity_id: String(group.sale_summary_id ?? ''),
+          entity_name: group.company_name,
+          is_critical: true,
+          error_message: errMsg,
+          details: `receive-vehicle failed while processing group ${groupIndex + 1}/${requestBody.length} for sale_summary_id=${group.sale_summary_id ?? 'n/a'} pending_contract_id=${group.pending_contract_id ?? 'n/a'} usage_type=${group.usage_type}`,
+          new_state: {
+            request_id: requestId,
+            group_index: groupIndex,
+            sale_summary_id: group.sale_summary_id ?? null,
+            pending_contract_id: group.pending_contract_id ?? null,
+            usage_type: group.usage_type,
+            company_name: group.company_name,
+            vehicles_count: group.vehicles?.length ?? 0,
+            error: errMsg,
+            stack: groupError?.stack ?? null,
+          },
+        })
+      } catch (logErr) {
+        console.error(`[${timestamp}][${requestId}] ⚠️ Failed to write app_logs entry:`, logErr)
+      }
+    }
   }
+
 
   console.log(`[${timestamp}][${requestId}] ===== PROCESSING COMPLETED =====`)
   console.log(`[${timestamp}][${requestId}] Total vehicles processed: ${totalVehiclesProcessed}`)
