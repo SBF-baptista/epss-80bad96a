@@ -408,6 +408,7 @@ const Kickoff = () => {
           onSuccess={() => {
             refetch();
             refetchHistory();
+            setActiveTab("pending-imei");
           }}
         />
       )}
