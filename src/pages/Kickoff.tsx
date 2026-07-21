@@ -347,6 +347,22 @@ const Kickoff = () => {
           )}
         </TabsContent>
 
+        {canBypass && (
+          <TabsContent value="pending-imei" className="space-y-6 mt-0">
+            <div className="flex items-center gap-2">
+              <RadioTower className="h-5 w-5 text-amber-600" />
+              <h2 className="text-xl font-semibold text-foreground">
+                Unidades Pendentes de IMEI
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Unidades criadas na Frota via bypass do Kickoff que ainda aguardam
+              o IMEI do rastreador para finalizar a instalação.
+            </p>
+            <FrotaUnitsPendingImeiTable />
+          </TabsContent>
+        )}
+
         {canViewBypassAudit && (
           <TabsContent value="bypass-audit" className="space-y-6 mt-0">
             <div className="flex items-center gap-2">
@@ -356,8 +372,7 @@ const Kickoff = () => {
               </h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              Registro imutável de todos os kickoffs que pularam Homologação,
-              Kits e Planejamento e foram diretamente para Agendamento.
+              Registro imutável de todos os bypasses de Kickoff executados.
             </p>
             <KickoffBypassAuditTable />
           </TabsContent>
