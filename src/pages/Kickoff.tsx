@@ -91,7 +91,9 @@ const Kickoff = () => {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const canViewBypassAudit = isAdmin();
+  const { canBypass } = useKickoffBypassPermission();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>("pending");
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
