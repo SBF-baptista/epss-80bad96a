@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward } from "lucide-react";
+import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward, RadioTower } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { deletePendingKickoffCard, getKickoffData, type KickoffClient } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
