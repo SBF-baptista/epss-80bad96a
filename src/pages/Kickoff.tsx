@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward } from "lucide-react";
+import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward, RadioTower } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { deletePendingKickoffCard, getKickoffData, type KickoffClient } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -13,6 +13,7 @@ import { KickoffDetailsModal } from "@/components/kickoff/KickoffDetailsModal";
 import { BypassKickoffModal } from "@/components/kickoff/BypassKickoffModal";
 import { KickoffHistoryTable } from "@/components/kickoff/KickoffHistoryTable";
 import { KickoffBypassAuditTable } from "@/components/kickoff/KickoffBypassAuditTable";
+import { FrotaUnitsPendingImeiTable } from "@/components/kickoff/FrotaUnitsPendingImeiTable";
 import { KickoffStats } from "@/components/kickoff/KickoffStats";
 import { KickoffClientCard } from "@/components/kickoff/KickoffClientCard";
 import { KickoffTutorial, type TutorialStep } from "@/components/kickoff/KickoffTutorial";
@@ -21,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useKickoffBypassPermission } from "@/hooks/useKickoffBypassPermission";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,7 +91,9 @@ const Kickoff = () => {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const canViewBypassAudit = isAdmin();
+  const { canBypass } = useKickoffBypassPermission();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>("pending");
   const [selectedSaleSummaryId, setSelectedSaleSummaryId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -232,9 +236,9 @@ const Kickoff = () => {
       <StalledAlertsPopup storageKey="stalled-alerts-popup-kickoff" />
 
       {/* Tabs */}
-      <Tabs defaultValue="pending" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
-        <TabsList data-tour="kickoff-tabs" className="bg-muted/50 p-1 h-auto">
+        <TabsList data-tour="kickoff-tabs" className="bg-muted/50 p-1 h-auto flex-wrap">
 
           <TabsTrigger
             value="pending"
@@ -250,6 +254,15 @@ const Kickoff = () => {
             <History className="h-4 w-4 mr-2" />
             Histórico de Aprovações
           </TabsTrigger>
+          {canBypass && (
+            <TabsTrigger
+              value="pending-imei"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium transition-all"
+            >
+              <RadioTower className="h-4 w-4 mr-2" />
+              Unidades Pendentes de IMEI
+            </TabsTrigger>
+          )}
           {canViewBypassAudit && (
             <TabsTrigger
               value="bypass-audit"
@@ -334,6 +347,22 @@ const Kickoff = () => {
           )}
         </TabsContent>
 
+        {canBypass && (
+          <TabsContent value="pending-imei" className="space-y-6 mt-0">
+            <div className="flex items-center gap-2">
+              <RadioTower className="h-5 w-5 text-amber-600" />
+              <h2 className="text-xl font-semibold text-foreground">
+                Unidades Pendentes de IMEI
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Unidades criadas na Frota via bypass do Kickoff que ainda aguardam
+              o IMEI do rastreador para finalizar a instalação.
+            </p>
+            <FrotaUnitsPendingImeiTable />
+          </TabsContent>
+        )}
+
         {canViewBypassAudit && (
           <TabsContent value="bypass-audit" className="space-y-6 mt-0">
             <div className="flex items-center gap-2">
@@ -343,8 +372,7 @@ const Kickoff = () => {
               </h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              Registro imutável de todos os kickoffs que pularam Homologação,
-              Kits e Planejamento e foram diretamente para Agendamento.
+              Registro imutável de todos os bypasses de Kickoff executados.
             </p>
             <KickoffBypassAuditTable />
           </TabsContent>
@@ -380,6 +408,7 @@ const Kickoff = () => {
           onSuccess={() => {
             refetch();
             refetchHistory();
+            setActiveTab("pending-imei");
           }}
         />
       )}

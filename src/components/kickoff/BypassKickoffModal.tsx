@@ -106,9 +106,9 @@ export const BypassKickoffModal = ({
 
       if (successes > 0) {
         toast.success(
-          `Bypass realizado para ${successes} ${
+          `Unidade criada na Frota para ${successes} ${
             successes === 1 ? "veículo" : "veículos"
-          }. Cliente liberado para Agendamento.`,
+          }. Aguardando vínculo de IMEI.`,
         );
       }
       if (errors.length > 0) {
@@ -138,7 +138,7 @@ export const BypassKickoffModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FastForward className="h-5 w-5 text-amber-600" />
-            Pular direto para Agendamento
+            Pular Kickoff e Criar Unidade na Frota
           </DialogTitle>
           <DialogDescription>
             {companyName} — venda #{saleSummaryId}
@@ -151,9 +151,10 @@ export const BypassKickoffModal = ({
         >
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-sm text-amber-900 dark:text-amber-200">
-            Esta ação <strong>ignora Homologação, Kits e Planejamento</strong> e
-            envia os veículos selecionados direto para Agendamento. É restrita a
-            Gestores, exige justificativa e fica registrada em auditoria.
+            Esta ação <strong>ignora Homologação, Kits, Planejamento e Agendamento</strong>{" "}
+            e cria a unidade diretamente na Frota. A unidade ficará listada em
+            "Unidades Pendentes de IMEI" até que o rastreador seja vinculado. É
+            restrita, exige justificativa e fica registrada em auditoria.
           </AlertDescription>
         </Alert>
 
@@ -252,7 +253,7 @@ export const BypassKickoffModal = ({
             ) : (
               <>
                 <FastForward className="h-4 w-4 mr-2" />
-                Confirmar Bypass
+                Criar Unidade na Frota
               </>
             )}
           </Button>
