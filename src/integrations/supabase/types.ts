@@ -629,12 +629,16 @@ export type Database = {
           api_status: number | null
           created_at: string
           error_message: string | null
-          filial_contrato: string
+          filial_contrato: string | null
           id: string
           notes: string | null
+          placa: string | null
           requested_by: string | null
           requested_by_email: string | null
-          tipo_contrato: string
+          sistema: string
+          tipo_contrato: string | null
+          wialon_item_id: number | null
+          wialon_item_name: string | null
         }
         Insert: {
           action: string
@@ -643,12 +647,16 @@ export type Database = {
           api_status?: number | null
           created_at?: string
           error_message?: string | null
-          filial_contrato: string
+          filial_contrato?: string | null
           id?: string
           notes?: string | null
+          placa?: string | null
           requested_by?: string | null
           requested_by_email?: string | null
-          tipo_contrato: string
+          sistema?: string
+          tipo_contrato?: string | null
+          wialon_item_id?: number | null
+          wialon_item_name?: string | null
         }
         Update: {
           action?: string
@@ -657,12 +665,16 @@ export type Database = {
           api_status?: number | null
           created_at?: string
           error_message?: string | null
-          filial_contrato?: string
+          filial_contrato?: string | null
           id?: string
           notes?: string | null
+          placa?: string | null
           requested_by?: string | null
           requested_by_email?: string | null
-          tipo_contrato?: string
+          sistema?: string
+          tipo_contrato?: string | null
+          wialon_item_id?: number | null
+          wialon_item_name?: string | null
         }
         Relationships: []
       }
