@@ -621,6 +621,51 @@ export type Database = {
         }
         Relationships: []
       }
+      frota_unit_activation_audit: {
+        Row: {
+          action: string
+          api_ok: boolean
+          api_response: Json | null
+          api_status: number | null
+          created_at: string
+          error_message: string | null
+          filial_contrato: string
+          id: string
+          notes: string | null
+          requested_by: string | null
+          requested_by_email: string | null
+          tipo_contrato: string
+        }
+        Insert: {
+          action: string
+          api_ok?: boolean
+          api_response?: Json | null
+          api_status?: number | null
+          created_at?: string
+          error_message?: string | null
+          filial_contrato: string
+          id?: string
+          notes?: string | null
+          requested_by?: string | null
+          requested_by_email?: string | null
+          tipo_contrato: string
+        }
+        Update: {
+          action?: string
+          api_ok?: boolean
+          api_response?: Json | null
+          api_status?: number | null
+          created_at?: string
+          error_message?: string | null
+          filial_contrato?: string
+          id?: string
+          notes?: string | null
+          requested_by?: string | null
+          requested_by_email?: string | null
+          tipo_contrato?: string
+        }
+        Relationships: []
+      }
       frota_units_pending_imei: {
         Row: {
           brand: string | null
