@@ -42,6 +42,7 @@ const PlateVerification = lazy(() => import("./pages/PlateVerification"));
 const FrotaPendentes = lazy(() => import("./pages/FrotaPendentes"));
 const ScheduleDeletionRequests = lazy(() => import("./pages/ScheduleDeletionRequests"));
 const FrotaUnitStatus = lazy(() => import("./pages/FrotaUnitStatus"));
+const FrotaUnitActivation = lazy(() => import("./pages/FrotaUnitActivation"));
 
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
 const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
@@ -336,6 +337,17 @@ function AppContent() {
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <FrotaUnitStatus />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Frota Unit Activation (admin only) */}
+              <Route path="/frota-unit-activation" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <FrotaUnitActivation />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>

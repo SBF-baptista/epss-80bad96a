@@ -116,6 +116,7 @@ const navigationGroups: NavGroup[] = [
       { to: "/segsale-search", label: "Busca Segsale", icon: Search, module: "scheduling", adminOnly: true },
       { to: "/frota-pendentes", label: "Pendências Segsale", icon: Search, module: "scheduling", adminOnly: true },
       { to: "/frota-unit-status", label: "Status Unidades Frota", icon: Activity, module: "scheduling", adminOnly: true, showBadge: true, badgeKind: "frota-unit-failed" },
+      { to: "/frota-unit-activation", label: "Ativação de Unidades", icon: Activity, module: "scheduling", adminOnly: true },
     ]
   },
 ];
