@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Power, PowerOff, Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { Power, PowerOff, Loader2, CheckCircle2, XCircle, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,12 +19,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 type Action = "activate" | "deactivate";
-type Tipo = "TELEMETRIA" | "MENSALISTA";
+type Sistema = "frota" | "auto";
 
 interface AuditRow {
   id: string;
-  filial_contrato: string;
-  tipo_contrato: string;
+  sistema: Sistema | null;
+  placa: string | null;
+  wialon_item_id: number | null;
+  wialon_item_name: string | null;
   action: Action;
   requested_by_email: string | null;
   api_status: number | null;
@@ -39,8 +41,9 @@ const FrotaUnitActivation = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [filial, setFilial] = useState("");
-  const [tipo, setTipo] = useState<Tipo>("MENSALISTA");
+  // Sem default — usuário DEVE escolher explicitamente
+  const [sistema, setSistema] = useState<Sistema | "">("");
+  const [query, setQuery] = useState("");
   const [action, setAction] = useState<Action>("deactivate");
   const [notes, setNotes] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -55,28 +58,44 @@ const FrotaUnitActivation = () => {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as AuditRow[];
+      return (data ?? []) as unknown as AuditRow[];
     },
   });
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("frota-toggle-unit-status", {
-        body: { filialContrato: filial.trim(), tipoContrato: tipo, action, notes: notes.trim() || undefined },
+      const { data, error } = await supabase.functions.invoke("wialon-toggle-unit", {
+        body: {
+          sistema,
+          action,
+          query: query.trim(),
+          notes: notes.trim() || undefined,
+        },
       });
       if (error) throw error;
-      return data as { ok: boolean; status?: number; response?: unknown; error?: string };
+      return data as {
+        ok: boolean;
+        sistema?: Sistema;
+        itemId?: number;
+        itemName?: string;
+        response?: unknown;
+        error?: string;
+        candidates?: Array<{ id: number; name: string }>;
+      };
     },
     onSuccess: (data) => {
       setLastResult(data);
       qc.invalidateQueries({ queryKey: ["frota-unit-activation-audit"] });
       if (data.ok) {
-        toast({ title: action === "activate" ? "Unidade ativada" : "Unidade desativada" });
+        toast({
+          title: action === "activate" ? "Unidade ativada" : "Unidade desativada",
+          description: data.itemName ? `${data.itemName} (id ${data.itemId})` : undefined,
+        });
         setNotes("");
       } else {
         toast({
           title: "Falha na operação",
-          description: data.error || `HTTP ${data.status}`,
+          description: data.error || "Erro desconhecido",
           variant: "destructive",
         });
       }
@@ -88,8 +107,12 @@ const FrotaUnitActivation = () => {
   });
 
   const submit = () => {
-    if (!filial.trim()) {
-      toast({ title: "Informe filialContrato", variant: "destructive" });
+    if (!sistema) {
+      toast({ title: "Selecione o sistema (Frota ou Auto)", variant: "destructive" });
+      return;
+    }
+    if (!query.trim()) {
+      toast({ title: "Informe a placa ou nome da unidade", variant: "destructive" });
       return;
     }
     setConfirmOpen(true);
@@ -98,12 +121,21 @@ const FrotaUnitActivation = () => {
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Ativação de Unidades (Frota)</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Ativação de Unidades</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Ferramenta de desenvolvedor. Aciona <code>POST /api/unidade/status</code> na Frota para
-          ativar/desativar unidades a nível de conta. Todas as ações ficam auditadas.
+          Ativa ou desativa uma unidade <b>já existente</b> no Wialon (Frota ou Auto).
+          Não cria nem exclui unidades — apenas alterna o estado <code>active</code>.
         </p>
       </div>
+
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription className="text-xs">
+          Escolha o <b>sistema</b> com atenção: Frota e Auto usam tokens (contas)
+          diferentes no mesmo Wialon. Uma ação executada no sistema errado afeta a
+          conta errada. Não há valor padrão de propósito.
+        </AlertDescription>
+      </Alert>
 
       <Card>
         <CardHeader>
@@ -112,30 +144,32 @@ const FrotaUnitActivation = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium">filialContrato</label>
-              <Input
-                placeholder="ex.: 300-077529"
-                value={filial}
-                onChange={(e) => setFilial(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium">tipoContrato</label>
-              <Select value={tipo} onValueChange={(v) => setTipo(v as Tipo)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <label className="text-xs font-medium">Sistema *</label>
+              <Select value={sistema} onValueChange={(v) => setSistema(v as Sistema)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione…" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MENSALISTA">MENSALISTA</SelectItem>
-                  <SelectItem value="TELEMETRIA">TELEMETRIA</SelectItem>
+                  <SelectItem value="frota">Frota</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <label className="text-xs font-medium">Placa ou nome da unidade *</label>
+              <Input
+                placeholder="ex.: ABC1D23"
+                value={query}
+                onChange={(e) => setQuery(e.target.value.toUpperCase())}
+              />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium">Ação</label>
               <Select value={action} onValueChange={(v) => setAction(v as Action)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="activate">Ativar (ativo=true)</SelectItem>
-                  <SelectItem value="deactivate">Desativar (ativo=false)</SelectItem>
+                  <SelectItem value="activate">Ativar (active=1)</SelectItem>
+                  <SelectItem value="deactivate">Desativar (active=0)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -159,9 +193,11 @@ const FrotaUnitActivation = () => {
           </div>
           <Alert>
             <AlertDescription className="text-xs">
-              Chama <code>POST https://frota-auto-aityd.ondigitalocean.app/api/unidade/status</code> com
-              <code> {"{ filialContrato, ativo, tipoContrato }"}</code>. Confirmação de sucesso exige
-              retorno com <code>ativo</code> igual ao solicitado.
+              Fluxo: <code>token/login</code> com o token do sistema escolhido →
+              <code> core/search_items</code> para localizar a unidade pelo nome
+              (contém a placa) → <code>unit/set_active</code> com <code>itemId</code>
+              e <code>active=0|1</code>. Se a busca retornar múltiplas unidades,
+              a operação é abortada e as candidatas são listadas na resposta abaixo.
             </AlertDescription>
           </Alert>
           {lastResult != null && (
@@ -190,9 +226,9 @@ const FrotaUnitActivation = () => {
                 <TableRow>
                   <TableHead>Quando</TableHead>
                   <TableHead>Usuário</TableHead>
+                  <TableHead>Sistema</TableHead>
                   <TableHead>Ação</TableHead>
-                  <TableHead>Filial/Contrato</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead>Placa / Unidade</TableHead>
                   <TableHead>Resultado</TableHead>
                   <TableHead>Detalhes</TableHead>
                 </TableRow>
@@ -205,19 +241,30 @@ const FrotaUnitActivation = () => {
                     </TableCell>
                     <TableCell className="text-xs">{r.requested_by_email ?? "—"}</TableCell>
                     <TableCell>
+                      <Badge variant="outline" className="uppercase text-xs">
+                        {r.sistema ?? "—"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       {r.action === "activate" ? (
                         <Badge className="bg-green-600 text-white gap-1"><Power className="w-3 h-3" />Ativar</Badge>
                       ) : (
                         <Badge className="bg-orange-600 text-white gap-1"><PowerOff className="w-3 h-3" />Desativar</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs font-mono">{r.filial_contrato}</TableCell>
-                    <TableCell className="text-xs">{r.tipo_contrato}</TableCell>
+                    <TableCell className="text-xs font-mono">
+                      <div>{r.placa ?? "—"}</div>
+                      {r.wialon_item_name && (
+                        <div className="text-muted-foreground">
+                          {r.wialon_item_name} (id {r.wialon_item_id})
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {r.api_ok ? (
-                        <Badge className="bg-green-600 text-white gap-1"><CheckCircle2 className="w-3 h-3" />OK {r.api_status ?? ""}</Badge>
+                        <Badge className="bg-green-600 text-white gap-1"><CheckCircle2 className="w-3 h-3" />OK</Badge>
                       ) : (
-                        <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />Falha {r.api_status ?? ""}</Badge>
+                        <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />Falha</Badge>
                       )}
                     </TableCell>
                     <TableCell className="max-w-md">
@@ -242,11 +289,13 @@ const FrotaUnitActivation = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Confirmar {action === "activate" ? "ativação" : "desativação"}?
+              Confirmar {action === "activate" ? "ativação" : "desativação"} no sistema {sistema.toUpperCase()}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a <b>{action === "activate" ? "ATIVAR" : "DESATIVAR"}</b> a unidade
-              com <code>filialContrato={filial}</code> ({tipo}). Essa ação é registrada em auditoria.
+              Você vai <b>{action === "activate" ? "ATIVAR" : "DESATIVAR"}</b> a unidade
+              com busca <code>{query}</code> no Wialon do sistema
+              <b> {sistema.toUpperCase()}</b>. Se houver mais de uma unidade correspondente,
+              a operação será abortada. A ação fica registrada em auditoria.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
