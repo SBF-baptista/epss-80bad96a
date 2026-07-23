@@ -342,6 +342,17 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
+              {/* Frota Unit Activation (admin only) */}
+              <Route path="/frota-unit-activation" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <FrotaUnitActivation />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
 
 
 
