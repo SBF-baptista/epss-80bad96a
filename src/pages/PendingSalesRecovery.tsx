@@ -382,7 +382,7 @@ export default function PendingSalesRecovery() {
                         </TableRow>
                         {isOpen && (
                           <TableRow key={`exp-${g.sale_summary_id}`}>
-                            <TableCell colSpan={8} className="bg-muted/30">
+                            <TableCell colSpan={9} className="bg-muted/30">
                               <div className="p-2 space-y-3">
                                 {g.plates.length === 0 ? (
                                   <div className="text-xs text-muted-foreground">
