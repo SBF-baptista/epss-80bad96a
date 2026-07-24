@@ -289,6 +289,36 @@ export default function PendingSalesRecovery() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Buscar venda por placa</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Cole as placas (separadas por vírgula, espaço ou quebra de linha) para identificar a venda vinculada a cada uma. A busca usa a base local de <code>incoming_vehicles</code>.
+          </p>
+          <div className="flex flex-col md:flex-row gap-2">
+            <Input
+              value={plateSearchInput}
+              onChange={(e) => setPlateSearchInput(e.target.value)}
+              placeholder="ex.: ABC1D23, XYZ4E56"
+              className="flex-1"
+            />
+            <Button onClick={searchByPlates} disabled={loadingPlateSearch}>
+              {loadingPlateSearch ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+              Buscar
+            </Button>
+          </div>
+          {plateSearchNotFound.length > 0 && (
+            <div className="text-xs text-destructive">
+              Sem venda vinculada: <span className="font-mono">{plateSearchNotFound.join(", ")}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
+
 
       <Card>
         <CardHeader>
