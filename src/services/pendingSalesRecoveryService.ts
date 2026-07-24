@@ -164,3 +164,73 @@ export async function recoverPendingSale(params: {
   if (error) return { ok: false, results: [], error: error.message };
   return { ok: !!data?.ok, results: (data?.results ?? []) as RecoverResult[] };
 }
+
+/**
+ * Busca vendas diretamente do Segsale por sale_summary_id (não depende de app_logs).
+ * Útil para vendas legadas que ficaram presas antes do fix de logging.
+ */
+export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGroup[]> {
+  const uniqueIds = Array.from(new Set(ids.filter(n => Number.isFinite(n) && n > 0)));
+  if (uniqueIds.length === 0) return [];
+
+  const results: PendingSaleGroup[] = [];
+  for (const id of uniqueIds) {
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-segsale-products", {
+        body: { idResumoVenda: id },
+      });
+      if (error || !data?.sales) {
+        results.push({
+          sale_summary_id: id,
+          company_name: null,
+          last_event_at: new Date().toISOString(),
+          reason: "other",
+          reason_detail: error?.message ?? data?.message ?? "Sem dados no Segsale",
+          raw_usage_types: [],
+          vehicle_count: 0,
+          plates: [],
+          log_ids: [],
+        });
+        continue;
+      }
+      const sales = data.sales as Array<{ company_name?: string; usage_type?: string; vehicles?: Array<{ plate?: string | null }> }>;
+      const plates: PendingSalePlate[] = [];
+      const rawUsage: string[] = [];
+      let company: string | null = null;
+      for (const s of sales) {
+        if (!company && s.company_name) company = s.company_name;
+        if (s.usage_type && !rawUsage.includes(s.usage_type)) rawUsage.push(s.usage_type);
+        for (const v of s.vehicles ?? []) {
+          const plate = (v.plate ?? "").trim().toUpperCase();
+          if (plate && !plates.some(p => p.plate === plate)) {
+            plates.push({ plate, raw_usage_type: s.usage_type ?? null });
+          }
+        }
+      }
+      results.push({
+        sale_summary_id: id,
+        company_name: company,
+        last_event_at: new Date().toISOString(),
+        reason: "other",
+        reason_detail: "Carregada manualmente do Segsale",
+        raw_usage_types: rawUsage,
+        vehicle_count: plates.length,
+        plates,
+        log_ids: [],
+      });
+    } catch (err) {
+      results.push({
+        sale_summary_id: id,
+        company_name: null,
+        last_event_at: new Date().toISOString(),
+        reason: "other",
+        reason_detail: err instanceof Error ? err.message : String(err),
+        raw_usage_types: [],
+        vehicle_count: 0,
+        plates: [],
+        log_ids: [],
+      });
+    }
+  }
+  return results;
+}

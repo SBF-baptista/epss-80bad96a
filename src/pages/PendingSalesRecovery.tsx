@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchPendingSaleGroups,
+  fetchSaleGroupsByIds,
   searchPlatesInWialon,
   recoverPendingSale,
   type PendingSaleGroup,
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -44,11 +46,44 @@ export default function PendingSalesRecovery() {
   const [tipoContrato, setTipoContrato] = useState<"MENSALISTA" | "TELEMETRIA">("MENSALISTA");
   const [running, setRunning] = useState(false);
   const [lastResults, setLastResults] = useState<{ saleId: number; results: RecoverResult[] } | null>(null);
+  const [manualIdsInput, setManualIdsInput] = useState("");
+  const [manualGroups, setManualGroups] = useState<PendingSaleGroup[]>([]);
+  const [loadingManual, setLoadingManual] = useState(false);
 
-  const { data: groups = [], isLoading, refetch } = useQuery({
+  const { data: logGroups = [], isLoading, refetch } = useQuery({
     queryKey: ["pending-sales-recovery"],
     queryFn: fetchPendingSaleGroups,
   });
+
+  // merge manual + log-based (manual first, dedup by sale_summary_id)
+  const groups: PendingSaleGroup[] = [
+    ...manualGroups,
+    ...logGroups.filter(g => !manualGroups.some(m => m.sale_summary_id === g.sale_summary_id)),
+  ];
+
+  const loadManualIds = async () => {
+    const ids = manualIdsInput
+      .split(/[\s,;]+/)
+      .map(s => Number(s.trim()))
+      .filter(n => Number.isFinite(n) && n > 0);
+    if (ids.length === 0) {
+      toast({ title: "Informe ao menos um sale_summary_id", variant: "destructive" });
+      return;
+    }
+    setLoadingManual(true);
+    try {
+      const fetched = await fetchSaleGroupsByIds(ids);
+      setManualGroups(prev => {
+        const merged = [...fetched, ...prev.filter(p => !fetched.some(f => f.sale_summary_id === p.sale_summary_id))];
+        return merged;
+      });
+      toast({ title: `Carregadas ${fetched.length} vendas do Segsale` });
+    } catch (err) {
+      toast({ title: "Falha ao carregar", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    } finally {
+      setLoadingManual(false);
+    }
+  };
 
   const toggleExpand = async (saleId: number, plates: string[]) => {
     const opening = !expanded[saleId];
@@ -183,6 +218,33 @@ export default function PendingSalesRecovery() {
           reenviar ao Kickoff (fluxo normal) ou criar a unidade agora e cadastrá-la como pendente de IMEI.
         </AlertDescription>
       </Alert>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Carregar vendas por ID</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Vendas legadas (anteriores ao fix de logging) não aparecem automaticamente. Cole aqui os <code>sale_summary_id</code> (separados por vírgula, espaço ou quebra de linha) para buscá-las direto do Segsale.
+          </p>
+          <div className="flex flex-col md:flex-row gap-2">
+            <Input
+              value={manualIdsInput}
+              onChange={(e) => setManualIdsInput(e.target.value)}
+              placeholder="ex.: 11343, 11344, 11345"
+              className="flex-1"
+            />
+            <Button onClick={loadManualIds} disabled={loadingManual}>
+              {loadingManual ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+              Carregar
+            </Button>
+            {manualGroups.length > 0 && (
+              <Button variant="ghost" onClick={() => setManualGroups([])}>Limpar manuais</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>
