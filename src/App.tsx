@@ -43,6 +43,7 @@ const FrotaPendentes = lazy(() => import("./pages/FrotaPendentes"));
 const ScheduleDeletionRequests = lazy(() => import("./pages/ScheduleDeletionRequests"));
 const FrotaUnitStatus = lazy(() => import("./pages/FrotaUnitStatus"));
 const FrotaUnitActivation = lazy(() => import("./pages/FrotaUnitActivation"));
+const PendingSalesRecovery = lazy(() => import("./pages/PendingSalesRecovery"));
 
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
 const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
@@ -348,6 +349,17 @@ function AppContent() {
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <Layout>
                       <FrotaUnitActivation />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Diagnóstico de Vendas Pendentes (admin only) */}
+              <Route path="/pending-sales-recovery" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <PendingSalesRecovery />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>

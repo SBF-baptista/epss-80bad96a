@@ -2042,6 +2042,54 @@ export type Database = {
           },
         ]
       }
+      pending_sales_recovery_log: {
+        Row: {
+          action: string
+          created_at: string
+          error_message: string | null
+          id: string
+          justification: string | null
+          performed_by: string | null
+          performed_by_email: string | null
+          plate: string
+          request_payload: Json | null
+          response_payload: Json | null
+          sale_summary_id: number
+          status: string
+          system: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          justification?: string | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          plate: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          sale_summary_id: number
+          status: string
+          system?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          justification?: string | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          plate?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          sale_summary_id?: number
+          status?: string
+          system?: string | null
+        }
+        Relationships: []
+      }
       production_items: {
         Row: {
           created_at: string
@@ -2884,6 +2932,7 @@ export type Database = {
         | "configuration"
         | "kickoff_simulator"
         | "kickoff_bypass"
+        | "pending_sales_recovery"
       app_role:
         | "admin"
         | "gestor"
@@ -3088,6 +3137,7 @@ export const Constants = {
         "configuration",
         "kickoff_simulator",
         "kickoff_bypass",
+        "pending_sales_recovery",
       ],
       app_role: [
         "admin",
