@@ -22,7 +22,8 @@ import {
   Wrench,
   Activity,
   Search,
-  Car
+  Car,
+  ShieldAlert
 } from "lucide-react";
 import {
   Sidebar,
