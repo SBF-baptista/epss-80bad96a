@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchPendingSaleGroups,
   fetchSaleGroupsByIds,
+  findSaleIdsByPlates,
   searchPlatesInWialon,
   recoverPendingSale,
   type PendingSaleGroup,
