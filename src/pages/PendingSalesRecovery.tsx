@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchPendingSaleGroups,
+  fetchSaleGroupsByIds,
   searchPlatesInWialon,
   recoverPendingSale,
   type PendingSaleGroup,
