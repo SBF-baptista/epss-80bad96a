@@ -340,6 +340,7 @@ export default function PendingSalesRecovery() {
                     <TableHead>Veíc.</TableHead>
                     <TableHead>Motivo</TableHead>
                     <TableHead>usage_type bruto</TableHead>
+                    <TableHead>Data da venda</TableHead>
                     <TableHead>Último evento</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
