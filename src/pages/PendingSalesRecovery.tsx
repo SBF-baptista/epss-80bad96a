@@ -89,6 +89,46 @@ export default function PendingSalesRecovery() {
     }
   };
 
+  const searchByPlates = async () => {
+    const plates = plateSearchInput
+      .split(/[\s,;]+/)
+      .map(s => s.trim().toUpperCase())
+      .filter(Boolean);
+    if (plates.length === 0) {
+      toast({ title: "Informe ao menos uma placa", variant: "destructive" });
+      return;
+    }
+    setLoadingPlateSearch(true);
+    setPlateSearchNotFound([]);
+    try {
+      const matches = await findSaleIdsByPlates(plates);
+      const foundIds = matches.filter(m => m.sale_summary_id).map(m => m.sale_summary_id as number);
+      const notFound = matches.filter(m => !m.sale_summary_id).map(m => m.plate);
+      setPlateSearchNotFound(notFound);
+      if (foundIds.length === 0) {
+        toast({
+          title: "Nenhuma venda encontrada",
+          description: "Placas não estão vinculadas a nenhuma venda em incoming_vehicles.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const fetched = await fetchSaleGroupsByIds(foundIds);
+      setManualGroups(prev => {
+        const merged = [...fetched, ...prev.filter(p => !fetched.some(f => f.sale_summary_id === p.sale_summary_id))];
+        return merged;
+      });
+      toast({
+        title: `Encontradas ${fetched.length} vendas`,
+        description: notFound.length > 0 ? `${notFound.length} placa(s) sem venda vinculada.` : undefined,
+      });
+    } catch (err) {
+      toast({ title: "Falha na busca", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    } finally {
+      setLoadingPlateSearch(false);
+    }
+  };
+
   const toggleExpand = async (saleId: number, plates: string[]) => {
     const opening = !expanded[saleId];
     setExpanded(prev => ({ ...prev, [saleId]: opening }));
