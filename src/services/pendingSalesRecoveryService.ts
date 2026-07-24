@@ -12,6 +12,7 @@ export interface PendingSaleGroup {
   sale_summary_id: number;
   company_name: string | null;
   last_event_at: string;
+  sale_date: string | null;
   reason: "unmapped_usage_type" | "receive_vehicle_failed" | "other";
   reason_detail: string | null;
   raw_usage_types: string[];
