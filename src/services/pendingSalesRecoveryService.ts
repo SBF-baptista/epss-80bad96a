@@ -176,10 +176,9 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
   const results: PendingSaleGroup[] = [];
   for (const id of uniqueIds) {
     try {
-      const { data, error } = await supabase.functions.invoke("fetch-segsale-products", {
-        body: { idResumoVenda: id },
-      });
-      if (error || !data?.sales) {
+      const { fetchSegsaleProductsDirect } = await import("./segsaleService");
+      const data = await fetchSegsaleProductsDirect(id);
+      if (!data?.success || !Array.isArray(data?.sales)) {
         results.push({
           sale_summary_id: id,
           company_name: null,
