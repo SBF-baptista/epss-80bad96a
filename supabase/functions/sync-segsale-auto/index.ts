@@ -344,12 +344,29 @@ function mapUsageType(usageType: string): string | null {
   return mapping[normalized] ?? null
 }
 
-function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any[] {
+function transformSalesToVehicleGroups(
+  sales: any[],
+  idResumoVenda: number,
+): { groups: any[]; unmapped: Array<{ raw_usage_type: string; company_name: string; plates: string[] }> } {
   const vehicleGroups: any[] = []
+  const unmapped: Array<{ raw_usage_type: string; company_name: string; plates: string[] }> = []
 
   for (const sale of sales) {
     const vehicles = sale.vehicles || []
     if (vehicles.length === 0) continue
+
+    const rawUsageType = sale.usage_type || 'TELEMETRIA GPS'
+    const usageType = mapUsageType(rawUsageType)
+
+    if (!usageType) {
+      unmapped.push({
+        raw_usage_type: rawUsageType,
+        company_name: sale.company_name || 'Não identificado',
+        plates: vehicles.map((v: any) => v.plate).filter(Boolean),
+      })
+      // Skip this sale group — do NOT invent a slug that would fail downstream.
+      continue
+    }
 
     const transformedVehicles = vehicles.map((v: any) => {
       const vehicle: any = {
@@ -378,12 +395,6 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
       return vehicle
     })
 
-    const usageType = mapUsageType(sale.usage_type || 'TELEMETRIA GPS')
-
-    // Map contract_items (new Segsale format) to group-level accessories and also
-    // keep the original items so receive-vehicle can persist categories correctly.
-    // The Segsale API now returns accessories/modules inside contract_items at the
-    // sale level instead of v.accessories / v.modules per vehicle.
     const groupAccessories: any[] = []
     if (Array.isArray(sale.contract_items)) {
       for (const item of sale.contract_items) {
@@ -411,5 +422,5 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
     })
   }
 
-  return vehicleGroups
+  return { groups: vehicleGroups, unmapped }
 }
