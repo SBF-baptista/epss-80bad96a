@@ -43,6 +43,7 @@ const FrotaPendentes = lazy(() => import("./pages/FrotaPendentes"));
 const ScheduleDeletionRequests = lazy(() => import("./pages/ScheduleDeletionRequests"));
 const FrotaUnitStatus = lazy(() => import("./pages/FrotaUnitStatus"));
 const FrotaUnitActivation = lazy(() => import("./pages/FrotaUnitActivation"));
+const PendingSalesRecovery = lazy(() => import("./pages/PendingSalesRecovery"));
 
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
 const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
