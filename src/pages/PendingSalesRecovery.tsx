@@ -46,11 +46,44 @@ export default function PendingSalesRecovery() {
   const [tipoContrato, setTipoContrato] = useState<"MENSALISTA" | "TELEMETRIA">("MENSALISTA");
   const [running, setRunning] = useState(false);
   const [lastResults, setLastResults] = useState<{ saleId: number; results: RecoverResult[] } | null>(null);
+  const [manualIdsInput, setManualIdsInput] = useState("");
+  const [manualGroups, setManualGroups] = useState<PendingSaleGroup[]>([]);
+  const [loadingManual, setLoadingManual] = useState(false);
 
-  const { data: groups = [], isLoading, refetch } = useQuery({
+  const { data: logGroups = [], isLoading, refetch } = useQuery({
     queryKey: ["pending-sales-recovery"],
     queryFn: fetchPendingSaleGroups,
   });
+
+  // merge manual + log-based (manual first, dedup by sale_summary_id)
+  const groups: PendingSaleGroup[] = [
+    ...manualGroups,
+    ...logGroups.filter(g => !manualGroups.some(m => m.sale_summary_id === g.sale_summary_id)),
+  ];
+
+  const loadManualIds = async () => {
+    const ids = manualIdsInput
+      .split(/[\s,;]+/)
+      .map(s => Number(s.trim()))
+      .filter(n => Number.isFinite(n) && n > 0);
+    if (ids.length === 0) {
+      toast({ title: "Informe ao menos um sale_summary_id", variant: "destructive" });
+      return;
+    }
+    setLoadingManual(true);
+    try {
+      const fetched = await fetchSaleGroupsByIds(ids);
+      setManualGroups(prev => {
+        const merged = [...fetched, ...prev.filter(p => !fetched.some(f => f.sale_summary_id === p.sale_summary_id))];
+        return merged;
+      });
+      toast({ title: `Carregadas ${fetched.length} vendas do Segsale` });
+    } catch (err) {
+      toast({ title: "Falha ao carregar", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    } finally {
+      setLoadingManual(false);
+    }
+  };
 
   const toggleExpand = async (saleId: number, plates: string[]) => {
     const opening = !expanded[saleId];
