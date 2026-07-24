@@ -12,6 +12,7 @@ export interface PendingSaleGroup {
   sale_summary_id: number;
   company_name: string | null;
   last_event_at: string;
+  sale_date: string | null;
   reason: "unmapped_usage_type" | "receive_vehicle_failed" | "other";
   reason_detail: string | null;
   raw_usage_types: string[];
@@ -87,6 +88,7 @@ export async function fetchPendingSaleGroups(): Promise<PendingSaleGroup[]> {
         sale_summary_id: saleId,
         company_name: row.entity_name ?? (typeof ns.company_name === "string" ? (ns.company_name as string) : null),
         last_event_at: row.created_at,
+        sale_date: null,
         reason,
         reason_detail: row.error_message,
         raw_usage_types: rawUsage ? [rawUsage] : [],
@@ -125,9 +127,62 @@ export async function fetchPendingSaleGroups(): Promise<PendingSaleGroup[]> {
     }
   }
 
+  // Enrich groups with sale_date (min received_at from incoming_vehicles)
+  await enrichWithSaleDate(Array.from(grouped.values()));
+
   return Array.from(grouped.values()).sort((a, b) =>
     new Date(b.last_event_at).getTime() - new Date(a.last_event_at).getTime()
   );
+}
+
+/**
+ * Preenche `sale_date` de cada grupo consultando o menor `received_at` em incoming_vehicles.
+ */
+async function enrichWithSaleDate(groups: PendingSaleGroup[]): Promise<void> {
+  const ids = groups.map(g => g.sale_summary_id);
+  if (ids.length === 0) return;
+  const { data } = await supabase
+    .from("incoming_vehicles")
+    .select("sale_summary_id, received_at, created_at")
+    .in("sale_summary_id", ids);
+  const byId = new Map<number, string>();
+  for (const row of data ?? []) {
+    const id = row.sale_summary_id as number;
+    const d = (row.received_at as string | null) ?? (row.created_at as string | null);
+    if (!d) continue;
+    const existing = byId.get(id);
+    if (!existing || new Date(d).getTime() < new Date(existing).getTime()) {
+      byId.set(id, d);
+    }
+  }
+  for (const g of groups) {
+    if (!g.sale_date) g.sale_date = byId.get(g.sale_summary_id) ?? null;
+  }
+}
+
+/**
+ * Busca sale_summary_ids em `incoming_vehicles` a partir de uma lista de placas.
+ */
+export async function findSaleIdsByPlates(plates: string[]): Promise<Array<{ plate: string; sale_summary_id: number | null }>> {
+  const cleaned = Array.from(new Set(
+    plates.map(p => (p ?? "").trim().toUpperCase()).filter(p => p.length > 0)
+  ));
+  if (cleaned.length === 0) return [];
+  const { data, error } = await supabase
+    .from("incoming_vehicles")
+    .select("plate, sale_summary_id, received_at")
+    .in("plate", cleaned)
+    .not("sale_summary_id", "is", null)
+    .order("received_at", { ascending: false });
+  if (error) throw error;
+  const byPlate = new Map<string, number>();
+  for (const row of data ?? []) {
+    const p = (row.plate ?? "").toUpperCase();
+    if (!byPlate.has(p) && row.sale_summary_id) {
+      byPlate.set(p, row.sale_summary_id as number);
+    }
+  }
+  return cleaned.map(p => ({ plate: p, sale_summary_id: byPlate.get(p) ?? null }));
 }
 
 export interface WialonSearchResult {
@@ -183,6 +238,7 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
           sale_summary_id: id,
           company_name: null,
           last_event_at: new Date().toISOString(),
+          sale_date: null,
           reason: "other",
           reason_detail: data?.message ?? "Sem dados no Segsale",
           raw_usage_types: [],
@@ -210,6 +266,7 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
         sale_summary_id: id,
         company_name: company,
         last_event_at: new Date().toISOString(),
+        sale_date: null,
         reason: "other",
         reason_detail: "Carregada manualmente do Segsale",
         raw_usage_types: rawUsage,
@@ -222,6 +279,7 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
         sale_summary_id: id,
         company_name: null,
         last_event_at: new Date().toISOString(),
+        sale_date: null,
         reason: "other",
         reason_detail: err instanceof Error ? err.message : String(err),
         raw_usage_types: [],
@@ -231,5 +289,6 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
       });
     }
   }
+  await enrichWithSaleDate(results);
   return results;
 }

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchPendingSaleGroups,
   fetchSaleGroupsByIds,
+  findSaleIdsByPlates,
   searchPlatesInWialon,
   recoverPendingSale,
   type PendingSaleGroup,
@@ -49,6 +50,9 @@ export default function PendingSalesRecovery() {
   const [manualIdsInput, setManualIdsInput] = useState("");
   const [manualGroups, setManualGroups] = useState<PendingSaleGroup[]>([]);
   const [loadingManual, setLoadingManual] = useState(false);
+  const [plateSearchInput, setPlateSearchInput] = useState("");
+  const [loadingPlateSearch, setLoadingPlateSearch] = useState(false);
+  const [plateSearchNotFound, setPlateSearchNotFound] = useState<string[]>([]);
 
   const { data: logGroups = [], isLoading, refetch } = useQuery({
     queryKey: ["pending-sales-recovery"],
@@ -82,6 +86,46 @@ export default function PendingSalesRecovery() {
       toast({ title: "Falha ao carregar", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
     } finally {
       setLoadingManual(false);
+    }
+  };
+
+  const searchByPlates = async () => {
+    const plates = plateSearchInput
+      .split(/[\s,;]+/)
+      .map(s => s.trim().toUpperCase())
+      .filter(Boolean);
+    if (plates.length === 0) {
+      toast({ title: "Informe ao menos uma placa", variant: "destructive" });
+      return;
+    }
+    setLoadingPlateSearch(true);
+    setPlateSearchNotFound([]);
+    try {
+      const matches = await findSaleIdsByPlates(plates);
+      const foundIds = matches.filter(m => m.sale_summary_id).map(m => m.sale_summary_id as number);
+      const notFound = matches.filter(m => !m.sale_summary_id).map(m => m.plate);
+      setPlateSearchNotFound(notFound);
+      if (foundIds.length === 0) {
+        toast({
+          title: "Nenhuma venda encontrada",
+          description: "Placas não estão vinculadas a nenhuma venda em incoming_vehicles.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const fetched = await fetchSaleGroupsByIds(foundIds);
+      setManualGroups(prev => {
+        const merged = [...fetched, ...prev.filter(p => !fetched.some(f => f.sale_summary_id === p.sale_summary_id))];
+        return merged;
+      });
+      toast({
+        title: `Encontradas ${fetched.length} vendas`,
+        description: notFound.length > 0 ? `${notFound.length} placa(s) sem venda vinculada.` : undefined,
+      });
+    } catch (err) {
+      toast({ title: "Falha na busca", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    } finally {
+      setLoadingPlateSearch(false);
     }
   };
 
@@ -245,6 +289,36 @@ export default function PendingSalesRecovery() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Buscar venda por placa</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Cole as placas (separadas por vírgula, espaço ou quebra de linha) para identificar a venda vinculada a cada uma. A busca usa a base local de <code>incoming_vehicles</code>.
+          </p>
+          <div className="flex flex-col md:flex-row gap-2">
+            <Input
+              value={plateSearchInput}
+              onChange={(e) => setPlateSearchInput(e.target.value)}
+              placeholder="ex.: ABC1D23, XYZ4E56"
+              className="flex-1"
+            />
+            <Button onClick={searchByPlates} disabled={loadingPlateSearch}>
+              {loadingPlateSearch ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+              Buscar
+            </Button>
+          </div>
+          {plateSearchNotFound.length > 0 && (
+            <div className="text-xs text-destructive">
+              Sem venda vinculada: <span className="font-mono">{plateSearchNotFound.join(", ")}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
+
 
       <Card>
         <CardHeader>
@@ -266,6 +340,7 @@ export default function PendingSalesRecovery() {
                     <TableHead>Veíc.</TableHead>
                     <TableHead>Motivo</TableHead>
                     <TableHead>usage_type bruto</TableHead>
+                    <TableHead>Data da venda</TableHead>
                     <TableHead>Último evento</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -286,6 +361,9 @@ export default function PendingSalesRecovery() {
                             {g.raw_usage_types.join(", ") || "—"}
                           </TableCell>
                           <TableCell className="text-xs whitespace-nowrap">
+                            {g.sale_date ? new Date(g.sale_date).toLocaleString("pt-BR") : "—"}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
                             {new Date(g.last_event_at).toLocaleString("pt-BR")}
                           </TableCell>
                           <TableCell className="text-right">
@@ -304,7 +382,7 @@ export default function PendingSalesRecovery() {
                         </TableRow>
                         {isOpen && (
                           <TableRow key={`exp-${g.sale_summary_id}`}>
-                            <TableCell colSpan={8} className="bg-muted/30">
+                            <TableCell colSpan={9} className="bg-muted/30">
                               <div className="p-2 space-y-3">
                                 {g.plates.length === 0 ? (
                                   <div className="text-xs text-muted-foreground">
