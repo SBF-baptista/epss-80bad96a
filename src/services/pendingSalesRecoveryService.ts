@@ -238,6 +238,7 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
           sale_summary_id: id,
           company_name: null,
           last_event_at: new Date().toISOString(),
+          sale_date: null,
           reason: "other",
           reason_detail: data?.message ?? "Sem dados no Segsale",
           raw_usage_types: [],
@@ -265,6 +266,7 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
         sale_summary_id: id,
         company_name: company,
         last_event_at: new Date().toISOString(),
+        sale_date: null,
         reason: "other",
         reason_detail: "Carregada manualmente do Segsale",
         raw_usage_types: rawUsage,
@@ -277,6 +279,7 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
         sale_summary_id: id,
         company_name: null,
         last_event_at: new Date().toISOString(),
+        sale_date: null,
         reason: "other",
         reason_detail: err instanceof Error ? err.message : String(err),
         raw_usage_types: [],
@@ -286,5 +289,6 @@ export async function fetchSaleGroupsByIds(ids: number[]): Promise<PendingSaleGr
       });
     }
   }
+  await enrichWithSaleDate(results);
   return results;
 }
