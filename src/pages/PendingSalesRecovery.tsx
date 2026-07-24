@@ -361,6 +361,9 @@ export default function PendingSalesRecovery() {
                             {g.raw_usage_types.join(", ") || "—"}
                           </TableCell>
                           <TableCell className="text-xs whitespace-nowrap">
+                            {g.sale_date ? new Date(g.sale_date).toLocaleString("pt-BR") : "—"}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
                             {new Date(g.last_event_at).toLocaleString("pt-BR")}
                           </TableCell>
                           <TableCell className="text-right">
