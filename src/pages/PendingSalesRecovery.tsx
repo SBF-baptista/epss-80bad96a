@@ -50,6 +50,9 @@ export default function PendingSalesRecovery() {
   const [manualIdsInput, setManualIdsInput] = useState("");
   const [manualGroups, setManualGroups] = useState<PendingSaleGroup[]>([]);
   const [loadingManual, setLoadingManual] = useState(false);
+  const [plateSearchInput, setPlateSearchInput] = useState("");
+  const [loadingPlateSearch, setLoadingPlateSearch] = useState(false);
+  const [plateSearchNotFound, setPlateSearchNotFound] = useState<string[]>([]);
 
   const { data: logGroups = [], isLoading, refetch } = useQuery({
     queryKey: ["pending-sales-recovery"],
