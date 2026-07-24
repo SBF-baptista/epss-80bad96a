@@ -221,6 +221,33 @@ export default function PendingSalesRecovery() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Carregar vendas por ID</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Vendas legadas (anteriores ao fix de logging) não aparecem automaticamente. Cole aqui os <code>sale_summary_id</code> (separados por vírgula, espaço ou quebra de linha) para buscá-las direto do Segsale.
+          </p>
+          <div className="flex flex-col md:flex-row gap-2">
+            <Input
+              value={manualIdsInput}
+              onChange={(e) => setManualIdsInput(e.target.value)}
+              placeholder="ex.: 11343, 11344, 11345"
+              className="flex-1"
+            />
+            <Button onClick={loadManualIds} disabled={loadingManual}>
+              {loadingManual ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+              Carregar
+            </Button>
+            {manualGroups.length > 0 && (
+              <Button variant="ghost" onClick={() => setManualGroups([])}>Limpar manuais</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Vendas presas ({groups.length})</CardTitle>
         </CardHeader>
         <CardContent>
