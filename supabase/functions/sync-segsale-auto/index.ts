@@ -253,11 +253,52 @@ Deno.serve(async (req) => {
         }
 
         // Step 3: Transform and send to receive-vehicle (dedup in receive-vehicle handles existing records)
-        const vehicleGroups = transformSalesToVehicleGroups(sales, idResumoVenda)
-        console.log(`📦 ${vehicleGroups.length} vehicle groups to store`)
+        const { groups: vehicleGroups, unmapped } = transformSalesToVehicleGroups(sales, idResumoVenda)
+        console.log(`📦 ${vehicleGroups.length} vehicle groups to store (${unmapped.length} unmapped)`) 
+
+        // Critical log for any unmapped productDescription / usage_type coming from Segsale.
+        // This surfaces new product families immediately instead of failing silently downstream.
+        if (unmapped.length > 0) {
+          for (const u of unmapped) {
+            console.error(`🚨 Unmapped usage_type "${u.raw_usage_type}" for sale ${idResumoVenda} (${u.company_name}) plates=${u.plates.join(',') || 'n/a'}`)
+            await supabase.from('app_logs').insert({
+              action: 'segsale_unmapped_usage_type',
+              module: 'segsale_sync',
+              impact_level: 'critical',
+              status: 'error',
+              action_type: 'system_event',
+              origin: 'edge_function',
+              entity_type: 'incoming_vehicle',
+              entity_id: String(idResumoVenda),
+              entity_name: u.company_name,
+              error_code: 'UNMAPPED_USAGE_TYPE',
+              error_message: `Segsale productDescription/usage_type "${u.raw_usage_type}" is not in mapUsageType() dictionary. Sale ${idResumoVenda} skipped for this group.`,
+              new_state: {
+                sale_summary_id: idResumoVenda,
+                raw_usage_type: u.raw_usage_type,
+                company_name: u.company_name,
+                plates: u.plates,
+              },
+            }).then(({ error }) => {
+              if (error) console.error('⚠️ Failed to write app_logs for unmapped usage_type:', error.message)
+            })
+          }
+
+          // Mark integration_state as errored so it does not silently look healthy.
+          await supabase.from('integration_state').upsert({
+            integration_name: `segsale_products_${idResumoVenda}`,
+            status: 'error',
+            last_error: `Unmapped usage_type(s): ${[...new Set(unmapped.map(u => u.raw_usage_type))].join(', ')}`,
+            last_poll_at: new Date().toISOString(),
+          }, { onConflict: 'integration_name' })
+        }
 
         if (vehicleGroups.length === 0) {
-          results.push({ id: idResumoVenda, status: 'no_vehicle_groups' })
+          results.push({
+            id: idResumoVenda,
+            status: unmapped.length > 0 ? 'unmapped_usage_type' : 'no_vehicle_groups',
+            unmapped: unmapped.length > 0 ? unmapped : undefined,
+          })
           continue
         }
 
@@ -283,6 +324,38 @@ Deno.serve(async (req) => {
         if (!receiveResponse.ok) {
           const receiveError = await receiveResponse.text()
           console.error(`❌ receive-vehicle failed for ${idResumoVenda}: ${receiveResponse.status} - ${receiveError}`)
+
+          // Propagate the failure into integration_state (last_error + error_count)
+          // and app_logs so the sync no longer looks healthy when downstream returns 4xx/5xx.
+          const isClientError = receiveResponse.status >= 400 && receiveResponse.status < 500
+          const { data: existingIS } = await supabase
+            .from('integration_state')
+            .select('error_count')
+            .eq('integration_name', `segsale_products_${idResumoVenda}`)
+            .maybeSingle()
+
+          await supabase.from('integration_state').upsert({
+            integration_name: `segsale_products_${idResumoVenda}`,
+            status: 'error',
+            last_error: `receive-vehicle ${receiveResponse.status}: ${receiveError.slice(0, 500)}`,
+            error_count: (existingIS?.error_count ?? 0) + 1,
+            last_poll_at: new Date().toISOString(),
+          }, { onConflict: 'integration_name' })
+
+          await supabase.from('app_logs').insert({
+            action: 'segsale_receive_vehicle_failed',
+            module: 'segsale_sync',
+            impact_level: 'critical',
+            status: 'error',
+            action_type: 'system_event',
+            origin: 'edge_function',
+            entity_type: 'incoming_vehicle',
+            entity_id: String(idResumoVenda),
+            error_code: `HTTP_${receiveResponse.status}`,
+            error_message: `receive-vehicle rejected sale ${idResumoVenda} with status ${receiveResponse.status}`,
+            new_state: { response_body: receiveError.slice(0, 2000), client_error: isClientError },
+          })
+
           results.push({ id: idResumoVenda, status: 'storage_failed', error: receiveResponse.status })
         } else {
           const receiveData = await receiveResponse.json()
@@ -325,9 +398,12 @@ Deno.serve(async (req) => {
   }
 })
 
-// Reuse the same mapping from segsale-webhook
-function mapUsageType(usageType: string): string {
-  const normalized = usageType.toUpperCase().trim()
+// Reuse the same mapping from segsale-webhook.
+// Returns null when the usage_type is not recognized so the caller can log/fail explicitly,
+// instead of silently generating an invalid slug (e.g. "plus_ii_-_gps") that
+// receive-vehicle would reject with HTTP 400.
+function mapUsageType(usageType: string): string | null {
+  const normalized = (usageType || '').toUpperCase().trim()
   const mapping: Record<string, string> = {
     'TELEMETRIA GPS': 'telemetria_gps',
     'TELEMETRIA CAN': 'telemetria_can',
@@ -336,16 +412,34 @@ function mapUsageType(usageType: string): string {
     'PARTICULAR': 'particular',
     'COMERCIAL': 'comercial',
     'FROTA': 'frota',
+    'PLUS II - GPS': 'particular',
   }
-  return mapping[normalized] || usageType.toLowerCase().replace(/\s+/g, '_')
+  return mapping[normalized] ?? null
 }
 
-function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any[] {
+function transformSalesToVehicleGroups(
+  sales: any[],
+  idResumoVenda: number,
+): { groups: any[]; unmapped: Array<{ raw_usage_type: string; company_name: string; plates: string[] }> } {
   const vehicleGroups: any[] = []
+  const unmapped: Array<{ raw_usage_type: string; company_name: string; plates: string[] }> = []
 
   for (const sale of sales) {
     const vehicles = sale.vehicles || []
     if (vehicles.length === 0) continue
+
+    const rawUsageType = sale.usage_type || 'TELEMETRIA GPS'
+    const usageType = mapUsageType(rawUsageType)
+
+    if (!usageType) {
+      unmapped.push({
+        raw_usage_type: rawUsageType,
+        company_name: sale.company_name || 'Não identificado',
+        plates: vehicles.map((v: any) => v.plate).filter(Boolean),
+      })
+      // Skip this sale group — do NOT invent a slug that would fail downstream.
+      continue
+    }
 
     const transformedVehicles = vehicles.map((v: any) => {
       const vehicle: any = {
@@ -374,12 +468,6 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
       return vehicle
     })
 
-    const usageType = mapUsageType(sale.usage_type || 'TELEMETRIA GPS')
-
-    // Map contract_items (new Segsale format) to group-level accessories and also
-    // keep the original items so receive-vehicle can persist categories correctly.
-    // The Segsale API now returns accessories/modules inside contract_items at the
-    // sale level instead of v.accessories / v.modules per vehicle.
     const groupAccessories: any[] = []
     if (Array.isArray(sale.contract_items)) {
       for (const item of sale.contract_items) {
@@ -407,5 +495,5 @@ function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any
     })
   }
 
-  return vehicleGroups
+  return { groups: vehicleGroups, unmapped }
 }
