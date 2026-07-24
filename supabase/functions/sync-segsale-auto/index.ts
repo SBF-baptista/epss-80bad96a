@@ -325,9 +325,12 @@ Deno.serve(async (req) => {
   }
 })
 
-// Reuse the same mapping from segsale-webhook
-function mapUsageType(usageType: string): string {
-  const normalized = usageType.toUpperCase().trim()
+// Reuse the same mapping from segsale-webhook.
+// Returns null when the usage_type is not recognized so the caller can log/fail explicitly,
+// instead of silently generating an invalid slug (e.g. "plus_ii_-_gps") that
+// receive-vehicle would reject with HTTP 400.
+function mapUsageType(usageType: string): string | null {
+  const normalized = (usageType || '').toUpperCase().trim()
   const mapping: Record<string, string> = {
     'TELEMETRIA GPS': 'telemetria_gps',
     'TELEMETRIA CAN': 'telemetria_can',
@@ -336,8 +339,9 @@ function mapUsageType(usageType: string): string {
     'PARTICULAR': 'particular',
     'COMERCIAL': 'comercial',
     'FROTA': 'frota',
+    'PLUS II - GPS': 'particular',
   }
-  return mapping[normalized] || usageType.toLowerCase().replace(/\s+/g, '_')
+  return mapping[normalized] ?? null
 }
 
 function transformSalesToVehicleGroups(sales: any[], idResumoVenda: number): any[] {
