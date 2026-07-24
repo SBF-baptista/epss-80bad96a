@@ -253,11 +253,52 @@ Deno.serve(async (req) => {
         }
 
         // Step 3: Transform and send to receive-vehicle (dedup in receive-vehicle handles existing records)
-        const vehicleGroups = transformSalesToVehicleGroups(sales, idResumoVenda)
-        console.log(`📦 ${vehicleGroups.length} vehicle groups to store`)
+        const { groups: vehicleGroups, unmapped } = transformSalesToVehicleGroups(sales, idResumoVenda)
+        console.log(`📦 ${vehicleGroups.length} vehicle groups to store (${unmapped.length} unmapped)`) 
+
+        // Critical log for any unmapped productDescription / usage_type coming from Segsale.
+        // This surfaces new product families immediately instead of failing silently downstream.
+        if (unmapped.length > 0) {
+          for (const u of unmapped) {
+            console.error(`🚨 Unmapped usage_type "${u.raw_usage_type}" for sale ${idResumoVenda} (${u.company_name}) plates=${u.plates.join(',') || 'n/a'}`)
+            await supabase.from('app_logs').insert({
+              action: 'segsale_unmapped_usage_type',
+              module: 'segsale_sync',
+              impact_level: 'critical',
+              status: 'error',
+              action_type: 'system_event',
+              origin: 'edge_function',
+              entity_type: 'incoming_vehicle',
+              entity_id: String(idResumoVenda),
+              entity_name: u.company_name,
+              error_code: 'UNMAPPED_USAGE_TYPE',
+              error_message: `Segsale productDescription/usage_type "${u.raw_usage_type}" is not in mapUsageType() dictionary. Sale ${idResumoVenda} skipped for this group.`,
+              new_state: {
+                sale_summary_id: idResumoVenda,
+                raw_usage_type: u.raw_usage_type,
+                company_name: u.company_name,
+                plates: u.plates,
+              },
+            }).then(({ error }) => {
+              if (error) console.error('⚠️ Failed to write app_logs for unmapped usage_type:', error.message)
+            })
+          }
+
+          // Mark integration_state as errored so it does not silently look healthy.
+          await supabase.from('integration_state').upsert({
+            integration_name: `segsale_products_${idResumoVenda}`,
+            status: 'error',
+            last_error: `Unmapped usage_type(s): ${[...new Set(unmapped.map(u => u.raw_usage_type))].join(', ')}`,
+            last_poll_at: new Date().toISOString(),
+          }, { onConflict: 'integration_name' })
+        }
 
         if (vehicleGroups.length === 0) {
-          results.push({ id: idResumoVenda, status: 'no_vehicle_groups' })
+          results.push({
+            id: idResumoVenda,
+            status: unmapped.length > 0 ? 'unmapped_usage_type' : 'no_vehicle_groups',
+            unmapped: unmapped.length > 0 ? unmapped : undefined,
+          })
           continue
         }
 
@@ -283,6 +324,38 @@ Deno.serve(async (req) => {
         if (!receiveResponse.ok) {
           const receiveError = await receiveResponse.text()
           console.error(`❌ receive-vehicle failed for ${idResumoVenda}: ${receiveResponse.status} - ${receiveError}`)
+
+          // Propagate the failure into integration_state (last_error + error_count)
+          // and app_logs so the sync no longer looks healthy when downstream returns 4xx/5xx.
+          const isClientError = receiveResponse.status >= 400 && receiveResponse.status < 500
+          const { data: existingIS } = await supabase
+            .from('integration_state')
+            .select('error_count')
+            .eq('integration_name', `segsale_products_${idResumoVenda}`)
+            .maybeSingle()
+
+          await supabase.from('integration_state').upsert({
+            integration_name: `segsale_products_${idResumoVenda}`,
+            status: 'error',
+            last_error: `receive-vehicle ${receiveResponse.status}: ${receiveError.slice(0, 500)}`,
+            error_count: (existingIS?.error_count ?? 0) + 1,
+            last_poll_at: new Date().toISOString(),
+          }, { onConflict: 'integration_name' })
+
+          await supabase.from('app_logs').insert({
+            action: 'segsale_receive_vehicle_failed',
+            module: 'segsale_sync',
+            impact_level: 'critical',
+            status: 'error',
+            action_type: 'system_event',
+            origin: 'edge_function',
+            entity_type: 'incoming_vehicle',
+            entity_id: String(idResumoVenda),
+            error_code: `HTTP_${receiveResponse.status}`,
+            error_message: `receive-vehicle rejected sale ${idResumoVenda} with status ${receiveResponse.status}`,
+            new_state: { response_body: receiveError.slice(0, 2000), client_error: isClientError },
+          })
+
           results.push({ id: idResumoVenda, status: 'storage_failed', error: receiveResponse.status })
         } else {
           const receiveData = await receiveResponse.json()
