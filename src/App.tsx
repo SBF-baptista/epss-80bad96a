@@ -354,6 +354,17 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
+              {/* Diagnóstico de Vendas Pendentes (admin only) */}
+              <Route path="/pending-sales-recovery" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <Layout>
+                      <PendingSalesRecovery />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
 
 
 
