@@ -88,6 +88,7 @@ export async function fetchPendingSaleGroups(): Promise<PendingSaleGroup[]> {
         sale_summary_id: saleId,
         company_name: row.entity_name ?? (typeof ns.company_name === "string" ? (ns.company_name as string) : null),
         last_event_at: row.created_at,
+        sale_date: null,
         reason,
         reason_detail: row.error_message,
         raw_usage_types: rawUsage ? [rawUsage] : [],
