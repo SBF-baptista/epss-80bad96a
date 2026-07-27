@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 type Action = "activate" | "deactivate";
+type AuditAction = Action | "create" | "create_partial_failure";
 type Sistema = "frota" | "auto";
 
 interface AuditRow {
