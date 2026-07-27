@@ -147,8 +147,9 @@ Deno.serve(async (req) => {
     );
 
     const diagKey = Deno.env.get("WIALON_DIAG_KEY");
+    const diagKey2 = Deno.env.get("WIALON_DIAG_KEY_TMP");
     const providedKey = req.headers.get("x-diag-key");
-    const viaDiagKey = !!diagKey && providedKey === diagKey;
+    const viaDiagKey = (!!diagKey && providedKey === diagKey) || (!!diagKey2 && providedKey === diagKey2);
 
     if (!viaDiagKey) {
       const authToken = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
