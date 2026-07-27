@@ -37,7 +37,7 @@ function isWialonError(b: unknown): b is { error: number; reason?: string } {
   return typeof b === "object" && b !== null && "error" in (b as Record<string, unknown>);
 }
 
-async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
+async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItemId?: number, resourceMask?: string, hwValues?: string[]) {
   const token = sistema === "frota"
     ? Deno.env.get("WIALON_TOKEN_FROTA")
     : Deno.env.get("WIALON_TOKEN_AUTO");
@@ -57,20 +57,26 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
   // 2) hw types (filtro por nome)
   const hw = await wialonCall("core/get_hw_types", {
     filterType: "name",
-    filterValue: [hwFilter],
+    filterValue: hwValues && hwValues.length ? hwValues : [hwFilter],
     includeType: true,
     ignoreRename: true,
   }, sid);
 
   // 2b) fallback: busca ampla por "NT" caso o filtro exato não retorne nada
   let hwLike: unknown = null;
+  let hwRaw: unknown = null;
   const hwEmpty = Array.isArray(hw.body) && hw.body.length === 0;
   if (hwEmpty || isWialonError(hw.body)) {
     const all = await wialonCall("core/get_hw_types", { filterType: "name", filterValue: [], includeType: true, ignoreRename: true }, sid);
     if (Array.isArray(all.body)) {
-      hwLike = (all.body as Array<{ id: number; name: string }>)
-        .filter((t) => String(t.name ?? "").toUpperCase().includes("NT"))
-        .slice(0, 40);
+      const list = all.body as Array<{ id: number; name: string }>;
+      hwRaw = { total: list.length };
+      const needle = hwFilter.toUpperCase().slice(0, 4);
+      hwLike = list
+        .filter((t) => String(t.name ?? "").toUpperCase().includes(needle))
+        .slice(0, 60);
+    } else {
+      hwRaw = all.body;
     }
   }
 
@@ -94,14 +100,47 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
   const totalItems = (sample.body as { totalItemsCount?: number })?.totalItemsCount ?? null;
   const items = [...all].sort((a, b) => b.id - a.id);
 
+  // 4) contas / recursos (avl_resource) — necessário para account/change_account
+  const resources = await wialonCall("core/search_items", {
+    spec: {
+      itemsType: "avl_resource",
+      propName: "sys_name",
+      propValueMask: resourceMask ?? "*",
+      sortType: "sys_name",
+      propType: "property",
+    },
+    force: 1,
+    flags: 1 + 1024, // base + billing/account properties
+    from: 0,
+    to: 200,
+  }, sid);
+  const resItems = (resources.body as { items?: Array<Record<string, unknown>> })?.items ?? [];
+
+  // 5) inspeção opcional de uma unidade específica (conta vinculada / estado)
+  let inspected: unknown = null;
+  if (inspectItemId) {
+    const one = await wialonCall("core/search_item", { id: inspectItemId, flags: 1 + 8192 + 1024 }, sid);
+    inspected = one.body;
+  }
+
   return {
     sistema,
     ok: true,
     creatorCandidate,
+    loginUser: lb.user ?? null,
     hwTypes: hw.body,
     hwTypesLikeNT: hwLike,
+    hwRaw,
     unitsTotal: totalItems,
     unitsSample: items.slice(0, 15).map((u) => ({ id: u.id, name: u.nm, hw: u.hw ?? null, uniqueId: u.uid ?? null })),
+    resources: resItems.map((r) => ({
+      id: r.id,
+      name: r.nm,
+      uacl: r.uacl ?? null,
+      account: (r as { act?: unknown }).act ?? null,
+      billing: (r as { bact?: unknown }).bact ?? null,
+    })),
+    inspected,
   };
 }
 
@@ -115,8 +154,9 @@ Deno.serve(async (req) => {
     );
 
     const diagKey = Deno.env.get("WIALON_DIAG_KEY");
+    const diagKey2 = Deno.env.get("WIALON_DIAG_KEY_TMP");
     const providedKey = req.headers.get("x-diag-key");
-    const viaDiagKey = !!diagKey && providedKey === diagKey;
+    const viaDiagKey = (!!diagKey && providedKey === diagKey) || (!!diagKey2 && providedKey === diagKey2);
 
     if (!viaDiagKey) {
       const authToken = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
@@ -134,10 +174,16 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const hwFilter = String(body?.hwFilter ?? "NT20");
+    const inspectFrotaItemId = body?.inspectFrotaItemId ? Number(body.inspectFrotaItemId) : undefined;
+    const onlyFrota = body?.onlyFrota === true;
+    const resourceMask = body?.resourceMask ? String(body.resourceMask) : undefined;
+    const hwValues = Array.isArray(body?.hwValues) ? body.hwValues.map(String) : undefined;
 
     const [frota, auto] = await Promise.all([
-      diagnose("frota", hwFilter).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
-      diagnose("auto", hwFilter).catch((e) => ({ sistema: "auto", ok: false, error: String(e) })),
+      diagnose("frota", hwFilter, inspectFrotaItemId, resourceMask, hwValues).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
+      onlyFrota
+        ? Promise.resolve({ sistema: "auto", ok: true, skipped: true })
+        : diagnose("auto", hwFilter).catch((e) => ({ sistema: "auto", ok: false, error: String(e) })),
     ]);
 
     return json({ ok: true, hwFilter, frota, auto });
