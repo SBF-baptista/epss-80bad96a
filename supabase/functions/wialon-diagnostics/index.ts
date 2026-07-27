@@ -74,7 +74,8 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
     }
   }
 
-  // 3) amostra de unidades (somente leitura)
+  // 3) amostra de unidades (somente leitura) — pega um lote grande e ordena por id desc
+  //    para ver as unidades MAIS RECENTES (as criadas pelo wrapper hoje).
   const sample = await wialonCall("core/search_items", {
     spec: {
       itemsType: "avl_unit",
@@ -84,13 +85,14 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
       propType: "property",
     },
     force: 1,
-    flags: 1 + 8, // base (nm) + hw/device settings quando disponível
+    flags: 1 + 8192, // base (nm) + hardware/uid
     from: 0,
-    to: 14,
+    to: 6000,
   }, sid);
 
-  const items = (sample.body as { items?: Array<{ id: number; nm: string; hw?: number; uid?: string }> })?.items ?? [];
+  const all = (sample.body as { items?: Array<{ id: number; nm: string; hw?: number; uid?: string }> })?.items ?? [];
   const totalItems = (sample.body as { totalItemsCount?: number })?.totalItemsCount ?? null;
+  const items = [...all].sort((a, b) => b.id - a.id);
 
   return {
     sistema,
