@@ -631,6 +631,7 @@ export type Database = {
           error_message: string | null
           filial_contrato: string | null
           id: string
+          imei: string | null
           notes: string | null
           placa: string | null
           requested_by: string | null
@@ -649,6 +650,7 @@ export type Database = {
           error_message?: string | null
           filial_contrato?: string | null
           id?: string
+          imei?: string | null
           notes?: string | null
           placa?: string | null
           requested_by?: string | null
@@ -667,6 +669,7 @@ export type Database = {
           error_message?: string | null
           filial_contrato?: string | null
           id?: string
+          imei?: string | null
           notes?: string | null
           placa?: string | null
           requested_by?: string | null
