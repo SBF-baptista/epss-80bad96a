@@ -37,7 +37,7 @@ function isWialonError(b: unknown): b is { error: number; reason?: string } {
   return typeof b === "object" && b !== null && "error" in (b as Record<string, unknown>);
 }
 
-async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItemId?: number) {
+async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItemId?: number, resourceMask?: string) {
   const token = sistema === "frota"
     ? Deno.env.get("WIALON_TOKEN_FROTA")
     : Deno.env.get("WIALON_TOKEN_AUTO");
@@ -64,13 +64,19 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItem
 
   // 2b) fallback: busca ampla por "NT" caso o filtro exato não retorne nada
   let hwLike: unknown = null;
+  let hwRaw: unknown = null;
   const hwEmpty = Array.isArray(hw.body) && hw.body.length === 0;
   if (hwEmpty || isWialonError(hw.body)) {
     const all = await wialonCall("core/get_hw_types", { filterType: "name", filterValue: [], includeType: true, ignoreRename: true }, sid);
     if (Array.isArray(all.body)) {
-      hwLike = (all.body as Array<{ id: number; name: string }>)
-        .filter((t) => String(t.name ?? "").toUpperCase().includes(hwFilter.toUpperCase().slice(0, 3)))
-        .slice(0, 40);
+      const list = all.body as Array<{ id: number; name: string }>;
+      hwRaw = { total: list.length };
+      const needle = hwFilter.toUpperCase().slice(0, 4);
+      hwLike = list
+        .filter((t) => String(t.name ?? "").toUpperCase().includes(needle))
+        .slice(0, 60);
+    } else {
+      hwRaw = all.body;
     }
   }
 
@@ -99,7 +105,7 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItem
     spec: {
       itemsType: "avl_resource",
       propName: "sys_name",
-      propValueMask: "*",
+      propValueMask: resourceMask ?? "*",
       sortType: "sys_name",
       propType: "property",
     },
@@ -124,6 +130,7 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItem
     loginUser: lb.user ?? null,
     hwTypes: hw.body,
     hwTypesLikeNT: hwLike,
+    hwRaw,
     unitsTotal: totalItems,
     unitsSample: items.slice(0, 15).map((u) => ({ id: u.id, name: u.nm, hw: u.hw ?? null, uniqueId: u.uid ?? null })),
     resources: resItems.map((r) => ({
@@ -169,9 +176,10 @@ Deno.serve(async (req) => {
     const hwFilter = String(body?.hwFilter ?? "NT20");
     const inspectFrotaItemId = body?.inspectFrotaItemId ? Number(body.inspectFrotaItemId) : undefined;
     const onlyFrota = body?.onlyFrota === true;
+    const resourceMask = body?.resourceMask ? String(body.resourceMask) : undefined;
 
     const [frota, auto] = await Promise.all([
-      diagnose("frota", hwFilter, inspectFrotaItemId).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
+      diagnose("frota", hwFilter, inspectFrotaItemId, resourceMask).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
       onlyFrota
         ? Promise.resolve({ sistema: "auto", ok: true, skipped: true })
         : diagnose("auto", hwFilter).catch((e) => ({ sistema: "auto", ok: false, error: String(e) })),
