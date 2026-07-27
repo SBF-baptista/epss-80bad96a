@@ -37,7 +37,7 @@ function isWialonError(b: unknown): b is { error: number; reason?: string } {
   return typeof b === "object" && b !== null && "error" in (b as Record<string, unknown>);
 }
 
-async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
+async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItemId?: number) {
   const token = sistema === "frota"
     ? Deno.env.get("WIALON_TOKEN_FROTA")
     : Deno.env.get("WIALON_TOKEN_AUTO");
@@ -69,7 +69,7 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
     const all = await wialonCall("core/get_hw_types", { filterType: "name", filterValue: [], includeType: true, ignoreRename: true }, sid);
     if (Array.isArray(all.body)) {
       hwLike = (all.body as Array<{ id: number; name: string }>)
-        .filter((t) => String(t.name ?? "").toUpperCase().includes("NT"))
+        .filter((t) => String(t.name ?? "").toUpperCase().includes(hwFilter.toUpperCase().slice(0, 3)))
         .slice(0, 40);
     }
   }
@@ -166,10 +166,14 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const hwFilter = String(body?.hwFilter ?? "NT20");
+    const inspectFrotaItemId = body?.inspectFrotaItemId ? Number(body.inspectFrotaItemId) : undefined;
+    const onlyFrota = body?.onlyFrota === true;
 
     const [frota, auto] = await Promise.all([
-      diagnose("frota", hwFilter).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
-      diagnose("auto", hwFilter).catch((e) => ({ sistema: "auto", ok: false, error: String(e) })),
+      diagnose("frota", hwFilter, inspectFrotaItemId).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
+      onlyFrota
+        ? Promise.resolve({ sistema: "auto", ok: true, skipped: true })
+        : diagnose("auto", hwFilter).catch((e) => ({ sistema: "auto", ok: false, error: String(e) })),
     ]);
 
     return json({ ok: true, hwFilter, frota, auto });
