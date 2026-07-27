@@ -94,14 +94,46 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string) {
   const totalItems = (sample.body as { totalItemsCount?: number })?.totalItemsCount ?? null;
   const items = [...all].sort((a, b) => b.id - a.id);
 
+  // 4) contas / recursos (avl_resource) — necessário para account/change_account
+  const resources = await wialonCall("core/search_items", {
+    spec: {
+      itemsType: "avl_resource",
+      propName: "sys_name",
+      propValueMask: "*",
+      sortType: "sys_name",
+      propType: "property",
+    },
+    force: 1,
+    flags: 1 + 1024, // base + billing/account properties
+    from: 0,
+    to: 200,
+  }, sid);
+  const resItems = (resources.body as { items?: Array<Record<string, unknown>> })?.items ?? [];
+
+  // 5) inspeção opcional de uma unidade específica (conta vinculada / estado)
+  let inspected: unknown = null;
+  if (inspectItemId) {
+    const one = await wialonCall("core/search_item", { id: inspectItemId, flags: 1 + 8192 + 1024 }, sid);
+    inspected = one.body;
+  }
+
   return {
     sistema,
     ok: true,
     creatorCandidate,
+    loginUser: lb.user ?? null,
     hwTypes: hw.body,
     hwTypesLikeNT: hwLike,
     unitsTotal: totalItems,
     unitsSample: items.slice(0, 15).map((u) => ({ id: u.id, name: u.nm, hw: u.hw ?? null, uniqueId: u.uid ?? null })),
+    resources: resItems.map((r) => ({
+      id: r.id,
+      name: r.nm,
+      uacl: r.uacl ?? null,
+      account: (r as { act?: unknown }).act ?? null,
+      billing: (r as { bact?: unknown }).bact ?? null,
+    })),
+    inspected,
   };
 }
 
