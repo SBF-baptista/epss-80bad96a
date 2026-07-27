@@ -112,17 +112,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const authToken = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!authToken) return json({ ok: false, error: "Não autenticado" });
+    const diagKey = Deno.env.get("WIALON_DIAG_KEY");
+    const providedKey = req.headers.get("x-diag-key");
+    const viaDiagKey = !!diagKey && providedKey === diagKey;
 
-    const { data: userData, error: userErr } = await admin.auth.getUser(authToken);
-    if (userErr || !userData?.user) return json({ ok: false, error: "Sessão inválida" });
+    if (!viaDiagKey) {
+      const authToken = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+      if (!authToken) return json({ ok: false, error: "Não autenticado" });
 
-    const { data: isAdmin } = await admin.rpc("has_role", {
-      _user_id: userData.user.id,
-      _role: "admin",
-    });
-    if (!isAdmin) return json({ ok: false, error: "Apenas administradores" });
+      const { data: userData, error: userErr } = await admin.auth.getUser(authToken);
+      if (userErr || !userData?.user) return json({ ok: false, error: "Sessão inválida" });
+
+      const { data: isAdmin } = await admin.rpc("has_role", {
+        _user_id: userData.user.id,
+        _role: "admin",
+      });
+      if (!isAdmin) return json({ ok: false, error: "Apenas administradores" });
+    }
 
     const body = await req.json().catch(() => ({}));
     const hwFilter = String(body?.hwFilter ?? "NT20");
