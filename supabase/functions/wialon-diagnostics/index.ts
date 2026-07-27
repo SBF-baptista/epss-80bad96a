@@ -37,7 +37,7 @@ function isWialonError(b: unknown): b is { error: number; reason?: string } {
   return typeof b === "object" && b !== null && "error" in (b as Record<string, unknown>);
 }
 
-async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItemId?: number, resourceMask?: string) {
+async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItemId?: number, resourceMask?: string, hwValues?: string[]) {
   const token = sistema === "frota"
     ? Deno.env.get("WIALON_TOKEN_FROTA")
     : Deno.env.get("WIALON_TOKEN_AUTO");
@@ -57,7 +57,7 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItem
   // 2) hw types (filtro por nome)
   const hw = await wialonCall("core/get_hw_types", {
     filterType: "name",
-    filterValue: [hwFilter],
+    filterValue: hwValues && hwValues.length ? hwValues : [hwFilter],
     includeType: true,
     ignoreRename: true,
   }, sid);
@@ -177,9 +177,10 @@ Deno.serve(async (req) => {
     const inspectFrotaItemId = body?.inspectFrotaItemId ? Number(body.inspectFrotaItemId) : undefined;
     const onlyFrota = body?.onlyFrota === true;
     const resourceMask = body?.resourceMask ? String(body.resourceMask) : undefined;
+    const hwValues = Array.isArray(body?.hwValues) ? body.hwValues.map(String) : undefined;
 
     const [frota, auto] = await Promise.all([
-      diagnose("frota", hwFilter, inspectFrotaItemId, resourceMask).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
+      diagnose("frota", hwFilter, inspectFrotaItemId, resourceMask, hwValues).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
       onlyFrota
         ? Promise.resolve({ sistema: "auto", ok: true, skipped: true })
         : diagnose("auto", hwFilter).catch((e) => ({ sistema: "auto", ok: false, error: String(e) })),
