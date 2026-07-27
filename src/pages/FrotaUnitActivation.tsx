@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Power, PowerOff, Loader2, CheckCircle2, XCircle, RefreshCw, AlertTriangle } from "lucide-react";
+import { Power, PowerOff, Loader2, CheckCircle2, XCircle, RefreshCw, AlertTriangle, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import WialonCreateUnitCard from "@/components/frota/WialonCreateUnitCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,7 +29,8 @@ interface AuditRow {
   placa: string | null;
   wialon_item_id: number | null;
   wialon_item_name: string | null;
-  action: Action;
+  action: AuditAction;
+  imei: string | null;
   requested_by_email: string | null;
   api_status: number | null;
   api_ok: boolean;
@@ -209,6 +211,8 @@ const FrotaUnitActivation = () => {
         </CardContent>
       </Card>
 
+      <WialonCreateUnitCard />
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Auditoria ({audit.length})</CardTitle>
@@ -249,8 +253,12 @@ const FrotaUnitActivation = () => {
                     <TableCell>
                       {r.action === "activate" ? (
                         <Badge className="bg-green-600 text-white gap-1"><Power className="w-3 h-3" />Ativar</Badge>
-                      ) : (
+                      ) : r.action === "deactivate" ? (
                         <Badge className="bg-orange-600 text-white gap-1"><PowerOff className="w-3 h-3" />Desativar</Badge>
+                      ) : r.action === "create" ? (
+                        <Badge className="bg-blue-600 text-white gap-1"><PlusCircle className="w-3 h-3" />Criar</Badge>
+                      ) : (
+                        <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" />Criação parcial</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-xs font-mono">
@@ -259,6 +267,9 @@ const FrotaUnitActivation = () => {
                         <div className="text-muted-foreground">
                           {r.wialon_item_name} (id {r.wialon_item_id})
                         </div>
+                      )}
+                      {r.imei && (
+                        <div className="text-muted-foreground">IMEI {r.imei}</div>
                       )}
                     </TableCell>
                     <TableCell>
