@@ -43,6 +43,34 @@ function isWialonError(b: unknown): b is { error: number; reason?: string } {
   return typeof b === "object" && b !== null && "error" in (b as Record<string, unknown>);
 }
 
+// TEMPORARIO: usar wrapper HMAC pro Frota enquanto ACL do Wialon nao e liberada
+// (unit/set_active retorna erro 7 / permission denied com o token direto do Frota).
+// Reverter para chamada direta quando a permissao for concedida ao usuario da integracao.
+const FROTA_STATUS_PATH = "/api/unidade/status";
+
+const toHex = (buf: ArrayBuffer) =>
+  Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+async function sha256Hex(data: string): Promise<string> {
+  return toHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data)));
+}
+
+async function hmacSha256Hex(secret: string, content: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return toHex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(content)));
+}
+
+function mapTipoContrato(usage?: string | null): "TELEMETRIA" | "MENSALISTA" {
+  return String(usage ?? "").toLowerCase().includes("telemetr") ? "TELEMETRIA" : "MENSALISTA";
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
