@@ -108,15 +108,21 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: audit.error_message });
     }
 
-    const { data: userData, error: userErr } = await admin.auth.getUser(token);
-    if (userErr || !userData?.user) {
-      const detail = userErr ? `${userErr.name}: ${userErr.message} (status ${(userErr as { status?: number }).status ?? "?"})` : "usuário nulo";
-      console.error("[wialon-toggle-unit] getUser falhou:", detail);
+    // Validação por CLAIMS (assinatura do JWT), não por sessão do servidor.
+    // getUser() consulta /auth/v1/user e falha com 403 session_not_found quando
+    // a sessão foi revogada em outro dispositivo, mesmo com o token ainda válido
+    // e aceito normalmente pelo restante da aplicação (PostgREST).
+    const { data: claimsData, error: claimsErr } = await admin.auth.getClaims(token);
+    const verified = claimsData?.claims as Record<string, unknown> | undefined;
+    if (claimsErr || !verified?.sub) {
+      const detail = claimsErr ? `${claimsErr.name}: ${claimsErr.message}` : "token sem 'sub'";
+      console.error("[wialon-toggle-unit] getClaims falhou:", detail);
       audit.error_message = `Sessão inválida — ${detail}`;
       return json({ ok: false, error: audit.error_message });
     }
-    userId = userData.user.id;
-    userEmail = userData.user.email ?? null;
+    userId = String(verified.sub);
+    userEmail = typeof verified.email === "string" ? verified.email : null;
+
 
 
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
