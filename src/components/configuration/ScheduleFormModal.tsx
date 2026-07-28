@@ -270,6 +270,48 @@ export const ScheduleFormModal = ({
 
   const selectedTechnicianPhone = form.watch('technician_whatsapp');
   const watchedDate = form.watch('date');
+  const watchedPlate = form.watch('plate');
+
+  // Busca automática do tipo de contrato na base de pendências do Segsale
+  useEffect(() => {
+    const plate = String(watchedPlate ?? '').trim().toUpperCase();
+    if (!open) return;
+    if (plate.length < 6) {
+      setContractLookup({ status: 'idle' });
+      return;
+    }
+    let cancelled = false;
+    setContractLookup({ status: 'loading' });
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('frota-check-placa-pendente', {
+          body: { placa: plate },
+        });
+        if (cancelled) return;
+        if (error) {
+          setContractLookup({ status: 'error' });
+          return;
+        }
+        if (data?.pendente && data?.data?.tipoContrato) {
+          const tipo = String(data.data.tipoContrato).toUpperCase() === 'TELEMETRIA'
+            ? 'TELEMETRIA' : 'MENSALISTA';
+          form.setValue('tipo_contrato', tipo as 'TELEMETRIA' | 'MENSALISTA', { shouldValidate: true });
+          setContractLookup({
+            status: 'found',
+            tipo: tipo as 'TELEMETRIA' | 'MENSALISTA',
+            filial: data.data.filial ?? null,
+            contrato: data.data.contrato ?? null,
+          });
+        } else {
+          setContractLookup({ status: 'not_found' });
+        }
+      } catch {
+        if (!cancelled) setContractLookup({ status: 'error' });
+      }
+    }, 600);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [watchedPlate, open, form]);
+
 
   const getTechnicianLocation = (technician: Technician) => {
     const parts = [technician.address_city, technician.address_state].filter(Boolean);
