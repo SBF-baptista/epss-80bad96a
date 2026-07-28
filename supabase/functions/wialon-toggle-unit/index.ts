@@ -212,14 +212,16 @@ Deno.serve(async (req) => {
   } catch (err) {
     audit.error_message = err instanceof Error ? err.message : String(err);
     console.error("[wialon-toggle-unit] ERROR", audit.error_message);
-    return json({ ok: false, error: audit.error_message });
+    return json({ ok: false, sistema, error: audit.error_message });
   } finally {
     try {
       await admin.from("frota_unit_activation_audit").insert({
-        sistema: sistema ?? "frota",
+        // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
+        sistema,
         filial_contrato: null,
         tipo_contrato: null,
         action: action ?? "deactivate",
+
         requested_by: userId,
         requested_by_email: userEmail,
         api_status: audit.api_status,
