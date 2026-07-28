@@ -305,20 +305,21 @@ Deno.serve(async (req) => {
       resolvedFilialContrato = filialContrato;
 
       const ativo = action === "activate";
-      const payload = { filialContrato, ativo, tipoContrato };
-      const reqBody = JSON.stringify(payload);
-      const timestamp = String(Math.floor(Date.now() / 1000));
-      const nonce = crypto.randomUUID();
-      const canonical =
-        `PATCH\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`;
-      const signature = await hmacSha256Hex(apiKey, canonical);
 
-      console.log(
-        `[wialon-toggle-unit] sistema=frota method=hmac_wrapper action=${action} placa=${placa} tipo=${tipoContrato}`,
-      );
-
-      let respText = "";
-      try {
+      // Chama o wrapper; em 404 tenta automaticamente o outro tipoContrato,
+      // pois a busca por FILIALCONTRATO é escopada por tipo de contrato.
+      const callWrapper = async (tipo: "TELEMETRIA" | "MENSALISTA") => {
+        const payload = { filialContrato, ativo, tipoContrato: tipo };
+        const reqBody = JSON.stringify(payload);
+        const timestamp = String(Math.floor(Date.now() / 1000));
+        const nonce = crypto.randomUUID();
+        const signature = await hmacSha256Hex(
+          apiKey,
+          `PATCH\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`,
+        );
+        console.log(
+          `[wialon-toggle-unit] sistema=frota method=hmac_wrapper action=${action} placa=${placa} tipo=${tipo}`,
+        );
         const resp = await fetch(`${baseUrl}${FROTA_STATUS_PATH}`, {
           method: "PATCH",
           headers: {
@@ -329,22 +330,43 @@ Deno.serve(async (req) => {
           },
           body: reqBody,
         });
-        audit.api_status = resp.status;
-        respText = await resp.text();
-        let respJson: unknown = respText;
-        try { respJson = JSON.parse(respText); } catch { /* keep text */ }
-        audit.api_response = { method: "frota_hmac_wrapper", request: payload, response: respJson };
+        const text = await resp.text();
+        let parsed: unknown = text;
+        try { parsed = JSON.parse(text); } catch { /* keep text */ }
+        return { status: resp.status, ok: resp.ok, parsed, payload };
+      };
 
-        const confirmed =
-          typeof respJson === "object" && respJson !== null &&
-          (respJson as Record<string, unknown>).ativo === ativo;
-        audit.api_ok = resp.ok && (confirmed || (respJson as Record<string, unknown>)?.ativo === undefined);
+      let usedTipo = tipoContrato;
+      let payload: Record<string, unknown> = { filialContrato, ativo, tipoContrato };
+      try {
+        let r = await callWrapper(tipoContrato);
+        if (r.status === 404) {
+          const alt: "TELEMETRIA" | "MENSALISTA" =
+            tipoContrato === "TELEMETRIA" ? "MENSALISTA" : "TELEMETRIA";
+          const r2 = await callWrapper(alt);
+          if (r2.status !== 404) {
+            r = r2;
+            usedTipo = alt;
+          }
+        }
+        payload = r.payload;
+        audit.tipo_contrato = usedTipo;
+        audit.api_status = r.status;
+        audit.api_response = { method: "frota_hmac_wrapper", request: r.payload, response: r.parsed };
+
+        const respObj = (typeof r.parsed === "object" && r.parsed !== null)
+          ? r.parsed as Record<string, unknown>
+          : null;
+        const confirmed = respObj?.ativo === ativo;
+        audit.api_ok = r.ok && (confirmed || respObj?.ativo === undefined);
         if (!audit.api_ok) {
-          const detail = typeof respJson === "string" ? respJson : JSON.stringify(respJson);
-          audit.error_message = resp.status === 404
-            ? `Wrapper Frota não encontrou a unidade para filialContrato="${filialContrato}". ` +
-              `Esse campo é a chave do contrato no Segsale (não a placa) — informe o filialContrato correto. Detalhe: ${detail}`
-            : `Wrapper Frota respondeu ${resp.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ${detail}`;
+          const detail = typeof r.parsed === "string" ? r.parsed : JSON.stringify(r.parsed);
+          audit.error_message = r.status === 404
+            ? `Nenhuma unidade no Frota com FILIALCONTRATO="${filialContrato}" ` +
+              `(tentado como TELEMETRIA e MENSALISTA). Esse valor é o campo personalizado ` +
+              `FILIALCONTRATO da unidade no Wialon (ex.: 300123568) — confirme abrindo a ` +
+              `unidade no Wialon → Campos personalizados. Detalhe: ${detail}`
+            : `Wrapper Frota respondeu ${r.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ${detail}`;
         }
       } catch (netErr) {
         audit.error_message = `Erro de rede ao chamar wrapper Frota: ${
@@ -358,11 +380,12 @@ Deno.serve(async (req) => {
         method: "frota_hmac_wrapper",
         placa,
         filialContrato,
-        tipoContrato,
+        tipoContrato: usedTipo,
         request: payload,
         response: audit.api_response,
         error: audit.api_ok ? null : audit.error_message,
       });
+
     }
 
 
