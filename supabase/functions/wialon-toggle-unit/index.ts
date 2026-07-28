@@ -288,6 +288,8 @@ Deno.serve(async (req) => {
       let tipoContrato: "TELEMETRIA" | "MENSALISTA";
       if (overrideTipo === "TELEMETRIA" || overrideTipo === "MENSALISTA") {
         tipoContrato = overrideTipo;
+      } else if (resolvedTipoFromList) {
+        tipoContrato = resolvedTipoFromList;
       } else {
         const { data: iv } = await admin
           .from("incoming_vehicles")
@@ -298,6 +300,7 @@ Deno.serve(async (req) => {
           .maybeSingle();
         tipoContrato = mapTipoContrato(iv?.usage_type ?? null);
       }
+
       audit.tipo_contrato = tipoContrato;
       resolvedFilialContrato = filialContrato;
 
