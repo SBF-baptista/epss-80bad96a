@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
   let action: Action | null = null;
   let query = "";
   let notes: string | null = null;
+  let resolvedFilialContrato: string | null = null;
   let userId: string | null = null;
   let userEmail: string | null = null;
 
@@ -262,6 +263,7 @@ Deno.serve(async (req) => {
         tipoContrato = mapTipoContrato(iv?.usage_type ?? null);
       }
       audit.tipo_contrato = tipoContrato;
+      resolvedFilialContrato = filialContrato;
 
       const ativo = action === "activate";
       const payload = { filialContrato, ativo, tipoContrato };
@@ -432,7 +434,7 @@ Deno.serve(async (req) => {
       await admin.from("frota_unit_activation_audit").insert({
         // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
         sistema,
-        filial_contrato: audit.method === "frota_hmac_wrapper" ? (String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
+        filial_contrato: audit.method === "frota_hmac_wrapper" ? (resolvedFilialContrato ?? String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
         tipo_contrato: audit.tipo_contrato,
         action: action ?? "deactivate",
 
