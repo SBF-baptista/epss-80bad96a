@@ -269,14 +269,19 @@ Deno.serve(async (req) => {
       });
     };
 
-    // 3) account/change_account — vincula a unidade à conta do cliente.
-    //    Sem esse passo a unidade nasce sem conta e o set_active retorna erro 7.
-    const acc = await wialonCall("account/change_account", { itemId, resourceId }, sid);
-    audit.api_status = acc.status;
-    audit.api_response = { ...audit.api_response, change_account: acc.body };
-    if (isWialonError(acc.body)) {
-      return await rollback("change_account", acc.body);
+    // 4) confere a conta de billing da unidade; só chama change_account se necessário
+    const check = await wialonCall("core/search_item", { id: itemId, flags: 4294967295 }, sid);
+    const bact = Number(((check.body as { item?: { bact?: number } })?.item?.bact) ?? 0) || null;
+    audit.api_response = { ...audit.api_response, unit_bact: bact };
+    if (bact !== resourceId) {
+      const acc = await wialonCall("account/change_account", { itemId, resourceId }, sid);
+      audit.api_status = acc.status;
+      audit.api_response = { ...audit.api_response, change_account: acc.body };
+      if (isWialonError(acc.body)) {
+        return await rollback("change_account", acc.body);
+      }
     }
+
 
     // 4) update_device_type (vincula IMEI) — opcional
     if (imei) {
