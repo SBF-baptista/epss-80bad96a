@@ -434,7 +434,7 @@ Deno.serve(async (req) => {
       await admin.from("frota_unit_activation_audit").insert({
         // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
         sistema,
-        filial_contrato: audit.method === "frota_hmac_wrapper" ? (resolvedFilialContrato ?? String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
+        filial_contrato: audit.method === "frota_hmac_wrapper" ? (resolvedFilialContrato || String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
         tipo_contrato: audit.tipo_contrato,
         action: action ?? "deactivate",
 
