@@ -211,7 +211,7 @@ export const ScheduleManagement = () => {
   const handleFormSubmit = async (data: any) => {
     // Fonte da verdade do tipo de contrato: base de pendências do Segsale.
     // O valor digitado no formulário é apenas fallback.
-    const plateNorm = String(data.plate ?? "").trim().toUpperCase();
+    const plateNorm = String(data.plate ?? "").toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean)[0] ?? "";
     let confirmedTipo: 'TELEMETRIA' | 'MENSALISTA' | null = null;
     if (plateNorm) {
       try {
