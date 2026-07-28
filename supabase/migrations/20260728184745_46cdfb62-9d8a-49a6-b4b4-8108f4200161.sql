@@ -1,0 +1,1 @@
+UPDATE public.installation_schedules SET tipo_contrato = 'TELEMETRIA', updated_at = now() WHERE id = '3edda494-4fa4-4441-ba5e-730cbc9586c9';
