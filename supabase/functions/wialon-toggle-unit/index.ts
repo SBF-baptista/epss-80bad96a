@@ -199,6 +199,10 @@ Deno.serve(async (req) => {
       }
 
       const placa = query.trim().toUpperCase();
+      // O wrapper identifica a unidade pelo campo `filialContrato` (chave do
+      // contrato no Segsale). Se a tela enviar esse valor explicitamente, ele
+      // tem prioridade; caso contrário tentamos com a própria placa.
+      const filialContrato = String(body?.filialContrato ?? "").trim() || placa;
 
       // tipoContrato: override explícito do corpo, senão derivado do usage_type
       // do veículo (mesma regra usada em create-frota-unidade).
