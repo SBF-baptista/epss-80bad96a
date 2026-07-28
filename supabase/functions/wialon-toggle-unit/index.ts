@@ -108,28 +108,36 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: audit.error_message });
     }
 
-    // Validação por CLAIMS (assinatura do JWT), não por sessão do servidor.
-    // getUser() consulta /auth/v1/user e falha com 403 session_not_found quando
-    // a sessão foi revogada em outro dispositivo, mesmo com o token ainda válido
-    // e aceito normalmente pelo restante da aplicação (PostgREST).
-    const { data: claimsData, error: claimsErr } = await admin.auth.getClaims(token);
-    const verified = claimsData?.claims as Record<string, unknown> | undefined;
-    if (claimsErr || !verified?.sub) {
-      const detail = claimsErr ? `${claimsErr.name}: ${claimsErr.message}` : "token sem 'sub'";
-      console.error("[wialon-toggle-unit] getClaims falhou:", detail);
-      audit.error_message = `Sessão inválida — ${detail}`;
+    // Validação via PostgREST com o token do usuário (mesmo caminho que o resto
+    // do app usa). Não depende de sessão ativa no GoTrue: o PostgREST valida
+    // apenas a assinatura do JWT. getUser()/getClaims() falham com
+    // session_not_found / AuthSessionMissingError quando a sessão foi revogada.
+    if (!claims.sub) {
+      audit.error_message = "Sessão inválida: token sem identificação de usuário. Recarregue a página.";
       return json({ ok: false, error: audit.error_message });
     }
-    userId = String(verified.sub);
-    userEmail = typeof verified.email === "string" ? verified.email : null;
+    userId = String(claims.sub);
+    userEmail = typeof claims.email === "string" ? claims.email : null;
 
-
-
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } },
+    );
+    const { data: isAdmin, error: roleErr } = await userClient.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (roleErr) {
+      console.error("[wialon-toggle-unit] has_role falhou:", roleErr.message);
+      audit.error_message = `Sessão inválida — ${roleErr.message}`;
+      return json({ ok: false, error: audit.error_message });
+    }
     if (!isAdmin) {
       audit.error_message = "Apenas administradores";
       return json({ ok: false, error: audit.error_message });
     }
+
 
     if (!sistema) {
       audit.error_message = `sistema deve ser 'frota' ou 'auto' (recebido: "${rawSistema}")`;
