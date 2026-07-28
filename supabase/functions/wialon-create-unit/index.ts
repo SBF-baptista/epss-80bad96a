@@ -204,31 +204,37 @@ Deno.serve(async (req) => {
     }
     const sid = s.sid;
 
-    // 2) descobrir o usuário "dono" da conta do cliente (resource.crt).
-    //    A unidade precisa nascer sob esse usuário para já pertencer à conta;
-    //    criada sob o usuário integrador ela fica órfã e o set_active devolve erro 7.
+    // 2) dados da conta do cliente (para auditoria e fallback de criador)
     const resInfo = await wialonCall("core/search_item", { id: resourceId, flags: 4294967295 }, sid);
     const resItem = (resInfo.body as { item?: { crt?: number; nm?: string } })?.item ?? null;
     const accountOwnerId = Number(resItem?.crt ?? 0) || null;
-    if (!accountOwnerId) {
-      audit.error_message = `Não foi possível descobrir o usuário da conta ${resourceId}`;
-      audit.api_response = { resource: resInfo.body };
-      return json({ ok: false, step: "resolve_account", error: audit.error_message, response: resInfo.body });
-    }
 
-    // 3) create_unit (criada já dentro da conta do cliente)
-    const create = await wialonCall("core/create_unit", {
-      creatorId: accountOwnerId,
-      name: placa,
-      hwTypeId,
-      dataFlags: 1,
-    }, sid);
+    // 3) create_unit — tenta criar sob o usuário da conta do cliente; se o
+    //    integrador não tiver esse direito, cria sob o próprio usuário e o
+    //    passo de change_account (feito na MESMA sessão) vincula a conta.
+    let create = accountOwnerId
+      ? await wialonCall("core/create_unit", { creatorId: accountOwnerId, name: placa, hwTypeId, dataFlags: 1 }, sid)
+      : null;
+    let usedCreatorId = accountOwnerId;
+    if (!create || isWialonError(create.body)) {
+      const fallback = await wialonCall("core/create_unit", {
+        creatorId: CREATOR_ID[sistema],
+        name: placa,
+        hwTypeId,
+        dataFlags: 1,
+      }, sid);
+      if (!isWialonError(fallback.body) || !create) {
+        usedCreatorId = CREATOR_ID[sistema];
+        create = fallback;
+      }
+    }
     audit.api_status = create.status;
     audit.api_response = {
-      hardware, hwTypeId, resourceId, accountOwnerId,
+      hardware, hwTypeId, resourceId, accountOwnerId, usedCreatorId,
       accountName: resItem?.nm ?? null,
       create_unit: create.body,
     };
+
 
     if (isWialonError(create.body)) {
       audit.error_message = `core/create_unit falhou: ${wialonErrText(create.body)}`;
