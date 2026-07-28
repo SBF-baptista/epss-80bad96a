@@ -636,7 +636,7 @@ export type Database = {
           placa: string | null
           requested_by: string | null
           requested_by_email: string | null
-          sistema: string
+          sistema: string | null
           tipo_contrato: string | null
           wialon_item_id: number | null
           wialon_item_name: string | null
@@ -655,7 +655,7 @@ export type Database = {
           placa?: string | null
           requested_by?: string | null
           requested_by_email?: string | null
-          sistema?: string
+          sistema?: string | null
           tipo_contrato?: string | null
           wialon_item_id?: number | null
           wialon_item_name?: string | null
@@ -674,7 +674,7 @@ export type Database = {
           placa?: string | null
           requested_by?: string | null
           requested_by_email?: string | null
-          sistema?: string
+          sistema?: string | null
           tipo_contrato?: string | null
           wialon_item_id?: number | null
           wialon_item_name?: string | null
