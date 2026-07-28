@@ -68,53 +68,74 @@ Deno.serve(async (req) => {
   };
 
   try {
+    // Parse do corpo PRIMEIRO: garante que o sistema realmente selecionado
+    // seja registrado na auditoria mesmo se a autenticação/validação falhar.
+    const body = await req.json().catch(() => ({}));
+    const rawSistema = String(body?.sistema ?? "").trim().toLowerCase();
+    sistema = (rawSistema === "frota" || rawSistema === "auto") ? rawSistema as Sistema : null;
+    const rawAction = String(body?.action ?? "").trim().toLowerCase();
+    action = (rawAction === "activate" || rawAction === "deactivate") ? rawAction as Action : null;
+    query = String(body?.query ?? "").trim(); // placa ou nome da unidade
+    notes = body?.notes ? String(body.notes).slice(0, 1000) : null;
+
     const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!token) return json({ ok: false, error: "Não autenticado" });
+    if (!token) {
+      audit.error_message = "Não autenticado";
+      return json({ ok: false, error: audit.error_message });
+    }
 
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
-    if (userErr || !userData?.user) return json({ ok: false, error: "Sessão inválida" });
+    if (userErr || !userData?.user) {
+      audit.error_message = "Sessão inválida";
+      return json({ ok: false, error: audit.error_message });
+    }
     userId = userData.user.id;
     userEmail = userData.user.email ?? null;
 
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) return json({ ok: false, error: "Apenas administradores" });
-
-    const body = await req.json().catch(() => ({}));
-    sistema = String(body?.sistema ?? "").toLowerCase() as Sistema;
-    action = String(body?.action ?? "").toLowerCase() as Action;
-    query = String(body?.query ?? "").trim(); // placa ou nome da unidade
-    notes = body?.notes ? String(body.notes).slice(0, 1000) : null;
-
-    if (sistema !== "frota" && sistema !== "auto") {
-      return json({ ok: false, error: "sistema deve ser 'frota' ou 'auto'" });
-    }
-    if (action !== "activate" && action !== "deactivate") {
-      return json({ ok: false, error: "action deve ser 'activate' ou 'deactivate'" });
-    }
-    if (!query) return json({ ok: false, error: "Informe a placa ou nome da unidade" });
-
-    const wialonToken = sistema === "frota"
-      ? Deno.env.get("WIALON_TOKEN_FROTA")
-      : Deno.env.get("WIALON_TOKEN_AUTO");
-    if (!wialonToken) {
-      audit.error_message = `Token do sistema ${sistema} não configurado`;
+    if (!isAdmin) {
+      audit.error_message = "Apenas administradores";
       return json({ ok: false, error: audit.error_message });
     }
+
+    if (!sistema) {
+      audit.error_message = `sistema deve ser 'frota' ou 'auto' (recebido: "${rawSistema}")`;
+      return json({ ok: false, error: audit.error_message });
+    }
+    if (!action) {
+      audit.error_message = `action deve ser 'activate' ou 'deactivate' (recebido: "${rawAction}")`;
+      return json({ ok: false, error: audit.error_message });
+    }
+    if (!query) {
+      audit.error_message = "Informe a placa ou nome da unidade";
+      return json({ ok: false, error: audit.error_message });
+    }
+
+    // Token estritamente derivado do sistema selecionado — sem fallback silencioso.
+    const tokenEnvName = sistema === "frota" ? "WIALON_TOKEN_FROTA" : "WIALON_TOKEN_AUTO";
+    const wialonToken = Deno.env.get(tokenEnvName);
+    if (!wialonToken) {
+      audit.error_message = `Token do sistema ${sistema.toUpperCase()} (${tokenEnvName}) não configurado`;
+      return json({ ok: false, error: audit.error_message });
+    }
+    console.log(`[wialon-toggle-unit] sistema=${sistema} token=${tokenEnvName} action=${action} query=${query}`);
+
 
     // 1) login
     const login = await wialonCall("token/login", { token: wialonToken, fl: 2 });
     audit.api_status = login.status;
     if (isWialonError(login.body)) {
-      audit.error_message = `Login Wialon falhou: erro ${login.body.error}`;
+      audit.error_message = `Login Wialon (sistema ${sistema.toUpperCase()}) falhou: erro ${login.body.error}${login.body.reason ? ` — ${login.body.reason}` : ""}`;
       audit.api_response = login.body;
-      return json({ ok: false, error: audit.error_message, response: login.body });
+      return json({ ok: false, sistema, error: audit.error_message, response: login.body });
     }
     const sid = (login.body as { eid?: string })?.eid;
     if (!sid) {
-      audit.error_message = "Login Wialon não retornou eid";
+      audit.error_message = `Login Wialon (sistema ${sistema.toUpperCase()}) não retornou eid`;
       audit.api_response = login.body;
-      return json({ ok: false, error: audit.error_message, response: login.body });
+      return json({ ok: false, sistema, error: audit.error_message, response: login.body });
     }
+
 
     // 2) search_items — procura por nome contendo placa/nome
     const searchParams = {
@@ -132,18 +153,20 @@ Deno.serve(async (req) => {
     const search = await wialonCall("core/search_items", searchParams, sid);
     audit.api_response = { login: login.body, search: search.body };
     if (isWialonError(search.body)) {
-      audit.error_message = `Busca Wialon falhou: erro ${search.body.error}`;
-      return json({ ok: false, error: audit.error_message, response: search.body });
+      audit.error_message = `Busca Wialon (sistema ${sistema.toUpperCase()}) falhou: erro ${search.body.error}${search.body.reason ? ` — ${search.body.reason}` : ""}`;
+      return json({ ok: false, sistema, error: audit.error_message, response: search.body });
     }
     const items = (search.body as { items?: Array<{ id: number; nm: string }> })?.items ?? [];
     if (items.length === 0) {
-      audit.error_message = `Nenhuma unidade encontrada no sistema ${sistema} para "${query}"`;
-      return json({ ok: false, error: audit.error_message, sid_ok: true, candidates: [] });
+      audit.error_message = `Unidade não encontrada no sistema ${sistema.toUpperCase()} para a placa "${query}". Verifique se a unidade pertence ao outro sistema (${sistema === "auto" ? "FROTA" : "AUTO"}).`;
+      return json({ ok: false, sistema, error: audit.error_message, sid_ok: true, candidates: [] });
     }
+
     if (items.length > 1) {
-      audit.error_message = `Múltiplas unidades encontradas (${items.length}) para "${query}". Refine a busca.`;
+      audit.error_message = `Múltiplas unidades encontradas (${items.length}) no sistema ${sistema.toUpperCase()} para "${query}". Refine a busca.`;
       return json({
         ok: false,
+        sistema,
         error: audit.error_message,
         candidates: items.map((i) => ({ id: i.id, name: i.nm })),
       });
@@ -158,15 +181,18 @@ Deno.serve(async (req) => {
     audit.api_status = set.status;
     audit.api_response = { ...(audit.api_response as object ?? {}), set_active: set.body };
     if (isWialonError(set.body)) {
-      audit.error_message = `set_active falhou: erro ${(set.body as { error: number }).error}`;
+      const e = set.body as { error: number; reason?: string };
+      audit.error_message = `set_active falhou no sistema ${sistema.toUpperCase()} (unidade ${unit.nm}/${unit.id}): erro ${e.error}${e.reason ? ` — ${e.reason}` : ""}`;
       return json({
         ok: false,
+        sistema,
         error: audit.error_message,
         itemId: unit.id,
         itemName: unit.nm,
         response: set.body,
       });
     }
+
     const returnedActive = (set.body as { active?: unknown })?.active;
     const desired = action === "activate";
     const ok = returnedActive === desired || returnedActive === active || returnedActive === (desired ? 1 : 0);
@@ -186,14 +212,16 @@ Deno.serve(async (req) => {
   } catch (err) {
     audit.error_message = err instanceof Error ? err.message : String(err);
     console.error("[wialon-toggle-unit] ERROR", audit.error_message);
-    return json({ ok: false, error: audit.error_message });
+    return json({ ok: false, sistema, error: audit.error_message });
   } finally {
     try {
       await admin.from("frota_unit_activation_audit").insert({
-        sistema: sistema ?? "frota",
+        // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
+        sistema,
         filial_contrato: null,
         tipo_contrato: null,
         action: action ?? "deactivate",
+
         requested_by: userId,
         requested_by_email: userEmail,
         api_status: audit.api_status,
