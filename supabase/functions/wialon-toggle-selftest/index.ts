@@ -18,6 +18,7 @@ Deno.serve(async (req) => {
     const filialContrato = String(body?.filialContrato ?? body?.placa ?? "").trim().toUpperCase();
     const ativo = body?.ativo === true;
     const tipoContrato = String(body?.tipoContrato ?? "MENSALISTA").toUpperCase();
+    const httpMethod = String(body?.httpMethod ?? "POST").toUpperCase();
 
     const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY");
     const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") ||
@@ -33,11 +34,11 @@ Deno.serve(async (req) => {
       "raw", new TextEncoder().encode(apiKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
     );
     const sig = toHex(await crypto.subtle.sign(
-      "HMAC", key, new TextEncoder().encode(`POST\n${PATH}\n${ts}\n${nonce}\n${hash}`),
+      "HMAC", key, new TextEncoder().encode(`${httpMethod}\n${PATH}\n${ts}\n${nonce}\n${hash}`),
     ));
 
     const resp = await fetch(`${baseUrl}${PATH}`, {
-      method: "POST",
+      method: httpMethod,
       headers: {
         "Content-Type": "application/json",
         "X-Timestamp": ts, "X-Nonce": nonce, "X-Signature": sig,
