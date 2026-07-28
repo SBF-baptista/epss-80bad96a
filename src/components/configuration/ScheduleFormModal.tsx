@@ -110,6 +110,13 @@ export const ScheduleFormModal = ({
   const [customService, setCustomService] = useState('');
   const [isAddingService, setIsAddingService] = useState(false);
   const [kickoffContacts, setKickoffContacts] = useState<{ name: string; role?: string; phone?: string }[]>([]);
+  const [contractLookup, setContractLookup] = useState<{
+    status: 'idle' | 'loading' | 'found' | 'not_found' | 'error';
+    tipo?: 'TELEMETRIA' | 'MENSALISTA';
+    filial?: string | null;
+    contrato?: string | null;
+  }>({ status: 'idle' });
+
 
   // Determine if fields should be locked (has initial data from pipeline)
   const hasInitialData = Boolean(initialVehicleData?.plate || initialVehicleData?.model);
