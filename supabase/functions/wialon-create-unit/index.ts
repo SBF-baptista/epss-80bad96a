@@ -152,6 +152,25 @@ Deno.serve(async (req) => {
       return json({ ok: true, accounts });
     }
 
+    // ---- modo auxiliar: vincular uma unidade existente a uma conta (conserto de órfãs) ----
+    if (String(body?.mode ?? "") === "attach-account") {
+      const s = await loginWialon(sistema);
+      if (!s.sid) { skipAudit = true; return json({ ok: false, error: s.error, response: s.body }); }
+      const itemIdFix = Number(body?.itemId ?? 0);
+      const resIdFix = Number(body?.resourceId ?? 0);
+      if (!itemIdFix || !resIdFix) { skipAudit = true; return json({ ok: false, error: "itemId e resourceId são obrigatórios" }); }
+      const r = await wialonCall("account/change_account", { itemId: itemIdFix, resourceId: resIdFix }, s.sid);
+      audit.action = "create_partial_failure";
+      audit.wialon_item_id = itemIdFix;
+      audit.api_status = r.status;
+      audit.api_ok = !isWialonError(r.body);
+      audit.api_response = { change_account: r.body, resourceId: resIdFix };
+      audit.error_message = isWialonError(r.body) ? `change_account falhou: ${wialonErrText(r.body)}` : null;
+      return json({ ok: audit.api_ok, itemId: itemIdFix, resourceId: resIdFix, response: r.body });
+    }
+
+
+
     placa = String(body?.placa ?? "").trim().toUpperCase();
     imei = String(body?.imei ?? "").trim();
     const passwd = String(body?.passwd ?? "");
