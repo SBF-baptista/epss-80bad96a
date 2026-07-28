@@ -265,24 +265,14 @@ export const ScheduleManagement = () => {
     await fetchSchedules();
     toast.success("Agendamento criado com sucesso!");
 
-    // Dispara integração externa conforme tipo de contrato escolhido no formulário:
+    // Dispara integração externa conforme o tipo de contrato CONFIRMADO na base do Segsale:
     // - TELEMETRIA -> POST no Frota (create-frota-unidade)
-    // - MENSALISTA -> publica no Kafka (kafka-publish-agendamento)
+    // - MENSALISTA -> publica no Kafka + também tenta criar unidade no Frota (rede de segurança)
     if (inserted?.id) {
-      const tipoContrato = data.tipo_contrato === 'MENSALISTA' ? 'MENSALISTA' : 'TELEMETRIA';
-      console.log(`[ScheduleManagement] installation_schedule=${inserted.id} tipoContrato=${tipoContrato}`);
+      const tipoContrato = finalTipo;
+      console.log(`[ScheduleManagement] installation_schedule=${inserted.id} tipoContrato=${tipoContrato} (confirmado=${confirmedTipo ?? 'nao'})`);
 
-      if (tipoContrato === 'TELEMETRIA') {
-        supabase.functions
-          .invoke('create-frota-unidade', {
-            body: { installationScheduleId: inserted.id, tipoContrato: 'TELEMETRIA' },
-          })
-          .then(({ data: fData, error }) => {
-            if (error) console.warn('[create-frota-unidade] falhou:', error.message);
-            else console.log('[create-frota-unidade] resultado:', fData);
-          })
-          .catch((e) => console.warn('[create-frota-unidade] erro:', e));
-      } else {
+      if (tipoContrato === 'MENSALISTA') {
         supabase.functions
           .invoke('kafka-publish-agendamento', {
             body: { installationScheduleId: inserted.id, tipoContrato: 'MENSALISTA' },
@@ -292,7 +282,19 @@ export const ScheduleManagement = () => {
           })
           .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
       }
+
+      // Sempre tenta criar a unidade na Frota (idempotente do lado da função)
+      supabase.functions
+        .invoke('create-frota-unidade', {
+          body: { installationScheduleId: inserted.id, tipoContrato },
+        })
+        .then(({ data: fData, error }) => {
+          if (error) console.warn('[create-frota-unidade] falhou:', error.message);
+          else console.log('[create-frota-unidade] resultado:', fData);
+        })
+        .catch((e) => console.warn('[create-frota-unidade] erro:', e));
     }
+
 
 
     // Send WhatsApp notification to technician with feedback
