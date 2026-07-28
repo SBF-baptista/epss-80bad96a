@@ -93,7 +93,10 @@ Deno.serve(async (req) => {
     error_message: null as string | null,
     wialon_item_id: null as number | null,
     wialon_item_name: null as string | null,
+    method: "wialon_direct" as "wialon_direct" | "frota_hmac_wrapper",
+    tipo_contrato: null as string | null,
   };
+
 
   try {
     // Parse do corpo PRIMEIRO: garante que o sistema realmente selecionado
