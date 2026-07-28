@@ -181,11 +181,27 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+
+    // modo passthrough SOMENTE LEITURA (allowlist de serviços)
+    if (String(body?.mode ?? "") === "raw") {
+      const ALLOWED = ["core/search_items", "core/search_item", "core/get_hw_types", "core/get_account_data"];
+      const svc = String(body?.svc ?? "");
+      if (!ALLOWED.includes(svc)) return json({ ok: false, error: `svc não permitido: ${svc}` });
+      const sistemaRaw = String(body?.sistema ?? "frota").toLowerCase() === "auto" ? "auto" : "frota";
+      const tk = sistemaRaw === "frota" ? Deno.env.get("WIALON_TOKEN_FROTA") : Deno.env.get("WIALON_TOKEN_AUTO");
+      const lg = await wialonCall("token/login", { token: tk, fl: 2 });
+      const sid2 = (lg.body as { eid?: string })?.eid;
+      if (!sid2) return json({ ok: false, error: "login falhou", response: lg.body });
+      const r = await wialonCall(svc, body?.params ?? {}, sid2);
+      return json({ ok: true, svc, response: r.body });
+    }
+
     const hwFilter = String(body?.hwFilter ?? "NT20");
     const inspectFrotaItemId = body?.inspectFrotaItemId ? Number(body.inspectFrotaItemId) : undefined;
     const onlyFrota = body?.onlyFrota === true;
     const resourceMask = body?.resourceMask ? String(body.resourceMask) : undefined;
     const hwValues = Array.isArray(body?.hwValues) ? body.hwValues.map(String) : undefined;
+
 
     const [frota, auto] = await Promise.all([
       diagnose("frota", hwFilter, inspectFrotaItemId, resourceMask, hwValues).catch((e) => ({ sistema: "frota", ok: false, error: String(e) })),
