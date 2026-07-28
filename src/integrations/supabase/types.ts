@@ -688,6 +688,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           frota_response: Json | null
+          hardware: string | null
           id: string
           imei: string | null
           incoming_vehicle_id: string | null
@@ -695,8 +696,11 @@ export type Database = {
           linked_by: string | null
           model: string | null
           plate: string | null
+          sistema: string | null
           status: string
           updated_at: string
+          wialon_item_id: number | null
+          wialon_resource_id: number | null
         }
         Insert: {
           brand?: string | null
@@ -704,6 +708,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           frota_response?: Json | null
+          hardware?: string | null
           id?: string
           imei?: string | null
           incoming_vehicle_id?: string | null
@@ -711,8 +716,11 @@ export type Database = {
           linked_by?: string | null
           model?: string | null
           plate?: string | null
+          sistema?: string | null
           status?: string
           updated_at?: string
+          wialon_item_id?: number | null
+          wialon_resource_id?: number | null
         }
         Update: {
           brand?: string | null
@@ -720,6 +728,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           frota_response?: Json | null
+          hardware?: string | null
           id?: string
           imei?: string | null
           incoming_vehicle_id?: string | null
@@ -727,8 +736,11 @@ export type Database = {
           linked_by?: string | null
           model?: string | null
           plate?: string | null
+          sistema?: string | null
           status?: string
           updated_at?: string
+          wialon_item_id?: number | null
+          wialon_resource_id?: number | null
         }
         Relationships: [
           {
