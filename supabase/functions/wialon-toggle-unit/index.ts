@@ -163,9 +163,10 @@ Deno.serve(async (req) => {
     }
 
     if (items.length > 1) {
-      audit.error_message = `Múltiplas unidades encontradas (${items.length}) para "${query}". Refine a busca.`;
+      audit.error_message = `Múltiplas unidades encontradas (${items.length}) no sistema ${sistema.toUpperCase()} para "${query}". Refine a busca.`;
       return json({
         ok: false,
+        sistema,
         error: audit.error_message,
         candidates: items.map((i) => ({ id: i.id, name: i.nm })),
       });
@@ -180,15 +181,18 @@ Deno.serve(async (req) => {
     audit.api_status = set.status;
     audit.api_response = { ...(audit.api_response as object ?? {}), set_active: set.body };
     if (isWialonError(set.body)) {
-      audit.error_message = `set_active falhou: erro ${(set.body as { error: number }).error}`;
+      const e = set.body as { error: number; reason?: string };
+      audit.error_message = `set_active falhou no sistema ${sistema.toUpperCase()} (unidade ${unit.nm}/${unit.id}): erro ${e.error}${e.reason ? ` — ${e.reason}` : ""}`;
       return json({
         ok: false,
+        sistema,
         error: audit.error_message,
         itemId: unit.id,
         itemName: unit.nm,
         response: set.body,
       });
     }
+
     const returnedActive = (set.body as { active?: unknown })?.active;
     const desired = action === "activate";
     const ok = returnedActive === desired || returnedActive === active || returnedActive === (desired ? 1 : 0);
