@@ -281,12 +281,17 @@ export const ScheduleFormModal = ({
 
   // Busca automática do tipo de contrato na base de pendências do Segsale
   useEffect(() => {
-    const plate = String(watchedPlate ?? '').trim().toUpperCase();
+    // Suporta múltiplas placas no mesmo campo: usa a primeira como referência
+    const plate = String(watchedPlate ?? '')
+      .toUpperCase()
+      .split(/[^A-Z0-9]+/)
+      .filter(Boolean)[0] ?? '';
     if (!open) return;
     if (plate.length < 6) {
       setContractLookup({ status: 'idle' });
       return;
     }
+
     let cancelled = false;
     setContractLookup({ status: 'loading' });
     const t = setTimeout(async () => {
