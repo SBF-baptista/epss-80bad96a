@@ -239,12 +239,48 @@ Deno.serve(async (req) => {
           }
         }
       }
+      // Fallback: resolver pela base do Segsale (GET /api/unidade/pendente/listar),
+      // onde filialContrato = filial + contrato (ex.: "300" + "123568").
+      let resolvedTipoFromList: "TELEMETRIA" | "MENSALISTA" | null = null;
+      if (!filialContrato) {
+        const alvo = placa.replace(/[^A-Z0-9]/g, "");
+        for (const tipo of ["TELEMETRIA", "MENSALISTA"] as const) {
+          const listPath = `/api/unidade/pendente/listar?tipoContrato=${tipo}`;
+          const ts = String(Math.floor(Date.now() / 1000));
+          const nc = crypto.randomUUID();
+          const sig = await hmacSha256Hex(
+            apiKey,
+            `GET\n${listPath}\n${ts}\n${nc}\n${await sha256Hex("")}`,
+          );
+          try {
+            const r = await fetch(`${baseUrl}${listPath}`, {
+              headers: { "X-Timestamp": ts, "X-Nonce": nc, "X-Signature": sig },
+            });
+            const arr = await r.json().catch(() => []);
+            if (Array.isArray(arr)) {
+              const hit = arr.find((it: { placa?: string }) =>
+                String(it?.placa ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "") === alvo
+              ) as { filial?: string; contrato?: string } | undefined;
+              if (hit?.filial && hit?.contrato) {
+                filialContrato = `${hit.filial}${hit.contrato}`;
+                resolvedTipoFromList = tipo;
+                break;
+              }
+            }
+          } catch { /* segue para o fallback manual */ }
+        }
+      }
+
       if (!filialContrato) {
         audit.error_message =
-          `Não foi possível resolver o FILIALCONTRATO da placa "${placa}" no Wialon Frota. ` +
-          `Preencha o campo "filialContrato" manualmente (campo personalizado da unidade, ex.: 300123568).`;
+          `Não foi possível resolver automaticamente o FILIALCONTRATO da placa "${placa}". ` +
+          `O token de integração do Wialon Frota não tem permissão para ler campos administrativos ` +
+          `da unidade, e a placa também não está na base de contratos do Segsale. ` +
+          `Abra a unidade no Wialon → Campos personalizados → copie o valor de FILIALCONTRATO ` +
+          `(ex.: 300123568) e preencha o campo "filialContrato" na tela.`;
         return json({ ok: false, sistema, error: audit.error_message });
       }
+
 
       // tipoContrato: override explícito do corpo, senão derivado do usage_type
       // do veículo (mesma regra usada em create-frota-unidade).
@@ -252,6 +288,8 @@ Deno.serve(async (req) => {
       let tipoContrato: "TELEMETRIA" | "MENSALISTA";
       if (overrideTipo === "TELEMETRIA" || overrideTipo === "MENSALISTA") {
         tipoContrato = overrideTipo;
+      } else if (resolvedTipoFromList) {
+        tipoContrato = resolvedTipoFromList;
       } else {
         const { data: iv } = await admin
           .from("incoming_vehicles")
@@ -262,24 +300,26 @@ Deno.serve(async (req) => {
           .maybeSingle();
         tipoContrato = mapTipoContrato(iv?.usage_type ?? null);
       }
+
       audit.tipo_contrato = tipoContrato;
       resolvedFilialContrato = filialContrato;
 
       const ativo = action === "activate";
-      const payload = { filialContrato, ativo, tipoContrato };
-      const reqBody = JSON.stringify(payload);
-      const timestamp = String(Math.floor(Date.now() / 1000));
-      const nonce = crypto.randomUUID();
-      const canonical =
-        `PATCH\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`;
-      const signature = await hmacSha256Hex(apiKey, canonical);
 
-      console.log(
-        `[wialon-toggle-unit] sistema=frota method=hmac_wrapper action=${action} placa=${placa} tipo=${tipoContrato}`,
-      );
-
-      let respText = "";
-      try {
+      // Chama o wrapper; em 404 tenta automaticamente o outro tipoContrato,
+      // pois a busca por FILIALCONTRATO é escopada por tipo de contrato.
+      const callWrapper = async (tipo: "TELEMETRIA" | "MENSALISTA") => {
+        const payload = { filialContrato, ativo, tipoContrato: tipo };
+        const reqBody = JSON.stringify(payload);
+        const timestamp = String(Math.floor(Date.now() / 1000));
+        const nonce = crypto.randomUUID();
+        const signature = await hmacSha256Hex(
+          apiKey,
+          `PATCH\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`,
+        );
+        console.log(
+          `[wialon-toggle-unit] sistema=frota method=hmac_wrapper action=${action} placa=${placa} tipo=${tipo}`,
+        );
         const resp = await fetch(`${baseUrl}${FROTA_STATUS_PATH}`, {
           method: "PATCH",
           headers: {
@@ -290,22 +330,43 @@ Deno.serve(async (req) => {
           },
           body: reqBody,
         });
-        audit.api_status = resp.status;
-        respText = await resp.text();
-        let respJson: unknown = respText;
-        try { respJson = JSON.parse(respText); } catch { /* keep text */ }
-        audit.api_response = { method: "frota_hmac_wrapper", request: payload, response: respJson };
+        const text = await resp.text();
+        let parsed: unknown = text;
+        try { parsed = JSON.parse(text); } catch { /* keep text */ }
+        return { status: resp.status, ok: resp.ok, parsed, payload };
+      };
 
-        const confirmed =
-          typeof respJson === "object" && respJson !== null &&
-          (respJson as Record<string, unknown>).ativo === ativo;
-        audit.api_ok = resp.ok && (confirmed || (respJson as Record<string, unknown>)?.ativo === undefined);
+      let usedTipo = tipoContrato;
+      let payload: Record<string, unknown> = { filialContrato, ativo, tipoContrato };
+      try {
+        let r = await callWrapper(tipoContrato);
+        if (r.status === 404) {
+          const alt: "TELEMETRIA" | "MENSALISTA" =
+            tipoContrato === "TELEMETRIA" ? "MENSALISTA" : "TELEMETRIA";
+          const r2 = await callWrapper(alt);
+          if (r2.status !== 404) {
+            r = r2;
+            usedTipo = alt;
+          }
+        }
+        payload = r.payload;
+        audit.tipo_contrato = usedTipo;
+        audit.api_status = r.status;
+        audit.api_response = { method: "frota_hmac_wrapper", request: r.payload, response: r.parsed };
+
+        const respObj = (typeof r.parsed === "object" && r.parsed !== null)
+          ? r.parsed as Record<string, unknown>
+          : null;
+        const confirmed = respObj?.ativo === ativo;
+        audit.api_ok = r.ok && (confirmed || respObj?.ativo === undefined);
         if (!audit.api_ok) {
-          const detail = typeof respJson === "string" ? respJson : JSON.stringify(respJson);
-          audit.error_message = resp.status === 404
-            ? `Wrapper Frota não encontrou a unidade para filialContrato="${filialContrato}". ` +
-              `Esse campo é a chave do contrato no Segsale (não a placa) — informe o filialContrato correto. Detalhe: ${detail}`
-            : `Wrapper Frota respondeu ${resp.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ${detail}`;
+          const detail = typeof r.parsed === "string" ? r.parsed : JSON.stringify(r.parsed);
+          audit.error_message = r.status === 404
+            ? `Nenhuma unidade no Frota com FILIALCONTRATO="${filialContrato}" ` +
+              `(tentado como TELEMETRIA e MENSALISTA). Esse valor é o campo personalizado ` +
+              `FILIALCONTRATO da unidade no Wialon (ex.: 300123568) — confirme abrindo a ` +
+              `unidade no Wialon → Campos personalizados. Detalhe: ${detail}`
+            : `Wrapper Frota respondeu ${r.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ${detail}`;
         }
       } catch (netErr) {
         audit.error_message = `Erro de rede ao chamar wrapper Frota: ${
@@ -319,11 +380,12 @@ Deno.serve(async (req) => {
         method: "frota_hmac_wrapper",
         placa,
         filialContrato,
-        tipoContrato,
+        tipoContrato: usedTipo,
         request: payload,
         response: audit.api_response,
         error: audit.api_ok ? null : audit.error_message,
       });
+
     }
 
 
