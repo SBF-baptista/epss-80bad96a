@@ -25,7 +25,11 @@ Deno.serve(async (req) => {
       "https://frota-auto-aityd.ondigitalocean.app";
     if (!apiKey) return json({ ok: false, error: "FROTA_SEGSALE_API_KEY ausente" });
 
-    const payload = body?.payload ?? { filialContrato, ativo, tipoContrato };
+    const candidates: unknown[] = Array.isArray(body?.payloads)
+      ? body.payloads
+      : [body?.payload ?? { filialContrato, ativo, tipoContrato }];
+    const results: unknown[] = [];
+    for (const payload of candidates) {
     const reqBody = JSON.stringify(payload);
     const ts = String(Math.floor(Date.now() / 1000));
     const nonce = crypto.randomUUID();
@@ -48,7 +52,9 @@ Deno.serve(async (req) => {
     const text = await resp.text();
     let parsed: unknown = text;
     try { parsed = JSON.parse(text); } catch { /* keep */ }
-    return json({ ok: resp.ok, status: resp.status, request: payload, response: parsed });
+    results.push({ status: resp.status, request: payload, response: parsed });
+    }
+    return json({ ok: true, results });
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) });
   }
