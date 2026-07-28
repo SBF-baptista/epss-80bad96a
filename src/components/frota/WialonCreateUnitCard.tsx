@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, PlusCircle, AlertTriangle } from "lucide-react";
+import { Loader2, PlusCircle, AlertTriangle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,13 +16,26 @@ import { useToast } from "@/hooks/use-toast";
 
 type Sistema = "frota" | "auto";
 
+const HARDWARE_OPTIONS = [
+  { value: "NT20", label: "NT20", hwTypeId: 400327740 },
+  { value: "SMART5", label: "Ruptela Smart5", hwTypeId: 401681750 },
+];
+
+interface WialonAccount {
+  id: number;
+  name: string;
+}
+
 interface CreateResult {
   ok: boolean;
   sistema?: Sistema;
   itemId?: number;
   itemName?: string;
   placa?: string;
-  imei?: string;
+  imei?: string | null;
+  hardware?: string;
+  resourceId?: number;
+  pendingImeiId?: string | null;
   step?: string;
   rollbackApplied?: boolean;
   error?: string;
@@ -34,12 +47,46 @@ const WialonCreateUnitCard = () => {
   const qc = useQueryClient();
 
   const [sistema, setSistema] = useState<Sistema | "">("");
+  const [hardware, setHardware] = useState("NT20");
   const [placa, setPlaca] = useState("");
   const [imei, setImei] = useState("");
   const [passwd, setPasswd] = useState("");
   const [notes, setNotes] = useState("");
+  const [accountQuery, setAccountQuery] = useState("");
+  const [accounts, setAccounts] = useState<WialonAccount[]>([]);
+  const [resourceId, setResourceId] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastResult, setLastResult] = useState<CreateResult | null>(null);
+
+  const accountName = accounts.find((a) => String(a.id) === resourceId)?.name ?? "";
+
+  const searchAccounts = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("wialon-create-unit", {
+        body: { mode: "search-accounts", sistema, q: accountQuery.trim() },
+      });
+      if (error) throw error;
+      return data as { ok: boolean; accounts?: WialonAccount[]; error?: string };
+    },
+    onSuccess: (data) => {
+      if (!data.ok) {
+        toast({ title: "Falha ao buscar contas", description: data.error, variant: "destructive" });
+        return;
+      }
+      setAccounts(data.accounts ?? []);
+      setResourceId("");
+      if (!data.accounts?.length) {
+        toast({ title: "Nenhuma conta encontrada", description: "Refine o nome do cliente." });
+      }
+    },
+    onError: (err) => {
+      toast({
+        title: "Erro na busca",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    },
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -49,6 +96,9 @@ const WialonCreateUnitCard = () => {
           placa: placa.trim().toUpperCase(),
           imei: imei.trim(),
           passwd,
+          hardware,
+          resourceId: Number(resourceId),
+          clienteNome: accountName || undefined,
           notes: notes.trim() || undefined,
         },
       });
@@ -58,10 +108,13 @@ const WialonCreateUnitCard = () => {
     onSuccess: (data) => {
       setLastResult(data);
       qc.invalidateQueries({ queryKey: ["frota-unit-activation-audit"] });
+      qc.invalidateQueries({ queryKey: ["frota-units-pending-imei"] });
       if (data.ok) {
         toast({
           title: "Unidade criada e ativada",
-          description: `${data.itemName} (id ${data.itemId}) — IMEI ${data.imei}`,
+          description: data.imei
+            ? `${data.itemName} (id ${data.itemId}) — IMEI ${data.imei}`
+            : `${data.itemName} (id ${data.itemId}) — aguardando IMEI`,
         });
         setPlaca("");
         setImei("");
@@ -90,8 +143,8 @@ const WialonCreateUnitCard = () => {
       toast({ title: "Informe a placa", variant: "destructive" });
       return;
     }
-    if (!imei.trim()) {
-      toast({ title: "Informe o IMEI", variant: "destructive" });
+    if (!resourceId) {
+      toast({ title: "Selecione a conta/cliente", variant: "destructive" });
       return;
     }
     setConfirmOpen(true);
@@ -100,26 +153,37 @@ const WialonCreateUnitCard = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Criar nova unidade (NT20)</CardTitle>
+        <CardTitle className="text-base">Criar nova unidade no Wialon</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            Cria a unidade <b>direto no Wialon</b> do sistema escolhido, já com o IMEI
-            vinculado e ativa. Placa e IMEI são obrigatórios — não criamos unidade
-            "vazia" por aqui.
+            Cria a unidade <b>direto no Wialon</b> do sistema escolhido, já dentro da conta do
+            cliente e ativa. O IMEI é opcional: sem ele a unidade fica registrada como
+            <b> aguardando IMEI</b> para o técnico vincular na instalação.
           </AlertDescription>
         </Alert>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-xs font-medium">Sistema *</label>
-            <Select value={sistema} onValueChange={(v) => setSistema(v as Sistema)}>
+            <Select value={sistema} onValueChange={(v) => { setSistema(v as Sistema); setAccounts([]); setResourceId(""); }}>
               <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="frota">Frota</SelectItem>
                 <SelectItem value="auto">Auto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Modelo de hardware *</label>
+            <Select value={hardware} onValueChange={setHardware}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {HARDWARE_OPTIONS.map((h) => (
+                  <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -132,17 +196,59 @@ const WialonCreateUnitCard = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium">IMEI *</label>
+            <label className="text-xs font-medium">IMEI (opcional)</label>
             <Input
-              placeholder="ex.: 860123456789012"
+              placeholder="deixe vazio se ainda não sabe"
               value={imei}
               onChange={(e) => setImei(e.target.value.trim())}
             />
           </div>
-          <div className="space-y-1">
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div className="space-y-1 md:col-span-1">
+            <label className="text-xs font-medium">Buscar conta/cliente *</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="ex.: SINARCO"
+                value={accountQuery}
+                onChange={(e) => setAccountQuery(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!sistema) {
+                    toast({ title: "Selecione o sistema primeiro", variant: "destructive" });
+                    return;
+                  }
+                  searchAccounts.mutate();
+                }}
+                disabled={searchAccounts.isPending}
+              >
+                {searchAccounts.isPending
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Search className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1 md:col-span-1">
+            <label className="text-xs font-medium">Conta/cliente *</label>
+            <Select value={resourceId} onValueChange={setResourceId} disabled={!accounts.length}>
+              <SelectTrigger>
+                <SelectValue placeholder={accounts.length ? "Selecione…" : "Busque primeiro"} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1 md:col-span-1">
             <label className="text-xs font-medium">Senha do device (opcional)</label>
             <Input
-              placeholder="deixe vazio para NT20"
+              placeholder="deixe vazio se não houver"
               value={passwd}
               onChange={(e) => setPasswd(e.target.value)}
             />
@@ -170,11 +276,13 @@ const WialonCreateUnitCard = () => {
 
         <Alert>
           <AlertDescription className="text-xs">
-            Fluxo: <code>token/login</code> → <code>core/create_unit</code>{" "}
-            (name = placa, hwTypeId 400327740) → <code>unit/update_device_type</code>{" "}
-            (uniqueId = IMEI) → <code>unit/set_active</code> (active = 1). Se algum passo
-            depois da criação falhar, a unidade é desativada como rollback e o caso fica
-            registrado na auditoria como <b>falha parcial</b> para revisão manual.
+            Fluxo: <code>token/login</code> → localizar o usuário da conta do cliente →{" "}
+            <code>core/create_unit</code> (name = placa, hwTypeId do modelo escolhido) →{" "}
+            conferir/ajustar a conta (<code>account/change_account</code>) →{" "}
+            <code>unit/update_device_type</code> (uniqueId = IMEI, se informado) →{" "}
+            <code>unit/set_active</code>. Se algum passo depois da criação falhar, a unidade é
+            desativada como rollback e o caso fica registrado na auditoria como{" "}
+            <b>falha parcial</b> para revisão manual.
           </AlertDescription>
         </Alert>
 
@@ -192,10 +300,11 @@ const WialonCreateUnitCard = () => {
               Criar unidade no sistema {sistema.toUpperCase()}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Será criada a unidade <b>{placa.toUpperCase()}</b> com IMEI{" "}
-              <code>{imei}</code> no Wialon do sistema <b>{sistema.toUpperCase()}</b>,
-              já ativa. Confira o sistema com atenção — Frota e Auto são contas
-              diferentes. A ação fica registrada em auditoria.
+              Será criada a unidade <b>{placa.toUpperCase()}</b> ({hardware}) na conta{" "}
+              <b>{accountName}</b> do Wialon <b>{sistema.toUpperCase()}</b>, já ativa
+              {imei ? <> com IMEI <code>{imei}</code></> : " e sem IMEI (ficará aguardando vínculo)"}.
+              Confira o sistema com atenção — Frota e Auto são contas diferentes. A ação fica
+              registrada em auditoria.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
