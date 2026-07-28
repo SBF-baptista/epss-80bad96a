@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
   let action: Action | null = null;
   let query = "";
   let notes: string | null = null;
+  let resolvedFilialContrato: string | null = null;
   let userId: string | null = null;
   let userEmail: string | null = null;
 
@@ -199,10 +200,51 @@ Deno.serve(async (req) => {
       }
 
       const placa = query.trim().toUpperCase();
-      // O wrapper identifica a unidade pelo campo `filialContrato` (chave do
-      // contrato no Segsale). Se a tela enviar esse valor explicitamente, ele
-      // tem prioridade; caso contrário tentamos com a própria placa.
-      const filialContrato = String(body?.filialContrato ?? "").trim() || placa;
+      // O wrapper identifica a unidade pelo campo personalizado FILIALCONTRATO
+      // da unidade no Wialon (ex.: "300123568"). Se a tela enviar o valor
+      // explicitamente, ele tem prioridade; caso contrário resolvemos pela
+      // placa lendo o campo personalizado direto no Wialon (leitura é permitida
+      // mesmo sem a ACL de escrita).
+      let filialContrato = String(body?.filialContrato ?? "").trim();
+      if (!filialContrato) {
+        const wt = Deno.env.get("WIALON_TOKEN_FROTA");
+        if (wt) {
+          const lg = await wialonCall("token/login", { token: wt, fl: 2 });
+          const sidF = (lg.body as { eid?: string })?.eid;
+          if (sidF) {
+            const sr = await wialonCall("core/search_items", {
+              spec: {
+                itemsType: "avl_unit",
+                propName: "sys_name",
+                propValueMask: `*${placa}*`,
+                sortType: "sys_name",
+              },
+              force: 1,
+              flags: 1 | 8 | 0x400000, // base + campos personalizados + campos admin
+              from: 0,
+              to: 10,
+            }, sidF);
+            const found = (sr.body as { items?: Array<{ id: number; nm: string; flds?: Record<string, { n: string; v: string }>; aflds?: Record<string, { n: string; v: string }> }> })?.items ?? [];
+            if (found.length === 1) {
+              audit.wialon_item_id = found[0].id;
+              audit.wialon_item_name = found[0].nm;
+              const flds = [...Object.values(found[0].flds ?? {}), ...Object.values(found[0].aflds ?? {})];
+              const f = flds.find((x) => String(x?.n ?? "").toUpperCase() === "FILIALCONTRATO");
+              if (f?.v) filialContrato = String(f.v).trim();
+            } else if (found.length > 1) {
+              audit.error_message =
+                `Múltiplas unidades (${found.length}) no Frota para "${placa}". Informe o filialContrato manualmente.`;
+              return json({ ok: false, sistema, error: audit.error_message, candidates: found.map((i) => ({ id: i.id, name: i.nm })) });
+            }
+          }
+        }
+      }
+      if (!filialContrato) {
+        audit.error_message =
+          `Não foi possível resolver o FILIALCONTRATO da placa "${placa}" no Wialon Frota. ` +
+          `Preencha o campo "filialContrato" manualmente (campo personalizado da unidade, ex.: 300123568).`;
+        return json({ ok: false, sistema, error: audit.error_message });
+      }
 
       // tipoContrato: override explícito do corpo, senão derivado do usage_type
       // do veículo (mesma regra usada em create-frota-unidade).
@@ -221,6 +263,7 @@ Deno.serve(async (req) => {
         tipoContrato = mapTipoContrato(iv?.usage_type ?? null);
       }
       audit.tipo_contrato = tipoContrato;
+      resolvedFilialContrato = filialContrato;
 
       const ativo = action === "activate";
       const payload = { filialContrato, ativo, tipoContrato };
@@ -391,7 +434,7 @@ Deno.serve(async (req) => {
       await admin.from("frota_unit_activation_audit").insert({
         // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
         sistema,
-        filial_contrato: audit.method === "frota_hmac_wrapper" ? (String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
+        filial_contrato: audit.method === "frota_hmac_wrapper" ? (resolvedFilialContrato || String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
         tipo_contrato: audit.tipo_contrato,
         action: action ?? "deactivate",
 
