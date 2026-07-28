@@ -20,6 +20,27 @@ Deno.serve(async (req) => {
     const tipoContrato = String(body?.tipoContrato ?? "MENSALISTA").toUpperCase();
     const httpMethod = String(body?.httpMethod ?? "POST").toUpperCase();
 
+    // modo busca no Wialon (read-only) para descobrir o nome exato da unidade
+    if (body?.mode === "search") {
+      const wt = Deno.env.get(body?.sistema === "auto" ? "WIALON_TOKEN_AUTO" : "WIALON_TOKEN_FROTA")!;
+      const call = async (svc: string, params: unknown, sid?: string) => {
+        const u = new URL("https://frota-api.segsat.com/wialon/ajax.html");
+        u.searchParams.set("svc", svc);
+        u.searchParams.set("params", JSON.stringify(params));
+        if (sid) u.searchParams.set("sid", sid);
+        const r = await fetch(u.toString(), { method: "POST" });
+        return JSON.parse(await r.text());
+      };
+      const lg = await call("token/login", { token: wt, fl: 2 });
+      const sid = lg?.eid;
+      if (!sid) return json({ ok: false, login: lg });
+      const sr = await call("core/search_items", {
+        spec: { itemsType: "avl_unit", propName: "sys_name", propValueMask: `*${body?.query ?? ""}*`, sortType: "sys_name" },
+        force: 1, flags: 1, from: 0, to: 20,
+      }, sid);
+      return json({ ok: true, items: (sr?.items ?? []).map((i: any) => ({ id: i.id, nm: i.nm })), total: sr?.totalItemsCount });
+    }
+
     const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY");
     const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") ||
       "https://frota-auto-aityd.ondigitalocean.app";
