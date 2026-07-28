@@ -220,15 +220,15 @@ Deno.serve(async (req) => {
                 sortType: "sys_name",
               },
               force: 1,
-              flags: 1 | 8, // base + campos personalizados
+              flags: 1 | 8 | 0x400000, // base + campos personalizados + campos admin
               from: 0,
               to: 10,
             }, sidF);
-            const found = (sr.body as { items?: Array<{ id: number; nm: string; flds?: Record<string, { n: string; v: string }> }> })?.items ?? [];
+            const found = (sr.body as { items?: Array<{ id: number; nm: string; flds?: Record<string, { n: string; v: string }>; aflds?: Record<string, { n: string; v: string }> }> })?.items ?? [];
             if (found.length === 1) {
               audit.wialon_item_id = found[0].id;
               audit.wialon_item_name = found[0].nm;
-              const flds = Object.values(found[0].flds ?? {});
+              const flds = [...Object.values(found[0].flds ?? {}), ...Object.values(found[0].aflds ?? {})];
               const f = flds.find((x) => String(x?.n ?? "").toUpperCase() === "FILIALCONTRATO");
               if (f?.v) filialContrato = String(f.v).trim();
             } else if (found.length > 1) {
