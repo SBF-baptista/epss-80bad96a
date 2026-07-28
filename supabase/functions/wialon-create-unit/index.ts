@@ -204,15 +204,32 @@ Deno.serve(async (req) => {
     }
     const sid = s.sid;
 
-    // 2) create_unit
+    // 2) descobrir o usuário "dono" da conta do cliente (resource.crt).
+    //    A unidade precisa nascer sob esse usuário para já pertencer à conta;
+    //    criada sob o usuário integrador ela fica órfã e o set_active devolve erro 7.
+    const resInfo = await wialonCall("core/search_item", { id: resourceId, flags: 4294967295 }, sid);
+    const resItem = (resInfo.body as { item?: { crt?: number; nm?: string } })?.item ?? null;
+    const accountOwnerId = Number(resItem?.crt ?? 0) || null;
+    if (!accountOwnerId) {
+      audit.error_message = `Não foi possível descobrir o usuário da conta ${resourceId}`;
+      audit.api_response = { resource: resInfo.body };
+      return json({ ok: false, step: "resolve_account", error: audit.error_message, response: resInfo.body });
+    }
+
+    // 3) create_unit (criada já dentro da conta do cliente)
     const create = await wialonCall("core/create_unit", {
-      creatorId: CREATOR_ID[sistema],
+      creatorId: accountOwnerId,
       name: placa,
       hwTypeId,
       dataFlags: 1,
     }, sid);
     audit.api_status = create.status;
-    audit.api_response = { hardware, hwTypeId, resourceId, create_unit: create.body };
+    audit.api_response = {
+      hardware, hwTypeId, resourceId, accountOwnerId,
+      accountName: resItem?.nm ?? null,
+      create_unit: create.body,
+    };
+
     if (isWialonError(create.body)) {
       audit.error_message = `core/create_unit falhou: ${wialonErrText(create.body)}`;
       return json({ ok: false, step: "create_unit", error: audit.error_message, response: create.body });
