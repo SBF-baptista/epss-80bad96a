@@ -120,8 +120,21 @@ const FrotaUnitActivation = () => {
       toast({ title: "Informe a placa ou nome da unidade", variant: "destructive" });
       return;
     }
+    if (sistema === "frota" && !filialContrato.trim()) {
+      toast({ title: "Informe o filialContrato", description: "Campo obrigatório para o sistema Frota.", variant: "destructive" });
+      return;
+    }
+    if (notes.trim().length < 10) {
+      toast({
+        title: "Justificativa obrigatória",
+        description: "Descreva o motivo da ação (mínimo 10 caracteres) para registro de auditoria.",
+        variant: "destructive",
+      });
+      return;
+    }
     setConfirmOpen(true);
   };
+
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
