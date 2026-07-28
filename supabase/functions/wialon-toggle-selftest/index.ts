@@ -1,79 +1,54 @@
-// TEMPORÁRIA: valida o roteamento de token (frota vs auto) do fluxo de toggle.
-// Protegida por um token de uso único gravado em public.app_logs (details).
-// Deve ser removida após o teste.
-
-import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
+// TEMPORARIO: função de teste do wrapper HMAC do Frota (POST /api/unidade/status).
+// Deve ser removida após a validação.
+const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-selftest-key",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
 const json = (b: unknown) =>
-  new Response(JSON.stringify(b), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  new Response(JSON.stringify(b), { headers: { ...cors, "Content-Type": "application/json" } });
 
-const WIALON_BASE = "https://frota-api.segsat.com/wialon/ajax.html";
-
-async function wialonCall(svc: string, params: unknown, sid?: string) {
-  const url = new URL(WIALON_BASE);
-  url.searchParams.set("svc", svc);
-  url.searchParams.set("params", JSON.stringify(params));
-  if (sid) url.searchParams.set("sid", sid);
-  const resp = await fetch(url.toString(), { method: "POST" });
-  const text = await resp.text();
-  try { return JSON.parse(text); } catch { return text; }
-}
+const PATH = "/api/unidade/status";
+const toHex = (buf: ArrayBuffer) =>
+  Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  try {
+    const body = await req.json().catch(() => ({}));
+    const filialContrato = String(body?.filialContrato ?? body?.placa ?? "").trim().toUpperCase();
+    const ativo = body?.ativo === true;
+    const tipoContrato = String(body?.tipoContrato ?? "MENSALISTA").toUpperCase();
 
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+    const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY");
+    const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") ||
+      "https://frota-auto-aityd.ondigitalocean.app";
+    if (!apiKey) return json({ ok: false, error: "FROTA_SEGSALE_API_KEY ausente" });
 
-  const key = req.headers.get("x-selftest-key") ?? "";
-  if (!key) return json({ ok: false, error: "sem chave" });
-  const { data: rows } = await admin
-    .from("app_logs")
-    .select("id")
-    .eq("action", "wialon_selftest_key")
-    .eq("details", key)
-    .limit(1);
-  if (!rows || rows.length === 0) return json({ ok: false, error: "chave inválida" });
+    const payload = { filialContrato, ativo, tipoContrato };
+    const reqBody = JSON.stringify(payload);
+    const ts = String(Math.floor(Date.now() / 1000));
+    const nonce = crypto.randomUUID();
+    const hash = toHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(reqBody)));
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(apiKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+    );
+    const sig = toHex(await crypto.subtle.sign(
+      "HMAC", key, new TextEncoder().encode(`POST\n${PATH}\n${ts}\n${nonce}\n${hash}`),
+    ));
 
-  const body = await req.json().catch(() => ({}));
-  const sistema = String(body?.sistema ?? "").toLowerCase() === "auto" ? "auto" : "frota";
-  const query = String(body?.query ?? "").trim();
-  const doSet = body?.set === true;
-  const active = body?.active === 1 ? 1 : 0;
-
-  const tokenEnv = sistema === "frota" ? "WIALON_TOKEN_FROTA" : "WIALON_TOKEN_AUTO";
-  const wtoken = Deno.env.get(tokenEnv);
-  const login = await wialonCall("token/login", { token: wtoken, fl: 2 }) as
-    { eid?: string; user?: { id?: number; nm?: string } };
-  const sid = login?.eid;
-  if (!sid) return json({ ok: false, sistema, tokenEnv, error: "login falhou", login });
-
-  const search = await wialonCall("core/search_items", {
-    spec: { itemsType: "avl_unit", propName: "sys_name", propValueMask: `*${query}*`, sortType: "sys_name" },
-    force: 1, flags: 1, from: 0, to: 50,
-  }, sid) as { items?: Array<{ id: number; nm: string }> };
-
-  const items = search?.items ?? [];
-  const result: Record<string, unknown> = {
-    ok: true,
-    sistema,
-    tokenEnv,
-    loginUser: { id: login?.user?.id ?? null, name: login?.user?.nm ?? null },
-    found: items.length,
-    items: items.slice(0, 5).map((i) => ({ id: i.id, name: i.nm })),
-  };
-
-  if (doSet && items.length === 1) {
-    result.set_active = await wialonCall("unit/set_active", { itemId: items[0].id, active }, sid);
+    const resp = await fetch(`${baseUrl}${PATH}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Timestamp": ts, "X-Nonce": nonce, "X-Signature": sig,
+      },
+      body: reqBody,
+    });
+    const text = await resp.text();
+    let parsed: unknown = text;
+    try { parsed = JSON.parse(text); } catch { /* keep */ }
+    return json({ ok: resp.ok, status: resp.status, request: payload, response: parsed });
+  } catch (e) {
+    return json({ ok: false, error: e instanceof Error ? e.message : String(e) });
   }
-  return json(result);
 });
