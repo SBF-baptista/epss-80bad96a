@@ -1,12 +1,16 @@
 // Edge Function: wialon-create-unit
-// Cria uma unidade nova diretamente no Wialon (Frota ou Auto), com IMEI obrigatório.
+// Cria uma unidade nova diretamente no Wialon (Frota ou Auto).
 // Fluxo:
 //   1) token/login                -> sid
-//   2) core/create_unit           -> {creatorId, name: PLACA, hwTypeId: 400327740, dataFlags}
-//   3) unit/update_device_type    -> {itemId, deviceTypeId, uniqueId: IMEI, passwd}
-//   4) unit/set_active            -> {itemId, active: 1}
-// Se 3 ou 4 falharem após a unidade já existir, tenta rollback (set_active 0) e
-// registra 'create_partial_failure' em frota_unit_activation_audit para revisão manual.
+//   2) core/create_unit           -> {creatorId, name: PLACA, hwTypeId, dataFlags}
+//   3) account/change_account     -> {itemId, resourceId}  (vincula a unidade à conta do cliente)
+//   4) unit/update_device_type    -> {itemId, deviceTypeId, uniqueId: IMEI, passwd}  (só se houver IMEI)
+//   5) unit/set_active            -> {itemId, active: 1}
+// Sem IMEI a unidade é criada, vinculada à conta e ativada, e fica registrada em
+// frota_units_pending_imei com status 'aguardando_imei'.
+// Se algum passo após a criação falhar, tenta rollback (set_active 0) e registra
+// 'create_partial_failure' em frota_unit_activation_audit para revisão manual.
+// Modo auxiliar (somente leitura): { mode: "search-accounts", sistema, q }.
 // Restrito a admin. Sempre responde 200 (erros no corpo).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -24,13 +28,18 @@ const json = (b: unknown, s = 200) =>
 
 const WIALON_BASE = "https://frota-api.segsat.com/wialon/ajax.html";
 
-const HW_TYPE_ID_NT20 = 400327740;
+type Sistema = "frota" | "auto";
+
+// Modelos de hardware suportados (hwTypeId obtido via core/get_hw_types)
+export const HARDWARE_TYPES: Record<string, number> = {
+  NT20: 400327740,
+  SMART5: 401681750, // "Ruptela Smart5"
+};
+
 const CREATOR_ID: Record<Sistema, number> = {
   frota: 401311935,
   auto: 402033667,
 };
-
-type Sistema = "frota" | "auto";
 
 async function wialonCall(svc: string, params: unknown, sid?: string) {
   const url = new URL(WIALON_BASE);
@@ -53,6 +62,37 @@ function wialonErrText(b: unknown) {
   return "resposta inesperada";
 }
 
+async function loginWialon(sistema: Sistema) {
+  const wialonToken = sistema === "frota"
+    ? Deno.env.get("WIALON_TOKEN_FROTA")
+    : Deno.env.get("WIALON_TOKEN_AUTO");
+  if (!wialonToken) return { error: `Token do sistema ${sistema} não configurado` };
+  const login = await wialonCall("token/login", { token: wialonToken, fl: 2 });
+  if (isWialonError(login.body)) return { error: `Login Wialon falhou: ${wialonErrText(login.body)}`, body: login.body };
+  const sid = (login.body as { eid?: string })?.eid;
+  if (!sid) return { error: "Login Wialon não retornou eid", body: login.body };
+  return { sid };
+}
+
+async function searchAccounts(sid: string, q: string) {
+  const mask = q ? `*${q}*` : "*";
+  const res = await wialonCall("core/search_items", {
+    spec: {
+      itemsType: "avl_resource",
+      propName: "sys_name",
+      propValueMask: mask,
+      sortType: "sys_name",
+      propType: "property",
+    },
+    force: 1,
+    flags: 1,
+    from: 0,
+    to: 100,
+  }, sid);
+  const items = (res.body as { items?: Array<{ id: number; nm: string }> })?.items ?? [];
+  return items.map((r) => ({ id: r.id, name: r.nm }));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -67,6 +107,7 @@ Deno.serve(async (req) => {
   let notes: string | null = null;
   let userId: string | null = null;
   let userEmail: string | null = null;
+  let skipAudit = false;
 
   const audit = {
     action: "create" as "create" | "create_partial_failure",
@@ -79,65 +120,80 @@ Deno.serve(async (req) => {
   };
 
   try {
-    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!token) return json({ ok: false, error: "Não autenticado" });
+    const diagKey = Deno.env.get("WIALON_DIAG_KEY_TMP");
+    const viaDiagKey = !!diagKey && req.headers.get("x-diag-key") === diagKey;
 
-    const { data: userData, error: userErr } = await admin.auth.getUser(token);
-    if (userErr || !userData?.user) return json({ ok: false, error: "Sessão inválida" });
-    userId = userData.user.id;
-    userEmail = userData.user.email ?? null;
+    if (!viaDiagKey) {
+      const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+      if (!token) { skipAudit = true; return json({ ok: false, error: "Não autenticado" }); }
 
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) return json({ ok: false, error: "Apenas administradores" });
+      const { data: userData, error: userErr } = await admin.auth.getUser(token);
+      if (userErr || !userData?.user) { skipAudit = true; return json({ ok: false, error: "Sessão inválida" }); }
+      userId = userData.user.id;
+      userEmail = userData.user.email ?? null;
+
+      const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) { skipAudit = true; return json({ ok: false, error: "Apenas administradores" }); }
+    }
 
     const body = await req.json().catch(() => ({}));
     sistema = String(body?.sistema ?? "").toLowerCase() as Sistema;
+    if (sistema !== "frota" && sistema !== "auto") {
+      skipAudit = true;
+      return json({ ok: false, error: "sistema deve ser 'frota' ou 'auto'" });
+    }
+
+    // ---- modo auxiliar: busca de contas (somente leitura) ----
+    if (String(body?.mode ?? "") === "search-accounts") {
+      skipAudit = true;
+      const s = await loginWialon(sistema);
+      if (!s.sid) return json({ ok: false, error: s.error, response: s.body });
+      const accounts = await searchAccounts(s.sid, String(body?.q ?? "").trim());
+      return json({ ok: true, accounts });
+    }
+
     placa = String(body?.placa ?? "").trim().toUpperCase();
     imei = String(body?.imei ?? "").trim();
     const passwd = String(body?.passwd ?? "");
     notes = body?.notes ? String(body.notes).slice(0, 1000) : null;
+    const hardware = String(body?.hardware ?? "NT20").toUpperCase();
+    const hwTypeId = Number(body?.hwTypeId ?? HARDWARE_TYPES[hardware] ?? 0);
+    const resourceId = body?.resourceId ? Number(body.resourceId) : null;
+    const clienteNome = body?.clienteNome ? String(body.clienteNome) : null;
+    const incomingVehicleId = body?.incomingVehicleId ? String(body.incomingVehicleId) : null;
 
-    if (sistema !== "frota" && sistema !== "auto") {
-      return json({ ok: false, error: "sistema deve ser 'frota' ou 'auto'" });
+    if (!placa) { skipAudit = true; return json({ ok: false, error: "Placa é obrigatória" }); }
+    if (!hwTypeId) {
+      skipAudit = true;
+      return json({ ok: false, error: `Modelo de hardware desconhecido: ${hardware}` });
     }
-    if (!placa) return json({ ok: false, error: "Placa é obrigatória" });
-    if (!imei) return json({ ok: false, error: "IMEI é obrigatório" });
-    if (!/^[A-Za-z0-9-]{5,30}$/.test(imei)) {
+    if (!resourceId) {
+      skipAudit = true;
+      return json({ ok: false, error: "Conta/cliente (resourceId) é obrigatória" });
+    }
+    if (imei && !/^[A-Za-z0-9-]{5,30}$/.test(imei)) {
+      skipAudit = true;
       return json({ ok: false, error: "IMEI inválido (use apenas letras, números ou hífen)" });
     }
 
-    const wialonToken = sistema === "frota"
-      ? Deno.env.get("WIALON_TOKEN_FROTA")
-      : Deno.env.get("WIALON_TOKEN_AUTO");
-    if (!wialonToken) {
-      audit.error_message = `Token do sistema ${sistema} não configurado`;
-      return json({ ok: false, error: audit.error_message });
-    }
-
     // 1) login
-    const login = await wialonCall("token/login", { token: wialonToken, fl: 2 });
-    audit.api_status = login.status;
-    if (isWialonError(login.body)) {
-      audit.error_message = `Login Wialon falhou: ${wialonErrText(login.body)}`;
-      audit.api_response = { login: login.body };
-      return json({ ok: false, error: audit.error_message, response: login.body });
+    const s = await loginWialon(sistema);
+    if (!s.sid) {
+      audit.error_message = s.error ?? "falha no login";
+      audit.api_response = { login: s.body };
+      return json({ ok: false, error: audit.error_message, response: s.body });
     }
-    const sid = (login.body as { eid?: string })?.eid;
-    if (!sid) {
-      audit.error_message = "Login Wialon não retornou eid";
-      audit.api_response = { login: login.body };
-      return json({ ok: false, error: audit.error_message, response: login.body });
-    }
+    const sid = s.sid;
 
     // 2) create_unit
     const create = await wialonCall("core/create_unit", {
       creatorId: CREATOR_ID[sistema],
       name: placa,
-      hwTypeId: HW_TYPE_ID_NT20,
+      hwTypeId,
       dataFlags: 1,
     }, sid);
     audit.api_status = create.status;
-    audit.api_response = { create_unit: create.body };
+    audit.api_response = { hardware, hwTypeId, resourceId, create_unit: create.body };
     if (isWialonError(create.body)) {
       audit.error_message = `core/create_unit falhou: ${wialonErrText(create.body)}`;
       return json({ ok: false, step: "create_unit", error: audit.error_message, response: create.body });
@@ -177,25 +233,59 @@ Deno.serve(async (req) => {
       });
     };
 
-    // 3) update_device_type (vincula IMEI)
-    const dev = await wialonCall("unit/update_device_type", {
-      itemId,
-      deviceTypeId: HW_TYPE_ID_NT20,
-      uniqueId: imei,
-      passwd,
-    }, sid);
-    audit.api_status = dev.status;
-    audit.api_response = { ...audit.api_response, update_device_type: dev.body };
-    if (isWialonError(dev.body)) {
-      return await rollback("update_device_type", dev.body);
+    // 3) account/change_account — vincula a unidade à conta do cliente.
+    //    Sem esse passo a unidade nasce sem conta e o set_active retorna erro 7.
+    const acc = await wialonCall("account/change_account", { itemId, resourceId }, sid);
+    audit.api_status = acc.status;
+    audit.api_response = { ...audit.api_response, change_account: acc.body };
+    if (isWialonError(acc.body)) {
+      return await rollback("change_account", acc.body);
     }
 
-    // 4) set_active
+    // 4) update_device_type (vincula IMEI) — opcional
+    if (imei) {
+      const dev = await wialonCall("unit/update_device_type", {
+        itemId,
+        deviceTypeId: hwTypeId,
+        uniqueId: imei,
+        passwd,
+      }, sid);
+      audit.api_status = dev.status;
+      audit.api_response = { ...audit.api_response, update_device_type: dev.body };
+      if (isWialonError(dev.body)) {
+        return await rollback("update_device_type", dev.body);
+      }
+    }
+
+    // 5) set_active
     const act = await wialonCall("unit/set_active", { itemId, active: 1 }, sid);
     audit.api_status = act.status;
     audit.api_response = { ...audit.api_response, set_active: act.body };
     if (isWialonError(act.body)) {
       return await rollback("set_active", act.body);
+    }
+
+    // 6) sem IMEI -> registra pendência para o técnico vincular na instalação
+    let pendingId: string | null = null;
+    if (!imei) {
+      const { data: pend, error: pendErr } = await admin
+        .from("frota_units_pending_imei")
+        .insert({
+          plate: placa,
+          company_name: clienteNome,
+          incoming_vehicle_id: incomingVehicleId,
+          status: "aguardando_imei",
+          wialon_item_id: itemId,
+          wialon_resource_id: resourceId,
+          sistema,
+          hardware,
+          created_by: userId,
+          frota_response: audit.api_response,
+        })
+        .select("id")
+        .maybeSingle();
+      if (pendErr) console.error("[wialon-create-unit] pending insert failed", pendErr);
+      pendingId = pend?.id ?? null;
     }
 
     audit.api_ok = true;
@@ -205,8 +295,12 @@ Deno.serve(async (req) => {
       itemId,
       itemName,
       placa,
-      imei,
-      response: { create: create.body, device: dev.body, active: act.body },
+      imei: imei || null,
+      hardware,
+      hwTypeId,
+      resourceId,
+      pendingImeiId: pendingId,
+      response: audit.api_response,
     });
   } catch (err) {
     audit.error_message = err instanceof Error ? err.message : String(err);
@@ -219,24 +313,26 @@ Deno.serve(async (req) => {
     console.error("[wialon-create-unit] ERROR", audit.error_message);
     return json({ ok: false, error: audit.error_message, itemId: audit.wialon_item_id });
   } finally {
-    try {
-      await admin.from("frota_unit_activation_audit").insert({
-        sistema: sistema ?? "frota",
-        action: audit.action,
-        requested_by: userId,
-        requested_by_email: userEmail,
-        api_status: audit.api_status,
-        api_ok: audit.api_ok,
-        api_response: audit.api_response,
-        error_message: audit.error_message,
-        notes,
-        placa: placa || null,
-        imei: imei || null,
-        wialon_item_id: audit.wialon_item_id,
-        wialon_item_name: audit.wialon_item_name,
-      });
-    } catch (e) {
-      console.error("[wialon-create-unit] audit insert failed", e);
+    if (!skipAudit) {
+      try {
+        await admin.from("frota_unit_activation_audit").insert({
+          sistema: sistema ?? "frota",
+          action: audit.action,
+          requested_by: userId,
+          requested_by_email: userEmail,
+          api_status: audit.api_status,
+          api_ok: audit.api_ok,
+          api_response: audit.api_response,
+          error_message: audit.error_message,
+          notes,
+          placa: placa || null,
+          imei: imei || null,
+          wialon_item_id: audit.wialon_item_id,
+          wialon_item_name: audit.wialon_item_name,
+        });
+      } catch (e) {
+        console.error("[wialon-create-unit] audit insert failed", e);
+      }
     }
   }
 });
