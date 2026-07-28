@@ -181,23 +181,27 @@ const FrotaUnitActivation = () => {
           </div>
           {sistema === "frota" && (
             <div className="space-y-1">
-              <label className="text-xs font-medium">filialContrato (opcional — Frota)</label>
+              <label className="text-xs font-medium">filialContrato (Frota) *</label>
               <Input
-                placeholder="Chave do contrato no Segsale. Se vazio, usa a placa."
+                placeholder="Chave do contrato no Segsale (ex.: 300123568)"
                 value={filialContrato}
                 onChange={(e) => setFilialContrato(e.target.value)}
               />
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-xs font-medium">Observação (opcional)</label>
+            <label className="text-xs font-medium">Justificativa *</label>
             <Textarea
-              placeholder="Motivo / contexto da ação"
+              placeholder="Descreva o motivo da ativação/desativação (mínimo 10 caracteres)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Obrigatória para auditoria — fica registrada junto com a operação.
+            </p>
           </div>
+
           <div className="flex justify-end">
             <Button onClick={submit} disabled={mutation.isPending} className="gap-2">
               {mutation.isPending
