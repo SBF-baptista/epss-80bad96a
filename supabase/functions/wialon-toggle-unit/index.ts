@@ -153,14 +153,15 @@ Deno.serve(async (req) => {
     const search = await wialonCall("core/search_items", searchParams, sid);
     audit.api_response = { login: login.body, search: search.body };
     if (isWialonError(search.body)) {
-      audit.error_message = `Busca Wialon falhou: erro ${search.body.error}`;
-      return json({ ok: false, error: audit.error_message, response: search.body });
+      audit.error_message = `Busca Wialon (sistema ${sistema.toUpperCase()}) falhou: erro ${search.body.error}${search.body.reason ? ` — ${search.body.reason}` : ""}`;
+      return json({ ok: false, sistema, error: audit.error_message, response: search.body });
     }
     const items = (search.body as { items?: Array<{ id: number; nm: string }> })?.items ?? [];
     if (items.length === 0) {
-      audit.error_message = `Nenhuma unidade encontrada no sistema ${sistema} para "${query}"`;
-      return json({ ok: false, error: audit.error_message, sid_ok: true, candidates: [] });
+      audit.error_message = `Unidade não encontrada no sistema ${sistema.toUpperCase()} para a placa "${query}". Verifique se a unidade pertence ao outro sistema (${sistema === "auto" ? "FROTA" : "AUTO"}).`;
+      return json({ ok: false, sistema, error: audit.error_message, sid_ok: true, candidates: [] });
     }
+
     if (items.length > 1) {
       audit.error_message = `Múltiplas unidades encontradas (${items.length}) para "${query}". Refine a busca.`;
       return json({
