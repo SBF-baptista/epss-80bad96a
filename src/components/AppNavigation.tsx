@@ -46,6 +46,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useEditRequestsCount } from "@/hooks/useEditRequestsCount";
 import { useFrotaUnitFailedCount } from "@/hooks/useFrotaUnitFailedCount";
+import { useUnitActivationPermission } from "@/hooks/useUnitActivationPermission";
 import { AppModule } from "@/types/permissions";
 
 // Navigation items with module-based permissions
@@ -145,6 +146,7 @@ export function AppNavigation() {
   const isCollapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const { role, accessProfileName, canViewModule, loading } = useUserRole();
+  const { canActivateUnits } = useUnitActivationPermission();
   const { count: editRequestsCount } = useEditRequestsCount();
   const { count: frotaFailedCount } = useFrotaUnitFailedCount();
   
