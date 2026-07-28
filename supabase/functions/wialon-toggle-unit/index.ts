@@ -224,10 +224,7 @@ Deno.serve(async (req) => {
       // mesmo sem a ACL de escrita).
       let filialContrato = String(body?.filialContrato ?? "").trim();
       if (!filialContrato) {
-        audit.error_message = "filialContrato é obrigatório para o sistema Frota (campo personalizado FILIALCONTRATO da unidade no Wialon)";
-        return json({ ok: false, error: audit.error_message });
-      }
-      if (false) {
+
 
         const wt = Deno.env.get("WIALON_TOKEN_FROTA");
         if (wt) {
