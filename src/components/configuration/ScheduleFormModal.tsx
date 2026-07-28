@@ -110,6 +110,13 @@ export const ScheduleFormModal = ({
   const [customService, setCustomService] = useState('');
   const [isAddingService, setIsAddingService] = useState(false);
   const [kickoffContacts, setKickoffContacts] = useState<{ name: string; role?: string; phone?: string }[]>([]);
+  const [contractLookup, setContractLookup] = useState<{
+    status: 'idle' | 'loading' | 'found' | 'not_found' | 'error';
+    tipo?: 'TELEMETRIA' | 'MENSALISTA';
+    filial?: string | null;
+    contrato?: string | null;
+  }>({ status: 'idle' });
+
 
   // Determine if fields should be locked (has initial data from pipeline)
   const hasInitialData = Boolean(initialVehicleData?.plate || initialVehicleData?.model);
@@ -270,6 +277,53 @@ export const ScheduleFormModal = ({
 
   const selectedTechnicianPhone = form.watch('technician_whatsapp');
   const watchedDate = form.watch('date');
+  const watchedPlate = form.watch('plate');
+
+  // Busca automática do tipo de contrato na base de pendências do Segsale
+  useEffect(() => {
+    // Suporta múltiplas placas no mesmo campo: usa a primeira como referência
+    const plate = String(watchedPlate ?? '')
+      .toUpperCase()
+      .split(/[^A-Z0-9]+/)
+      .filter(Boolean)[0] ?? '';
+    if (!open) return;
+    if (plate.length < 6) {
+      setContractLookup({ status: 'idle' });
+      return;
+    }
+
+    let cancelled = false;
+    setContractLookup({ status: 'loading' });
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('frota-check-placa-pendente', {
+          body: { placa: plate },
+        });
+        if (cancelled) return;
+        if (error) {
+          setContractLookup({ status: 'error' });
+          return;
+        }
+        if (data?.pendente && data?.data?.tipoContrato) {
+          const tipo = String(data.data.tipoContrato).toUpperCase() === 'TELEMETRIA'
+            ? 'TELEMETRIA' : 'MENSALISTA';
+          form.setValue('tipo_contrato', tipo as 'TELEMETRIA' | 'MENSALISTA', { shouldValidate: true });
+          setContractLookup({
+            status: 'found',
+            tipo: tipo as 'TELEMETRIA' | 'MENSALISTA',
+            filial: data.data.filial ?? null,
+            contrato: data.data.contrato ?? null,
+          });
+        } else {
+          setContractLookup({ status: 'not_found' });
+        }
+      } catch {
+        if (!cancelled) setContractLookup({ status: 'error' });
+      }
+    }, 600);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [watchedPlate, open, form]);
+
 
   const getTechnicianLocation = (technician: Technician) => {
     const parts = [technician.address_city, technician.address_state].filter(Boolean);
@@ -524,10 +578,14 @@ export const ScheduleFormModal = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm">Tipo de Contrato *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={contractLookup.status === 'found' || contractLookup.status === 'loading'}
+                    >
                       <FormControl>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Selecione o tipo de contrato" />
+                        <SelectTrigger className="h-9 disabled:opacity-100 disabled:bg-muted disabled:text-foreground">
+                          <SelectValue placeholder={contractLookup.status === 'loading' ? 'Consultando base do Segsale...' : 'Selecione o tipo de contrato'} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background">
@@ -535,11 +593,29 @@ export const ScheduleFormModal = ({
                         <SelectItem value="MENSALISTA">Mensalista</SelectItem>
                       </SelectContent>
                     </Select>
+                    {contractLookup.status === 'found' && (
+                      <p className="text-xs text-emerald-600">
+                        Confirmado pela base de pendências do Segsale
+                        {contractLookup.filial ? ` — Filial ${contractLookup.filial}` : ''}
+                        {contractLookup.contrato ? ` / Contrato ${contractLookup.contrato}` : ''}. Campo bloqueado.
+                      </p>
+                    )}
+                    {contractLookup.status === 'not_found' && (
+                      <p className="text-xs text-amber-600">
+                        Placa não encontrada na base de pendências do Segsale — valor NÃO confirmado, preencha manualmente com atenção.
+                      </p>
+                    )}
+                    {contractLookup.status === 'error' && (
+                      <p className="text-xs text-amber-600">
+                        Não foi possível consultar a base do Segsale — valor não confirmado.
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Telemetria: envia para o Frota. Mensalista: envia para o Kafka.
                     </p>
                     <FormMessage />
                   </FormItem>
+
                 )}
               />
 

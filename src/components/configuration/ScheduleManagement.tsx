@@ -209,6 +209,30 @@ export const ScheduleManagement = () => {
   };
 
   const handleFormSubmit = async (data: any) => {
+    // Fonte da verdade do tipo de contrato: base de pendências do Segsale.
+    // O valor digitado no formulário é apenas fallback.
+    const plateNorm = String(data.plate ?? "").toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean)[0] ?? "";
+    let confirmedTipo: 'TELEMETRIA' | 'MENSALISTA' | null = null;
+    if (plateNorm) {
+      try {
+        const { data: check } = await supabase.functions.invoke('frota-check-placa-pendente', {
+          body: { placa: plateNorm },
+        });
+        if (check?.pendente && check?.data?.tipoContrato) {
+          confirmedTipo = String(check.data.tipoContrato).toUpperCase() === 'TELEMETRIA'
+            ? 'TELEMETRIA' : 'MENSALISTA';
+        }
+      } catch (e) {
+        console.warn('[ScheduleManagement] falha ao confirmar tipo_contrato:', e);
+      }
+    }
+    const finalTipo: 'TELEMETRIA' | 'MENSALISTA' =
+      confirmedTipo ?? (data.tipo_contrato === 'MENSALISTA' ? 'MENSALISTA' : 'TELEMETRIA');
+    if (confirmedTipo && data.tipo_contrato && confirmedTipo !== data.tipo_contrato) {
+      console.warn(`[ScheduleManagement] tipo_contrato divergente: form=${data.tipo_contrato} base=${confirmedTipo} placa=${plateNorm}`);
+      toast.info(`Tipo de contrato ajustado para ${confirmedTipo} conforme a base do Segsale.`);
+    }
+
     const scheduleData: any = {
       scheduled_date: format(data.date, "yyyy-MM-dd"),
       scheduled_time: data.time,
@@ -221,7 +245,8 @@ export const ScheduleManagement = () => {
       vehicle_model: data.vehicle_model,
       vehicle_year: data.vehicle_year || null,
       tracker_model: data.tracker_model,
-      tipo_contrato: data.tipo_contrato || null,
+      tipo_contrato: finalTipo,
+
       scheduled_by: "Sistema", // Auto-filled since field was removed
       reference_point: data.reference_point || null,
       phone: data.phone || null,
@@ -240,24 +265,14 @@ export const ScheduleManagement = () => {
     await fetchSchedules();
     toast.success("Agendamento criado com sucesso!");
 
-    // Dispara integração externa conforme tipo de contrato escolhido no formulário:
+    // Dispara integração externa conforme o tipo de contrato CONFIRMADO na base do Segsale:
     // - TELEMETRIA -> POST no Frota (create-frota-unidade)
-    // - MENSALISTA -> publica no Kafka (kafka-publish-agendamento)
+    // - MENSALISTA -> publica no Kafka + também tenta criar unidade no Frota (rede de segurança)
     if (inserted?.id) {
-      const tipoContrato = data.tipo_contrato === 'MENSALISTA' ? 'MENSALISTA' : 'TELEMETRIA';
-      console.log(`[ScheduleManagement] installation_schedule=${inserted.id} tipoContrato=${tipoContrato}`);
+      const tipoContrato = finalTipo;
+      console.log(`[ScheduleManagement] installation_schedule=${inserted.id} tipoContrato=${tipoContrato} (confirmado=${confirmedTipo ?? 'nao'})`);
 
-      if (tipoContrato === 'TELEMETRIA') {
-        supabase.functions
-          .invoke('create-frota-unidade', {
-            body: { installationScheduleId: inserted.id, tipoContrato: 'TELEMETRIA' },
-          })
-          .then(({ data: fData, error }) => {
-            if (error) console.warn('[create-frota-unidade] falhou:', error.message);
-            else console.log('[create-frota-unidade] resultado:', fData);
-          })
-          .catch((e) => console.warn('[create-frota-unidade] erro:', e));
-      } else {
+      if (tipoContrato === 'MENSALISTA') {
         supabase.functions
           .invoke('kafka-publish-agendamento', {
             body: { installationScheduleId: inserted.id, tipoContrato: 'MENSALISTA' },
@@ -267,7 +282,19 @@ export const ScheduleManagement = () => {
           })
           .catch((e) => console.warn('[kafka-publish-agendamento] erro:', e));
       }
+
+      // Sempre tenta criar a unidade na Frota (idempotente do lado da função)
+      supabase.functions
+        .invoke('create-frota-unidade', {
+          body: { installationScheduleId: inserted.id, tipoContrato },
+        })
+        .then(({ data: fData, error }) => {
+          if (error) console.warn('[create-frota-unidade] falhou:', error.message);
+          else console.log('[create-frota-unidade] resultado:', fData);
+        })
+        .catch((e) => console.warn('[create-frota-unidade] erro:', e));
     }
+
 
 
     // Send WhatsApp notification to technician with feedback
