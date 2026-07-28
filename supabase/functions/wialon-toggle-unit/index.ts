@@ -165,10 +165,27 @@ Deno.serve(async (req) => {
       audit.error_message = `Sessão inválida — ${roleErr.message}`;
       return json({ ok: false, error: audit.error_message });
     }
-    if (!isAdmin) {
-      audit.error_message = "Apenas administradores";
+    let allowed = !!isAdmin;
+    if (!allowed && userEmail) {
+      const { data: allowRow } = await admin
+        .from("unit_activation_allowed_users")
+        .select("email")
+        .ilike("email", userEmail)
+        .maybeSingle();
+      allowed = !!allowRow;
+    }
+    if (!allowed) {
+      audit.error_message = "Sem permissão para ativar/desativar unidades";
       return json({ ok: false, error: audit.error_message });
     }
+
+    // Auditoria: justificativa obrigatória
+    if (!notes || notes.trim().length < 10) {
+      audit.error_message = "Justificativa obrigatória (mínimo 10 caracteres) para ativar/desativar uma unidade";
+      return json({ ok: false, error: audit.error_message });
+    }
+    notes = notes.trim();
+
 
 
     if (!sistema) {
