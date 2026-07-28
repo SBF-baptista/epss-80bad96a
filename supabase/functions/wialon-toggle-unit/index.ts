@@ -384,15 +384,19 @@ Deno.serve(async (req) => {
       await admin.from("frota_unit_activation_audit").insert({
         // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
         sistema,
-        filial_contrato: null,
-        tipo_contrato: null,
+        filial_contrato: audit.method === "frota_hmac_wrapper" ? (query || null) : null,
+        tipo_contrato: audit.tipo_contrato,
         action: action ?? "deactivate",
 
         requested_by: userId,
         requested_by_email: userEmail,
         api_status: audit.api_status,
         api_ok: audit.api_ok,
-        api_response: audit.api_response as Record<string, unknown> | null,
+        api_response: (audit.api_response
+          ? { method: audit.method, ...(typeof audit.api_response === "object" && audit.api_response !== null
+              ? audit.api_response as Record<string, unknown>
+              : { raw: audit.api_response }) }
+          : { method: audit.method }) as Record<string, unknown>,
         error_message: audit.error_message,
         notes,
         placa: query || null,
