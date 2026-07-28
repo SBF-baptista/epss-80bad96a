@@ -16,6 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import WialonCreateUnitCard from "@/components/frota/WialonCreateUnitCard";
+import { useUnitActivationPermission } from "@/hooks/useUnitActivationPermission";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +43,7 @@ interface AuditRow {
 
 const FrotaUnitActivation = () => {
   const { toast } = useToast();
+  const { canActivateUnits, isLoading: permLoading } = useUnitActivationPermission();
   const qc = useQueryClient();
 
   // Sem default — usuário DEVE escolher explicitamente
@@ -135,6 +137,23 @@ const FrotaUnitActivation = () => {
     setConfirmOpen(true);
   };
 
+
+  if (permLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Verificando permissões…</div>;
+  }
+
+  if (!canActivateUnits) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            Você não tem permissão para ativar ou desativar unidades. Solicite acesso a um administrador.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
