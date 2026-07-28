@@ -18,6 +18,30 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const body = await req.json().catch(() => ({}));
   const plates: string[] = Array.isArray(body?.plates) ? body.plates : [];
+
+  // modo teste do wrapper: { probe: { ...payload } }
+  if (body?.probe) {
+    const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY")!;
+    const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") || "https://frota-auto-aityd.ondigitalocean.app";
+    const path = "/api/unidade/status";
+    const reqBody = JSON.stringify(body.probe);
+    const ts = String(Math.floor(Date.now() / 1000));
+    const nonce = crypto.randomUUID();
+    const enc = new TextEncoder();
+    const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, "0")).join("");
+    const bodyHash = hex(await crypto.subtle.digest("SHA-256", enc.encode(reqBody)));
+    const key = await crypto.subtle.importKey("raw", enc.encode(apiKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const sig = hex(await crypto.subtle.sign("HMAC", key, enc.encode(`PATCH\n${path}\n${ts}\n${nonce}\n${bodyHash}`)));
+    const r = await fetch(`${baseUrl}${path}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "X-Timestamp": ts, "X-Nonce": nonce, "X-Signature": sig },
+      body: reqBody,
+    });
+    const t = await r.text();
+    return new Response(JSON.stringify({ probe: body.probe, status: r.status, response: t }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const token = Deno.env.get("WIALON_TOKEN_FROTA");
   const login = await wialonCall("token/login", { token, fl: 2 });
   const sid = (login as { eid?: string })?.eid;
