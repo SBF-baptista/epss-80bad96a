@@ -78,19 +78,46 @@ Deno.serve(async (req) => {
     query = String(body?.query ?? "").trim(); // placa ou nome da unidade
     notes = body?.notes ? String(body.notes).slice(0, 1000) : null;
 
-    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (!token) {
-      audit.error_message = "Não autenticado";
+      audit.error_message = "Não autenticado (header Authorization ausente)";
+      return json({ ok: false, error: audit.error_message });
+    }
+
+    // Diagnóstico: claims do JWT (nunca o token em si)
+    let claims: Record<string, unknown> = {};
+    try {
+      const part = token.split(".")[1] ?? "";
+      claims = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+    } catch { /* token não-JWT */ }
+    const nowSec = Math.floor(Date.now() / 1000);
+    console.log("[wialon-toggle-unit] token claims", JSON.stringify({
+      iss: claims.iss, role: claims.role, sub: claims.sub,
+      exp: claims.exp, now: nowSec,
+      expired: typeof claims.exp === "number" ? claims.exp < nowSec : null,
+      alg_header: (() => { try { return JSON.parse(atob(token.split(".")[0])).alg; } catch { return null; } })(),
+    }));
+
+    if (claims.role === "anon") {
+      audit.error_message = "Sessão inválida: a requisição chegou com a chave anônima, não com o token do usuário logado. Faça login novamente / recarregue a página.";
+      return json({ ok: false, error: audit.error_message });
+    }
+    if (typeof claims.exp === "number" && claims.exp < nowSec) {
+      audit.error_message = `Sessão expirada há ${nowSec - claims.exp}s. Recarregue a página e tente novamente.`;
       return json({ ok: false, error: audit.error_message });
     }
 
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
     if (userErr || !userData?.user) {
-      audit.error_message = "Sessão inválida";
+      const detail = userErr ? `${userErr.name}: ${userErr.message} (status ${(userErr as { status?: number }).status ?? "?"})` : "usuário nulo";
+      console.error("[wialon-toggle-unit] getUser falhou:", detail);
+      audit.error_message = `Sessão inválida — ${detail}`;
       return json({ ok: false, error: audit.error_message });
     }
     userId = userData.user.id;
     userEmail = userData.user.email ?? null;
+
 
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
     if (!isAdmin) {
