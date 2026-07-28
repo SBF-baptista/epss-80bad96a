@@ -125,16 +125,17 @@ Deno.serve(async (req) => {
     const login = await wialonCall("token/login", { token: wialonToken, fl: 2 });
     audit.api_status = login.status;
     if (isWialonError(login.body)) {
-      audit.error_message = `Login Wialon falhou: erro ${login.body.error}`;
+      audit.error_message = `Login Wialon (sistema ${sistema.toUpperCase()}) falhou: erro ${login.body.error}${login.body.reason ? ` — ${login.body.reason}` : ""}`;
       audit.api_response = login.body;
-      return json({ ok: false, error: audit.error_message, response: login.body });
+      return json({ ok: false, sistema, error: audit.error_message, response: login.body });
     }
     const sid = (login.body as { eid?: string })?.eid;
     if (!sid) {
-      audit.error_message = "Login Wialon não retornou eid";
+      audit.error_message = `Login Wialon (sistema ${sistema.toUpperCase()}) não retornou eid`;
       audit.api_response = login.body;
-      return json({ ok: false, error: audit.error_message, response: login.body });
+      return json({ ok: false, sistema, error: audit.error_message, response: login.body });
     }
+
 
     // 2) search_items — procura por nome contendo placa/nome
     const searchParams = {
