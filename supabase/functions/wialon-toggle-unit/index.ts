@@ -68,38 +68,58 @@ Deno.serve(async (req) => {
   };
 
   try {
+    // Parse do corpo PRIMEIRO: garante que o sistema realmente selecionado
+    // seja registrado na auditoria mesmo se a autenticação/validação falhar.
+    const body = await req.json().catch(() => ({}));
+    const rawSistema = String(body?.sistema ?? "").trim().toLowerCase();
+    sistema = (rawSistema === "frota" || rawSistema === "auto") ? rawSistema as Sistema : null;
+    const rawAction = String(body?.action ?? "").trim().toLowerCase();
+    action = (rawAction === "activate" || rawAction === "deactivate") ? rawAction as Action : null;
+    query = String(body?.query ?? "").trim(); // placa ou nome da unidade
+    notes = body?.notes ? String(body.notes).slice(0, 1000) : null;
+
     const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!token) return json({ ok: false, error: "Não autenticado" });
+    if (!token) {
+      audit.error_message = "Não autenticado";
+      return json({ ok: false, error: audit.error_message });
+    }
 
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
-    if (userErr || !userData?.user) return json({ ok: false, error: "Sessão inválida" });
+    if (userErr || !userData?.user) {
+      audit.error_message = "Sessão inválida";
+      return json({ ok: false, error: audit.error_message });
+    }
     userId = userData.user.id;
     userEmail = userData.user.email ?? null;
 
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) return json({ ok: false, error: "Apenas administradores" });
-
-    const body = await req.json().catch(() => ({}));
-    sistema = String(body?.sistema ?? "").toLowerCase() as Sistema;
-    action = String(body?.action ?? "").toLowerCase() as Action;
-    query = String(body?.query ?? "").trim(); // placa ou nome da unidade
-    notes = body?.notes ? String(body.notes).slice(0, 1000) : null;
-
-    if (sistema !== "frota" && sistema !== "auto") {
-      return json({ ok: false, error: "sistema deve ser 'frota' ou 'auto'" });
-    }
-    if (action !== "activate" && action !== "deactivate") {
-      return json({ ok: false, error: "action deve ser 'activate' ou 'deactivate'" });
-    }
-    if (!query) return json({ ok: false, error: "Informe a placa ou nome da unidade" });
-
-    const wialonToken = sistema === "frota"
-      ? Deno.env.get("WIALON_TOKEN_FROTA")
-      : Deno.env.get("WIALON_TOKEN_AUTO");
-    if (!wialonToken) {
-      audit.error_message = `Token do sistema ${sistema} não configurado`;
+    if (!isAdmin) {
+      audit.error_message = "Apenas administradores";
       return json({ ok: false, error: audit.error_message });
     }
+
+    if (!sistema) {
+      audit.error_message = `sistema deve ser 'frota' ou 'auto' (recebido: "${rawSistema}")`;
+      return json({ ok: false, error: audit.error_message });
+    }
+    if (!action) {
+      audit.error_message = `action deve ser 'activate' ou 'deactivate' (recebido: "${rawAction}")`;
+      return json({ ok: false, error: audit.error_message });
+    }
+    if (!query) {
+      audit.error_message = "Informe a placa ou nome da unidade";
+      return json({ ok: false, error: audit.error_message });
+    }
+
+    // Token estritamente derivado do sistema selecionado — sem fallback silencioso.
+    const tokenEnvName = sistema === "frota" ? "WIALON_TOKEN_FROTA" : "WIALON_TOKEN_AUTO";
+    const wialonToken = Deno.env.get(tokenEnvName);
+    if (!wialonToken) {
+      audit.error_message = `Token do sistema ${sistema.toUpperCase()} (${tokenEnvName}) não configurado`;
+      return json({ ok: false, error: audit.error_message });
+    }
+    console.log(`[wialon-toggle-unit] sistema=${sistema} token=${tokenEnvName} action=${action} query=${query}`);
+
 
     // 1) login
     const login = await wialonCall("token/login", { token: wialonToken, fl: 2 });
