@@ -183,6 +183,100 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: audit.error_message });
     }
 
+    // ==========================================================================
+    // TEMPORARIO: usar wrapper HMAC pro Frota enquanto ACL do Wialon nao e
+    // liberada (unit/set_active -> erro 7). Reverter para chamada direta
+    // (bloco abaixo, igual ao Auto) quando a permissao for concedida.
+    // ==========================================================================
+    if (sistema === "frota") {
+      audit.method = "frota_hmac_wrapper";
+      const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY");
+      const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") ||
+        "https://frota-auto-aityd.ondigitalocean.app";
+      if (!apiKey) {
+        audit.error_message = "FROTA_SEGSALE_API_KEY não configurada";
+        return json({ ok: false, sistema, error: audit.error_message });
+      }
+
+      const placa = query.trim().toUpperCase();
+
+      // tipoContrato: override explícito do corpo, senão derivado do usage_type
+      // do veículo (mesma regra usada em create-frota-unidade).
+      const overrideTipo = String(body?.tipoContrato ?? "").trim().toUpperCase();
+      let tipoContrato: "TELEMETRIA" | "MENSALISTA";
+      if (overrideTipo === "TELEMETRIA" || overrideTipo === "MENSALISTA") {
+        tipoContrato = overrideTipo;
+      } else {
+        const { data: iv } = await admin
+          .from("incoming_vehicles")
+          .select("usage_type")
+          .eq("plate", placa)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        tipoContrato = mapTipoContrato(iv?.usage_type ?? null);
+      }
+      audit.tipo_contrato = tipoContrato;
+
+      const ativo = action === "activate";
+      const payload = { filialContrato: placa, ativo, tipoContrato };
+      const reqBody = JSON.stringify(payload);
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const nonce = crypto.randomUUID();
+      const canonical =
+        `POST\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`;
+      const signature = await hmacSha256Hex(apiKey, canonical);
+
+      console.log(
+        `[wialon-toggle-unit] sistema=frota method=hmac_wrapper action=${action} placa=${placa} tipo=${tipoContrato}`,
+      );
+
+      let respText = "";
+      try {
+        const resp = await fetch(`${baseUrl}${FROTA_STATUS_PATH}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Timestamp": timestamp,
+            "X-Nonce": nonce,
+            "X-Signature": signature,
+          },
+          body: reqBody,
+        });
+        audit.api_status = resp.status;
+        respText = await resp.text();
+        let respJson: unknown = respText;
+        try { respJson = JSON.parse(respText); } catch { /* keep text */ }
+        audit.api_response = { method: "frota_hmac_wrapper", request: payload, response: respJson };
+
+        const confirmed =
+          typeof respJson === "object" && respJson !== null &&
+          (respJson as Record<string, unknown>).ativo === ativo;
+        audit.api_ok = resp.ok && (confirmed || (respJson as Record<string, unknown>)?.ativo === undefined);
+        if (!audit.api_ok) {
+          audit.error_message =
+            `Wrapper Frota respondeu ${resp.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ` +
+            (typeof respJson === "string" ? respJson : JSON.stringify(respJson));
+        }
+      } catch (netErr) {
+        audit.error_message = `Erro de rede ao chamar wrapper Frota: ${
+          netErr instanceof Error ? netErr.message : String(netErr)
+        }`;
+      }
+
+      return json({
+        ok: audit.api_ok,
+        sistema,
+        method: "frota_hmac_wrapper",
+        placa,
+        tipoContrato,
+        request: payload,
+        response: audit.api_response,
+        error: audit.api_ok ? null : audit.error_message,
+      });
+    }
+
+
     // Token estritamente derivado do sistema selecionado — sem fallback silencioso.
     const tokenEnvName = sistema === "frota" ? "WIALON_TOKEN_FROTA" : "WIALON_TOKEN_AUTO";
     const wialonToken = Deno.env.get(tokenEnvName);
