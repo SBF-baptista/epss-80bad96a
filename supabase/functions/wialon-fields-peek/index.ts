@@ -19,6 +19,35 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const plates: string[] = Array.isArray(body?.plates) ? body.plates : [];
 
+  if (body?.resolve) {
+    const alvo = String(body.resolve).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY")!;
+    const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") || "https://frota-auto-aityd.ondigitalocean.app";
+    const hits: unknown[] = [];
+    for (const tipo of ["TELEMETRIA", "MENSALISTA"]) {
+      const path = `/api/unidade/pendente/listar?tipoContrato=${tipo}`;
+      const ts = String(Math.floor(Date.now() / 1000));
+      const nonce = crypto.randomUUID();
+      const enc = new TextEncoder();
+      const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, "0")).join("");
+      const bodyHash = hex(await crypto.subtle.digest("SHA-256", enc.encode("")));
+      const key = await crypto.subtle.importKey("raw", enc.encode(apiKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+      const sig = hex(await crypto.subtle.sign("HMAC", key, enc.encode(`GET\n${path}\n${ts}\n${nonce}\n${bodyHash}`)));
+      const r = await fetch(`${baseUrl}${path}`, { headers: { "X-Timestamp": ts, "X-Nonce": nonce, "X-Signature": sig } });
+      const arr = await r.json().catch(() => []);
+      if (Array.isArray(arr)) {
+        for (const it of arr) {
+          if (String(it?.placa ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "") === alvo) {
+            hits.push({ tipo, ...it, filialContrato: `${it.filial}${it.contrato}` });
+          }
+        }
+      }
+    }
+    return new Response(JSON.stringify({ resolve: alvo, hits }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // modo teste do wrapper: { probe: { ...payload } }
   if (body?.probe) {
     const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY")!;
