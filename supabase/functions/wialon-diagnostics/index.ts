@@ -140,8 +140,9 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItem
     unitsByName: resourceMask
       ? all.filter((u) => String(u.nm ?? "").toUpperCase().includes(String(resourceMask).replace(/\*/g, "").toUpperCase()))
       : [],
-
+    resources: resItems.map((r) => ({
       id: r.id,
+
       name: r.nm,
       uacl: r.uacl ?? null,
       account: (r as { act?: unknown }).act ?? null,
