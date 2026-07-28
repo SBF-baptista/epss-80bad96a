@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       "https://frota-auto-aityd.ondigitalocean.app";
     if (!apiKey) return json({ ok: false, error: "FROTA_SEGSALE_API_KEY ausente" });
 
-    const payload = { filialContrato, ativo, tipoContrato };
+    const payload = body?.payload ?? { filialContrato, ativo, tipoContrato };
     const reqBody = JSON.stringify(payload);
     const ts = String(Math.floor(Date.now() / 1000));
     const nonce = crypto.randomUUID();
