@@ -573,10 +573,14 @@ export const ScheduleFormModal = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm">Tipo de Contrato *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={contractLookup.status === 'found' || contractLookup.status === 'loading'}
+                    >
                       <FormControl>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Selecione o tipo de contrato" />
+                        <SelectTrigger className="h-9 disabled:opacity-100 disabled:bg-muted disabled:text-foreground">
+                          <SelectValue placeholder={contractLookup.status === 'loading' ? 'Consultando base do Segsale...' : 'Selecione o tipo de contrato'} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background">
@@ -584,11 +588,29 @@ export const ScheduleFormModal = ({
                         <SelectItem value="MENSALISTA">Mensalista</SelectItem>
                       </SelectContent>
                     </Select>
+                    {contractLookup.status === 'found' && (
+                      <p className="text-xs text-emerald-600">
+                        Confirmado pela base de pendências do Segsale
+                        {contractLookup.filial ? ` — Filial ${contractLookup.filial}` : ''}
+                        {contractLookup.contrato ? ` / Contrato ${contractLookup.contrato}` : ''}. Campo bloqueado.
+                      </p>
+                    )}
+                    {contractLookup.status === 'not_found' && (
+                      <p className="text-xs text-amber-600">
+                        Placa não encontrada na base de pendências do Segsale — valor NÃO confirmado, preencha manualmente com atenção.
+                      </p>
+                    )}
+                    {contractLookup.status === 'error' && (
+                      <p className="text-xs text-amber-600">
+                        Não foi possível consultar a base do Segsale — valor não confirmado.
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Telemetria: envia para o Frota. Mensalista: envia para o Kafka.
                     </p>
                     <FormMessage />
                   </FormItem>
+
                 )}
               />
 
