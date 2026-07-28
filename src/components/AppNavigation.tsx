@@ -176,11 +176,13 @@ export function AppNavigation() {
   // Filter items based on module permissions
   const canAccessItem = (item: NavItem) => {
     if (role === 'admin') return true;
+    if (item.to === '/frota-unit-activation' && canActivateUnits) return true;
     if (item.adminOnly) return false;
     if (item.gestorOrAdminOnly) return role === 'gestor';
     const modulesToCheck = item.modules || [item.module];
     return modulesToCheck.some(module => canViewModule(module));
   };
+
 
   // Filter groups to show only those with accessible items
   const getVisibleGroups = () => {
