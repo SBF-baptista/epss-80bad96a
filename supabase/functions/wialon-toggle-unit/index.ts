@@ -239,12 +239,48 @@ Deno.serve(async (req) => {
           }
         }
       }
+      // Fallback: resolver pela base do Segsale (GET /api/unidade/pendente/listar),
+      // onde filialContrato = filial + contrato (ex.: "300" + "123568").
+      let resolvedTipoFromList: "TELEMETRIA" | "MENSALISTA" | null = null;
+      if (!filialContrato) {
+        const alvo = placa.replace(/[^A-Z0-9]/g, "");
+        for (const tipo of ["TELEMETRIA", "MENSALISTA"] as const) {
+          const listPath = `/api/unidade/pendente/listar?tipoContrato=${tipo}`;
+          const ts = String(Math.floor(Date.now() / 1000));
+          const nc = crypto.randomUUID();
+          const sig = await hmacSha256Hex(
+            apiKey,
+            `GET\n${listPath}\n${ts}\n${nc}\n${await sha256Hex("")}`,
+          );
+          try {
+            const r = await fetch(`${baseUrl}${listPath}`, {
+              headers: { "X-Timestamp": ts, "X-Nonce": nc, "X-Signature": sig },
+            });
+            const arr = await r.json().catch(() => []);
+            if (Array.isArray(arr)) {
+              const hit = arr.find((it: { placa?: string }) =>
+                String(it?.placa ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "") === alvo
+              ) as { filial?: string; contrato?: string } | undefined;
+              if (hit?.filial && hit?.contrato) {
+                filialContrato = `${hit.filial}${hit.contrato}`;
+                resolvedTipoFromList = tipo;
+                break;
+              }
+            }
+          } catch { /* segue para o fallback manual */ }
+        }
+      }
+
       if (!filialContrato) {
         audit.error_message =
-          `Não foi possível resolver o FILIALCONTRATO da placa "${placa}" no Wialon Frota. ` +
-          `Preencha o campo "filialContrato" manualmente (campo personalizado da unidade, ex.: 300123568).`;
+          `Não foi possível resolver automaticamente o FILIALCONTRATO da placa "${placa}". ` +
+          `O token de integração do Wialon Frota não tem permissão para ler campos administrativos ` +
+          `da unidade, e a placa também não está na base de contratos do Segsale. ` +
+          `Abra a unidade no Wialon → Campos personalizados → copie o valor de FILIALCONTRATO ` +
+          `(ex.: 300123568) e preencha o campo "filialContrato" na tela.`;
         return json({ ok: false, sistema, error: audit.error_message });
       }
+
 
       // tipoContrato: override explícito do corpo, senão derivado do usage_type
       // do veículo (mesma regra usada em create-frota-unidade).
