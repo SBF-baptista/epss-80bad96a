@@ -121,7 +121,11 @@ async function diagnose(sistema: "frota" | "auto", hwFilter: string, inspectItem
   if (inspectItemId) {
     const one = await wialonCall("core/search_item", { id: inspectItemId, flags: 1 + 8192 + 1024 }, sid);
     inspected = one.body;
+    if (!inspected || (inspected as { item?: unknown })?.item == null) {
+      inspected = { search_item_raw: one.body, fromList: all.find((u) => u.id === inspectItemId) ?? null };
+    }
   }
+
 
   return {
     sistema,
