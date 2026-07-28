@@ -16,6 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import WialonCreateUnitCard from "@/components/frota/WialonCreateUnitCard";
+import { useUnitActivationPermission } from "@/hooks/useUnitActivationPermission";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +43,7 @@ interface AuditRow {
 
 const FrotaUnitActivation = () => {
   const { toast } = useToast();
+  const { canActivateUnits, isLoading: permLoading } = useUnitActivationPermission();
   const qc = useQueryClient();
 
   // Sem default — usuário DEVE escolher explicitamente
@@ -120,8 +122,38 @@ const FrotaUnitActivation = () => {
       toast({ title: "Informe a placa ou nome da unidade", variant: "destructive" });
       return;
     }
+    if (sistema === "frota" && !filialContrato.trim()) {
+      toast({ title: "Informe o filialContrato", description: "Campo obrigatório para o sistema Frota.", variant: "destructive" });
+      return;
+    }
+    if (notes.trim().length < 10) {
+      toast({
+        title: "Justificativa obrigatória",
+        description: "Descreva o motivo da ação (mínimo 10 caracteres) para registro de auditoria.",
+        variant: "destructive",
+      });
+      return;
+    }
     setConfirmOpen(true);
   };
+
+
+  if (permLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Verificando permissões…</div>;
+  }
+
+  if (!canActivateUnits) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            Você não tem permissão para ativar ou desativar unidades. Solicite acesso a um administrador.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
@@ -181,23 +213,27 @@ const FrotaUnitActivation = () => {
           </div>
           {sistema === "frota" && (
             <div className="space-y-1">
-              <label className="text-xs font-medium">filialContrato (opcional — Frota)</label>
+              <label className="text-xs font-medium">filialContrato (Frota) *</label>
               <Input
-                placeholder="Chave do contrato no Segsale. Se vazio, usa a placa."
+                placeholder="Chave do contrato no Segsale (ex.: 300123568)"
                 value={filialContrato}
                 onChange={(e) => setFilialContrato(e.target.value)}
               />
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-xs font-medium">Observação (opcional)</label>
+            <label className="text-xs font-medium">Justificativa *</label>
             <Textarea
-              placeholder="Motivo / contexto da ação"
+              placeholder="Descreva o motivo da ativação/desativação (mínimo 10 caracteres)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Obrigatória para auditoria — fica registrada junto com a operação.
+            </p>
           </div>
+
           <div className="flex justify-end">
             <Button onClick={submit} disabled={mutation.isPending} className="gap-2">
               {mutation.isPending

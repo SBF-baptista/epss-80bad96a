@@ -46,6 +46,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useEditRequestsCount } from "@/hooks/useEditRequestsCount";
 import { useFrotaUnitFailedCount } from "@/hooks/useFrotaUnitFailedCount";
+import { useUnitActivationPermission } from "@/hooks/useUnitActivationPermission";
 import { AppModule } from "@/types/permissions";
 
 // Navigation items with module-based permissions
@@ -145,6 +146,7 @@ export function AppNavigation() {
   const isCollapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const { role, accessProfileName, canViewModule, loading } = useUserRole();
+  const { canActivateUnits } = useUnitActivationPermission();
   const { count: editRequestsCount } = useEditRequestsCount();
   const { count: frotaFailedCount } = useFrotaUnitFailedCount();
   
@@ -176,11 +178,13 @@ export function AppNavigation() {
   // Filter items based on module permissions
   const canAccessItem = (item: NavItem) => {
     if (role === 'admin') return true;
+    if (item.to === '/frota-unit-activation' && canActivateUnits) return true;
     if (item.adminOnly) return false;
     if (item.gestorOrAdminOnly) return role === 'gestor';
     const modulesToCheck = item.modules || [item.module];
     return modulesToCheck.some(module => canViewModule(module));
   };
+
 
   // Filter groups to show only those with accessible items
   const getVisibleGroups = () => {

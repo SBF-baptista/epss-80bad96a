@@ -343,16 +343,15 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* Frota Unit Activation (admin only) */}
+              {/* Frota Unit Activation (admins + usuários autorizados) */}
               <Route path="/frota-unit-activation" element={
                 <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={['admin']}>
-                    <Layout>
-                      <FrotaUnitActivation />
-                    </Layout>
-                  </RoleProtectedRoute>
+                  <Layout>
+                    <FrotaUnitActivation />
+                  </Layout>
                 </ProtectedRoute>
               } />
+
 
               {/* Diagnóstico de Vendas Pendentes (admin only) */}
               <Route path="/pending-sales-recovery" element={

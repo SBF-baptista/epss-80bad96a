@@ -2520,6 +2520,21 @@ export type Database = {
         }
         Relationships: []
       }
+      unit_activation_allowed_users: {
+        Row: {
+          added_at: string
+          email: string
+        }
+        Insert: {
+          added_at?: string
+          email: string
+        }
+        Update: {
+          added_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
       user_last_seen: {
         Row: {
           last_seen_at: string
