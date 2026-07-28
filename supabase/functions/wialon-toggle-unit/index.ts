@@ -223,12 +223,12 @@ Deno.serve(async (req) => {
       audit.tipo_contrato = tipoContrato;
 
       const ativo = action === "activate";
-      const payload = { filialContrato: placa, ativo, tipoContrato };
+      const payload = { filialContrato, ativo, tipoContrato };
       const reqBody = JSON.stringify(payload);
       const timestamp = String(Math.floor(Date.now() / 1000));
       const nonce = crypto.randomUUID();
       const canonical =
-        `POST\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`;
+        `PATCH\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`;
       const signature = await hmacSha256Hex(apiKey, canonical);
 
       console.log(
@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
       let respText = "";
       try {
         const resp = await fetch(`${baseUrl}${FROTA_STATUS_PATH}`, {
-          method: "POST",
+          method: "PATCH",
           headers: {
             "Content-Type": "application/json",
             "X-Timestamp": timestamp,
@@ -258,9 +258,11 @@ Deno.serve(async (req) => {
           (respJson as Record<string, unknown>).ativo === ativo;
         audit.api_ok = resp.ok && (confirmed || (respJson as Record<string, unknown>)?.ativo === undefined);
         if (!audit.api_ok) {
-          audit.error_message =
-            `Wrapper Frota respondeu ${resp.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ` +
-            (typeof respJson === "string" ? respJson : JSON.stringify(respJson));
+          const detail = typeof respJson === "string" ? respJson : JSON.stringify(respJson);
+          audit.error_message = resp.status === 404
+            ? `Wrapper Frota não encontrou a unidade para filialContrato="${filialContrato}". ` +
+              `Esse campo é a chave do contrato no Segsale (não a placa) — informe o filialContrato correto. Detalhe: ${detail}`
+            : `Wrapper Frota respondeu ${resp.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ${detail}`;
         }
       } catch (netErr) {
         audit.error_message = `Erro de rede ao chamar wrapper Frota: ${
@@ -273,6 +275,7 @@ Deno.serve(async (req) => {
         sistema,
         method: "frota_hmac_wrapper",
         placa,
+        filialContrato,
         tipoContrato,
         request: payload,
         response: audit.api_response,
@@ -388,7 +391,7 @@ Deno.serve(async (req) => {
       await admin.from("frota_unit_activation_audit").insert({
         // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
         sistema,
-        filial_contrato: audit.method === "frota_hmac_wrapper" ? (query || null) : null,
+        filial_contrato: audit.method === "frota_hmac_wrapper" ? (String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
         tipo_contrato: audit.tipo_contrato,
         action: action ?? "deactivate",
 
