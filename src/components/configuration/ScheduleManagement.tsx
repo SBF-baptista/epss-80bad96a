@@ -209,6 +209,30 @@ export const ScheduleManagement = () => {
   };
 
   const handleFormSubmit = async (data: any) => {
+    // Fonte da verdade do tipo de contrato: base de pendências do Segsale.
+    // O valor digitado no formulário é apenas fallback.
+    const plateNorm = String(data.plate ?? "").trim().toUpperCase();
+    let confirmedTipo: 'TELEMETRIA' | 'MENSALISTA' | null = null;
+    if (plateNorm) {
+      try {
+        const { data: check } = await supabase.functions.invoke('frota-check-placa-pendente', {
+          body: { placa: plateNorm },
+        });
+        if (check?.pendente && check?.data?.tipoContrato) {
+          confirmedTipo = String(check.data.tipoContrato).toUpperCase() === 'TELEMETRIA'
+            ? 'TELEMETRIA' : 'MENSALISTA';
+        }
+      } catch (e) {
+        console.warn('[ScheduleManagement] falha ao confirmar tipo_contrato:', e);
+      }
+    }
+    const finalTipo: 'TELEMETRIA' | 'MENSALISTA' =
+      confirmedTipo ?? (data.tipo_contrato === 'MENSALISTA' ? 'MENSALISTA' : 'TELEMETRIA');
+    if (confirmedTipo && data.tipo_contrato && confirmedTipo !== data.tipo_contrato) {
+      console.warn(`[ScheduleManagement] tipo_contrato divergente: form=${data.tipo_contrato} base=${confirmedTipo} placa=${plateNorm}`);
+      toast.info(`Tipo de contrato ajustado para ${confirmedTipo} conforme a base do Segsale.`);
+    }
+
     const scheduleData: any = {
       scheduled_date: format(data.date, "yyyy-MM-dd"),
       scheduled_time: data.time,
@@ -221,7 +245,8 @@ export const ScheduleManagement = () => {
       vehicle_model: data.vehicle_model,
       vehicle_year: data.vehicle_year || null,
       tracker_model: data.tracker_model,
-      tipo_contrato: data.tipo_contrato || null,
+      tipo_contrato: finalTipo,
+
       scheduled_by: "Sistema", // Auto-filled since field was removed
       reference_point: data.reference_point || null,
       phone: data.phone || null,
