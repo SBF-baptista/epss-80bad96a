@@ -48,6 +48,7 @@ const FrotaUnitActivation = () => {
   const [sistema, setSistema] = useState<Sistema | "">("");
   const [query, setQuery] = useState("");
   const [action, setAction] = useState<Action>("deactivate");
+  const [filialContrato, setFilialContrato] = useState("");
   const [notes, setNotes] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastResult, setLastResult] = useState<unknown>(null);
@@ -72,6 +73,7 @@ const FrotaUnitActivation = () => {
           sistema,
           action,
           query: query.trim(),
+          filialContrato: filialContrato.trim() || undefined,
           notes: notes.trim() || undefined,
         },
       });
@@ -177,6 +179,16 @@ const FrotaUnitActivation = () => {
               </Select>
             </div>
           </div>
+          {sistema === "frota" && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium">filialContrato (opcional — Frota)</label>
+              <Input
+                placeholder="Chave do contrato no Segsale. Se vazio, usa a placa."
+                value={filialContrato}
+                onChange={(e) => setFilialContrato(e.target.value)}
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-xs font-medium">Observação (opcional)</label>
             <Textarea

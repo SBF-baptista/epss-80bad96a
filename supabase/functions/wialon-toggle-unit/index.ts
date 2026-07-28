@@ -43,6 +43,34 @@ function isWialonError(b: unknown): b is { error: number; reason?: string } {
   return typeof b === "object" && b !== null && "error" in (b as Record<string, unknown>);
 }
 
+// TEMPORARIO: usar wrapper HMAC pro Frota enquanto ACL do Wialon nao e liberada
+// (unit/set_active retorna erro 7 / permission denied com o token direto do Frota).
+// Reverter para chamada direta quando a permissao for concedida ao usuario da integracao.
+const FROTA_STATUS_PATH = "/api/unidade/status";
+
+const toHex = (buf: ArrayBuffer) =>
+  Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+async function sha256Hex(data: string): Promise<string> {
+  return toHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data)));
+}
+
+async function hmacSha256Hex(secret: string, content: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return toHex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(content)));
+}
+
+function mapTipoContrato(usage?: string | null): "TELEMETRIA" | "MENSALISTA" {
+  return String(usage ?? "").toLowerCase().includes("telemetr") ? "TELEMETRIA" : "MENSALISTA";
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -65,7 +93,10 @@ Deno.serve(async (req) => {
     error_message: null as string | null,
     wialon_item_id: null as number | null,
     wialon_item_name: null as string | null,
+    method: "wialon_direct" as "wialon_direct" | "frota_hmac_wrapper",
+    tipo_contrato: null as string | null,
   };
+
 
   try {
     // Parse do corpo PRIMEIRO: garante que o sistema realmente selecionado
@@ -151,6 +182,107 @@ Deno.serve(async (req) => {
       audit.error_message = "Informe a placa ou nome da unidade";
       return json({ ok: false, error: audit.error_message });
     }
+
+    // ==========================================================================
+    // TEMPORARIO: usar wrapper HMAC pro Frota enquanto ACL do Wialon nao e
+    // liberada (unit/set_active -> erro 7). Reverter para chamada direta
+    // (bloco abaixo, igual ao Auto) quando a permissao for concedida.
+    // ==========================================================================
+    if (sistema === "frota") {
+      audit.method = "frota_hmac_wrapper";
+      const apiKey = Deno.env.get("FROTA_SEGSALE_API_KEY");
+      const baseUrl = Deno.env.get("FROTA_SEGSALE_BASE_URL") ||
+        "https://frota-auto-aityd.ondigitalocean.app";
+      if (!apiKey) {
+        audit.error_message = "FROTA_SEGSALE_API_KEY não configurada";
+        return json({ ok: false, sistema, error: audit.error_message });
+      }
+
+      const placa = query.trim().toUpperCase();
+      // O wrapper identifica a unidade pelo campo `filialContrato` (chave do
+      // contrato no Segsale). Se a tela enviar esse valor explicitamente, ele
+      // tem prioridade; caso contrário tentamos com a própria placa.
+      const filialContrato = String(body?.filialContrato ?? "").trim() || placa;
+
+      // tipoContrato: override explícito do corpo, senão derivado do usage_type
+      // do veículo (mesma regra usada em create-frota-unidade).
+      const overrideTipo = String(body?.tipoContrato ?? "").trim().toUpperCase();
+      let tipoContrato: "TELEMETRIA" | "MENSALISTA";
+      if (overrideTipo === "TELEMETRIA" || overrideTipo === "MENSALISTA") {
+        tipoContrato = overrideTipo;
+      } else {
+        const { data: iv } = await admin
+          .from("incoming_vehicles")
+          .select("usage_type")
+          .eq("plate", placa)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        tipoContrato = mapTipoContrato(iv?.usage_type ?? null);
+      }
+      audit.tipo_contrato = tipoContrato;
+
+      const ativo = action === "activate";
+      const payload = { filialContrato, ativo, tipoContrato };
+      const reqBody = JSON.stringify(payload);
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const nonce = crypto.randomUUID();
+      const canonical =
+        `PATCH\n${FROTA_STATUS_PATH}\n${timestamp}\n${nonce}\n${await sha256Hex(reqBody)}`;
+      const signature = await hmacSha256Hex(apiKey, canonical);
+
+      console.log(
+        `[wialon-toggle-unit] sistema=frota method=hmac_wrapper action=${action} placa=${placa} tipo=${tipoContrato}`,
+      );
+
+      let respText = "";
+      try {
+        const resp = await fetch(`${baseUrl}${FROTA_STATUS_PATH}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Timestamp": timestamp,
+            "X-Nonce": nonce,
+            "X-Signature": signature,
+          },
+          body: reqBody,
+        });
+        audit.api_status = resp.status;
+        respText = await resp.text();
+        let respJson: unknown = respText;
+        try { respJson = JSON.parse(respText); } catch { /* keep text */ }
+        audit.api_response = { method: "frota_hmac_wrapper", request: payload, response: respJson };
+
+        const confirmed =
+          typeof respJson === "object" && respJson !== null &&
+          (respJson as Record<string, unknown>).ativo === ativo;
+        audit.api_ok = resp.ok && (confirmed || (respJson as Record<string, unknown>)?.ativo === undefined);
+        if (!audit.api_ok) {
+          const detail = typeof respJson === "string" ? respJson : JSON.stringify(respJson);
+          audit.error_message = resp.status === 404
+            ? `Wrapper Frota não encontrou a unidade para filialContrato="${filialContrato}". ` +
+              `Esse campo é a chave do contrato no Segsale (não a placa) — informe o filialContrato correto. Detalhe: ${detail}`
+            : `Wrapper Frota respondeu ${resp.status} sem confirmar ${ativo ? "ativação" : "desativação"}: ${detail}`;
+        }
+      } catch (netErr) {
+        audit.error_message = `Erro de rede ao chamar wrapper Frota: ${
+          netErr instanceof Error ? netErr.message : String(netErr)
+        }`;
+      }
+
+      return json({
+        ok: audit.api_ok,
+        sistema,
+        method: "frota_hmac_wrapper",
+        placa,
+        filialContrato,
+        tipoContrato,
+        request: payload,
+        response: audit.api_response,
+        error: audit.api_ok ? null : audit.error_message,
+      });
+    }
+
 
     // Token estritamente derivado do sistema selecionado — sem fallback silencioso.
     const tokenEnvName = sistema === "frota" ? "WIALON_TOKEN_FROTA" : "WIALON_TOKEN_AUTO";
@@ -259,15 +391,19 @@ Deno.serve(async (req) => {
       await admin.from("frota_unit_activation_audit").insert({
         // NUNCA usar valor fixo: grava exatamente o sistema selecionado (null se inválido)
         sistema,
-        filial_contrato: null,
-        tipo_contrato: null,
+        filial_contrato: audit.method === "frota_hmac_wrapper" ? (String((body as any)?.filialContrato ?? "").trim() || query || null) : null,
+        tipo_contrato: audit.tipo_contrato,
         action: action ?? "deactivate",
 
         requested_by: userId,
         requested_by_email: userEmail,
         api_status: audit.api_status,
         api_ok: audit.api_ok,
-        api_response: audit.api_response as Record<string, unknown> | null,
+        api_response: (audit.api_response
+          ? { method: audit.method, ...(typeof audit.api_response === "object" && audit.api_response !== null
+              ? audit.api_response as Record<string, unknown>
+              : { raw: audit.api_response }) }
+          : { method: audit.method }) as Record<string, unknown>,
         error_message: audit.error_message,
         notes,
         placa: query || null,
