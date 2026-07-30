@@ -229,6 +229,23 @@ Deno.serve(async (req) => {
       return json({ ok: true, accounts });
     }
 
+    // ---- modo auxiliar: listar usuários .segsat (somente leitura) ----
+    if (String(body?.mode ?? "") === "list-segsat-users") {
+      skipAudit = true;
+      const s = await loginWialon(sistema);
+      if (!s.sid) return json({ ok: false, error: s.error, response: s.body });
+      const users = await searchSegsatUsers(s.sid);
+      return json({
+        ok: true,
+        users: users.map((u) => ({
+          ...u,
+          level: FULL_ACCESS_USERS.includes(u.name.toLowerCase()) ? "full" : "readonly",
+        })),
+        fullAccessUsers: FULL_ACCESS_USERS,
+        masks: { full: ACCESS_FULL, readonly: ACCESS_READONLY },
+      });
+    }
+
     // ---- modo auxiliar: vincular uma unidade existente a uma conta (conserto de órfãs) ----
     if (String(body?.mode ?? "") === "attach-account") {
       const s = await loginWialon(sistema);
