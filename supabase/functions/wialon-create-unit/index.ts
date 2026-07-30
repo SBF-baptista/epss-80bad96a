@@ -389,6 +389,67 @@ Deno.serve(async (req) => {
       return await rollback("set_active", act.body);
     }
 
+    // 5.1) concessão de acesso por usuário — SOMENTE sistema Auto
+    //      (Frota segue bloqueado por falta de ACL do brayan.segsat)
+    let accessSummary: {
+      total: number; granted: number; failed: number;
+      missingFull: string[]; results: GrantResult[];
+    } | null = null;
+    if (sistema === "auto") {
+      try {
+        const g = await grantUnitAccess(sid, itemId);
+        const failed = g.results.filter((r) => !r.ok);
+        accessSummary = {
+          total: g.results.length,
+          granted: g.results.length - failed.length,
+          failed: failed.length,
+          missingFull: g.missingFull,
+          results: g.results,
+        };
+        audit.api_response = { ...audit.api_response, access_grants: accessSummary };
+
+        await admin.from("frota_unit_activation_audit").insert({
+          sistema,
+          action: failed.length || g.missingFull.length
+            ? "grant_access_partial_failure"
+            : "grant_access",
+          requested_by: userId,
+          requested_by_email: userEmail,
+          api_status: 200,
+          api_ok: failed.length === 0 && g.missingFull.length === 0,
+          api_response: accessSummary,
+          error_message: failed.length || g.missingFull.length
+            ? `Concessões com falha: ${failed.map((f) => `${f.userName} (${f.error})`).join("; ") || "nenhuma"}` +
+              (g.missingFull.length ? ` | usuários de acesso completo não encontrados: ${g.missingFull.join(", ")}` : "")
+            : null,
+          notes,
+          placa: placa || null,
+          imei: imei || null,
+          wialon_item_id: itemId,
+          wialon_item_name: itemName,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        audit.api_response = { ...audit.api_response, access_grants_error: msg };
+        await admin.from("frota_unit_activation_audit").insert({
+          sistema,
+          action: "grant_access_partial_failure",
+          requested_by: userId,
+          requested_by_email: userEmail,
+          api_ok: false,
+          api_response: { error: msg },
+          error_message: `Falha ao conceder acessos: ${msg}`,
+          notes,
+          placa: placa || null,
+          imei: imei || null,
+          wialon_item_id: itemId,
+          wialon_item_name: itemName,
+        });
+      }
+    }
+
+
+
     // 6) sem IMEI -> registra pendência para o técnico vincular na instalação
     let pendingId: string | null = null;
     if (!imei) {
