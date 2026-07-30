@@ -717,11 +717,22 @@ export const ScheduleFormModal = ({
                         <Input
                           placeholder="Nome do cliente"
                           {...field}
+                          onChange={(e) => {
+                            setCustomerAutofilled(false);
+                            lastAutoCustomerRef.current = null;
+                            field.onChange(e);
+                          }}
                           className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}
                           disabled={hasInitialData}
                         />
                       </FormControl>
+                      {customerAutofilled && !hasInitialData && (
+                        <p className="text-xs text-muted-foreground">
+                          Preenchido automaticamente pela placa — confira e edite se necessário.
+                        </p>
+                      )}
                       <FormMessage />
+
                     </FormItem>
                   )}
                 />
