@@ -23,6 +23,8 @@ export interface KickoffVehicleInfo {
   year: number | null;
   plate: string | null;
   received_at: string;
+  kickoff_completed?: boolean;
+  stage?: CustomerTrackingStage;
 }
 
 export interface CustomerWithStage extends Customer {
