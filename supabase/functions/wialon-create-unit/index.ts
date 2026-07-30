@@ -485,6 +485,8 @@ Deno.serve(async (req) => {
       hwTypeId,
       resourceId,
       pendingImeiId: pendingId,
+      accessGrants: accessSummary,
+
       response: audit.api_response,
     });
   } catch (err) {
