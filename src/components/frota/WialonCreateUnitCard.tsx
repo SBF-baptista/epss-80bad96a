@@ -230,45 +230,58 @@ const WialonCreateUnitCard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          <div className="space-y-1 md:col-span-1">
-            <label className="text-xs font-medium">Buscar conta/cliente *</label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="ex.: SINARCO"
-                value={accountQuery}
-                onChange={(e) => setAccountQuery(e.target.value)}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  if (!sistema) {
-                    toast({ title: "Selecione o sistema primeiro", variant: "destructive" });
-                    return;
-                  }
-                  searchAccounts.mutate();
-                }}
-                disabled={searchAccounts.isPending}
-              >
-                {searchAccounts.isPending
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <Search className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-1 md:col-span-1">
+          <div className="space-y-1 md:col-span-2 relative">
             <label className="text-xs font-medium">Conta/cliente *</label>
-            <Select value={resourceId} onValueChange={setResourceId} disabled={!accounts.length}>
-              <SelectTrigger>
-                <SelectValue placeholder={accounts.length ? "Selecione…" : "Busque primeiro"} />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                className="pl-8 pr-8"
+                placeholder={sistema ? "digite ao menos 2 letras, ex.: SINARCO" : "selecione o sistema primeiro"}
+                disabled={!sistema}
+                value={accountQuery}
+                onChange={(e) => {
+                  setAccountQuery(e.target.value);
+                  setResourceId("");
+                  setSelectedAccountName("");
+                }}
+                onFocus={() => { if (accounts.length) setShowSuggestions(true); }}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              />
+              {searching && (
+                <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+              )}
+              {!searching && resourceId && (
+                <Check className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+              )}
+              {showSuggestions && (
+                <div className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md">
+                  {accounts.length === 0 && !searching ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      Nenhuma conta encontrada
+                    </div>
+                  ) : (
+                    accounts.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => selectAccount(a)}
+                      >
+                        {a.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            {resourceId && (
+              <p className="text-[11px] text-muted-foreground">
+                Selecionado: <b>{accountName}</b> (id {resourceId})
+              </p>
+            )}
           </div>
+
           <div className="space-y-1 md:col-span-1">
             <label className="text-xs font-medium">Senha do device (opcional)</label>
             <Input
