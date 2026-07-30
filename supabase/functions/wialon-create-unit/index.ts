@@ -93,6 +93,83 @@ async function searchAccounts(sid: string, q: string) {
   return items.map((r) => ({ id: r.id, name: r.nm }));
 }
 
+// ---------------------------------------------------------------------------
+// Concessão de acesso por usuário (aba "Acesso" das Propriedades da Unidade)
+// Método: user/update_item_access { userId, itemId, accessMask }
+// Máscaras montadas a partir dos ACL bits oficiais (help.wialon.com — Tokens):
+//   Acesso completo  = todos os bits de "Any object" + "Unit, unit group"
+//   Somente leitura  = ver objeto (0x1), propriedades detalhadas (0x2),
+//                      campos personalizados (0x20), relatórios/mensagens (0x200),
+//                      ver arquivos (0x4000), ver intervalos de serviço (0x10000000),
+//                      ver comandos (0x400000000), ver eventos (0x1000000000)
+// ---------------------------------------------------------------------------
+const ACCESS_FULL = 1086625742719;   // 0xFCFFF0FF7F
+const ACCESS_READONLY = 86167798307; // 0x1410004223
+
+// Usuários com acesso completo (nomes no Wialon, comparação case-insensitive)
+const FULL_ACCESS_USERS = [
+  "admin.autosegsat.suporte",
+  "liborio.segsat",
+  "nunes.segsat",
+];
+
+async function searchSegsatUsers(sid: string) {
+  const res = await wialonCall("core/search_items", {
+    spec: {
+      itemsType: "user",
+      propName: "sys_name",
+      propValueMask: "*.segsat*",
+      sortType: "sys_name",
+      propType: "property",
+    },
+    force: 1,
+    flags: 1,
+    from: 0,
+    to: 1000,
+  }, sid);
+  const items = (res.body as { items?: Array<{ id: number; nm: string }> })?.items ?? [];
+  return items.map((u) => ({ id: u.id, name: u.nm }));
+}
+
+type GrantResult = {
+  userId: number;
+  userName: string;
+  level: "full" | "readonly";
+  accessMask: number;
+  ok: boolean;
+  error: string | null;
+};
+
+async function grantUnitAccess(sid: string, itemId: number) {
+  const users = await searchSegsatUsers(sid);
+  const results: GrantResult[] = [];
+  for (const u of users) {
+    const level: "full" | "readonly" =
+      FULL_ACCESS_USERS.includes(u.name.toLowerCase()) ? "full" : "readonly";
+    const accessMask = level === "full" ? ACCESS_FULL : ACCESS_READONLY;
+    const r = await wialonCall("user/update_item_access", {
+      userId: u.id,
+      itemId,
+      accessMask,
+    }, sid);
+    const failed = isWialonError(r.body);
+    results.push({
+      userId: u.id,
+      userName: u.name,
+      level,
+      accessMask,
+      ok: !failed,
+      error: failed ? wialonErrText(r.body) : null,
+    });
+  }
+  // usuários fixos que não apareceram na busca (para não ficar silencioso)
+  const found = users.map((u) => u.name.toLowerCase());
+  const missingFull = FULL_ACCESS_USERS.filter((n) => !found.includes(n));
+  return { users, results, missingFull };
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
