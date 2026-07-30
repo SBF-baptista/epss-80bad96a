@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, PlusCircle, AlertTriangle, Search } from "lucide-react";
+import { Loader2, PlusCircle, AlertTriangle, Search, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,38 +55,62 @@ const WialonCreateUnitCard = () => {
   const [accountQuery, setAccountQuery] = useState("");
   const [accounts, setAccounts] = useState<WialonAccount[]>([]);
   const [resourceId, setResourceId] = useState("");
+  const [selectedAccountName, setSelectedAccountName] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastResult, setLastResult] = useState<CreateResult | null>(null);
+  const searchSeq = useRef(0);
 
-  const accountName = accounts.find((a) => String(a.id) === resourceId)?.name ?? "";
+  const accountName =
+    accounts.find((a) => String(a.id) === resourceId)?.name ?? selectedAccountName;
 
-  const searchAccounts = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("wialon-create-unit", {
-        body: { mode: "search-accounts", sistema, q: accountQuery.trim() },
-      });
-      if (error) throw error;
-      return data as { ok: boolean; accounts?: WialonAccount[]; error?: string };
-    },
-    onSuccess: (data) => {
-      if (!data.ok) {
-        toast({ title: "Falha ao buscar contas", description: data.error, variant: "destructive" });
-        return;
+  // Autocomplete: busca no Wialon conforme o usuário digita (debounce 350ms)
+  useEffect(() => {
+    const q = accountQuery.trim();
+    if (!sistema || q.length < 2 || q === selectedAccountName) {
+      setSearching(false);
+      return;
+    }
+    const seq = ++searchSeq.current;
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("wialon-create-unit", {
+          body: { mode: "search-accounts", sistema, q },
+        });
+        if (seq !== searchSeq.current) return;
+        if (error) throw error;
+        const res = data as { ok: boolean; accounts?: WialonAccount[]; error?: string };
+        if (!res.ok) {
+          toast({ title: "Falha ao buscar contas", description: res.error, variant: "destructive" });
+          setAccounts([]);
+        } else {
+          setAccounts(res.accounts ?? []);
+          setShowSuggestions(true);
+        }
+      } catch (err) {
+        if (seq !== searchSeq.current) return;
+        toast({
+          title: "Erro na busca",
+          description: err instanceof Error ? err.message : String(err),
+          variant: "destructive",
+        });
+        setAccounts([]);
+      } finally {
+        if (seq === searchSeq.current) setSearching(false);
       }
-      setAccounts(data.accounts ?? []);
-      setResourceId("");
-      if (!data.accounts?.length) {
-        toast({ title: "Nenhuma conta encontrada", description: "Refine o nome do cliente." });
-      }
-    },
-    onError: (err) => {
-      toast({
-        title: "Erro na busca",
-        description: err instanceof Error ? err.message : String(err),
-        variant: "destructive",
-      });
-    },
-  });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [accountQuery, sistema, selectedAccountName, toast]);
+
+  const selectAccount = (a: WialonAccount) => {
+    setResourceId(String(a.id));
+    setSelectedAccountName(a.name);
+    setAccountQuery(a.name);
+    setShowSuggestions(false);
+  };
+
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -168,7 +192,7 @@ const WialonCreateUnitCard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-xs font-medium">Sistema *</label>
-            <Select value={sistema} onValueChange={(v) => { setSistema(v as Sistema); setAccounts([]); setResourceId(""); }}>
+            <Select value={sistema} onValueChange={(v) => { setSistema(v as Sistema); setAccounts([]); setResourceId(""); setAccountQuery(""); setSelectedAccountName(""); }}>
               <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="frota">Frota</SelectItem>
@@ -206,45 +230,58 @@ const WialonCreateUnitCard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          <div className="space-y-1 md:col-span-1">
-            <label className="text-xs font-medium">Buscar conta/cliente *</label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="ex.: SINARCO"
-                value={accountQuery}
-                onChange={(e) => setAccountQuery(e.target.value)}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  if (!sistema) {
-                    toast({ title: "Selecione o sistema primeiro", variant: "destructive" });
-                    return;
-                  }
-                  searchAccounts.mutate();
-                }}
-                disabled={searchAccounts.isPending}
-              >
-                {searchAccounts.isPending
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <Search className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-1 md:col-span-1">
+          <div className="space-y-1 md:col-span-2 relative">
             <label className="text-xs font-medium">Conta/cliente *</label>
-            <Select value={resourceId} onValueChange={setResourceId} disabled={!accounts.length}>
-              <SelectTrigger>
-                <SelectValue placeholder={accounts.length ? "Selecione…" : "Busque primeiro"} />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                className="pl-8 pr-8"
+                placeholder={sistema ? "digite ao menos 2 letras, ex.: SINARCO" : "selecione o sistema primeiro"}
+                disabled={!sistema}
+                value={accountQuery}
+                onChange={(e) => {
+                  setAccountQuery(e.target.value);
+                  setResourceId("");
+                  setSelectedAccountName("");
+                }}
+                onFocus={() => { if (accounts.length) setShowSuggestions(true); }}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              />
+              {searching && (
+                <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+              )}
+              {!searching && resourceId && (
+                <Check className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+              )}
+              {showSuggestions && (
+                <div className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md">
+                  {accounts.length === 0 && !searching ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      Nenhuma conta encontrada
+                    </div>
+                  ) : (
+                    accounts.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => selectAccount(a)}
+                      >
+                        {a.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            {resourceId && (
+              <p className="text-[11px] text-muted-foreground">
+                Selecionado: <b>{accountName}</b> (id {resourceId})
+              </p>
+            )}
           </div>
+
           <div className="space-y-1 md:col-span-1">
             <label className="text-xs font-medium">Senha do device (opcional)</label>
             <Input
