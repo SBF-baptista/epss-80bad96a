@@ -320,9 +320,33 @@ export const ScheduleFormModal = ({
       } catch {
         if (!cancelled) setContractLookup({ status: 'error' });
       }
+
+      // Autopreenchimento do Cliente via base local (dado inferido, editável)
+      if (cancelled || hasInitialData) return;
+      try {
+        const { data: iv } = await supabase
+          .from('incoming_vehicles')
+          .select('company_name, received_at')
+          .ilike('plate', plate)
+          .not('company_name', 'is', null)
+          .order('received_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        const name = iv?.company_name?.trim();
+        const current = String(form.getValues('customer') ?? '').trim();
+        if (name && (!current || current === lastAutoCustomerRef.current)) {
+          lastAutoCustomerRef.current = name;
+          form.setValue('customer', name, { shouldValidate: true });
+          setCustomerAutofilled(true);
+        }
+      } catch {
+        // silencioso: campo permanece manual
+      }
     }, 600);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [watchedPlate, open, form]);
+  }, [watchedPlate, open, form, hasInitialData]);
+
 
 
   const getTechnicianLocation = (technician: Technician) => {
