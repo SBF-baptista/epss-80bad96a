@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -116,6 +116,10 @@ export const ScheduleFormModal = ({
     filial?: string | null;
     contrato?: string | null;
   }>({ status: 'idle' });
+  const [customerAutofilled, setCustomerAutofilled] = useState(false);
+  const lastAutoCustomerRef = useRef<string | null>(null);
+
+
 
 
   // Determine if fields should be locked (has initial data from pipeline)
@@ -320,9 +324,33 @@ export const ScheduleFormModal = ({
       } catch {
         if (!cancelled) setContractLookup({ status: 'error' });
       }
+
+      // Autopreenchimento do Cliente via base local (dado inferido, editável)
+      if (cancelled || hasInitialData) return;
+      try {
+        const { data: iv } = await supabase
+          .from('incoming_vehicles')
+          .select('company_name, received_at')
+          .ilike('plate', plate)
+          .not('company_name', 'is', null)
+          .order('received_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        const name = iv?.company_name?.trim();
+        const current = String(form.getValues('customer') ?? '').trim();
+        if (name && (!current || current === lastAutoCustomerRef.current)) {
+          lastAutoCustomerRef.current = name;
+          form.setValue('customer', name, { shouldValidate: true });
+          setCustomerAutofilled(true);
+        }
+      } catch {
+        // silencioso: campo permanece manual
+      }
     }, 600);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [watchedPlate, open, form]);
+  }, [watchedPlate, open, form, hasInitialData]);
+
 
 
   const getTechnicianLocation = (technician: Technician) => {
@@ -689,11 +717,22 @@ export const ScheduleFormModal = ({
                         <Input
                           placeholder="Nome do cliente"
                           {...field}
+                          onChange={(e) => {
+                            setCustomerAutofilled(false);
+                            lastAutoCustomerRef.current = null;
+                            field.onChange(e);
+                          }}
                           className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}
                           disabled={hasInitialData}
                         />
                       </FormControl>
+                      {customerAutofilled && !hasInitialData && (
+                        <p className="text-xs text-muted-foreground">
+                          Preenchido automaticamente pela placa — confira e edite se necessário.
+                        </p>
+                      )}
                       <FormMessage />
+
                     </FormItem>
                   )}
                 />
