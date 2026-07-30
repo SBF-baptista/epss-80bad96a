@@ -11,6 +11,7 @@ interface KickoffVehicleSectionProps {
 }
 
 export const KickoffVehicleSection = ({ vehicle }: KickoffVehicleSectionProps) => {
+  const kickoffDone = vehicle.kickoff_completed ?? vehicle.stage === 'planning';
   const [homologationStatus, setHomologationStatus] = useState<string | null>(null);
   const [homologationDate, setHomologationDate] = useState<string | null>(null);
 
@@ -56,13 +57,23 @@ export const KickoffVehicleSection = ({ vehicle }: KickoffVehicleSectionProps) =
             </div>
             
             <div className="flex items-center gap-2 pl-9 flex-wrap">
-              <Badge 
-                variant="outline" 
-                className="text-xs font-medium px-2 py-0.5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
-                Aguardando Kickoff
-              </Badge>
+              {kickoffDone ? (
+                <Badge
+                  variant="outline"
+                  className="text-xs font-medium px-2 py-0.5 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-800"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5" />
+                  Kickoff concluído · Aguardando planejamento
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="text-xs font-medium px-2 py-0.5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
+                  Aguardando Kickoff
+                </Badge>
+              )}
               {vehicle.received_at && (
                 <span className="text-xs text-muted-foreground/60">
                   Recebido em {new Date(vehicle.received_at).toLocaleDateString('pt-BR')}
@@ -74,9 +85,9 @@ export const KickoffVehicleSection = ({ vehicle }: KickoffVehicleSectionProps) =
       </CardHeader>
 
       <CardContent className="space-y-4 px-4 pb-4 pt-0">
-        {/* Timeline de progresso - kickoff pendente */}
+        {/* Timeline de progresso */}
         <KitStatusTimeline 
-          kickoffCompleted={false}
+          kickoffCompleted={kickoffDone}
           kickoffDate={vehicle.received_at}
           homologationStatus={homologationStatus}
           homologationDate={homologationDate}

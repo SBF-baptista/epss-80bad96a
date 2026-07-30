@@ -23,6 +23,8 @@ export interface KickoffVehicleInfo {
   year: number | null;
   plate: string | null;
   received_at: string;
+  kickoff_completed?: boolean;
+  stage?: CustomerTrackingStage;
 }
 
 export interface CustomerWithStage extends Customer {
@@ -126,6 +128,7 @@ const CustomerTracking = () => {
           const mapped = groupVehicles.map(v => ({
             id: v.id, brand: v.brand, model: v.vehicle,
             year: v.year, plate: v.plate, received_at: v.received_at,
+            kickoff_completed: !!v.kickoff_completed, stage,
           }));
           if (existing) {
             existing.kickoffVehicles = [...(existing.kickoffVehicles || []), ...mapped];
