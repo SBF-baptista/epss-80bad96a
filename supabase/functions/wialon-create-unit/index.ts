@@ -93,6 +93,83 @@ async function searchAccounts(sid: string, q: string) {
   return items.map((r) => ({ id: r.id, name: r.nm }));
 }
 
+// ---------------------------------------------------------------------------
+// Concessão de acesso por usuário (aba "Acesso" das Propriedades da Unidade)
+// Método: user/update_item_access { userId, itemId, accessMask }
+// Máscaras montadas a partir dos ACL bits oficiais (help.wialon.com — Tokens):
+//   Acesso completo  = todos os bits de "Any object" + "Unit, unit group"
+//   Somente leitura  = ver objeto (0x1), propriedades detalhadas (0x2),
+//                      campos personalizados (0x20), relatórios/mensagens (0x200),
+//                      ver arquivos (0x4000), ver intervalos de serviço (0x10000000),
+//                      ver comandos (0x400000000), ver eventos (0x1000000000)
+// ---------------------------------------------------------------------------
+const ACCESS_FULL = 1086625742719;   // 0xFCFFF0FF7F
+const ACCESS_READONLY = 86167798307; // 0x1410004223
+
+// Usuários com acesso completo (nomes no Wialon, comparação case-insensitive)
+const FULL_ACCESS_USERS = [
+  "admin.autosegsat.suporte",
+  "liborio.segsat",
+  "nunes.segsat",
+];
+
+async function searchSegsatUsers(sid: string) {
+  const res = await wialonCall("core/search_items", {
+    spec: {
+      itemsType: "user",
+      propName: "sys_name",
+      propValueMask: "*.segsat*",
+      sortType: "sys_name",
+      propType: "property",
+    },
+    force: 1,
+    flags: 1,
+    from: 0,
+    to: 1000,
+  }, sid);
+  const items = (res.body as { items?: Array<{ id: number; nm: string }> })?.items ?? [];
+  return items.map((u) => ({ id: u.id, name: u.nm }));
+}
+
+type GrantResult = {
+  userId: number;
+  userName: string;
+  level: "full" | "readonly";
+  accessMask: number;
+  ok: boolean;
+  error: string | null;
+};
+
+async function grantUnitAccess(sid: string, itemId: number) {
+  const users = await searchSegsatUsers(sid);
+  const results: GrantResult[] = [];
+  for (const u of users) {
+    const level: "full" | "readonly" =
+      FULL_ACCESS_USERS.includes(u.name.toLowerCase()) ? "full" : "readonly";
+    const accessMask = level === "full" ? ACCESS_FULL : ACCESS_READONLY;
+    const r = await wialonCall("user/update_item_access", {
+      userId: u.id,
+      itemId,
+      accessMask,
+    }, sid);
+    const failed = isWialonError(r.body);
+    results.push({
+      userId: u.id,
+      userName: u.name,
+      level,
+      accessMask,
+      ok: !failed,
+      error: failed ? wialonErrText(r.body) : null,
+    });
+  }
+  // usuários fixos que não apareceram na busca (para não ficar silencioso)
+  const found = users.map((u) => u.name.toLowerCase());
+  const missingFull = FULL_ACCESS_USERS.filter((n) => !found.includes(n));
+  return { users, results, missingFull };
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -150,6 +227,23 @@ Deno.serve(async (req) => {
       if (!s.sid) return json({ ok: false, error: s.error, response: s.body });
       const accounts = await searchAccounts(s.sid, String(body?.q ?? "").trim());
       return json({ ok: true, accounts });
+    }
+
+    // ---- modo auxiliar: listar usuários .segsat (somente leitura) ----
+    if (String(body?.mode ?? "") === "list-segsat-users") {
+      skipAudit = true;
+      const s = await loginWialon(sistema);
+      if (!s.sid) return json({ ok: false, error: s.error, response: s.body });
+      const users = await searchSegsatUsers(s.sid);
+      return json({
+        ok: true,
+        users: users.map((u) => ({
+          ...u,
+          level: FULL_ACCESS_USERS.includes(u.name.toLowerCase()) ? "full" : "readonly",
+        })),
+        fullAccessUsers: FULL_ACCESS_USERS,
+        masks: { full: ACCESS_FULL, readonly: ACCESS_READONLY },
+      });
     }
 
     // ---- modo auxiliar: vincular uma unidade existente a uma conta (conserto de órfãs) ----
@@ -312,6 +406,67 @@ Deno.serve(async (req) => {
       return await rollback("set_active", act.body);
     }
 
+    // 5.1) concessão de acesso por usuário — SOMENTE sistema Auto
+    //      (Frota segue bloqueado por falta de ACL do brayan.segsat)
+    let accessSummary: {
+      total: number; granted: number; failed: number;
+      missingFull: string[]; results: GrantResult[];
+    } | null = null;
+    if (sistema === "auto") {
+      try {
+        const g = await grantUnitAccess(sid, itemId);
+        const failed = g.results.filter((r) => !r.ok);
+        accessSummary = {
+          total: g.results.length,
+          granted: g.results.length - failed.length,
+          failed: failed.length,
+          missingFull: g.missingFull,
+          results: g.results,
+        };
+        audit.api_response = { ...audit.api_response, access_grants: accessSummary };
+
+        await admin.from("frota_unit_activation_audit").insert({
+          sistema,
+          action: failed.length || g.missingFull.length
+            ? "grant_access_partial_failure"
+            : "grant_access",
+          requested_by: userId,
+          requested_by_email: userEmail,
+          api_status: 200,
+          api_ok: failed.length === 0 && g.missingFull.length === 0,
+          api_response: accessSummary,
+          error_message: failed.length || g.missingFull.length
+            ? `Concessões com falha: ${failed.map((f) => `${f.userName} (${f.error})`).join("; ") || "nenhuma"}` +
+              (g.missingFull.length ? ` | usuários de acesso completo não encontrados: ${g.missingFull.join(", ")}` : "")
+            : null,
+          notes,
+          placa: placa || null,
+          imei: imei || null,
+          wialon_item_id: itemId,
+          wialon_item_name: itemName,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        audit.api_response = { ...audit.api_response, access_grants_error: msg };
+        await admin.from("frota_unit_activation_audit").insert({
+          sistema,
+          action: "grant_access_partial_failure",
+          requested_by: userId,
+          requested_by_email: userEmail,
+          api_ok: false,
+          api_response: { error: msg },
+          error_message: `Falha ao conceder acessos: ${msg}`,
+          notes,
+          placa: placa || null,
+          imei: imei || null,
+          wialon_item_id: itemId,
+          wialon_item_name: itemName,
+        });
+      }
+    }
+
+
+
     // 6) sem IMEI -> registra pendência para o técnico vincular na instalação
     let pendingId: string | null = null;
     if (!imei) {
@@ -347,6 +502,8 @@ Deno.serve(async (req) => {
       hwTypeId,
       resourceId,
       pendingImeiId: pendingId,
+      accessGrants: accessSummary,
+
       response: audit.api_response,
     });
   } catch (err) {
