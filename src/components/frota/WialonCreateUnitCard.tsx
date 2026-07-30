@@ -55,38 +55,62 @@ const WialonCreateUnitCard = () => {
   const [accountQuery, setAccountQuery] = useState("");
   const [accounts, setAccounts] = useState<WialonAccount[]>([]);
   const [resourceId, setResourceId] = useState("");
+  const [selectedAccountName, setSelectedAccountName] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastResult, setLastResult] = useState<CreateResult | null>(null);
+  const searchSeq = useRef(0);
 
-  const accountName = accounts.find((a) => String(a.id) === resourceId)?.name ?? "";
+  const accountName =
+    accounts.find((a) => String(a.id) === resourceId)?.name ?? selectedAccountName;
 
-  const searchAccounts = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("wialon-create-unit", {
-        body: { mode: "search-accounts", sistema, q: accountQuery.trim() },
-      });
-      if (error) throw error;
-      return data as { ok: boolean; accounts?: WialonAccount[]; error?: string };
-    },
-    onSuccess: (data) => {
-      if (!data.ok) {
-        toast({ title: "Falha ao buscar contas", description: data.error, variant: "destructive" });
-        return;
+  // Autocomplete: busca no Wialon conforme o usuário digita (debounce 350ms)
+  useEffect(() => {
+    const q = accountQuery.trim();
+    if (!sistema || q.length < 2 || q === selectedAccountName) {
+      setSearching(false);
+      return;
+    }
+    const seq = ++searchSeq.current;
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("wialon-create-unit", {
+          body: { mode: "search-accounts", sistema, q },
+        });
+        if (seq !== searchSeq.current) return;
+        if (error) throw error;
+        const res = data as { ok: boolean; accounts?: WialonAccount[]; error?: string };
+        if (!res.ok) {
+          toast({ title: "Falha ao buscar contas", description: res.error, variant: "destructive" });
+          setAccounts([]);
+        } else {
+          setAccounts(res.accounts ?? []);
+          setShowSuggestions(true);
+        }
+      } catch (err) {
+        if (seq !== searchSeq.current) return;
+        toast({
+          title: "Erro na busca",
+          description: err instanceof Error ? err.message : String(err),
+          variant: "destructive",
+        });
+        setAccounts([]);
+      } finally {
+        if (seq === searchSeq.current) setSearching(false);
       }
-      setAccounts(data.accounts ?? []);
-      setResourceId("");
-      if (!data.accounts?.length) {
-        toast({ title: "Nenhuma conta encontrada", description: "Refine o nome do cliente." });
-      }
-    },
-    onError: (err) => {
-      toast({
-        title: "Erro na busca",
-        description: err instanceof Error ? err.message : String(err),
-        variant: "destructive",
-      });
-    },
-  });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [accountQuery, sistema, selectedAccountName, toast]);
+
+  const selectAccount = (a: WialonAccount) => {
+    setResourceId(String(a.id));
+    setSelectedAccountName(a.name);
+    setAccountQuery(a.name);
+    setShowSuggestions(false);
+  };
+
 
   const mutation = useMutation({
     mutationFn: async () => {
