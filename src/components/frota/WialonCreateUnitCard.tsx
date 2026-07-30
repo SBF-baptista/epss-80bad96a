@@ -192,7 +192,7 @@ const WialonCreateUnitCard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-xs font-medium">Sistema *</label>
-            <Select value={sistema} onValueChange={(v) => { setSistema(v as Sistema); setAccounts([]); setResourceId(""); }}>
+            <Select value={sistema} onValueChange={(v) => { setSistema(v as Sistema); setAccounts([]); setResourceId(""); setAccountQuery(""); setSelectedAccountName(""); }}>
               <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="frota">Frota</SelectItem>
