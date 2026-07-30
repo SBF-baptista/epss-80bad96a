@@ -11,6 +11,7 @@ interface KickoffVehicleSectionProps {
 }
 
 export const KickoffVehicleSection = ({ vehicle }: KickoffVehicleSectionProps) => {
+  const kickoffDone = vehicle.kickoff_completed ?? vehicle.stage === 'planning';
   const [homologationStatus, setHomologationStatus] = useState<string | null>(null);
   const [homologationDate, setHomologationDate] = useState<string | null>(null);
 
