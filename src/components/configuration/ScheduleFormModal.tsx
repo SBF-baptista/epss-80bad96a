@@ -116,6 +116,10 @@ export const ScheduleFormModal = ({
     filial?: string | null;
     contrato?: string | null;
   }>({ status: 'idle' });
+  const [customerAutofilled, setCustomerAutofilled] = useState(false);
+  const lastAutoCustomerRef = useRef<string | null>(null);
+
+
 
 
   // Determine if fields should be locked (has initial data from pipeline)
