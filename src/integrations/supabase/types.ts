@@ -61,6 +61,41 @@ export type Database = {
           },
         ]
       }
+      access_profile_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+          module: Database["public"]["Enums"]["app_module"]
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: Database["public"]["Enums"]["permission_level"]
+          module: Database["public"]["Enums"]["app_module"]
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: Database["public"]["Enums"]["permission_level"]
+          module?: Database["public"]["Enums"]["app_module"]
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_profile_permissions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "access_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       access_profiles: {
         Row: {
           base_role: Database["public"]["Enums"]["app_role"]
@@ -2659,6 +2694,39 @@ export type Database = {
           id?: string
           module?: Database["public"]["Enums"]["app_module"]
           permission?: Database["public"]["Enums"]["permission_level"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_permission_overrides: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          justification: string | null
+          level: Database["public"]["Enums"]["permission_level"]
+          module: Database["public"]["Enums"]["app_module"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          justification?: string | null
+          level: Database["public"]["Enums"]["permission_level"]
+          module: Database["public"]["Enums"]["app_module"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          justification?: string | null
+          level?: Database["public"]["Enums"]["permission_level"]
+          module?: Database["public"]["Enums"]["app_module"]
           updated_at?: string
           user_id?: string
         }
