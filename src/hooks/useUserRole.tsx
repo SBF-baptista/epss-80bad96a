@@ -160,20 +160,36 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 
         let profileRole: UserRole = null
         let profileName: string | null = null
-        let profilePermissions: ModulePermission[] = []
+        const profilePermissions = new Map<AppModule, ModulePermission>()
 
         if (accessProfileIds.length > 0) {
-          const { data: profileData, error: profileError } = await supabase
-            .from('access_profiles')
-            .select('name, base_role, permissions')
-            .in('id', accessProfileIds)
+          const [{ data: profileData, error: profileError }, { data: profilePerms, error: profilePermsError }] =
+            await Promise.all([
+              supabase.from('access_profiles').select('name, base_role').in('id', accessProfileIds),
+              supabase
+                .from('access_profile_permissions')
+                .select('module, level')
+                .in('profile_id', accessProfileIds),
+            ])
 
           if (profileError) {
-            console.error('Error fetching access profile permissions:', profileError)
+            console.error('Error fetching access profile:', profileError)
           } else if (profileData?.length) {
             profileRole = pickHighestRole(profileData.map(profile => mapRawRole(profile.base_role)))
             profileName = profileData[0]?.name || null
-            profilePermissions = profileData.flatMap(profile => mapPermissionEntries(user.id, profile.permissions || {}))
+          }
+
+          if (profilePermsError) {
+            console.error('Error fetching access profile permissions:', profilePermsError)
+          } else {
+            (profilePerms || [])
+              .filter(p => p.level && p.level !== 'none')
+              .forEach(p =>
+                mergeHighestPermission(
+                  profilePermissions,
+                  { ...normalizeModulePermission(p.module as AppModule, p.level as PermissionLevel), user_id: user.id },
+                ),
+              )
           }
         }
 
@@ -181,31 +197,32 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
         setRole(resolvedRole)
         setAccessProfileName(profileName)
 
-        const { data: permData, error: permError } = await supabase
-          .from('user_module_permissions')
-          .select('*')
+        // Exceções por usuário: SEMPRE vencem o perfil (para mais ou para menos)
+        const { data: overrides, error: overridesError } = await supabase
+          .from('user_permission_overrides')
+          .select('module, level')
           .eq('user_id', user.id)
 
-        if (permError) {
-          console.error('Error fetching permissions:', permError)
-          setPermissions(profilePermissions)
+        if (overridesError) {
+          console.error('Error fetching permission overrides:', overridesError)
+          setPermissions(Array.from(profilePermissions.values()))
         } else {
-          const legacyPermissions = (permData || [])
-            .filter(p => p.permission && p.permission !== 'none')
-            .map(p => ({
-              id: p.id,
-              user_id: p.user_id,
-              module: p.module as AppModule,
-              permission: normalizeModulePermission(p.module as AppModule, p.permission as PermissionLevel).permission,
-              created_at: p.created_at,
-              updated_at: p.updated_at
-            }))
+          const finalPermissions = new Map(profilePermissions)
 
-          const mergedPermissions = new Map<AppModule, ModulePermission>()
-          profilePermissions.forEach(permission => mergeHighestPermission(mergedPermissions, permission))
-          legacyPermissions.forEach(permission => mergeHighestPermission(mergedPermissions, permission))
+          ;(overrides || []).forEach(o => {
+            const module = o.module as AppModule
+            const level = o.level as PermissionLevel
+            if (!level || level === 'none') {
+              finalPermissions.delete(module)
+              return
+            }
+            finalPermissions.set(module, {
+              ...normalizeModulePermission(module, level),
+              user_id: user.id,
+            })
+          })
 
-          setPermissions(Array.from(mergedPermissions.values()))
+          setPermissions(Array.from(finalPermissions.values()))
         }
       } catch (error) {
         console.error('Error fetching user role:', error)
