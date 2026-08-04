@@ -28,6 +28,8 @@ export type AppModule =
   | 'configuration'
   | 'kickoff_simulator'
   | 'kickoff_bypass'
+  | 'kickoff_bypass_control'
+  | 'unit_activation'
   | 'chamados';
 
 // Base role that determines default permissions
@@ -299,6 +301,30 @@ export const MODULE_GROUPS: Record<string, { label: string; modules: ModuleConfi
           admin: 'Acesso total às configurações'
         }
       },
+      {
+        key: 'kickoff_bypass_control',
+        label: 'Controle de Bypass do Kickoff',
+        description: 'Direito de executar o "Pular para Agendamento" (exige justificativa e é auditado)',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver a auditoria dos bypasses executados',
+          edit: 'Executar o bypass do Kickoff (com justificativa obrigatória)',
+          approve: 'Executar bypass e revisar a auditoria',
+          admin: 'Controle total do bypass e da auditoria'
+        }
+      },
+      {
+        key: 'unit_activation',
+        label: 'Ativação de Unidades (Frota/Auto)',
+        description: 'Direito de ativar/desativar unidades nos sistemas Frota e Auto (auditado)',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver a auditoria de ativações e desativações',
+          edit: 'Ativar/desativar unidades (com justificativa obrigatória)',
+          approve: 'Ativar/desativar e revisar a auditoria',
+          admin: 'Controle total da ativação de unidades'
+        }
+      },
     ]
   },
   integrations: {
@@ -464,6 +490,8 @@ export const getDefaultPermissionsForRole = (role: BaseRole): Record<AppModule, 
     configuration: 'none',
     kickoff_simulator: 'none',
     kickoff_bypass: 'none',
+    kickoff_bypass_control: 'none',
+    unit_activation: 'none',
     chamados: 'none'
   };
 
