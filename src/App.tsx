@@ -30,7 +30,7 @@ const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const History = lazy(() => import("./pages/History"));
+
 const EditRequests = lazy(() => import("./pages/EditRequests"));
 const WhatsAppMessageControl = lazy(() => import("./pages/WhatsAppMessageControl"));
 const ModuleSelection = lazy(() => import("./pages/ModuleSelection"));
