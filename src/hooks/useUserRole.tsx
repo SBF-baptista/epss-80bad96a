@@ -272,8 +272,22 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_module_permissions', filter: `user_id=eq.${user.id}` },
+        { event: '*', schema: 'public', table: 'user_permission_overrides', filter: `user_id=eq.${user.id}` },
         schedulePermissionRefresh,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'access_profile_permissions' },
+        (payload) => {
+          const profileIds = accessProfileIdsRef.current
+          const changedProfileId =
+            (payload.new as { profile_id?: string } | null)?.profile_id ||
+            (payload.old as { profile_id?: string } | null)?.profile_id
+
+          if (changedProfileId && profileIds.has(changedProfileId)) {
+            schedulePermissionRefresh()
+          }
+        },
       )
       .on(
         'postgres_changes',
