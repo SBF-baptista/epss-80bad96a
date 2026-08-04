@@ -466,6 +466,8 @@ export const getDefaultPermissionsForRole = (role: BaseRole): Record<AppModule, 
     configuration: 'none',
     kickoff_simulator: 'none',
     kickoff_bypass: 'none',
+    kickoff_bypass_control: 'none',
+    unit_activation: 'none',
     chamados: 'none'
   };
 
