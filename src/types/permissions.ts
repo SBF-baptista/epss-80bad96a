@@ -28,6 +28,8 @@ export type AppModule =
   | 'configuration'
   | 'kickoff_simulator'
   | 'kickoff_bypass'
+  | 'kickoff_bypass_control'
+  | 'unit_activation'
   | 'chamados';
 
 // Base role that determines default permissions
