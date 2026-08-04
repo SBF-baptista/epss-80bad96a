@@ -621,6 +621,90 @@ export type Database = {
         }
         Relationships: []
       }
+      frota_ticket_companies: {
+        Row: {
+          cnpj: string
+          created_at: string
+          id: string
+          razao_social: string
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          id?: string
+          razao_social: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          id?: string
+          razao_social?: string
+        }
+        Relationships: []
+      }
+      frota_tickets: {
+        Row: {
+          atendente_suporte: string
+          canal_entrada: string
+          classificacao: string
+          cnpj: string
+          created_at: string
+          created_by: string | null
+          data_atendimento: string
+          data_encerramento: string | null
+          data_escalonamento: string | null
+          descricao_problema: string
+          descricao_solucao: string | null
+          id: string
+          produto: string
+          razao_social: string
+          responsavel_escalonado: string | null
+          status: string
+          tempo_primeiro_atendimento: string | null
+          updated_at: string
+        }
+        Insert: {
+          atendente_suporte: string
+          canal_entrada: string
+          classificacao: string
+          cnpj: string
+          created_at?: string
+          created_by?: string | null
+          data_atendimento: string
+          data_encerramento?: string | null
+          data_escalonamento?: string | null
+          descricao_problema: string
+          descricao_solucao?: string | null
+          id?: string
+          produto: string
+          razao_social: string
+          responsavel_escalonado?: string | null
+          status?: string
+          tempo_primeiro_atendimento?: string | null
+          updated_at?: string
+        }
+        Update: {
+          atendente_suporte?: string
+          canal_entrada?: string
+          classificacao?: string
+          cnpj?: string
+          created_at?: string
+          created_by?: string | null
+          data_atendimento?: string
+          data_encerramento?: string | null
+          data_escalonamento?: string | null
+          descricao_problema?: string
+          descricao_solucao?: string | null
+          id?: string
+          produto?: string
+          razao_social?: string
+          responsavel_escalonado?: string | null
+          status?: string
+          tempo_primeiro_atendimento?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       frota_unit_activation_audit: {
         Row: {
           action: string
@@ -2963,6 +3047,7 @@ export type Database = {
         | "kickoff_simulator"
         | "kickoff_bypass"
         | "pending_sales_recovery"
+        | "chamados"
       app_role:
         | "admin"
         | "gestor"
@@ -3168,6 +3253,7 @@ export const Constants = {
         "kickoff_simulator",
         "kickoff_bypass",
         "pending_sales_recovery",
+        "chamados",
       ],
       app_role: [
         "admin",

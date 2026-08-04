@@ -34,6 +34,7 @@ export const ROUTE_TO_MODULE: Record<string, AppModule> = {
   '/frota-pendentes': 'frota_pendentes',
   '/segsale-sales': 'segsale_sales',
   '/segsale-search': 'segsale_search',
+  '/chamados': 'chamados',
   '/modules': 'kickoff',
 }
 

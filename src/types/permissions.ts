@@ -27,7 +27,8 @@ export type AppModule =
   | 'whatsapp_control'
   | 'configuration'
   | 'kickoff_simulator'
-  | 'kickoff_bypass';
+  | 'kickoff_bypass'
+  | 'chamados';
 
 // Base role that determines default permissions
 export type BaseRole = 'visualizador' | 'operador' | 'gestor' | 'admin';
@@ -388,6 +389,18 @@ export const MODULE_GROUPS: Record<string, { label: string; modules: ModuleConfi
         }
       },
       {
+        key: 'chamados',
+        label: 'Chamados',
+        description: 'Service desk interno de suporte técnico',
+        group: 'supply',
+        levelDescriptions: {
+          view: 'Ver chamados e dashboard de SLA',
+          edit: 'Abrir e editar chamados',
+          approve: 'Encerrar e escalonar chamados',
+          admin: 'Acesso total aos chamados'
+        }
+      },
+      {
         key: 'kickoff_simulator',
         label: 'Simulador de Kickoff',
         description: 'Simulador de kickoff',
@@ -450,7 +463,8 @@ export const getDefaultPermissionsForRole = (role: BaseRole): Record<AppModule, 
     whatsapp_control: 'none',
     configuration: 'none',
     kickoff_simulator: 'none',
-    kickoff_bypass: 'none'
+    kickoff_bypass: 'none',
+    chamados: 'none'
   };
 
   switch (role) {

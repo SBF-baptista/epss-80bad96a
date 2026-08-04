@@ -16,6 +16,7 @@ import {
   UserCheck,
   Clock,
   ShoppingCart,
+  Headphones,
 } from "lucide-react";
 import { StalledAlertsBanner } from "@/components/alerts/StalledAlertsBanner";
 import { StalledAlertsPopup } from "@/components/alerts/StalledAlertsPopup";
@@ -98,6 +99,17 @@ const modules: ModuleCard[] = [
     gradient: "from-pink-500 to-rose-600",
     iconBg: "bg-pink-500/10",
     iconColor: "text-pink-600",
+    isPrimary: true,
+  },
+  {
+    title: "Chamados",
+    description: "Service desk de suporte e indicadores de SLA",
+    icon: Headphones,
+    path: "/chamados",
+    module: "chamados",
+    gradient: "from-teal-500 to-emerald-600",
+    iconBg: "bg-teal-500/10",
+    iconColor: "text-teal-600",
     isPrimary: true,
   },
   {
