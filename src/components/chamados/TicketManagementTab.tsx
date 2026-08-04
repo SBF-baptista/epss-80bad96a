@@ -422,17 +422,14 @@ export function TicketManagementTab() {
     form.status === "Concluído" || form.status === "Fechado";
 
   return (
-    <Tabs defaultValue="dashboard" className="space-y-4">
+    <Tabs defaultValue="chamados" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
         <TabsTrigger value="chamados">📋 Chamados</TabsTrigger>
+        <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="dashboard">
-        <TicketDashboard tickets={tickets} />
-      </TabsContent>
-
       <TabsContent value="chamados" className="space-y-4">
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {statCards.map((card, i) => (
             <motion.div
