@@ -647,6 +647,7 @@ export function TicketManagementTab() {
                         value={form.razao_social}
                         placeholder="Nome da empresa"
                         onFocus={() => setCompanyPopoverOpen(true)}
+                        onBlur={() => void upsertCompany(true)}
                         onChange={(e) => {
                           setForm((f) => ({
                             ...f,
@@ -663,8 +664,11 @@ export function TicketManagementTab() {
                     >
                       <Command shouldFilter={false}>
                         <CommandList>
-                          <CommandEmpty>Nenhuma empresa cadastrada.</CommandEmpty>
-                          <CommandGroup>
+                          <CommandEmpty>
+                            Nenhuma empresa encontrada. Digite a razão social e o
+                            CNPJ para cadastrar automaticamente.
+                          </CommandEmpty>
+                          <CommandGroup heading="Empresas cadastradas">
                             {companySuggestions.map((c) => (
                               <CommandItem
                                 key={c.id}
@@ -698,11 +702,13 @@ export function TicketManagementTab() {
                   <Input
                     placeholder="00.000.000/0000-00"
                     value={form.cnpj}
+                    onBlur={() => void upsertCompany(true)}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, cnpj: e.target.value }))
                     }
                   />
                 </div>
+
 
                 <div className="space-y-1">
                   <Label>Data do Atendimento *</Label>
