@@ -636,66 +636,55 @@ export function TicketManagementTab() {
                 color="bg-amber-500"
               />
               <div className="grid md:grid-cols-2 gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1 relative">
                   <Label>Razão Social *</Label>
-                  <Popover
-                    open={companyPopoverOpen}
-                    onOpenChange={setCompanyPopoverOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Input
-                        value={form.razao_social}
-                        placeholder="Nome da empresa"
-                        onFocus={() => setCompanyPopoverOpen(true)}
-                        onBlur={() => void upsertCompany(true)}
-                        onChange={(e) => {
-                          setForm((f) => ({
-                            ...f,
-                            razao_social: e.target.value,
-                          }));
-                          setCompanyPopoverOpen(true);
-                        }}
-                      />
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="p-0 w-[--radix-popover-trigger-width]"
-                      align="start"
-                      onOpenAutoFocus={(e) => e.preventDefault()}
-                    >
-                      <Command shouldFilter={false}>
-                        <CommandList>
-                          <CommandEmpty>
-                            Nenhuma empresa encontrada. Digite a razão social e o
-                            CNPJ para cadastrar automaticamente.
-                          </CommandEmpty>
-                          <CommandGroup heading="Empresas cadastradas">
-                            {companySuggestions.map((c) => (
-                              <CommandItem
-                                key={c.id}
-                                value={c.id}
-                                onSelect={() => {
-                                  setForm((f) => ({
-                                    ...f,
-                                    razao_social: c.razao_social,
-                                    cnpj: c.cnpj,
-                                  }));
-                                  setCompanyPopoverOpen(false);
-                                }}
-                              >
-                                <div className="flex flex-col">
-                                  <span>{c.razao_social}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {c.cnpj}
-                                  </span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    value={form.razao_social}
+                    placeholder="Nome da empresa"
+                    autoComplete="off"
+                    onFocus={() => setCompanyPopoverOpen(true)}
+                    onBlur={() => {
+                      window.setTimeout(() => setCompanyPopoverOpen(false), 150);
+                      void upsertCompany(true);
+                    }}
+                    onChange={(e) => {
+                      setForm((f) => ({
+                        ...f,
+                        razao_social: e.target.value,
+                      }));
+                      setCompanyPopoverOpen(true);
+                    }}
+                  />
+                  {companyPopoverOpen && companySuggestions.length > 0 && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-md border bg-popover shadow-md max-h-60 overflow-auto">
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                        Empresas cadastradas
+                      </div>
+                      {companySuggestions.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setForm((f) => ({
+                              ...f,
+                              razao_social: c.razao_social,
+                              cnpj: c.cnpj,
+                            }));
+                            setCompanyPopoverOpen(false);
+                          }}
+                        >
+                          <span className="block">{c.razao_social}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {c.cnpj}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
 
                 <div className="space-y-1">
                   <Label>CNPJ *</Label>
