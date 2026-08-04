@@ -73,8 +73,8 @@ interface CompanyRow {
 }
 
 export const CLASSIFICACOES = ["Baixo", "Médio", "Alta", "Crítico"];
-export const ATENDENTES = ["Rafael", "Sóstenes", "Patrocínio", "Arlean"];
-export const CANAIS = ["E-mail", "Octadesk", "Tomtickte"];
+export const ATENDENTES = ["Matheus Nunes", "Sóstenes Silva", "Pedro Nascimento", "Thalita Silva"];
+export const CANAIS = ["E-mail", "Octadesk", "Tomticket", "Whatsapp"];
 export const STATUSES = [
   "Em Atendimento",
   "Aguardando Retorno",
