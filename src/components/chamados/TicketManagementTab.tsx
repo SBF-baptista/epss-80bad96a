@@ -594,6 +594,10 @@ export function TicketManagementTab() {
         </Card>
       </TabsContent>
 
+      <TabsContent value="dashboard">
+        <TicketDashboard tickets={tickets} />
+      </TabsContent>
+
       {/* Dialog criação / edição */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
