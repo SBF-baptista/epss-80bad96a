@@ -304,27 +304,44 @@ export function TicketManagementTab() {
     setViewDialogOpen(true);
   };
 
-  const upsertCompany = async () => {
-    const existing = companies.find((c) => c.cnpj === form.cnpj);
+  const upsertCompany = async (notify = false) => {
+    const razao = form.razao_social.trim();
+    const cnpj = form.cnpj.trim();
+    if (!razao || !cnpj) return;
+
+    const existing = companies.find((c) => c.cnpj === cnpj);
     if (!existing) {
       const { data } = await supabase
         .from("frota_ticket_companies")
-        .insert({ razao_social: form.razao_social, cnpj: form.cnpj })
+        .insert({ razao_social: razao, cnpj })
         .select()
         .maybeSingle();
-      if (data) setCompanies((prev) => [...prev, data as CompanyRow]);
-    } else if (existing.razao_social !== form.razao_social) {
+      if (data) {
+        setCompanies((prev) =>
+          [...prev, data as CompanyRow].sort((a, b) =>
+            a.razao_social.localeCompare(b.razao_social)
+          )
+        );
+        if (notify) {
+          toast({
+            title: "Empresa cadastrada",
+            description: `${razao} foi salva e ficará disponível nos próximos chamados.`,
+          });
+        }
+      }
+    } else if (existing.razao_social !== razao) {
       await supabase
         .from("frota_ticket_companies")
-        .update({ razao_social: form.razao_social })
+        .update({ razao_social: razao })
         .eq("id", existing.id);
       setCompanies((prev) =>
         prev.map((c) =>
-          c.id === existing.id ? { ...c, razao_social: form.razao_social } : c
+          c.id === existing.id ? { ...c, razao_social: razao } : c
         )
       );
     }
   };
+
 
   const handleSubmit = async () => {
     const required: (keyof TicketForm)[] = [
