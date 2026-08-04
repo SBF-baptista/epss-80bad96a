@@ -3048,6 +3048,8 @@ export type Database = {
         | "kickoff_bypass"
         | "pending_sales_recovery"
         | "chamados"
+        | "kickoff_bypass_control"
+        | "unit_activation"
       app_role:
         | "admin"
         | "gestor"
@@ -3254,6 +3256,8 @@ export const Constants = {
         "kickoff_bypass",
         "pending_sales_recovery",
         "chamados",
+        "kickoff_bypass_control",
+        "unit_activation",
       ],
       app_role: [
         "admin",
