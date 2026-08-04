@@ -71,6 +71,7 @@ interface NavGroup {
 // Single navigation items (shown first after Home)
 const singleNavigationItems: NavItem[] = [
   { to: "/kickoff", label: "Kickoff", icon: Rocket, module: "kickoff" },
+  { to: "/chamados", label: "Chamados", icon: MessageSquare, module: "chamados" },
 ];
 
 // Simulador - visível para operadores de Kickoff e Homologação (e admin/gestor)

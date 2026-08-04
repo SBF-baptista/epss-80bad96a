@@ -44,6 +44,7 @@ const ScheduleDeletionRequests = lazy(() => import("./pages/ScheduleDeletionRequ
 const FrotaUnitStatus = lazy(() => import("./pages/FrotaUnitStatus"));
 const FrotaUnitActivation = lazy(() => import("./pages/FrotaUnitActivation"));
 const PendingSalesRecovery = lazy(() => import("./pages/PendingSalesRecovery"));
+const Chamados = lazy(() => import("./pages/Chamados"));
 
 const KickoffSimulator = lazy(() => import("./pages/KickoffSimulator"));
 const KickoffSimulatorResult = lazy(() => import("./pages/KickoffSimulatorResult"));
@@ -366,6 +367,17 @@ function AppContent() {
 
 
 
+
+              {/* Chamados */}
+              <Route path="/chamados" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="chamados">
+                    <Layout>
+                      <Chamados />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
 
               {/* Segsale Sales */}
               <Route path="/segsale-sales" element={
