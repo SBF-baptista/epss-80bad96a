@@ -769,7 +769,7 @@ export function TicketManagementTab() {
                 />
               </div>
               <div className="space-y-1 md:w-1/2">
-                <Label>Status *</Label>
+                <Label>Status</Label>
                 <Select
                   value={form.status}
                   onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
