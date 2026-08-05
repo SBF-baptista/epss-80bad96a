@@ -679,60 +679,60 @@ export type Database = {
       }
       frota_tickets: {
         Row: {
-          atendente_suporte: string
-          canal_entrada: string
-          classificacao: string
-          cnpj: string
+          atendente_suporte: string | null
+          canal_entrada: string | null
+          classificacao: string | null
+          cnpj: string | null
           created_at: string
           created_by: string | null
-          data_atendimento: string
+          data_atendimento: string | null
           data_encerramento: string | null
           data_escalonamento: string | null
-          descricao_problema: string
+          descricao_problema: string | null
           descricao_solucao: string | null
           id: string
-          produto: string
-          razao_social: string
+          produto: string | null
+          razao_social: string | null
           responsavel_escalonado: string | null
           status: string
           tempo_primeiro_atendimento: string | null
           updated_at: string
         }
         Insert: {
-          atendente_suporte: string
-          canal_entrada: string
-          classificacao: string
-          cnpj: string
+          atendente_suporte?: string | null
+          canal_entrada?: string | null
+          classificacao?: string | null
+          cnpj?: string | null
           created_at?: string
           created_by?: string | null
-          data_atendimento: string
+          data_atendimento?: string | null
           data_encerramento?: string | null
           data_escalonamento?: string | null
-          descricao_problema: string
+          descricao_problema?: string | null
           descricao_solucao?: string | null
           id?: string
-          produto: string
-          razao_social: string
+          produto?: string | null
+          razao_social?: string | null
           responsavel_escalonado?: string | null
           status?: string
           tempo_primeiro_atendimento?: string | null
           updated_at?: string
         }
         Update: {
-          atendente_suporte?: string
-          canal_entrada?: string
-          classificacao?: string
-          cnpj?: string
+          atendente_suporte?: string | null
+          canal_entrada?: string | null
+          classificacao?: string | null
+          cnpj?: string | null
           created_at?: string
           created_by?: string | null
-          data_atendimento?: string
+          data_atendimento?: string | null
           data_encerramento?: string | null
           data_escalonamento?: string | null
-          descricao_problema?: string
+          descricao_problema?: string | null
           descricao_solucao?: string | null
           id?: string
-          produto?: string
-          razao_social?: string
+          produto?: string | null
+          razao_social?: string | null
           responsavel_escalonado?: string | null
           status?: string
           tempo_primeiro_atendimento?: string | null
