@@ -759,9 +759,7 @@ export function TicketManagementTab() {
                 color="bg-blue-500"
               />
               <div className="space-y-1">
-                <Label>
-                  Descrição da Solução {encerrandoObrigatorio && "*"}
-                </Label>
+                <Label>Descrição da Solução</Label>
                 <Textarea
                   rows={3}
                   value={form.descricao_solucao}
