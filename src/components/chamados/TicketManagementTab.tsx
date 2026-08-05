@@ -344,59 +344,27 @@ export function TicketManagementTab() {
 
 
   const handleSubmit = async () => {
-    const required: (keyof TicketForm)[] = [
-      "razao_social",
-      "cnpj",
-      "data_atendimento",
-      "descricao_problema",
-      "classificacao",
-      "atendente_suporte",
-      "canal_entrada",
-      "produto",
-    ];
-
-    if (required.some((k) => !form[k]?.trim())) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (
-      (form.status === "Concluído" || form.status === "Fechado") &&
-      !form.descricao_solucao.trim()
-    ) {
-      toast({
-        title: "Solução obrigatória",
-        description:
-          "Descrição da Solução é obrigatória para encerrar o chamado",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSubmitting(true);
     try {
       await upsertCompany();
 
       const iso = (v: string) => (v ? new Date(v).toISOString() : null);
+      const orNull = (v: string) => (v.trim() ? v.trim() : null);
       const payload = {
-        razao_social: form.razao_social,
-        cnpj: form.cnpj,
-        data_atendimento: iso(form.data_atendimento)!,
+        razao_social: orNull(form.razao_social),
+        cnpj: orNull(form.cnpj),
+        data_atendimento: iso(form.data_atendimento),
         tempo_primeiro_atendimento: iso(form.tempo_primeiro_atendimento),
-        descricao_problema: form.descricao_problema,
-        classificacao: form.classificacao,
-        atendente_suporte: form.atendente_suporte,
-        canal_entrada: form.canal_entrada,
-        descricao_solucao: form.descricao_solucao || null,
-        status: form.status,
+        descricao_problema: orNull(form.descricao_problema),
+        classificacao: orNull(form.classificacao),
+        atendente_suporte: orNull(form.atendente_suporte),
+        canal_entrada: orNull(form.canal_entrada),
+        descricao_solucao: orNull(form.descricao_solucao),
+        status: form.status || "Em Atendimento",
         data_encerramento: iso(form.data_encerramento),
-        responsavel_escalonado: form.responsavel_escalonado || null,
+        responsavel_escalonado: orNull(form.responsavel_escalonado),
         data_escalonamento: iso(form.data_escalonamento),
-        produto: form.produto,
+        produto: orNull(form.produto),
       };
 
       if (editingId) {
@@ -434,9 +402,6 @@ export function TicketManagementTab() {
     { label: "Aguardando Retorno", value: stats.aguardando, color: "text-blue-600" },
     { label: "Concluídos/Fechados", value: stats.concluidos, color: "text-emerald-600" },
   ];
-
-  const encerrandoObrigatorio =
-    form.status === "Concluído" || form.status === "Fechado";
 
   return (
     <Tabs defaultValue="chamados" className="space-y-4">
@@ -637,7 +602,7 @@ export function TicketManagementTab() {
               />
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-1 relative">
-                  <Label>Razão Social *</Label>
+                  <Label>Razão Social</Label>
                   <Input
                     value={form.razao_social}
                     placeholder="Nome da empresa"
@@ -687,7 +652,7 @@ export function TicketManagementTab() {
 
 
                 <div className="space-y-1">
-                  <Label>CNPJ *</Label>
+                  <Label>CNPJ</Label>
                   <Input
                     placeholder="00.000.000/0000-00"
                     value={form.cnpj}
@@ -700,7 +665,7 @@ export function TicketManagementTab() {
 
 
                 <div className="space-y-1">
-                  <Label>Data do Atendimento *</Label>
+                  <Label>Data do Atendimento</Label>
                   <Input
                     type="datetime-local"
                     value={form.data_atendimento}
@@ -726,7 +691,7 @@ export function TicketManagementTab() {
               </div>
 
               <div className="space-y-1">
-                <Label>Descrição do Problema *</Label>
+                <Label>Descrição do Problema</Label>
                 <Textarea
                   rows={3}
                   value={form.descricao_problema}
@@ -742,22 +707,22 @@ export function TicketManagementTab() {
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   {
-                    label: "Classificação *",
+                    label: "Classificação",
                     key: "classificacao" as const,
                     options: CLASSIFICACOES,
                   },
                   {
-                    label: "Atendente Suporte *",
+                    label: "Atendente Suporte",
                     key: "atendente_suporte" as const,
                     options: ATENDENTES,
                   },
                   {
-                    label: "Canal de Entrada *",
+                    label: "Canal de Entrada",
                     key: "canal_entrada" as const,
                     options: CANAIS,
                   },
                   {
-                    label: "Produto *",
+                    label: "Produto",
                     key: "produto" as const,
                     options: PRODUTOS,
                   },
@@ -794,9 +759,7 @@ export function TicketManagementTab() {
                 color="bg-blue-500"
               />
               <div className="space-y-1">
-                <Label>
-                  Descrição da Solução {encerrandoObrigatorio && "*"}
-                </Label>
+                <Label>Descrição da Solução</Label>
                 <Textarea
                   rows={3}
                   value={form.descricao_solucao}
@@ -806,7 +769,7 @@ export function TicketManagementTab() {
                 />
               </div>
               <div className="space-y-1 md:w-1/2">
-                <Label>Status *</Label>
+                <Label>Status</Label>
                 <Select
                   value={form.status}
                   onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
