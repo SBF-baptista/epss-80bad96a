@@ -707,22 +707,22 @@ export function TicketManagementTab() {
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   {
-                    label: "Classificação *",
+                    label: "Classificação",
                     key: "classificacao" as const,
                     options: CLASSIFICACOES,
                   },
                   {
-                    label: "Atendente Suporte *",
+                    label: "Atendente Suporte",
                     key: "atendente_suporte" as const,
                     options: ATENDENTES,
                   },
                   {
-                    label: "Canal de Entrada *",
+                    label: "Canal de Entrada",
                     key: "canal_entrada" as const,
                     options: CANAIS,
                   },
                   {
-                    label: "Produto *",
+                    label: "Produto",
                     key: "produto" as const,
                     options: PRODUTOS,
                   },
