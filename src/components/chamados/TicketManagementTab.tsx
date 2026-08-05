@@ -403,9 +403,6 @@ export function TicketManagementTab() {
     { label: "Concluídos/Fechados", value: stats.concluidos, color: "text-emerald-600" },
   ];
 
-  const encerrandoObrigatorio =
-    form.status === "Concluído" || form.status === "Fechado";
-
   return (
     <Tabs defaultValue="chamados" className="space-y-4">
       <TabsList>
