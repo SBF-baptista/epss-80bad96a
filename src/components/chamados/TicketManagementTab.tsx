@@ -665,7 +665,7 @@ export function TicketManagementTab() {
 
 
                 <div className="space-y-1">
-                  <Label>Data do Atendimento *</Label>
+                  <Label>Data do Atendimento</Label>
                   <Input
                     type="datetime-local"
                     value={form.data_atendimento}
