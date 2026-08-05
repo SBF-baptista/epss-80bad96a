@@ -344,59 +344,27 @@ export function TicketManagementTab() {
 
 
   const handleSubmit = async () => {
-    const required: (keyof TicketForm)[] = [
-      "razao_social",
-      "cnpj",
-      "data_atendimento",
-      "descricao_problema",
-      "classificacao",
-      "atendente_suporte",
-      "canal_entrada",
-      "produto",
-    ];
-
-    if (required.some((k) => !form[k]?.trim())) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (
-      (form.status === "Concluído" || form.status === "Fechado") &&
-      !form.descricao_solucao.trim()
-    ) {
-      toast({
-        title: "Solução obrigatória",
-        description:
-          "Descrição da Solução é obrigatória para encerrar o chamado",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSubmitting(true);
     try {
       await upsertCompany();
 
       const iso = (v: string) => (v ? new Date(v).toISOString() : null);
+      const orNull = (v: string) => (v.trim() ? v.trim() : null);
       const payload = {
-        razao_social: form.razao_social,
-        cnpj: form.cnpj,
-        data_atendimento: iso(form.data_atendimento)!,
+        razao_social: orNull(form.razao_social),
+        cnpj: orNull(form.cnpj),
+        data_atendimento: iso(form.data_atendimento),
         tempo_primeiro_atendimento: iso(form.tempo_primeiro_atendimento),
-        descricao_problema: form.descricao_problema,
-        classificacao: form.classificacao,
-        atendente_suporte: form.atendente_suporte,
-        canal_entrada: form.canal_entrada,
-        descricao_solucao: form.descricao_solucao || null,
-        status: form.status,
+        descricao_problema: orNull(form.descricao_problema),
+        classificacao: orNull(form.classificacao),
+        atendente_suporte: orNull(form.atendente_suporte),
+        canal_entrada: orNull(form.canal_entrada),
+        descricao_solucao: orNull(form.descricao_solucao),
+        status: form.status || "Em Atendimento",
         data_encerramento: iso(form.data_encerramento),
-        responsavel_escalonado: form.responsavel_escalonado || null,
+        responsavel_escalonado: orNull(form.responsavel_escalonado),
         data_escalonamento: iso(form.data_escalonamento),
-        produto: form.produto,
+        produto: orNull(form.produto),
       };
 
       if (editingId) {
