@@ -652,7 +652,7 @@ export function TicketManagementTab() {
 
 
                 <div className="space-y-1">
-                  <Label>CNPJ *</Label>
+                  <Label>CNPJ</Label>
                   <Input
                     placeholder="00.000.000/0000-00"
                     value={form.cnpj}
