@@ -691,7 +691,7 @@ export function TicketManagementTab() {
               </div>
 
               <div className="space-y-1">
-                <Label>Descrição do Problema *</Label>
+                <Label>Descrição do Problema</Label>
                 <Textarea
                   rows={3}
                   value={form.descricao_problema}
