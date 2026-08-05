@@ -602,7 +602,7 @@ export function TicketManagementTab() {
               />
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-1 relative">
-                  <Label>Razão Social *</Label>
+                  <Label>Razão Social</Label>
                   <Input
                     value={form.razao_social}
                     placeholder="Nome da empresa"
