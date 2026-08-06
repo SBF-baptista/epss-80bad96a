@@ -238,9 +238,10 @@ export function TicketManagementTab() {
     return tickets.filter((t) => {
       const matchesSearch =
         !term ||
-        t.razao_social.toLowerCase().includes(term) ||
-        t.cnpj.toLowerCase().includes(term) ||
-        t.descricao_problema.toLowerCase().includes(term);
+        (t.razao_social || "").toLowerCase().includes(term) ||
+        (t.cnpj || "").toLowerCase().includes(term) ||
+        (t.descricao_problema || "").toLowerCase().includes(term);
+
 
       const matchesStatus = statusFilter === "all" || t.status === statusFilter;
 
