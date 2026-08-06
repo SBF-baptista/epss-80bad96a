@@ -49,20 +49,21 @@ import { TicketDashboard } from "./TicketDashboard";
 
 export interface TicketRow {
   id: string;
-  razao_social: string;
-  cnpj: string;
-  data_atendimento: string;
+  razao_social: string | null;
+  cnpj: string | null;
+  data_atendimento: string | null;
   tempo_primeiro_atendimento: string | null;
-  descricao_problema: string;
-  classificacao: string;
-  atendente_suporte: string;
-  canal_entrada: string;
+  descricao_problema: string | null;
+  classificacao: string | null;
+  atendente_suporte: string | null;
+  canal_entrada: string | null;
   descricao_solucao: string | null;
   status: string;
   data_encerramento: string | null;
   responsavel_escalonado: string | null;
   data_escalonamento: string | null;
-  produto: string;
+  produto: string | null;
+
   created_at: string;
 }
 
