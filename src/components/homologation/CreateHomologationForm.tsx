@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Plus, Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { createHomologationCard } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,8 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
   const { brands, loading: loadingBrands } = useFipeBrands();
   const { models, loading: loadingModels } = useFipeModels(selectedBrandCode);
   const { years, loading: loadingYears } = useFipeYears(selectedBrandCode, selectedModelCode);
+
+  const isManualEntry = !selectedBrandCode || !selectedModelCode;
 
   const handleCreateCard = async () => {
     if (!selectedBrandName || !selectedModelName) {
@@ -194,10 +197,10 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   role="combobox"
                   aria-expanded={openModel}
                   className="w-full justify-between text-sm"
-                  disabled={!selectedBrandCode || loadingModels}
+                  disabled={!selectedBrandName || loadingModels}
                 >
                   {selectedModelName || 
-                    (!selectedBrandCode ? "Selecione uma marca primeiro" :
+                    (!selectedBrandName ? "Selecione uma marca primeiro" :
                     loadingModels ? "Carregando..." :
                     "Selecione o modelo")}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -263,6 +266,17 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ano
             </label>
+            {isManualEntry ? (
+              <Input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="Digite o ano (ex: 2024)"
+                className="text-sm"
+              />
+            ) : (
             <Popover open={openYear} onOpenChange={setOpenYear} modal={true}>
               <PopoverTrigger asChild>
                 <Button
@@ -270,11 +284,10 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   role="combobox"
                   aria-expanded={openYear}
                   className="w-full justify-between text-sm"
-                  disabled={!selectedModelCode || loadingYears}
+                  disabled={loadingYears}
                 >
-                  {selectedYear ? years.find(y => y.code === selectedYear)?.name : 
-                    (!selectedModelCode ? "Selecione um modelo primeiro" :
-                    loadingYears ? "Carregando..." :
+                  {selectedYear ? (years.find(y => y.code === selectedYear)?.name || selectedYear) :
+                    (loadingYears ? "Carregando..." :
                     "Selecione o ano (opcional)")}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -331,7 +344,9 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                 </Command>
               </PopoverContent>
             </Popover>
+            )}
           </div>
+
         </div>
 
         
