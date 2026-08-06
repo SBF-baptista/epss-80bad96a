@@ -281,21 +281,22 @@ export function TicketManagementTab() {
 
   const openEdit = (ticket: TicketRow) => {
     setForm({
-      razao_social: ticket.razao_social,
-      cnpj: ticket.cnpj,
+      razao_social: ticket.razao_social || "",
+      cnpj: ticket.cnpj || "",
       data_atendimento: toLocalInput(ticket.data_atendimento),
       tempo_primeiro_atendimento: toLocalInput(ticket.tempo_primeiro_atendimento),
-      descricao_problema: ticket.descricao_problema,
-      classificacao: ticket.classificacao,
-      atendente_suporte: ticket.atendente_suporte,
-      canal_entrada: ticket.canal_entrada,
+      descricao_problema: ticket.descricao_problema || "",
+      classificacao: ticket.classificacao || "",
+      atendente_suporte: ticket.atendente_suporte || "",
+      canal_entrada: ticket.canal_entrada || "",
       descricao_solucao: ticket.descricao_solucao || "",
-      status: ticket.status,
+      status: ticket.status || "Em Atendimento",
       data_encerramento: toLocalInput(ticket.data_encerramento),
       responsavel_escalonado: ticket.responsavel_escalonado || "",
       data_escalonamento: toLocalInput(ticket.data_escalonamento),
-      produto: ticket.produto,
+      produto: ticket.produto || "",
     });
+
     setEditingId(ticket.id);
     setDialogOpen(true);
   };
