@@ -351,7 +351,16 @@ export function TicketManagementTab() {
     try {
       await upsertCompany();
 
-      const iso = (v: string) => (v ? new Date(v).toISOString() : null);
+      const invalidos: string[] = [];
+      const iso = (v: string, label: string) => {
+        if (!v) return null;
+        const d = new Date(v);
+        if (isNaN(d.getTime())) {
+          invalidos.push(label);
+          return null;
+        }
+        return d.toISOString();
+      };
       const orNull = (v: string) => (v.trim() ? v.trim() : null);
       const payload = {
         razao_social: orNull(form.razao_social),
