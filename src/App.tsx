@@ -15,7 +15,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import History from "./pages/History";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 import Kanban from "./pages/Kanban";
-const Homologation = lazy(() => import("./pages/Homologation"));
+import Homologation from "./pages/Homologation";
 const KitManagement = lazy(() => import("./pages/KitManagement"));
 const CustomerTracking = lazy(() => import("./pages/CustomerTracking"));
 const AccessorySupplyHomologation = lazy(() => import("./pages/AccessorySupplyHomologation"));
