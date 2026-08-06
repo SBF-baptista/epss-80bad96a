@@ -272,7 +272,7 @@ export function TicketDashboard({ tickets }: Props) {
   const monthly = useMemo(() => {
     const map = new Map<string, { mes: string; abertos: number; resolvidos: number }>();
     filtered.forEach((t) => {
-      const key = t.data_atendimento.slice(0, 7);
+      const key = (t.data_atendimento || "").slice(0, 7) || "Sem data";
       if (!map.has(key)) map.set(key, { mes: key, abertos: 0, resolvidos: 0 });
       const row = map.get(key)!;
       row.abertos += 1;
@@ -287,18 +287,20 @@ export function TicketDashboard({ tickets }: Props) {
       { cnpj: string; razao_social: string; total: number; porStatus: Record<string, number> }
     >();
     filtered.forEach((t) => {
-      if (!map.has(t.cnpj)) {
-        map.set(t.cnpj, {
-          cnpj: t.cnpj,
-          razao_social: t.razao_social,
+      const cnpj = t.cnpj || "Sem CNPJ";
+      if (!map.has(cnpj)) {
+        map.set(cnpj, {
+          cnpj,
+          razao_social: t.razao_social || "Sem razão social",
           total: 0,
           porStatus: {},
         });
       }
-      const row = map.get(t.cnpj)!;
+      const row = map.get(cnpj)!;
       row.total += 1;
       row.porStatus[t.status] = (row.porStatus[t.status] || 0) + 1;
     });
+
     const rows = [...map.values()];
     return companySort === "count"
       ? rows.sort((a, b) => b.total - a.total)

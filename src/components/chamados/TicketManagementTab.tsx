@@ -49,20 +49,21 @@ import { TicketDashboard } from "./TicketDashboard";
 
 export interface TicketRow {
   id: string;
-  razao_social: string;
-  cnpj: string;
-  data_atendimento: string;
+  razao_social: string | null;
+  cnpj: string | null;
+  data_atendimento: string | null;
   tempo_primeiro_atendimento: string | null;
-  descricao_problema: string;
-  classificacao: string;
-  atendente_suporte: string;
-  canal_entrada: string;
+  descricao_problema: string | null;
+  classificacao: string | null;
+  atendente_suporte: string | null;
+  canal_entrada: string | null;
   descricao_solucao: string | null;
   status: string;
   data_encerramento: string | null;
   responsavel_escalonado: string | null;
   data_escalonamento: string | null;
-  produto: string;
+  produto: string | null;
+
   created_at: string;
 }
 
@@ -238,9 +239,10 @@ export function TicketManagementTab() {
     return tickets.filter((t) => {
       const matchesSearch =
         !term ||
-        t.razao_social.toLowerCase().includes(term) ||
-        t.cnpj.toLowerCase().includes(term) ||
-        t.descricao_problema.toLowerCase().includes(term);
+        (t.razao_social || "").toLowerCase().includes(term) ||
+        (t.cnpj || "").toLowerCase().includes(term) ||
+        (t.descricao_problema || "").toLowerCase().includes(term);
+
 
       const matchesStatus = statusFilter === "all" || t.status === statusFilter;
 
@@ -280,21 +282,22 @@ export function TicketManagementTab() {
 
   const openEdit = (ticket: TicketRow) => {
     setForm({
-      razao_social: ticket.razao_social,
-      cnpj: ticket.cnpj,
+      razao_social: ticket.razao_social || "",
+      cnpj: ticket.cnpj || "",
       data_atendimento: toLocalInput(ticket.data_atendimento),
       tempo_primeiro_atendimento: toLocalInput(ticket.tempo_primeiro_atendimento),
-      descricao_problema: ticket.descricao_problema,
-      classificacao: ticket.classificacao,
-      atendente_suporte: ticket.atendente_suporte,
-      canal_entrada: ticket.canal_entrada,
+      descricao_problema: ticket.descricao_problema || "",
+      classificacao: ticket.classificacao || "",
+      atendente_suporte: ticket.atendente_suporte || "",
+      canal_entrada: ticket.canal_entrada || "",
       descricao_solucao: ticket.descricao_solucao || "",
-      status: ticket.status,
+      status: ticket.status || "Em Atendimento",
       data_encerramento: toLocalInput(ticket.data_encerramento),
       responsavel_escalonado: ticket.responsavel_escalonado || "",
       data_escalonamento: toLocalInput(ticket.data_escalonamento),
-      produto: ticket.produto,
+      produto: ticket.produto || "",
     });
+
     setEditingId(ticket.id);
     setDialogOpen(true);
   };
