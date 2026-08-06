@@ -365,19 +365,28 @@ export function TicketManagementTab() {
       const payload = {
         razao_social: orNull(form.razao_social),
         cnpj: orNull(form.cnpj),
-        data_atendimento: iso(form.data_atendimento),
-        tempo_primeiro_atendimento: iso(form.tempo_primeiro_atendimento),
+        data_atendimento: iso(form.data_atendimento, "Data do Atendimento"),
+        tempo_primeiro_atendimento: iso(form.tempo_primeiro_atendimento, "Tempo 1º Atendimento"),
         descricao_problema: orNull(form.descricao_problema),
         classificacao: orNull(form.classificacao),
         atendente_suporte: orNull(form.atendente_suporte),
         canal_entrada: orNull(form.canal_entrada),
         descricao_solucao: orNull(form.descricao_solucao),
         status: form.status || "Em Atendimento",
-        data_encerramento: iso(form.data_encerramento),
+        data_encerramento: iso(form.data_encerramento, "Data Encerramento"),
         responsavel_escalonado: orNull(form.responsavel_escalonado),
-        data_escalonamento: iso(form.data_escalonamento),
+        data_escalonamento: iso(form.data_escalonamento, "Data de Escalonamento"),
         produto: orNull(form.produto),
       };
+
+      if (invalidos.length > 0) {
+        toast({
+          title: "Data inválida",
+          description: `Corrija o(s) campo(s): ${invalidos.join(", ")}. Verifique o ano (4 dígitos).`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (editingId) {
         const { error } = await supabase
