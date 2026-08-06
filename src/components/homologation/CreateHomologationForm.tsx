@@ -263,6 +263,17 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ano
             </label>
+            {isManualEntry ? (
+              <Input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="Digite o ano (ex: 2024)"
+                className="text-sm"
+              />
+            ) : (
             <Popover open={openYear} onOpenChange={setOpenYear} modal={true}>
               <PopoverTrigger asChild>
                 <Button
@@ -270,11 +281,10 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                   role="combobox"
                   aria-expanded={openYear}
                   className="w-full justify-between text-sm"
-                  disabled={!selectedModelCode || loadingYears}
+                  disabled={loadingYears}
                 >
-                  {selectedYear ? years.find(y => y.code === selectedYear)?.name : 
-                    (!selectedModelCode ? "Selecione um modelo primeiro" :
-                    loadingYears ? "Carregando..." :
+                  {selectedYear ? (years.find(y => y.code === selectedYear)?.name || selectedYear) :
+                    (loadingYears ? "Carregando..." :
                     "Selecione o ano (opcional)")}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -331,7 +341,9 @@ const CreateHomologationForm = ({ onUpdate }: CreateHomologationFormProps) => {
                 </Command>
               </PopoverContent>
             </Popover>
+            )}
           </div>
+
         </div>
 
         
