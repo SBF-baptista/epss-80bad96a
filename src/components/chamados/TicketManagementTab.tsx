@@ -105,7 +105,9 @@ export const classConfig: Record<string, string> = {
 
 export const formatDateBR = (value?: string | null) => {
   if (!value) return "—";
-  return new Date(value).toLocaleString("pt-BR", {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -117,6 +119,7 @@ export const formatDateBR = (value?: string | null) => {
 const toLocalInput = (value?: string | null) => {
   if (!value) return "";
   const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
   const off = d.getTimezoneOffset();
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
 };
