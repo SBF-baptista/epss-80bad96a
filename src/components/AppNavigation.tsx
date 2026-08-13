@@ -117,7 +117,7 @@ const navigationGroups: NavGroup[] = [
       { to: "/plate-verification", label: "Verificação de Placa", icon: Search, module: "users", adminOnly: true },
       { to: "/segsale-sales", label: "Vendas Segsale", icon: Package, module: "scheduling", adminOnly: true },
       { to: "/segsale-search", label: "Busca Segsale", icon: Search, module: "scheduling", adminOnly: true },
-      { to: "/frota-pendentes", label: "Pendências Segsale", icon: Search, module: "scheduling", adminOnly: true },
+      { to: "/frota-pendentes", label: "Pendências Segsale", icon: Search, module: "frota_pendentes" },
       { to: "/frota-unit-status", label: "Status Unidades Frota", icon: Activity, module: "scheduling", adminOnly: true, showBadge: true, badgeKind: "frota-unit-failed" },
       { to: "/frota-unit-activation", label: "Ativação de Unidades", icon: Activity, module: "scheduling", adminOnly: true },
       { to: "/pending-sales-recovery", label: "Diagnóstico Vendas Pendentes", icon: ShieldAlert, module: "scheduling", adminOnly: true },
