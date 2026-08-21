@@ -2982,6 +2982,10 @@ export type Database = {
         Args: { p_vehicle_id: string }
         Returns: string
       }
+      ensure_planning_customer_for_vehicle: {
+        Args: { p_vehicle_id: string }
+        Returns: string
+      }
       generate_auto_order_number: { Args: never; Returns: string }
       get_app_logs_admin: {
         Args: {
