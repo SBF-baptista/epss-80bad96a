@@ -220,13 +220,31 @@ serve(async (req) => {
             .single();
 
           if (createErr) {
-            console.error(`[KICKOFF-EF] create card failed for ${vehicle.id}:`, createErr);
-            result.errors.push(`${vehicle.brand} ${vehicle.vehicle}: ${createErr.message}`);
+            console.warn(`[KICKOFF-EF] create card failed for ${vehicle.id}, falling back to RPC:`, createErr);
+
+            // Fallback: a tabela possui unique (brand, model, year) — reaproveita/vincula via função do banco
+            const { data: rpcCardId, error: rpcErr } = await supabase.rpc("ensure_homologation_card", {
+              p_vehicle_id: vehicle.id,
+            });
+
+            if (!rpcErr && rpcCardId) {
+              if (!firstCardId) firstCardId = rpcCardId as string;
+              existingCards.push({
+                id: rpcCardId as string,
+                status: "homologar",
+                configuration: existingCard?.configuration || null,
+                incoming_vehicle_id: vehicle.id,
+              });
+              continue;
+            }
+
+            const errMessage = rpcErr?.message || createErr.message;
+            result.errors.push(`${vehicle.brand} ${vehicle.vehicle}: ${errMessage}`);
             result.failed_vehicles.push({
               id: vehicle.id,
               brand: vehicle.brand,
               model: vehicle.vehicle,
-              error: createErr.message,
+              error: errMessage,
             });
 
             await supabase.from("app_logs").insert({
@@ -238,12 +256,13 @@ serve(async (req) => {
                 vehicle_id: vehicle.id,
                 brand: vehicle.brand,
                 model: vehicle.vehicle,
-                error: createErr.message,
+                error: errMessage,
                 via: "edge-function",
               }),
             });
             continue;
           }
+
 
           if (!firstCardId) firstCardId = newCard.id;
           existingCards.push({
