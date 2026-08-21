@@ -2978,6 +2978,10 @@ export type Database = {
         Args: { p_sale_summary_id: number }
         Returns: Json
       }
+      ensure_homologation_card: {
+        Args: { p_vehicle_id: string }
+        Returns: string
+      }
       generate_auto_order_number: { Args: never; Returns: string }
       get_app_logs_admin: {
         Args: {
