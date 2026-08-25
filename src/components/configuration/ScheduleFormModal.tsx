@@ -52,7 +52,9 @@ const scheduleFormSchema = z.object({
   time: z.string().min(1, 'Horário é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
   tipo_contrato: z.enum(['TELEMETRIA', 'MENSALISTA'], { required_error: 'Tipo de contrato é obrigatório' }),
-  plate: z.string().min(1, 'Placa é obrigatória'),
+  plate: z.string()
+    .min(1, 'Placa é obrigatória')
+    .max(7, 'A placa deve ter no máximo 7 dígitos'),
   vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
   vehicle_year: z.string().optional(),
   tracker_model: z.string().min(1, 'Modelo do rastreador é obrigatório'),
