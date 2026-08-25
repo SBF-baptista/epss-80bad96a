@@ -52,7 +52,9 @@ const scheduleFormSchema = z.object({
   time: z.string().min(1, 'Horário é obrigatório'),
   service: z.string().min(1, 'Serviço é obrigatório'),
   tipo_contrato: z.enum(['TELEMETRIA', 'MENSALISTA'], { required_error: 'Tipo de contrato é obrigatório' }),
-  plate: z.string().min(1, 'Placa é obrigatória'),
+  plate: z.string()
+    .min(1, 'Placa é obrigatória')
+    .max(7, 'A placa deve ter no máximo 7 dígitos'),
   vehicle_model: z.string().min(1, 'Modelo do veículo é obrigatório'),
   vehicle_year: z.string().optional(),
   tracker_model: z.string().min(1, 'Modelo do rastreador é obrigatório'),
@@ -656,7 +658,17 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Placa *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Placa do veículo" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
+                        <Input
+                          placeholder="Placa do veículo"
+                          {...field}
+                          maxLength={7}
+                          onChange={(e) => {
+                            const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+                            field.onChange(v);
+                          }}
+                          className={`h-9 uppercase font-mono ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}
+                          disabled={hasInitialData}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
