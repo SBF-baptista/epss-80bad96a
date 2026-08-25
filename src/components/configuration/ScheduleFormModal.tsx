@@ -658,7 +658,17 @@ export const ScheduleFormModal = ({
                     <FormItem>
                       <FormLabel className="text-sm">Placa *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Placa do veículo" {...field} className={`h-9 ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`} disabled={hasInitialData} />
+                        <Input
+                          placeholder="Placa do veículo"
+                          {...field}
+                          maxLength={7}
+                          onChange={(e) => {
+                            const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+                            field.onChange(v);
+                          }}
+                          className={`h-9 uppercase font-mono ${hasInitialData ? 'disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:cursor-not-allowed' : ''}`}
+                          disabled={hasInitialData}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
