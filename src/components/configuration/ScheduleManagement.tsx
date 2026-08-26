@@ -5,12 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScheduleFormModal } from "./ScheduleFormModal";
 import { ScheduleEditModal, ScheduleEditFormData } from "./ScheduleEditModal";
 import { CustomerScheduleSection } from "./CustomerScheduleSection";
 import { TechnicianAgendaModal } from "./TechnicianAgendaModal";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter, Plus, Send, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Clock, GripVertical, User, Wrench, Filter, Plus, Send, Search, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -151,6 +152,13 @@ export const ScheduleManagement = () => {
   const [selectedTechnicianFilter, setSelectedTechnicianFilter] = useState<string>("all");
   const [plateSearch, setPlateSearch] = useState<string>("");
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
+  const [unitCreationResult, setUnitCreationResult] = useState<{
+    placa: string;
+    sistema: string;
+    tipoContrato: string;
+    dispositivo: string;
+    response?: unknown;
+  } | null>(null);
 
   const { isAdmin, isGestor, canEditModule } = useUserRole();
   const canDispatchAgenda = isAdmin() || isGestor();
@@ -289,10 +297,29 @@ export const ScheduleManagement = () => {
           body: { installationScheduleId: inserted.id, tipoContrato },
         })
         .then(({ data: fData, error }) => {
-          if (error) console.warn('[create-frota-unidade] falhou:', error.message);
-          else console.log('[create-frota-unidade] resultado:', fData);
+          if (error) {
+            console.warn('[create-frota-unidade] falhou:', error.message);
+            toast.error('Falha ao criar unidade na Frota: ' + error.message);
+            return;
+          }
+          console.log('[create-frota-unidade] resultado:', fData);
+          const fr = fData as any;
+          if (fr?.ok && !fr?.skipped) {
+            setUnitCreationResult({
+              placa: fr?.request?.placa ?? data.plate,
+              sistema: 'Frota',
+              tipoContrato: fr?.request?.tipoContrato ?? finalTipo,
+              dispositivo: fr?.request?.dispositivo ?? 'NT20',
+              response: fr?.response,
+            });
+          } else if (fr?.skipped) {
+            toast.info('Unidade já havia sido criada para este agendamento.');
+          }
         })
-        .catch((e) => console.warn('[create-frota-unidade] erro:', e));
+        .catch((e) => {
+          console.warn('[create-frota-unidade] erro:', e);
+          toast.error('Erro ao criar unidade na Frota');
+        });
     }
 
 
@@ -790,6 +817,33 @@ export const ScheduleManagement = () => {
       />
 
       <TechnicianAgendaModal isOpen={isAgendaModalOpen} onOpenChange={setIsAgendaModalOpen} />
+
+      <AlertDialog open={unitCreationResult != null} onOpenChange={(open) => { if (!open) setUnitCreationResult(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-primary" />
+              Unidade criada na Frota
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  A unidade da placa <b>{unitCreationResult?.placa}</b> foi criada com sucesso no sistema{" "}
+                  <b>{unitCreationResult?.sistema}</b>.
+                </p>
+                <div className="rounded-md bg-muted p-3 space-y-1 text-xs">
+                  <p>Sistema: <b>{unitCreationResult?.sistema}</b></p>
+                  <p>Tipo de contrato: <b>{unitCreationResult?.tipoContrato}</b></p>
+                  <p>Dispositivo: <b>{unitCreationResult?.dispositivo}</b></p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setUnitCreationResult(null)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
