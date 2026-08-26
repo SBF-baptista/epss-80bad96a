@@ -53,29 +53,14 @@ Deno.serve(async (req) => {
     if (error) return json({ ok: false, error: error.message }, 200);
 
     const agendamentos = (data ?? []).map((s: Record<string, unknown>) => ({
-      id: s.id,
       data: s.scheduled_date,
       hora: s.scheduled_time,
       servico: s.service,
-      status_exclusao: s.deletion_request_status,
       cliente: s.customer,
-      telefone: s.phone,
-      contato_local: s.local_contact,
-      endereco: s.address,
-      ponto_referencia: s.reference_point,
       placa: s.plate,
-      veiculo_modelo: s.vehicle_model,
-      veiculo_ano: s.vehicle_year,
       modelo_rastreador: s.tracker_model,
-      modelo_equipamento: s.equipment_model,
       tipo_contrato: s.tipo_contrato,
       tecnico: s.technician_name,
-      tecnico_whatsapp: s.technician_whatsapp,
-      agendado_por: s.scheduled_by,
-      observacao: s.observation,
-      kit_schedule_id: s.kit_schedule_id,
-      criado_em: s.created_at,
-      atualizado_em: s.updated_at,
     }));
 
     return json({
