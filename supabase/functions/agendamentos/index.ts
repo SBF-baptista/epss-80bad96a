@@ -63,14 +63,7 @@ Deno.serve(async (req) => {
       tecnico: s.technician_name,
     }));
 
-    return json({
-      ok: true,
-      total: count ?? agendamentos.length,
-      page,
-      limit,
-      count: agendamentos.length,
-      agendamentos,
-    });
+    return json({ agendamentos });
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 200);
   }
