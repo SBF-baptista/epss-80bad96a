@@ -656,6 +656,36 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment_models: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          normalized_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          normalized_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          normalized_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       frota_ticket_companies: {
         Row: {
           cnpj: string
@@ -887,6 +917,7 @@ export type Database = {
           created_order_id: string | null
           deleted_at: string | null
           electrical_connection_type: string | null
+          equipment_model: string | null
           id: string
           incoming_vehicle_id: string | null
           installation_photos: string[] | null
@@ -911,6 +942,7 @@ export type Database = {
           created_order_id?: string | null
           deleted_at?: string | null
           electrical_connection_type?: string | null
+          equipment_model?: string | null
           id?: string
           incoming_vehicle_id?: string | null
           installation_photos?: string[] | null
@@ -935,6 +967,7 @@ export type Database = {
           created_order_id?: string | null
           deleted_at?: string | null
           electrical_connection_type?: string | null
+          equipment_model?: string | null
           id?: string
           incoming_vehicle_id?: string | null
           installation_photos?: string[] | null
@@ -1479,6 +1512,7 @@ export type Database = {
           created_by: string | null
           customer: string
           deletion_request_status: string | null
+          equipment_model: string | null
           id: string
           kit_schedule_id: string | null
           local_contact: string | null
@@ -1504,6 +1538,7 @@ export type Database = {
           created_by?: string | null
           customer: string
           deletion_request_status?: string | null
+          equipment_model?: string | null
           id?: string
           kit_schedule_id?: string | null
           local_contact?: string | null
@@ -1529,6 +1564,7 @@ export type Database = {
           created_by?: string | null
           customer?: string
           deletion_request_status?: string | null
+          equipment_model?: string | null
           id?: string
           kit_schedule_id?: string | null
           local_contact?: string | null
@@ -1944,6 +1980,7 @@ export type Database = {
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
+          equipment_model: string | null
           frota_unit_attempts: number
           frota_unit_created_at: string | null
           frota_unit_error: string | null
@@ -1983,6 +2020,7 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          equipment_model?: string | null
           frota_unit_attempts?: number
           frota_unit_created_at?: string | null
           frota_unit_error?: string | null
@@ -2022,6 +2060,7 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          equipment_model?: string | null
           frota_unit_attempts?: number
           frota_unit_created_at?: string | null
           frota_unit_error?: string | null
