@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const tecnico = p("tecnico");
     const cliente = p("cliente");
     const contrato = p("tipo_contrato");
-    const limit = Math.min(Number(p("limit") ?? 100) || 100, 1000);
+    const limit = Math.min(Number(p("limit") ?? 100000) || 100000, 100000);
     const page = Math.max(Number(p("page") ?? 1) || 1, 1);
     const from = (page - 1) * limit;
 
