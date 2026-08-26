@@ -104,8 +104,6 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    const isDiag = authHeader === "Bearer diag-tmp-uhx-2026";
-    if (!isDiag) {
     if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
 
@@ -125,7 +123,7 @@ Deno.serve(async (req) => {
     });
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
     if (!isAdmin) return json({ error: "Apenas administradores" }, 403);
-    }
+
 
 
     const body = await req.json().catch(() => ({}));
