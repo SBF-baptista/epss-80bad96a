@@ -135,12 +135,7 @@ const WialonCreateUnitCard = () => {
       qc.invalidateQueries({ queryKey: ["frota-unit-activation-audit"] });
       qc.invalidateQueries({ queryKey: ["frota-units-pending-imei"] });
       if (data.ok) {
-        toast({
-          title: "Unidade criada e ativada",
-          description: data.imei
-            ? `${data.itemName} (id ${data.itemId}) — IMEI ${data.imei}`
-            : `${data.itemName} (id ${data.itemId}) — aguardando IMEI`,
-        });
+        setSuccessResult(data);
         setPlaca("");
         setImei("");
         setPasswd("");
@@ -348,6 +343,40 @@ const WialonCreateUnitCard = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => mutation.mutate()}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={successResult != null} onOpenChange={(open) => { if (!open) setSuccessResult(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-primary" />
+              Unidade criada com sucesso
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  A unidade <b>{successResult?.itemName}</b> foi criada e ativada no sistema{" "}
+                  <b className="uppercase">{successResult?.sistema}</b> (Wialon{" "}
+                  {successResult?.sistema === "auto" ? "Auto" : "Frota"}).
+                </p>
+                <div className="rounded-md bg-muted p-3 space-y-1 text-xs">
+                  <p>ID da unidade: <b>{successResult?.itemId}</b></p>
+                  <p>Placa: <b>{successResult?.placa}</b></p>
+                  <p>Hardware: <b>{successResult?.hardware}</b></p>
+                  <p>
+                    IMEI:{" "}
+                    {successResult?.imei
+                      ? <b>{successResult.imei}</b>
+                      : <span className="text-muted-foreground">não informado — aguardando vínculo</span>}
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setSuccessResult(null)}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
