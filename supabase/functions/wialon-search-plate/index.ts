@@ -126,6 +126,8 @@ Deno.serve(async (req) => {
     });
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
     if (!isAdmin) return json({ error: "Apenas administradores" }, 403);
+    }
+
 
     const body = await req.json().catch(() => ({}));
     const rawPlates: string[] = Array.isArray(body?.plates)
