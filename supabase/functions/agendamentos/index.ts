@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from("installation_schedules")
-      .select("*", { count: "exact" })
+      .select("*")
       .order("scheduled_date", { ascending: false })
       .order("scheduled_time", { ascending: true })
       .range(from, from + limit - 1);
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     if (cliente) query = query.ilike("customer", `%${cliente}%`);
     if (contrato) query = query.eq("tipo_contrato", String(contrato));
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
     if (error) return json({ ok: false, error: error.message }, 200);
 
     const agendamentos = (data ?? []).map((s: Record<string, unknown>) => ({
@@ -63,14 +63,7 @@ Deno.serve(async (req) => {
       tecnico: s.technician_name,
     }));
 
-    return json({
-      ok: true,
-      total: count ?? agendamentos.length,
-      page,
-      limit,
-      count: agendamentos.length,
-      agendamentos,
-    });
+    return json({ agendamentos });
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 200);
   }
