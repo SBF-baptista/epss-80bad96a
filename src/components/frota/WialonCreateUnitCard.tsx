@@ -60,6 +60,7 @@ const WialonCreateUnitCard = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastResult, setLastResult] = useState<CreateResult | null>(null);
+  const [successResult, setSuccessResult] = useState<CreateResult | null>(null);
   const searchSeq = useRef(0);
 
   const accountName =
