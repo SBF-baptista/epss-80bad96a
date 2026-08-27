@@ -68,3 +68,6 @@ verify_jwt = false
 [functions.agendamentos]
 verify_jwt = false
 
+[functions.agendamentos-criar]
+verify_jwt = false
+
