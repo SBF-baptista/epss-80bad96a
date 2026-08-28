@@ -1,6 +1,6 @@
 // Envia o e-mail de instalação para a Frota (formato email-frota-instalar.ftl)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { sendMail } from "./smtp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
