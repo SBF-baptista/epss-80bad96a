@@ -320,6 +320,23 @@ export const ScheduleManagement = () => {
           console.warn('[create-frota-unidade] erro:', e);
           toast.error('Erro ao criar unidade na Frota');
         });
+
+      // E-mail de instalação para a Frota (MENSALISTA / TELEMETRIA / VIDEOMONITORAMENTO)
+      supabase.functions
+        .invoke('enviar-email-frota', {
+          body: { installationScheduleId: inserted.id },
+        })
+        .then(({ data: eData, error }) => {
+          if (error) {
+            console.warn('[enviar-email-frota] falhou:', error.message);
+            return;
+          }
+          const er = eData as any;
+          if (er?.ok && !er?.skipped) {
+            toast.success('E-mail de instalação enviado para a Frota.');
+          }
+        })
+        .catch((e) => console.warn('[enviar-email-frota] erro:', e));
     }
 
 

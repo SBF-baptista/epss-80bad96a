@@ -105,6 +105,15 @@ Deno.serve(async (req) => {
 
     if (error) return json({ ok: false, error: error.message }, 200);
 
+    // Dispara o e-mail de instalação para a Frota (não bloqueia a resposta)
+    try {
+      await supabase.functions.invoke("enviar-email-frota", {
+        body: { installationScheduleId: inserted.id },
+      });
+    } catch (e) {
+      console.warn("[agendamentos-criar] falha ao enviar e-mail frota:", e);
+    }
+
     return json({
       ok: true,
       agendamento: {
