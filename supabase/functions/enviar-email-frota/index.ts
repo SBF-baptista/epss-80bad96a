@@ -166,9 +166,11 @@ Deno.serve(async (req) => {
 
     const subject = campos.cliente ?? "";
     const text = montarCorpo(campos);
+    const toOverride = typeof body.to === "string" && body.to.includes("@") ? body.to : null;
+    const destinatario = toOverride ?? EMAIL_CHAMADO_FROTA;
 
     if (dryRun) {
-      return json({ ok: true, dryRun: true, from: EMAIL_CHAMADO_TOMTICKET, to: EMAIL_CHAMADO_FROTA, subject, text });
+      return json({ ok: true, dryRun: true, from: EMAIL_CHAMADO_TOMTICKET, to: destinatario, subject, text });
     }
 
     const host = Deno.env.get("SMTP_HOST")!;
@@ -182,14 +184,14 @@ Deno.serve(async (req) => {
       username,
       password,
       from: EMAIL_CHAMADO_TOMTICKET,
-      to: EMAIL_CHAMADO_FROTA,
+      to: destinatario,
       subject,
       text,
     });
 
-    console.log(`[email-frota] enviado para ${EMAIL_CHAMADO_FROTA} assunto="${subject}"`);
+    console.log(`[email-frota] enviado para ${destinatario} assunto="${subject}"`);
 
-    return json({ ok: true, from: EMAIL_CHAMADO_TOMTICKET, to: EMAIL_CHAMADO_FROTA, subject, text });
+    return json({ ok: true, from: EMAIL_CHAMADO_TOMTICKET, to: destinatario, subject, text });
   } catch (e) {
     console.error("[email-frota] erro:", e);
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) });
