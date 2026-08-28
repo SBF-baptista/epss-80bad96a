@@ -25,10 +25,14 @@ class Conn {
   constructor(private conn: Deno.Conn) {}
 
   async read(): Promise<string> {
-    const buf = new Uint8Array(4096);
-    const n = await this.conn.read(buf);
-    if (n === null) throw new Error("Conexão SMTP encerrada");
-    return dec.decode(buf.subarray(0, n));
+    for (let i = 0; i < 20; i++) {
+      const buf = new Uint8Array(8192);
+      const n = await this.conn.read(buf);
+      if (n === null) throw new Error("Conexão SMTP encerrada");
+      const chunk = dec.decode(buf.subarray(0, n));
+      if (chunk.trim().length > 0) return chunk;
+    }
+    throw new Error("Sem resposta do servidor SMTP");
   }
 
   async write(cmd: string) {
