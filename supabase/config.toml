@@ -71,3 +71,6 @@ verify_jwt = false
 [functions.agendamentos-criar]
 verify_jwt = false
 
+[functions.enviar-email-frota]
+verify_jwt = false
+
