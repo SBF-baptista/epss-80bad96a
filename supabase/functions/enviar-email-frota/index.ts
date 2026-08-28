@@ -176,43 +176,16 @@ Deno.serve(async (req) => {
     const username = Deno.env.get("SMTP_USER")!;
     const password = Deno.env.get("SMTP_PASSWORD")!;
 
-    const attempt = async (tls: boolean, p: number) => {
-      const client = new SMTPClient({
-        connection: { hostname: host, port: p, tls, auth: { username, password } },
-      });
-      await client.send({
-        from: EMAIL_CHAMADO_TOMTICKET,
-        to: EMAIL_CHAMADO_FROTA,
-        subject,
-        content: text,
-      });
-      await client.close();
-    };
-
-    // Tenta a combinação configurada e, em caso de falha, alterna TLS implícito/STARTTLS
-    const combos: Array<[boolean, number]> = [
-      [port === 465, port],
-      [port !== 465, port],
-      [true, 465],
-      [false, 587],
-      [false, 25],
-    ];
-
-    let lastErr: unknown = null;
-    let usado: [boolean, number] | null = null;
-    for (const [tls, p] of combos) {
-      try {
-        await attempt(tls, p);
-        usado = [tls, p];
-        lastErr = null;
-        break;
-      } catch (e) {
-        lastErr = e;
-        console.warn(`[email-frota] falha tls=${tls} port=${p}:`, e instanceof Error ? e.message : e);
-      }
-    }
-    if (lastErr) throw lastErr;
-    console.log(`[email-frota] conexão usada: tls=${usado?.[0]} port=${usado?.[1]}`);
+    await sendMail({
+      hostname: host,
+      port,
+      username,
+      password,
+      from: EMAIL_CHAMADO_TOMTICKET,
+      to: EMAIL_CHAMADO_FROTA,
+      subject,
+      text,
+    });
 
     console.log(`[email-frota] enviado para ${EMAIL_CHAMADO_FROTA} assunto="${subject}"`);
 
