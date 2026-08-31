@@ -25,10 +25,10 @@ const Scheduling = lazy(() => import("./pages/Scheduling"));
 const ConfigurationManagement = lazy(() => import("./pages/ConfigurationManagement"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const Kickoff = lazy(() => import("./pages/Kickoff"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Login = lazy(() => import("./pages/Login"));
-const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+import Auth from "./pages/Auth";
+import Login from "./pages/Login";
+import ActivateAccount from "./pages/ActivateAccount";
+import ResetPassword from "./pages/ResetPassword";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
