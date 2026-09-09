@@ -204,8 +204,14 @@ const Kickoff = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredClients =
-    kickoffData?.clients.filter((client) => client.company_name.toLowerCase().includes(searchTerm.toLowerCase())) || [];
+    kickoffData?.clients.filter((client) => {
+      if (!normalizedSearch) return true;
+      if (client.company_name.toLowerCase().includes(normalizedSearch)) return true;
+      // Busca por placa dentro dos veículos do cliente
+      return client.vehicles.some((v) => (v.plate || "").toLowerCase().includes(normalizedSearch));
+    }) || [];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
