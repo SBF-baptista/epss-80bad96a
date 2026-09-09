@@ -305,10 +305,11 @@ export const useProductionItems = (
         }
       }
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from('kit_schedules')
         .update({ status: 'completed' })
-        .in('id', scheduleIds);
+        .in('id', scheduleIds)
+        .select('id');
 
       if (error) {
         console.error('Error completing production:', error);
@@ -319,6 +320,16 @@ export const useProductionItems = (
         });
         return false;
       }
+
+      if (!updated || updated.length === 0) {
+        toast({
+          title: "Sem permissão",
+          description: "Você não tem permissão para mover este pedido. Fale com um administrador.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
 
       // Log each schedule movement
       for (const id of scheduleIds) {
