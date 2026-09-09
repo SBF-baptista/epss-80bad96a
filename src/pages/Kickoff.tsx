@@ -57,9 +57,9 @@ const KICKOFF_TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     target: "[data-tour='kickoff-search']",
-    title: "Busca rápida por cliente",
+    title: "Busca rápida por cliente ou placa",
     description:
-      "Digite o nome da empresa para filtrar a lista. A busca é instantânea e ignora maiúsculas/minúsculas.",
+      "Digite o nome da empresa ou a placa de um veículo para filtrar a lista. A busca é instantânea e ignora maiúsculas/minúsculas.",
   },
   {
     target: "[data-tour='kickoff-stats']",
@@ -204,8 +204,14 @@ const Kickoff = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredClients =
-    kickoffData?.clients.filter((client) => client.company_name.toLowerCase().includes(searchTerm.toLowerCase())) || [];
+    kickoffData?.clients.filter((client) => {
+      if (!normalizedSearch) return true;
+      if (client.company_name.toLowerCase().includes(normalizedSearch)) return true;
+      // Busca por placa dentro dos veículos do cliente
+      return client.vehicles.some((v) => (v.plate || "").toLowerCase().includes(normalizedSearch));
+    }) || [];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -286,7 +292,7 @@ const Kickoff = () => {
             <div data-tour="kickoff-search" className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Pesquisar por nome do cliente..."
+                placeholder="Pesquisar por nome do cliente ou placa..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 h-10 bg-background border-border/60"
