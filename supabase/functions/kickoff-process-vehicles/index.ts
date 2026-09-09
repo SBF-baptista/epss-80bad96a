@@ -184,14 +184,8 @@ serve(async (req) => {
           .limit(1)
           .maybeSingle();
 
-        if (existingCard && !existingCards.some((c) => c.id === existingCard.id)) {
-          await supabase
-            .from("homologation_cards")
-            .update({ incoming_vehicle_id: vehicle.id })
-            .eq("id", existingCard.id);
-          existingCard.incoming_vehicle_id = vehicle.id;
-          existingCards.push(existingCard);
-        }
+        // Não reaproveita card de outro veículo: o card do mesmo modelo serve apenas
+        // como referência de status/configuração para o card próprio deste veículo.
 
         const qty = Math.max(vehicle.quantity || 1, 1);
         const missingCount = Math.max(qty - existingCards.length, 0);
