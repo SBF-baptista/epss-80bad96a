@@ -57,9 +57,9 @@ const KICKOFF_TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     target: "[data-tour='kickoff-search']",
-    title: "Busca rápida por cliente",
+    title: "Busca rápida por cliente ou placa",
     description:
-      "Digite o nome da empresa para filtrar a lista. A busca é instantânea e ignora maiúsculas/minúsculas.",
+      "Digite o nome da empresa ou a placa de um veículo para filtrar a lista. A busca é instantânea e ignora maiúsculas/minúsculas.",
   },
   {
     target: "[data-tour='kickoff-stats']",
