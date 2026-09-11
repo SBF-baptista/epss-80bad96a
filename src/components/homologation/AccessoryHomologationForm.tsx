@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { createKitItemOption, checkIfItemExists } from "@/services/kitItemOptionsService";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,7 +15,6 @@ import { Loader2, Plus } from "lucide-react";
 const accessoryFormSchema = z.object({
   item_name: z.string().min(1, "Nome do acessório é obrigatório"),
   description: z.string().optional(),
-  requires_homologation: z.boolean(),
 });
 
 type AccessoryFormData = z.infer<typeof accessoryFormSchema>;
@@ -35,7 +33,6 @@ export const AccessoryHomologationForm = ({ onSuccess }: AccessoryHomologationFo
     defaultValues: {
       item_name: "",
       description: "",
-      requires_homologation: true,
     },
   });
 
@@ -59,7 +56,6 @@ export const AccessoryHomologationForm = ({ onSuccess }: AccessoryHomologationFo
         item_name: data.item_name,
         item_type: 'accessory',
         description: data.description,
-        requires_homologation: data.requires_homologation,
       });
 
       // Refresh the accessories list
@@ -111,24 +107,6 @@ export const AccessoryHomologationForm = ({ onSuccess }: AccessoryHomologationFo
                     />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="requires_homologation"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between gap-4 rounded-md border p-4">
-                  <div className="space-y-1">
-                    <FormLabel>Precisa de homologação</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Desative para permitir que veículos com este acessório sigam direto ao Planejamento.
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
                 </FormItem>
               )}
             />
