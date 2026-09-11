@@ -192,8 +192,7 @@ serve(async (req) => {
         );
         const { data: accessoryOptions, error: optionsError } = await supabase
           .from("kit_item_options")
-          .select("item_name, requires_homologation")
-          .eq("item_type", "accessory");
+          .select("item_name, requires_homologation");
 
         if (optionsError) throw optionsError;
 

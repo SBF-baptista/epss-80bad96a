@@ -239,9 +239,6 @@ export const AccessoryHomologationList = () => {
                         <Badge variant="secondary" className="bg-primary/10 text-primary">
                           Homologado
                         </Badge>
-                        <Badge variant={accessory.requires_homologation ? "outline" : "secondary"}>
-                          {accessory.requires_homologation ? "Exige homologação" : "Dispensa homologação"}
-                        </Badge>
                       </div>
                       
                       {accessory.description && (
