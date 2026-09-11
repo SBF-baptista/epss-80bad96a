@@ -15,6 +15,7 @@ Deno.serve(async (req) => {
 
   try {
     let requestedIds: number[] = []
+    let requestSource = ''
     try {
       const url = new URL(req.url)
       const idsParam = url.searchParams.get('sale_summary_ids') || url.searchParams.get('ids')
@@ -22,12 +23,23 @@ Deno.serve(async (req) => {
         requestedIds = idsParam.split(',').map(id => parseInt(id.trim())).filter(id => Number.isFinite(id))
       } else if (req.method !== 'GET') {
         const body = await req.json().catch(() => null)
+        requestSource = typeof body?.source === 'string' ? body.source : ''
         if (Array.isArray(body?.sale_summary_ids)) {
           requestedIds = body.sale_summary_ids.map((id: any) => parseInt(String(id))).filter((id: number) => Number.isFinite(id))
         }
       }
     } catch (parseError) {
       console.warn('⚠️ Could not parse manual sale_summary_ids:', parseError)
+    }
+
+    // The obsolete 5-hour cron cannot be removed by the integration role
+    // because it belongs to another database owner. Ignore only its uniquely
+    // identifiable payload; the active 10-minute job sends a `time` field.
+    if (requestSource === 'pg_cron') {
+      return new Response(
+        JSON.stringify({ success: true, status: 'ignored_legacy_schedule', message: 'Legacy 5-hour schedule ignored' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -81,6 +93,7 @@ Deno.serve(async (req) => {
       .select('integration_name, metadata, last_poll_at, status, error_count')
       .like('integration_name', 'segsale_products_%')
       .gt('created_at', sevenDaysAgo)
+      .eq('status', 'error')
       .order('last_poll_at', { ascending: true })
 
     if (retryError) {
@@ -110,8 +123,8 @@ Deno.serve(async (req) => {
       console.log(`🔄 Found ${retryIds.length} IDs in integration_state not yet in incoming_vehicles: ${retryIds.join(', ')}`)
     }
 
-    // Scan forward from a dedicated cursor. Empty IDs still advance the cursor;
-    // they remain eligible for the bounded retry queue above for seven days.
+    // Scan forward from a dedicated cursor. The cursor advances only through
+    // confirmed sales, so an empty range is reviewed again on the next cycle.
     let discoveredIds: number[] = []
     let discoveryProbes = 0
     let lastScannedId = initialCursor
@@ -149,9 +162,10 @@ Deno.serve(async (req) => {
           await new Promise(r => setTimeout(r, 300))
         }
 
+        const confirmedCursor = discoveredIds.length > 0 ? Math.max(...discoveredIds) : initialCursor
         await supabase.from('integration_state').upsert({
           integration_name: CURSOR_NAME,
-          last_processed_id: lastScannedId,
+          last_processed_id: confirmedCursor,
           last_poll_at: new Date().toISOString(),
           status: 'ok',
           error_count: 0,
@@ -160,7 +174,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         }, { onConflict: 'integration_name' })
 
-        console.log(`🔎 Discovery complete: probed ${discoveryProbes} IDs through ${lastScannedId}, found ${discoveredIds.length} new (${discoveredIds.join(', ') || 'none'})`)
+        console.log(`🔎 Discovery complete: probed ${discoveryProbes} IDs through ${lastScannedId}, confirmed cursor ${confirmedCursor}, found ${discoveredIds.length} new (${discoveredIds.join(', ') || 'none'})`)
       } catch (discErr: any) {
         console.warn('⚠️ Discovery scan error:', discErr?.message)
         await supabase.from('integration_state').upsert({
@@ -401,7 +415,7 @@ Deno.serve(async (req) => {
       status: runStatus,
       message: `Sync ${runStatus}: ${results.filter(r => r.status === 'success').length} imported, ${failedResults.length} failed`,
       cursor_before: initialCursor,
-      cursor_after: lastScannedId,
+      cursor_after: discoveredIds.length > 0 ? Math.max(...discoveredIds) : initialCursor,
       discovery_probes: discoveryProbes,
       discovered: discoveredIds.length,
       retries_selected: retryIds.length,
