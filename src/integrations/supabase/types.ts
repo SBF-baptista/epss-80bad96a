@@ -1906,6 +1906,7 @@ export type Database = {
           id: string
           item_name: string
           item_type: string
+          requires_homologation: boolean
           updated_at: string
         }
         Insert: {
@@ -1915,6 +1916,7 @@ export type Database = {
           id?: string
           item_name: string
           item_type: string
+          requires_homologation?: boolean
           updated_at?: string
         }
         Update: {
@@ -1924,6 +1926,7 @@ export type Database = {
           id?: string
           item_name?: string
           item_type?: string
+          requires_homologation?: boolean
           updated_at?: string
         }
         Relationships: []
