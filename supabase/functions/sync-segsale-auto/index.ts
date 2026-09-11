@@ -34,47 +34,65 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-    // Step 1: Get distinct sale_summary_ids from unprocessed incoming_vehicles
-    const { data: pendingVehicles, error: queryError } = await supabase
+    // Segsale IDs are currently sequential in this range. IDs from 900000 are
+    // reserved by the OPM for manually-created records and must never move the
+    // Segsale discovery cursor.
+    const MIN_SALE_SUMMARY_ID = 10942
+    const MANUAL_ID_START = 900000
+    const CURSOR_NAME = 'segsale_discovery_cursor'
+    const MAX_DISCOVERY_PROBES = 12
+    const MAX_RETRIES_PER_RUN = 4
+
+    const { data: cursorState } = await supabase
+      .from('integration_state')
+      .select('last_processed_id')
+      .eq('integration_name', CURSOR_NAME)
+      .maybeSingle()
+
+    const { data: maxRealRow, error: maxRealError } = await supabase
       .from('incoming_vehicles')
       .select('sale_summary_id')
-      .eq('processed', false)
-      .not('sale_summary_id', 'is', null)
+      .gte('sale_summary_id', MIN_SALE_SUMMARY_ID)
+      .lt('sale_summary_id', MANUAL_ID_START)
+      .order('sale_summary_id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    if (queryError) {
-      console.error('❌ Failed to query pending vehicles:', queryError)
+    if (maxRealError) {
+      console.error('❌ Failed to determine latest real Segsale ID:', maxRealError.message)
       return new Response(
-        JSON.stringify({ success: false, error: 'Database query failed', details: queryError.message }),
+        JSON.stringify({ success: false, error: 'Database query failed', details: maxRealError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Deduplicate sale_summary_ids
-    const uniqueIds = [...new Set((pendingVehicles || []).map(v => v.sale_summary_id))].filter(Boolean)
-    console.log(`📊 Found ${uniqueIds.length} unique pending sale_summary_ids from incoming_vehicles: ${uniqueIds.join(', ')}`)
+    const initialCursor = Math.max(
+      cursorState?.last_processed_id ?? 0,
+      maxRealRow?.sale_summary_id ?? MIN_SALE_SUMMARY_ID - 1,
+      MIN_SALE_SUMMARY_ID - 1,
+    )
 
-    // Only retry IDs >= this threshold to avoid re-importing old sales
-    const MIN_SALE_SUMMARY_ID = 10942
-
-    // Also fetch IDs from integration_state that were CREATED recently but never stored in incoming_vehicles
+    // Retry recent empty/error probes independently from Kickoff's `processed`
+    // flag. This prevents completed or pending Kickoffs from becoming a
+    // permanent import queue.
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const { data: integrationRecords, error: retryError } = await supabase
       .from('integration_state')
-      .select('integration_name, metadata, last_poll_at')
+      .select('integration_name, metadata, last_poll_at, status, error_count')
       .like('integration_name', 'segsale_products_%')
       .gt('created_at', sevenDaysAgo)
+      .order('last_poll_at', { ascending: true })
 
     if (retryError) {
       console.warn('⚠️ Failed to query integration_state for retry:', retryError.message)
     }
 
-    // Extract all candidate IDs from integration_state
     const candidateRetryIds = (integrationRecords || [])
       .map(r => {
         const match = r.integration_name.match(/segsale_products_(\d+)/)
         return match ? parseInt(match[1]) : null
       })
-      .filter((id): id is number => id !== null)
+      .filter((id): id is number => id !== null && id >= MIN_SALE_SUMMARY_ID && id < MANUAL_ID_START)
 
     // Check which of these IDs are NOT in incoming_vehicles (never stored or empty result)
     let retryIds: number[] = []
@@ -85,36 +103,24 @@ Deno.serve(async (req) => {
         .in('sale_summary_id', candidateRetryIds)
 
       const existingSet = new Set((existingIncoming || []).map(v => v.sale_summary_id))
-      retryIds = candidateRetryIds.filter(id => !existingSet.has(id) && id >= MIN_SALE_SUMMARY_ID)
+      retryIds = [...new Set(candidateRetryIds.filter(id => !existingSet.has(id)))].slice(0, MAX_RETRIES_PER_RUN)
     }
 
     if (retryIds.length > 0) {
       console.log(`🔄 Found ${retryIds.length} IDs in integration_state not yet in incoming_vehicles: ${retryIds.join(', ')}`)
     }
 
-    // 🔎 DISCOVERY: scan forward from the max known sale_summary_id to catch new IDs
-    // that the Segsale webhook did not deliver. Stops after N consecutive empty responses.
+    // Scan forward from a dedicated cursor. Empty IDs still advance the cursor;
+    // they remain eligible for the bounded retry queue above for seven days.
     let discoveredIds: number[] = []
+    let discoveryProbes = 0
+    let lastScannedId = initialCursor
     if (requestedIds.length === 0) {
       try {
-        const { data: maxRow } = await supabase
-          .from('incoming_vehicles')
-          .select('sale_summary_id')
-          .not('sale_summary_id', 'is', null)
-          .order('sale_summary_id', { ascending: false })
-          .limit(1)
-          .maybeSingle()
+        let cursor = initialCursor + 1
+        console.log(`🔎 Discovery scan starting at real Segsale cursor ${initialCursor}; manual IDs >= ${MANUAL_ID_START} are ignored`)
 
-        const startId = Math.max((maxRow?.sale_summary_id ?? MIN_SALE_SUMMARY_ID) + 1, MIN_SALE_SUMMARY_ID)
-        const MAX_CONSECUTIVE_EMPTY = 8
-        const MAX_SCAN = 40 // hard cap per execution
-        let consecutiveEmpty = 0
-        let scanned = 0
-        let cursor = startId
-
-        console.log(`🔎 Discovery scan starting at sale_summary_id=${startId} (stop after ${MAX_CONSECUTIVE_EMPTY} consecutive empty, max ${MAX_SCAN} probes)`)
-
-        while (consecutiveEmpty < MAX_CONSECUTIVE_EMPTY && scanned < MAX_SCAN) {
+        while (discoveryProbes < MAX_DISCOVERY_PROBES) {
           const probeUrl = `${supabaseUrl}/functions/v1/fetch-segsale-products?idResumoVenda=${cursor}&forceRefresh=true`
           try {
             const probeResp = await fetch(probeUrl, {
@@ -130,36 +136,50 @@ Deno.serve(async (req) => {
               const sales = probeData?.sales || []
               if (sales.length > 0) {
                 discoveredIds.push(cursor)
-                consecutiveEmpty = 0
                 console.log(`✨ Discovered new sale_summary_id=${cursor} (${sales.length} sale(s))`)
-              } else {
-                consecutiveEmpty++
               }
-            } else {
-              consecutiveEmpty++
             }
           } catch (probeErr: any) {
             console.warn(`⚠️ Probe failed for ${cursor}: ${probeErr?.message}`)
-            consecutiveEmpty++
           }
+          lastScannedId = cursor
           cursor++
-          scanned++
+          discoveryProbes++
           // small delay to be gentle with Segsale
           await new Promise(r => setTimeout(r, 300))
         }
 
-        console.log(`🔎 Discovery complete: probed ${scanned} IDs, found ${discoveredIds.length} new (${discoveredIds.join(', ') || 'none'})`)
+        await supabase.from('integration_state').upsert({
+          integration_name: CURSOR_NAME,
+          last_processed_id: lastScannedId,
+          last_poll_at: new Date().toISOString(),
+          status: 'ok',
+          error_count: 0,
+          last_error: null,
+          metadata: { started_at: initialCursor + 1, probes: discoveryProbes, discovered_ids: discoveredIds },
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'integration_name' })
+
+        console.log(`🔎 Discovery complete: probed ${discoveryProbes} IDs through ${lastScannedId}, found ${discoveredIds.length} new (${discoveredIds.join(', ') || 'none'})`)
       } catch (discErr: any) {
         console.warn('⚠️ Discovery scan error:', discErr?.message)
+        await supabase.from('integration_state').upsert({
+          integration_name: CURSOR_NAME,
+          last_processed_id: lastScannedId,
+          last_poll_at: new Date().toISOString(),
+          status: 'error',
+          last_error: discErr?.message || 'Discovery scan failed',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'integration_name' })
       }
     }
 
-    // Combine all sources, deduplicated, sorted by ID descending (newest first).
-    // If sale_summary_ids are provided manually, process only those IDs.
+    // Newly discovered sales always get priority. Retries have a separate,
+    // bounded quota so persistent failures cannot starve new sales.
     const allIds = (requestedIds.length > 0
       ? [...new Set(requestedIds)]
-      : [...new Set([...uniqueIds, ...retryIds, ...discoveredIds])]
-    ).sort((a, b) => b - a)
+      : [...new Set([...discoveredIds, ...retryIds])]
+    ).filter(id => id >= MIN_SALE_SUMMARY_ID && id < MANUAL_ID_START)
     if (requestedIds.length > 0) {
       console.log(`🎯 Manual sale_summary_ids requested: ${allIds.join(', ')}`)
     }
@@ -173,9 +193,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Limit to 10 per execution to avoid overloading
-    const idsToProcess = allIds.slice(0, 10)
-    console.log(`🔄 Processing ${idsToProcess.length} sale_summary_ids (max 10)`)
+    const idsToProcess = allIds.slice(0, 16)
+    console.log(`🔄 Processing ${idsToProcess.length} sale_summary_ids (${discoveredIds.length} discovered, up to ${MAX_RETRIES_PER_RUN} retries)`)
 
     const results: any[] = []
 
@@ -374,14 +393,38 @@ Deno.serve(async (req) => {
       }
     }
 
+    const successfulStatuses = new Set(['success', 'already_complete', 'no_sales'])
+    const failedResults = results.filter(r => !successfulStatuses.has(r.status))
+    const runStatus = failedResults.length === 0 ? 'success' : results.length === failedResults.length ? 'error' : 'partial'
     const summary = {
-      success: true,
-      message: `Sync completed: ${results.filter(r => r.status === 'success').length}/${idsToProcess.length} processed`,
-      total_pending: uniqueIds.length,
+      success: failedResults.length === 0,
+      status: runStatus,
+      message: `Sync ${runStatus}: ${results.filter(r => r.status === 'success').length} imported, ${failedResults.length} failed`,
+      cursor_before: initialCursor,
+      cursor_after: lastScannedId,
+      discovery_probes: discoveryProbes,
+      discovered: discoveredIds.length,
+      retries_selected: retryIds.length,
       processed: idsToProcess.length,
       results,
       timestamp,
     }
+
+    await supabase.from('app_logs').insert({
+      action: 'segsale_automatic_sync',
+      module: 'segsale_sync',
+      details: summary.message,
+      impact_level: failedResults.length > 0 ? 'high' : 'info',
+      status: runStatus,
+      action_type: 'integration',
+      origin: 'job',
+      entity_type: 'integration',
+      entity_id: CURSOR_NAME,
+      entity_name: 'Sincronização automática Segsale',
+      new_state: summary,
+      error_message: failedResults.length > 0 ? `${failedResults.length} sale(s) failed` : null,
+      is_critical: runStatus === 'error',
+    })
 
     console.log(`\n🏁 Sync complete:`, JSON.stringify(summary, null, 2))
 
