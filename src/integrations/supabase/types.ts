@@ -2958,6 +2958,10 @@ export type Database = {
       }
     }
     Functions: {
+      apply_accessory_homologation_exemption: {
+        Args: { p_vehicle_id: string }
+        Returns: boolean
+      }
       backfill_planning_customers: {
         Args: never
         Returns: {

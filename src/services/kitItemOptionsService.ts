@@ -7,6 +7,7 @@ export interface KitItemOption {
   item_name: string;
   item_type: ItemType;
   description?: string;
+  requires_homologation: boolean;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -16,6 +17,7 @@ export interface CreateKitItemOptionRequest {
   item_name: string;
   item_type: ItemType;
   description?: string;
+  requires_homologation?: boolean;
 }
 
 export const fetchKitItemOptions = async (itemType?: ItemType): Promise<KitItemOption[]> => {
@@ -54,6 +56,7 @@ export const createKitItemOption = async (optionData: CreateKitItemOptionRequest
         item_name: optionData.item_name,
         item_type: optionData.item_type,
         description: optionData.description,
+        requires_homologation: optionData.requires_homologation ?? true,
         created_by: (await supabase.auth.getUser()).data.user?.id
       })
       .select()
@@ -123,10 +126,10 @@ export const deleteKitItemOption = async (optionId: string): Promise<{ count: nu
 
 export const updateKitItemOption = async (
   optionId: string,
-  optionData: Partial<Pick<CreateKitItemOptionRequest, 'item_name' | 'description'>>
+  optionData: Partial<Pick<CreateKitItemOptionRequest, 'item_name' | 'description' | 'requires_homologation'>>
 ): Promise<KitItemOption> => {
   try {
-    const updateData: Record<string, string | null> = {};
+    const updateData: Record<string, string | boolean | null> = {};
 
     if (typeof optionData.item_name === 'string') {
       updateData.item_name = optionData.item_name;
@@ -134,6 +137,10 @@ export const updateKitItemOption = async (
 
     if ('description' in optionData) {
       updateData.description = optionData.description || null;
+    }
+
+    if (typeof optionData.requires_homologation === 'boolean') {
+      updateData.requires_homologation = optionData.requires_homologation;
     }
 
     const { data, error } = await supabase

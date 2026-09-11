@@ -20,6 +20,7 @@ interface KitItemOption {
   item_name: string;
   item_type: string;
   description?: string | null;
+  requires_homologation: boolean;
   created_at: string;
 }
 
@@ -141,7 +142,10 @@ export const AccessoryHomologationList = () => {
     }
   };
 
-  const handleDirectUpdateAccessory = async (accessoryId: string, changes: { item_name: string }) => {
+  const handleDirectUpdateAccessory = async (
+    accessoryId: string,
+    changes: { item_name: string; requires_homologation?: boolean },
+  ) => {
     await updateKitItemOption(accessoryId, changes);
     queryClient.invalidateQueries({ queryKey: ['kit-item-options', 'accessory'] });
     queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
@@ -234,6 +238,9 @@ export const AccessoryHomologationList = () => {
                         <h4 className="font-medium text-foreground">{accessory.item_name}</h4>
                         <Badge variant="secondary" className="bg-primary/10 text-primary">
                           Homologado
+                        </Badge>
+                        <Badge variant={accessory.requires_homologation ? "outline" : "secondary"}>
+                          {accessory.requires_homologation ? "Exige homologação" : "Dispensa homologação"}
                         </Badge>
                       </div>
                       
