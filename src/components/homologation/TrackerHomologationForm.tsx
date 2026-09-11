@@ -43,7 +43,7 @@ export const TrackerHomologationForm = ({ onSuccess }: TrackerHomologationFormPr
     try {
       setIsSubmitting(true);
 
-      const exists = await checkIfItemExists(data.item_name, 'equipment');
+      const exists = await checkIfItemExists(data.item_name, 'tracker');
       if (exists) {
         toast({
           title: "Rastreador já existe",
@@ -55,12 +55,12 @@ export const TrackerHomologationForm = ({ onSuccess }: TrackerHomologationFormPr
 
       await createKitItemOption({
         item_name: data.item_name,
-        item_type: 'equipment',
+        item_type: 'tracker',
         description: data.description,
         requires_homologation: data.requires_homologation,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['kit-item-options', 'equipment'] });
+      queryClient.invalidateQueries({ queryKey: ['kit-item-options', 'tracker'] });
       queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
       queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
 

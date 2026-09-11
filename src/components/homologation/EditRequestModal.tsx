@@ -25,7 +25,7 @@ interface EditRequestModalProps {
   item: {
     id: string;
     item_name: string;
-    item_type: 'accessory' | 'supply' | 'equipment';
+    item_type: 'accessory' | 'supply' | 'equipment' | 'tracker';
     description?: string | null;
     requires_homologation?: boolean;
   } | null;
@@ -127,7 +127,7 @@ export const EditRequestModal = ({ open, onClose, mode = 'request', onDirectSave
                 ? "bg-blue-100 text-blue-800" 
                 : "bg-orange-100 text-orange-800"
             }>
-              {item.item_type === 'accessory' ? 'Acessório' : item.item_type === 'equipment' ? 'Rastreador' : 'Insumo'}
+              {item.item_type === 'accessory' ? 'Acessório' : item.item_type === 'tracker' ? 'Rastreador' : 'Insumo'}
             </Badge>
           </div>
 
@@ -143,7 +143,7 @@ export const EditRequestModal = ({ open, onClose, mode = 'request', onDirectSave
             />
           </div>
 
-          {item.item_type === 'equipment' && mode === 'direct' && (
+          {item.item_type === 'tracker' && mode === 'direct' && (
             <div className="flex items-center justify-between gap-4 rounded-md border p-4">
               <div className="space-y-1">
                 <Label htmlFor="edit-requires-homologation">Precisa de homologação</Label>

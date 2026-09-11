@@ -46,8 +46,8 @@ export const TrackerHomologationList = () => {
   const [deleteModalItem, setDeleteModalItem] = useState<TrackerItem | null>(null);
 
   const { data: trackers = [], isLoading } = useQuery({
-    queryKey: ['kit-item-options', 'equipment'],
-    queryFn: () => fetchKitItemOptions('equipment'),
+    queryKey: ['kit-item-options', 'tracker'],
+    queryFn: () => fetchKitItemOptions('tracker'),
     staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
   });
@@ -63,7 +63,7 @@ export const TrackerHomologationList = () => {
   }, [trackers, searchTerm]);
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['kit-item-options', 'equipment'] });
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options', 'tracker'] });
     queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
     queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
   };
@@ -253,7 +253,7 @@ export const TrackerHomologationList = () => {
         onDirectSave={(changes) =>
           editModalItem ? handleDirectUpdate(editModalItem.id, changes) : Promise.resolve()
         }
-        item={editModalItem ? { ...editModalItem, item_type: 'equipment' } : null}
+        item={editModalItem ? { ...editModalItem, item_type: 'tracker' } : null}
       />
 
       <AlertDialog open={!!deleteModalItem} onOpenChange={(open) => !open && setDeleteModalItem(null)}>
