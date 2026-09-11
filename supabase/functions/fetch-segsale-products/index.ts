@@ -149,12 +149,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-    // Rate limiting check — before any DB or API call
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const authorization = req.headers.get('authorization')
+    const isInternalSync = authorization === `Bearer ${supabaseServiceKey}`
+
+    // Public callers stay rate-limited. The authenticated internal sync has its
+    // own bounded batching and must not block itself while scanning sale IDs.
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || req.headers.get('cf-connecting-ip')
       || 'unknown'
 
-    if (isRateLimited(clientIp)) {
+    if (!isInternalSync && isRateLimited(clientIp)) {
       console.warn(`🚫 Rate limited IP: ${clientIp}`)
       return new Response(
         JSON.stringify({ error: 'Too many requests. Try again in 1 minute.', retryAfterSeconds: 60 }),
@@ -165,7 +170,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const segsaleToken = Deno.env.get('SEGSALE_API_TOKEN')!
     // Public endpoint — no auth required, protected by rate-limiting
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -343,7 +347,7 @@ Deno.serve(async (req) => {
     try {
       const { data: clientData, error: clientError } = await supabase
         .from('customers')
-        .select('id, codigo_cliente, name, company_name, email, phone, document_number, sale_summary_id')
+        .select('id, name, company_name, email, phone, document_number, sale_summary_id')
         .eq('sale_summary_id', parseInt(idResumoVenda))
         .maybeSingle()
 
