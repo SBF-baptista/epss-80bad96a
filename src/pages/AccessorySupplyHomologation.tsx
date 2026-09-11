@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
-import { AccessoryHomologationList } from "@/components/homologation";
+import { AccessoryHomologationList, TrackerHomologationList } from "@/components/homologation";
 import { SupplyHomologationList } from "@/components/homologation/SupplyHomologationList";
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
