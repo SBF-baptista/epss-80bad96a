@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Package, Wrench, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,12 +21,13 @@ interface EditRequestModalProps {
   open: boolean;
   onClose: () => void;
   mode?: 'request' | 'direct';
-  onDirectSave?: (changes: { item_name: string }) => Promise<void>;
+  onDirectSave?: (changes: { item_name: string; requires_homologation?: boolean }) => Promise<void>;
   item: {
     id: string;
     item_name: string;
     item_type: 'accessory' | 'supply';
     description?: string | null;
+    requires_homologation?: boolean;
   } | null;
 }
 
@@ -34,11 +36,13 @@ export const EditRequestModal = ({ open, onClose, mode = 'request', onDirectSave
   const [newName, setNewName] = useState("");
   const [observation, setObservation] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [requiresHomologation, setRequiresHomologation] = useState(true);
 
   useEffect(() => {
     if (open && item) {
       setNewName(item.item_name);
       setObservation("");
+      setRequiresHomologation(item.requires_homologation ?? true);
     }
   }, [open, item]);
 
@@ -57,7 +61,10 @@ export const EditRequestModal = ({ open, onClose, mode = 'request', onDirectSave
     setSubmitting(true);
     try {
       if (mode === 'direct') {
-        await onDirectSave?.({ item_name: newName.trim().toUpperCase() });
+        await onDirectSave?.({
+          item_name: newName.trim().toUpperCase(),
+          requires_homologation: requiresHomologation,
+        });
         toast.success("Item atualizado com sucesso");
         handleClose();
         return;
@@ -135,6 +142,22 @@ export const EditRequestModal = ({ open, onClose, mode = 'request', onDirectSave
               className="bg-muted"
             />
           </div>
+
+          {item.item_type === 'accessory' && mode === 'direct' && (
+            <div className="flex items-center justify-between gap-4 rounded-md border p-4">
+              <div className="space-y-1">
+                <Label htmlFor="edit-requires-homologation">Precisa de homologação</Label>
+                <p className="text-sm text-muted-foreground">
+                  Desative para liberar o veículo direto ao Planejamento quando todos os acessórios forem dispensados.
+                </p>
+              </div>
+              <Switch
+                id="edit-requires-homologation"
+                checked={requiresHomologation}
+                onCheckedChange={setRequiresHomologation}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="new-name" className="text-sm font-medium">

@@ -20,6 +20,14 @@ interface Result {
   failed_vehicles: Array<{ id: string; brand: string; model: string; error: string }>;
 }
 
+const normalizeItemName = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -172,6 +180,30 @@ serve(async (req) => {
         const normalizedBrand = (vehicle.brand || "").trim().toUpperCase();
         const normalizedModel = (vehicle.vehicle || "").trim().toUpperCase();
 
+        const { data: vehicleAccessories, error: accessoriesError } = await supabase
+          .from("accessories")
+          .select("name, categories")
+          .eq("vehicle_id", vehicle.id);
+
+        if (accessoriesError) throw accessoriesError;
+
+        const relevantAccessories = (vehicleAccessories || []).filter((accessory: any) =>
+          normalizeItemName(accessory.categories || "") !== "modulos"
+        );
+        const { data: accessoryOptions, error: optionsError } = await supabase
+          .from("kit_item_options")
+          .select("item_name, requires_homologation")
+          .eq("item_type", "accessory");
+
+        if (optionsError) throw optionsError;
+
+        const optionByName = new Map(
+          (accessoryOptions || []).map((option: any) => [normalizeItemName(option.item_name), option]),
+        );
+        const skipFullHomologation = relevantAccessories.length > 0 && relevantAccessories.every(
+          (accessory: any) => optionByName.get(normalizeItemName(accessory.name))?.requires_homologation === false,
+        );
+
         const { data: existingCard } = await supabase
           .from("homologation_cards")
           .select("id, status, configuration, incoming_vehicle_id")
@@ -191,8 +223,10 @@ serve(async (req) => {
         const missingCount = Math.max(qty - existingCards.length, 0);
 
         let firstCardId: string | null = existingCards[0]?.id || vehicle.created_homologation_id || null;
-        const isHomologated = existingCard?.status === "homologado";
-        const baseNotesAuto = `Criado do kickoff para ${vehicle.company_name}. Homologação automática baseada em card existente (${existingCard?.id}).`;
+        const isHomologated = existingCard?.status === "homologado" || skipFullHomologation;
+        const baseNotesAuto = skipFullHomologation
+          ? `Criado do kickoff para ${vehicle.company_name}. Homologação dispensada: todos os acessórios vinculados estão configurados para avanço direto ao Planejamento.`
+          : `Criado do kickoff para ${vehicle.company_name}. Homologação automática baseada em card existente (${existingCard?.id}).`;
         const baseNotesManual = `Criado do kickoff para ${vehicle.company_name}. Aguardando homologação.`;
 
         for (let i = 0; i < missingCount; i++) {
@@ -266,6 +300,21 @@ serve(async (req) => {
             incoming_vehicle_id: vehicle.id,
           });
           if (!isHomologated) result.homologations_created++;
+        }
+
+        if (skipFullHomologation && existingCards.length > 0) {
+          const cardIds = existingCards.map((card) => card.id).filter(Boolean);
+          if (cardIds.length > 0) {
+            const { error: approveError } = await supabase
+              .from("homologation_cards")
+              .update({
+                status: "homologado",
+                notes: baseNotesAuto,
+              })
+              .in("id", cardIds);
+            if (approveError) throw approveError;
+            existingCards.forEach((card) => { card.status = "homologado"; });
+          }
         }
 
         const linkedStatus = existingCards.some((c) => c.status === "homologado")
