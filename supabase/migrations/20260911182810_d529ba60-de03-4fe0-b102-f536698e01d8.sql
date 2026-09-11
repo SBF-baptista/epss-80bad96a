@@ -1,0 +1,2 @@
+ALTER TABLE public.kit_item_options DROP CONSTRAINT IF EXISTS kit_item_options_item_type_check;
+ALTER TABLE public.kit_item_options ADD CONSTRAINT kit_item_options_item_type_check CHECK (item_type = ANY (ARRAY['equipment'::text, 'accessory'::text, 'supply'::text, 'module'::text, 'tracker'::text]));
