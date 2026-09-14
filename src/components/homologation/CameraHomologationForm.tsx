@@ -14,7 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 
 const cameraFormSchema = z.object({
-  item_name: z.string().min(1, "Nome do câmera é obrigatório"),
+  item_name: z.string().min(1, "Nome da câmera é obrigatório"),
   description: z.string().optional(),
   requires_homologation: z.boolean(),
 });
@@ -47,7 +47,7 @@ export const CameraHomologationForm = ({ onSuccess }: CameraHomologationFormProp
       if (exists) {
         toast({
           title: "Câmera já existe",
-          description: "Este câmera já foi cadastrado anteriormente.",
+          description: "Esta câmera já foi cadastrada anteriormente.",
           variant: "destructive",
         });
         return;
@@ -75,7 +75,7 @@ export const CameraHomologationForm = ({ onSuccess }: CameraHomologationFormProp
       console.error('Error creating camera:', error);
       toast({
         title: "Erro ao cadastrar",
-        description: "Ocorreu um erro ao cadastrar o câmera. Tente novamente.",
+        description: "Ocorreu um erro ao cadastrar a câmera. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -99,9 +99,9 @@ export const CameraHomologationForm = ({ onSuccess }: CameraHomologationFormProp
               name="item_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Câmera</FormLabel>
+                  <FormLabel>Nome da Câmera</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: FMC130, FMC150, Ruptela FM-Eco4..." {...field} />
+                    <Input placeholder="Ex: Câmera Frontal, Câmera Cabine..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,7 +116,7 @@ export const CameraHomologationForm = ({ onSuccess }: CameraHomologationFormProp
                   <div className="space-y-1">
                     <FormLabel>Precisa de homologação</FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      Desative para permitir que veículos com este câmera sigam direto ao Planejamento.
+                      Desative para permitir que veículos com esta câmera sigam direto ao Planejamento.
                     </p>
                   </div>
                   <FormControl>
