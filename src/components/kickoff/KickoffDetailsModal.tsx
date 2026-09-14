@@ -1365,35 +1365,39 @@ export const KickoffDetailsModal = ({
             Realizar Kickoff
           </Button>
         </div>
-
-        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar conclusão do Kickoff</AlertDialogTitle>
-              <AlertDialogDescription>
-                Você está prestes a finalizar o Kickoff de <strong>{companyName}</strong> com{" "}
-                <strong>{validatedPlates.size}</strong> veículo(s) validado(s).
-                <br />
-                Após a confirmação, os veículos sairão da tela de Kickoff Pendente e serão enviados
-                para homologação. Deseja continuar?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                disabled={loading}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setConfirmOpen(false);
-                  handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-                }}
-              >
-                Sim, concluir Kickoff
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirmar conclusão do Kickoff</AlertDialogTitle>
+          <AlertDialogDescription>
+            Você está prestes a finalizar o Kickoff de <strong>{companyName}</strong> com{" "}
+            <strong>{validatedPlates.size}</strong> veículo(s) validado(s).
+            <br />
+            Após a confirmação, os veículos sairão da tela de Kickoff Pendente e serão enviados
+            para homologação. Deseja continuar?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={loading}
+            onClick={(e) => {
+              e.preventDefault();
+              setConfirmOpen(false);
+              setTimeout(() => {
+                handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+              }, 0);
+            }}
+          >
+            Sim, concluir Kickoff
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
+
