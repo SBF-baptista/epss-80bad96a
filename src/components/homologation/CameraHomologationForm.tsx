@@ -65,8 +65,8 @@ export const CameraHomologationForm = ({ onSuccess }: CameraHomologationFormProp
       queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
 
       toast({
-        title: "Câmera cadastrado",
-        description: "Câmera homologado cadastrado com sucesso.",
+        title: "Câmera cadastrada",
+        description: "Câmera homologada cadastrada com sucesso.",
       });
 
       form.reset();
@@ -88,7 +88,7 @@ export const CameraHomologationForm = ({ onSuccess }: CameraHomologationFormProp
       <CardHeader>
         <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
           <Plus className="h-5 w-5" />
-          Cadastrar Novo Câmera
+          Cadastrar Nova Câmera
         </CardTitle>
       </CardHeader>
       <CardContent>

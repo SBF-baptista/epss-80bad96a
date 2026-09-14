@@ -73,12 +73,12 @@ export const CameraHomologationList = () => {
       setDeletingId(id);
       await deleteKitItemOption(id);
       invalidate();
-      toast({ title: "Câmera removido", description: `${name} foi removido com sucesso.` });
+      toast({ title: "Câmera removida", description: `${name} foi removida com sucesso.` });
       setDeleteModalItem(null);
     } catch (error: any) {
       toast({
         title: "Erro ao remover",
-        description: error?.message || "Ocorreu um erro ao remover o câmera.",
+        description: error?.message || "Ocorreu um erro ao remover a câmera.",
         variant: "destructive",
       });
     } finally {
@@ -100,7 +100,7 @@ export const CameraHomologationList = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
             <Camera className="h-5 w-5" />
-            Câmeras Homologados
+            Câmeras Homologadas
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -122,7 +122,7 @@ export const CameraHomologationList = () => {
             <CollapsibleTrigger asChild>
               <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2 cursor-pointer">
                 <Camera className="h-5 w-5" />
-                Câmeras Homologados ({cameras.length})
+                Câmeras Homologadas ({cameras.length})
                 <ChevronDown
                   className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                 />
@@ -154,13 +154,13 @@ export const CameraHomologationList = () => {
             {cameras.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">Nenhum câmera cadastrado</p>
-                <p className="text-sm">Cadastre o primeiro câmera para começar</p>
+                <p className="text-lg font-medium mb-2">Nenhuma câmera cadastrada</p>
+                <p className="text-sm">Cadastre a primeira câmera para começar</p>
               </div>
             ) : filteredCameras.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Search className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">Nenhum câmera encontrado para "{searchTerm}"</p>
+                <p className="text-sm">Nenhuma câmera encontrada para "{searchTerm}"</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -239,7 +239,7 @@ export const CameraHomologationList = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Camera className="h-5 w-5" />
-              Cadastrar Novo Câmera
+              Cadastrar Nova Câmera
             </DialogTitle>
           </DialogHeader>
           <CameraHomologationForm onSuccess={() => setIsFormModalOpen(false)} />
@@ -261,7 +261,7 @@ export const CameraHomologationList = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Câmera</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja excluir o câmera <strong>{deleteModalItem?.item_name}</strong>? Esta ação será aplicada
+              Deseja excluir a câmera <strong>{deleteModalItem?.item_name}</strong>? Esta ação será aplicada
               imediatamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
