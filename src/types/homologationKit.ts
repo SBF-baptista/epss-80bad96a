@@ -1,4 +1,4 @@
-export type ItemType = 'equipment' | 'accessory' | 'supply' | 'module' | 'tracker';
+export type ItemType = 'equipment' | 'accessory' | 'supply' | 'module' | 'tracker' | 'camera';
 
 export interface HomologationKitItem {
   id?: string;
