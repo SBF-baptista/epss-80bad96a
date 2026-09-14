@@ -27,7 +27,7 @@ const AccessorySupplyHomologation = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-6">Homologação de Acessórios e Insumos</h1>
           
           <Tabs defaultValue="accessories" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-12 bg-muted p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-4 h-12 bg-muted p-1 rounded-lg">
               <TabsTrigger 
                 value="accessories" 
                 className="h-10 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm font-medium"
