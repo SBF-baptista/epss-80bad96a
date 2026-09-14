@@ -67,6 +67,10 @@ const AccessorySupplyHomologation = () => {
             <TabsContent value="trackers" className="space-y-6 mt-6">
               <TrackerHomologationList />
             </TabsContent>
+
+            <TabsContent value="cameras" className="space-y-6 mt-6">
+              <CameraHomologationList />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
