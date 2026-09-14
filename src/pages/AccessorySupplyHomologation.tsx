@@ -46,6 +46,12 @@ const AccessorySupplyHomologation = () => {
               >
                 Rastreadores
               </TabsTrigger>
+              <TabsTrigger
+                value="cameras"
+                className="h-10 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm font-medium"
+              >
+                Câmeras
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="accessories" className="space-y-6 mt-6">
