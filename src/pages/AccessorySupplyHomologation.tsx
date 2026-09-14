@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import HomologationErrorBoundary from "@/components/homologation/HomologationErrorBoundary";
-import { AccessoryHomologationList, TrackerHomologationList } from "@/components/homologation";
+import { AccessoryHomologationList, TrackerHomologationList, CameraHomologationList } from "@/components/homologation";
 import { SupplyHomologationList } from "@/components/homologation/SupplyHomologationList";
 import { PendingAccessoriesSection } from "@/components/homologation/PendingAccessoriesSection";
 import { PendingSuppliesSection } from "@/components/homologation/PendingSuppliesSection";
@@ -27,7 +27,7 @@ const AccessorySupplyHomologation = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-6">Homologação de Acessórios e Insumos</h1>
           
           <Tabs defaultValue="accessories" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-12 bg-muted p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-4 h-12 bg-muted p-1 rounded-lg">
               <TabsTrigger 
                 value="accessories" 
                 className="h-10 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm font-medium"
@@ -46,6 +46,12 @@ const AccessorySupplyHomologation = () => {
               >
                 Rastreadores
               </TabsTrigger>
+              <TabsTrigger
+                value="cameras"
+                className="h-10 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm font-medium"
+              >
+                Câmeras
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="accessories" className="space-y-6 mt-6">
@@ -60,6 +66,10 @@ const AccessorySupplyHomologation = () => {
 
             <TabsContent value="trackers" className="space-y-6 mt-6">
               <TrackerHomologationList />
+            </TabsContent>
+
+            <TabsContent value="cameras" className="space-y-6 mt-6">
+              <CameraHomologationList />
             </TabsContent>
           </Tabs>
         </div>
