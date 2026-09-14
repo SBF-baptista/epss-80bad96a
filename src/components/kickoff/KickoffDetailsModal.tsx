@@ -985,6 +985,7 @@ export const KickoffDetailsModal = ({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-[95vw] xl:max-w-[90vw] 2xl:max-w-[85vw] h-[90vh] flex flex-col p-0"
