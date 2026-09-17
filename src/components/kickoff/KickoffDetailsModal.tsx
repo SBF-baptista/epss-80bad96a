@@ -1088,8 +1088,26 @@ export const KickoffDetailsModal = ({
         aria-describedby="kickoff-details-desc"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
+            {previousKickoff && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={applyPreviousKickoff}
+              >
+                <History className="h-4 w-4" />
+                Utilizar kickoff anterior
+                <span className="text-xs text-muted-foreground">
+                  ({new Date(previousKickoff.approved_at).toLocaleDateString("pt-BR")})
+                </span>
+              </Button>
+            )}
+          </div>
         </DialogHeader>
+
         <p id="kickoff-details-desc" className="sr-only">
           Preencha os detalhes do kickoff do cliente {companyName}.
         </p>
