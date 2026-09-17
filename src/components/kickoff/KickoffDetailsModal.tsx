@@ -332,6 +332,8 @@ export const KickoffDetailsModal = ({
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previousKickoff, setPreviousKickoff] = useState<any | null>(null);
+
 
   // Accessories sale state - supports multiple items
   interface AccessorySaleItem {
