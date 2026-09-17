@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info, History as HistoryIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlateSelectionModal } from "./PlateSelectionModal";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
@@ -332,6 +332,8 @@ export const KickoffDetailsModal = ({
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previousKickoff, setPreviousKickoff] = useState<any | null>(null);
+
 
   // Accessories sale state - supports multiple items
   interface AccessorySaleItem {
@@ -500,6 +502,100 @@ export const KickoffDetailsModal = ({
       });
     }
   };
+
+  // Busca o kickoff anterior mais recente do mesmo cliente
+  useEffect(() => {
+    const loadPrevious = async () => {
+      if (!open || !companyName) {
+        setPreviousKickoff(null);
+        return;
+      }
+      const { data } = await supabase
+        .from("kickoff_history")
+        .select("*")
+        .ilike("company_name", companyName.trim())
+        .neq("sale_summary_id", saleSummaryId)
+        .order("approved_at", { ascending: false })
+        .limit(1);
+
+      setPreviousKickoff(data && data.length > 0 ? data[0] : null);
+    };
+    loadPrevious();
+  }, [open, companyName, saleSummaryId]);
+
+  const applyPreviousKickoff = () => {
+    if (!previousKickoff) return;
+
+    const prevContacts = Array.isArray(previousKickoff.contacts) ? (previousKickoff.contacts as Contact[]) : [];
+    if (prevContacts.length > 0) setContacts(prevContacts.map((c) => ({ ...c })));
+
+    const prevLocations = Array.isArray(previousKickoff.installation_locations)
+      ? (previousKickoff.installation_locations as InstallationLocation[])
+      : [];
+    if (prevLocations.length > 0) {
+      // Placas são específicas de cada venda: mantemos apenas os endereços
+      setInstallationLocations(prevLocations.map((loc) => ({ ...loc, plates: [] })));
+    }
+
+    setHasParticularity(!!previousKickoff.has_installation_particularity);
+    setParticularityDetails(previousKickoff.installation_particularity_details || "");
+    setNotes(previousKickoff.kickoff_notes || "");
+
+    // Reaproveita configurações por veículo (módulos, bloqueio, sirene) quando o modelo coincide
+    const prevVehicles: any[] = Array.isArray(previousKickoff.vehicles_data) ? previousKickoff.vehicles_data : [];
+    if (prevVehicles.length > 0) {
+      const key = (brand?: string, model?: string) =>
+        `${(brand || "").trim().toLowerCase()}|${(model || "").trim().toLowerCase()}`;
+      const byModel = new Map<string, any>();
+      prevVehicles.forEach((pv) => byModel.set(key(pv.brand, pv.model), pv));
+
+      setSelectedModules((prev) => {
+        const next = new Map(prev);
+        vehicles.forEach((v) => {
+          const match = byModel.get(key(v.brand, v.model));
+          if (match && Array.isArray(match.selected_modules)) {
+            next.set(v.id, new Set(match.selected_modules));
+          }
+        });
+        return next;
+      });
+
+      setVehicleBlocking((prev) => {
+        const next = new Map(prev);
+        vehicles.forEach((v) => {
+          const match = byModel.get(key(v.brand, v.model));
+          if (match?.blocking_info) {
+            next.set(v.id, {
+              needsBlocking: !!match.blocking_info.needsBlocking,
+              engineBlocking: !!match.blocking_info.engineBlocking,
+              fuelBlocking: !!match.blocking_info.fuelBlocking,
+              engineQuantity: Number(match.blocking_info.engineQuantity) || 1,
+              fuelQuantity: Number(match.blocking_info.fuelQuantity) || 1,
+            });
+          }
+        });
+        return next;
+      });
+
+      setVehicleSiren((prev) => {
+        const next = new Map(prev);
+        vehicles.forEach((v) => {
+          const match = byModel.get(key(v.brand, v.model));
+          if (match?.siren_info) {
+            next.set(v.id, {
+              hasSiren: !!match.siren_info.hasSiren,
+              quantity: Number(match.siren_info.quantity) || 1,
+            });
+          }
+        });
+        return next;
+      });
+    }
+
+    toast.success("Dados do kickoff anterior aplicados. Revise antes de concluir.");
+  };
+
+
 
   const calculateDaysSinceKickoff = (): number => {
     if (!kickoffCreatedAt) return 0;
@@ -992,8 +1088,26 @@ export const KickoffDetailsModal = ({
         aria-describedby="kickoff-details-desc"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
+            {previousKickoff && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={applyPreviousKickoff}
+              >
+                <HistoryIcon className="h-4 w-4" />
+                Utilizar kickoff anterior
+                <span className="text-xs text-muted-foreground">
+                  ({new Date(previousKickoff.approved_at).toLocaleDateString("pt-BR")})
+                </span>
+              </Button>
+            )}
+          </div>
         </DialogHeader>
+
         <p id="kickoff-details-desc" className="sr-only">
           Preencha os detalhes do kickoff do cliente {companyName}.
         </p>
