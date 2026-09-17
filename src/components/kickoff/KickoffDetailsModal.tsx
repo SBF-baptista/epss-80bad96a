@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info, History } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info, History as HistoryIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlateSelectionModal } from "./PlateSelectionModal";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
@@ -1098,7 +1098,7 @@ export const KickoffDetailsModal = ({
                 className="gap-2"
                 onClick={applyPreviousKickoff}
               >
-                <History className="h-4 w-4" />
+                <HistoryIcon className="h-4 w-4" />
                 Utilizar kickoff anterior
                 <span className="text-xs text-muted-foreground">
                   ({new Date(previousKickoff.approved_at).toLocaleDateString("pt-BR")})
