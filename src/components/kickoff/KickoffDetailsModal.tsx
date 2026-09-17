@@ -1088,19 +1088,19 @@ export const KickoffDetailsModal = ({
         aria-describedby="kickoff-details-desc"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <DialogTitle>Detalhes do Kickoff - {companyName}</DialogTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pr-8">
+            <DialogTitle className="text-base sm:text-lg">Detalhes do Kickoff - {companyName}</DialogTitle>
             {previousKickoff && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto"
                 onClick={applyPreviousKickoff}
               >
-                <HistoryIcon className="h-4 w-4" />
-                Utilizar kickoff anterior
-                <span className="text-xs text-muted-foreground">
+                <HistoryIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">Utilizar kickoff anterior</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
                   ({new Date(previousKickoff.approved_at).toLocaleDateString("pt-BR")})
                 </span>
               </Button>
