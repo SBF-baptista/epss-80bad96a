@@ -354,9 +354,15 @@ export const KickoffDetailsModal = ({
       .trim();
   };
 
-  // Identify vehicles with "camera extra" accessory
+  // Copiloto 2 Câmeras já inclui câmeras — não exige configuração de câmera extra
+  const isCopiloto2Cameras = (usageType: string | null | undefined): boolean => {
+    return normalizeForSearch(usageType || "").replace(/_/g, " ").includes("copiloto 2");
+  };
+
+  // Identify vehicles with "camera extra" accessory (exclui Copiloto 2 Câmeras)
   const vehiclesWithCameraExtra = useMemo(() => {
     return vehicles.filter((vehicle) => {
+      if (isCopiloto2Cameras(vehicle.usage_type)) return false;
       return vehicle.modules.some((m) => {
         const normalizedName = normalizeForSearch(m.name);
         return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
@@ -979,7 +985,7 @@ export const KickoffDetailsModal = ({
           return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
         });
 
-        if (hasCameraExtra) {
+        if (hasCameraExtra && !isCopiloto2Cameras(vehicle.usage_type)) {
           const cameraQuantity = vehicleCameraExtra.get(vehicle.id) || 1;
           const cameraLocation = cameraExtraLocations.get(vehicle.id) || null;
 

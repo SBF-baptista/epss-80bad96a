@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward, RadioTower } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward, RadioTower, Camera } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { deletePendingKickoffCard, getKickoffData, type KickoffClient } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -98,6 +100,8 @@ const Kickoff = () => {
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [cameraExtraOnly, setCameraExtraOnly] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<KickoffClient | null>(null);
   const [deletingKickoff, setDeletingKickoff] = useState(false);
@@ -204,13 +208,53 @@ const Kickoff = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const USAGE_TYPE_LABELS: Record<string, string> = {
+    particular: "Particular",
+    comercial: "Comercial",
+    frota: "Frota",
+    telemetria_gps: "Telemetria GPS",
+    telemetria_can: "Telemetria CAN",
+    copiloto_2_cameras: "Copiloto 2 Câmeras",
+    copiloto_4_cameras: "Copiloto 4 Câmeras",
+  };
+
+  const formatUsageType = (usageType: string) =>
+    USAGE_TYPE_LABELS[usageType] ||
+    usageType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const hasCameraExtraModule = (vehicle: KickoffClient["vehicles"][number]) =>
+    (vehicle.modules || []).some((m) => {
+      const normalized = (m.name || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "");
+      return normalized.includes("camera extra") || normalized.includes("camara extra");
+    });
+
+  const availableProducts = [
+    ...new Set(
+      (kickoffData?.clients || []).flatMap((client) =>
+        client.vehicles.map((v) => v.usage_type).filter(Boolean),
+      ),
+    ),
+  ];
+
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredClients =
     kickoffData?.clients.filter((client) => {
-      if (!normalizedSearch) return true;
-      if (client.company_name.toLowerCase().includes(normalizedSearch)) return true;
-      // Busca por placa dentro dos veículos do cliente
-      return client.vehicles.some((v) => (v.plate || "").toLowerCase().includes(normalizedSearch));
+      if (normalizedSearch) {
+        const matchesSearch =
+          client.company_name.toLowerCase().includes(normalizedSearch) ||
+          client.vehicles.some((v) => (v.plate || "").toLowerCase().includes(normalizedSearch));
+        if (!matchesSearch) return false;
+      }
+      if (productFilter !== "all" && !client.vehicles.some((v) => v.usage_type === productFilter)) {
+        return false;
+      }
+      if (cameraExtraOnly && !client.vehicles.some(hasCameraExtraModule)) {
+        return false;
+      }
+      return true;
     }) || [];
 
   return (
@@ -289,14 +333,41 @@ const Kickoff = () => {
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           >
             <h2 className="text-xl font-semibold text-foreground">Clientes Pendentes</h2>
-            <div data-tour="kickoff-search" className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar por nome do cliente ou placa..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10 bg-background border-border/60"
-              />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+              <div data-tour="kickoff-search" className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar por nome do cliente ou placa..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-10 bg-background border-border/60"
+                />
+              </div>
+              <Select value={productFilter} onValueChange={setProductFilter}>
+                <SelectTrigger className="w-full sm:w-56 h-10 bg-background border-border/60">
+                  <SelectValue placeholder="Todos os produtos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os produtos</SelectItem>
+                  {availableProducts.map((product) => (
+                    <SelectItem key={product} value={product}>
+                      {formatUsageType(product)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <label
+                htmlFor="kickoff-camera-extra-filter"
+                className="flex items-center gap-2 h-10 px-3 rounded-md border border-border/60 bg-background cursor-pointer select-none"
+              >
+                <Checkbox
+                  id="kickoff-camera-extra-filter"
+                  checked={cameraExtraOnly}
+                  onCheckedChange={(checked) => setCameraExtraOnly(checked === true)}
+                />
+                <Camera className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-foreground whitespace-nowrap">Com câmera extra</span>
+              </label>
             </div>
           </motion.div>
 
