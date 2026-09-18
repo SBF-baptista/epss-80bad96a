@@ -87,7 +87,8 @@ export function validateRequestBody(requestBody: any, timestamp: string, request
 
     // Validate usage_type with new accepted values
     const validUsageTypes = [
-      'particular', 
+      'particular',
+      'plus_2_gps',
       'comercial', 
       'frota', 
       'telemetria_gps', 

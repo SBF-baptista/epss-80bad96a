@@ -210,6 +210,7 @@ const Kickoff = () => {
 
   const USAGE_TYPE_LABELS: Record<string, string> = {
     particular: "Particular",
+    plus_2_gps: "PLUS II - GPS",
     comercial: "Comercial",
     frota: "Frota",
     telemetria_gps: "Telemetria GPS",

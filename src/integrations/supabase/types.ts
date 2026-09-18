@@ -3223,6 +3223,7 @@ export type Database = {
         | "telemetria_can"
         | "copiloto_2_cameras"
         | "copiloto_4_cameras"
+        | "plus_2_gps"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3436,6 +3437,7 @@ export const Constants = {
         "telemetria_can",
         "copiloto_2_cameras",
         "copiloto_4_cameras",
+        "plus_2_gps",
       ],
     },
   },

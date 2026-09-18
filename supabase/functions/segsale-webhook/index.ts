@@ -19,7 +19,7 @@ function mapUsageType(usageType: string): string {
     'PARTICULAR': 'particular',
     'COMERCIAL': 'comercial',
     'FROTA': 'frota',
-    'PLUS II - GPS': 'particular',
+    'PLUS II - GPS': 'plus_2_gps',
   };
   return mapping[normalized] || usageType.toLowerCase().replace(/\s+/g, '_');
 }
