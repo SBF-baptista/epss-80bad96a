@@ -206,13 +206,53 @@ const Kickoff = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const USAGE_TYPE_LABELS: Record<string, string> = {
+    particular: "Particular",
+    comercial: "Comercial",
+    frota: "Frota",
+    telemetria_gps: "Telemetria GPS",
+    telemetria_can: "Telemetria CAN",
+    copiloto_2_cameras: "Copiloto 2 Câmeras",
+    copiloto_4_cameras: "Copiloto 4 Câmeras",
+  };
+
+  const formatUsageType = (usageType: string) =>
+    USAGE_TYPE_LABELS[usageType] ||
+    usageType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const hasCameraExtraModule = (vehicle: KickoffClient["vehicles"][number]) =>
+    (vehicle.modules || []).some((m) => {
+      const normalized = (m.name || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "");
+      return normalized.includes("camera extra") || normalized.includes("camara extra");
+    });
+
+  const availableProducts = [
+    ...new Set(
+      (kickoffData?.clients || []).flatMap((client) =>
+        client.vehicles.map((v) => v.usage_type).filter(Boolean),
+      ),
+    ),
+  ];
+
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredClients =
     kickoffData?.clients.filter((client) => {
-      if (!normalizedSearch) return true;
-      if (client.company_name.toLowerCase().includes(normalizedSearch)) return true;
-      // Busca por placa dentro dos veículos do cliente
-      return client.vehicles.some((v) => (v.plate || "").toLowerCase().includes(normalizedSearch));
+      if (normalizedSearch) {
+        const matchesSearch =
+          client.company_name.toLowerCase().includes(normalizedSearch) ||
+          client.vehicles.some((v) => (v.plate || "").toLowerCase().includes(normalizedSearch));
+        if (!matchesSearch) return false;
+      }
+      if (productFilter !== "all" && !client.vehicles.some((v) => v.usage_type === productFilter)) {
+        return false;
+      }
+      if (cameraExtraOnly && !client.vehicles.some(hasCameraExtraModule)) {
+        return false;
+      }
+      return true;
     }) || [];
 
   return (
