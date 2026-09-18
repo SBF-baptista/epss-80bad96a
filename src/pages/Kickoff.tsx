@@ -98,6 +98,8 @@ const Kickoff = () => {
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [cameraExtraOnly, setCameraExtraOnly] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<KickoffClient | null>(null);
   const [deletingKickoff, setDeletingKickoff] = useState(false);
