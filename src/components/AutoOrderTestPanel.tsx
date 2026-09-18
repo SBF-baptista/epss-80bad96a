@@ -262,6 +262,7 @@ const AutoOrderTestPanel = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="particular">Particular</SelectItem>
+                  <SelectItem value="plus_2_gps">PLUS II - GPS</SelectItem>
                   <SelectItem value="comercial">Comercial</SelectItem>
                   <SelectItem value="frota">Frota</SelectItem>
                   <SelectItem value="telemetria_gps">Telemetria GPS</SelectItem>
