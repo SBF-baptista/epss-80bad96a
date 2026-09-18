@@ -1,0 +1,1 @@
+ALTER TYPE vehicle_usage_type ADD VALUE IF NOT EXISTS 'plus_2_gps';
