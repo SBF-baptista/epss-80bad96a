@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward, RadioTower } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward, RadioTower, Camera } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { deletePendingKickoffCard, getKickoffData, type KickoffClient } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
@@ -331,14 +333,41 @@ const Kickoff = () => {
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           >
             <h2 className="text-xl font-semibold text-foreground">Clientes Pendentes</h2>
-            <div data-tour="kickoff-search" className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar por nome do cliente ou placa..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10 bg-background border-border/60"
-              />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+              <div data-tour="kickoff-search" className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar por nome do cliente ou placa..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-10 bg-background border-border/60"
+                />
+              </div>
+              <Select value={productFilter} onValueChange={setProductFilter}>
+                <SelectTrigger className="w-full sm:w-56 h-10 bg-background border-border/60">
+                  <SelectValue placeholder="Todos os produtos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os produtos</SelectItem>
+                  {availableProducts.map((product) => (
+                    <SelectItem key={product} value={product}>
+                      {formatUsageType(product)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <label
+                htmlFor="kickoff-camera-extra-filter"
+                className="flex items-center gap-2 h-10 px-3 rounded-md border border-border/60 bg-background cursor-pointer select-none"
+              >
+                <Checkbox
+                  id="kickoff-camera-extra-filter"
+                  checked={cameraExtraOnly}
+                  onCheckedChange={(checked) => setCameraExtraOnly(checked === true)}
+                />
+                <Camera className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-foreground whitespace-nowrap">Com câmera extra</span>
+              </label>
             </div>
           </motion.div>
 
