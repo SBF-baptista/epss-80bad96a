@@ -293,7 +293,7 @@ const isKitCompatibleWithUsageType = (kit: HomologationKit, usageType?: string |
   const isTelemetryUsage = telemetryTypes.includes(usageType);
   
   // Tipos de uso que são Rastreamento/Copiloto (FMC130)
-  const trackingCopilotoTypes = ['particular', 'comercial', 'frota', 'copiloto_2_cameras', 'copiloto_4_cameras'];
+  const trackingCopilotoTypes = ['particular', 'plus_2_gps', 'comercial', 'frota', 'copiloto_2_cameras', 'copiloto_4_cameras'];
   const isTrackingCopilotoUsage = trackingCopilotoTypes.includes(usageType);
   
   // Lógica de compatibilidade:
@@ -1292,6 +1292,8 @@ export const ScheduleModal = ({
                                         return { label: 'Copiloto 4 Câmeras', variant: 'secondary' };
                                       case 'particular':
                                         return { label: 'Particular', variant: 'outline' };
+                                      case 'plus_2_gps':
+                                        return { label: 'PLUS II - GPS', variant: 'outline' };
                                       case 'comercial':
                                         return { label: 'Comercial', variant: 'outline' };
                                       case 'frota':
