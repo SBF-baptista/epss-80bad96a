@@ -48,6 +48,135 @@ interface Contact {
   phone: string;
 }
 
+type CameraArea = "cavalo" | "bau";
+
+interface CameraPlacementPoint {
+  id: string;
+  area: CameraArea;
+  x: number;
+  y: number;
+}
+
+interface CameraLocalizationData {
+  product: string | null;
+  base_cameras: number;
+  total_cameras: number;
+  camera_extra_quantity: number;
+  points: Array<CameraPlacementPoint & { order: number; area_label: string }>;
+}
+
+const CAMERA_AREA_LABELS: Record<CameraArea, string> = {
+  cavalo: "Cavalo",
+  bau: "Baú",
+};
+
+const normalizeForSearch = (text: string): string => {
+  return (text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const isCameraExtraModule = (name: string) => {
+  const normalizedName = normalizeForSearch(name);
+  return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
+};
+
+const isCopilotoProduct = (usageType: string | null | undefined): boolean => {
+  const normalizedUsageType = normalizeForSearch(usageType || "").replace(/_/g, " ");
+  return normalizedUsageType.includes("copiloto 2") || normalizedUsageType.includes("copiloto 4");
+};
+
+const getBaseCopilotoCameraCount = (usageType: string | null | undefined): number => {
+  const normalizedUsageType = normalizeForSearch(usageType || "").replace(/_/g, " ");
+  if (normalizedUsageType.includes("copiloto 4")) return 4;
+  if (normalizedUsageType.includes("copiloto 2")) return 2;
+  return 0;
+};
+
+const getVehicleCameraExtraModuleQuantity = (vehicle: KickoffVehicle): number => {
+  return vehicle.modules.reduce((total, module) => {
+    if (!isCameraExtraModule(module.name)) return total;
+    return total + Math.max(1, Number(module.quantity) || 1);
+  }, 0);
+};
+
+const getDefaultCopilotoCameraTotal = (vehicle: KickoffVehicle): number => {
+  return getBaseCopilotoCameraCount(vehicle.usage_type) + getVehicleCameraExtraModuleQuantity(vehicle);
+};
+
+interface CameraPlacementImageProps {
+  area: CameraArea;
+  points: CameraPlacementPoint[];
+  canAdd: boolean;
+  onAdd: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onRemove: (pointId: string) => void;
+  getPointNumber: (pointId: string) => number;
+}
+
+const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointNumber }: CameraPlacementImageProps) => {
+  const isHorse = area === "cavalo";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-sm font-semibold">{CAMERA_AREA_LABELS[area]}</Label>
+        <Badge variant="secondary" className="text-xs">
+          {points.length}
+        </Badge>
+      </div>
+      <div className="relative h-48 overflow-hidden rounded-lg border bg-muted/30 shadow-inner">
+        <Button
+          type="button"
+          variant="ghost"
+          aria-label={`Marcar câmera no ${CAMERA_AREA_LABELS[area]}`}
+          disabled={!canAdd}
+          onClick={onAdd}
+          className="absolute inset-0 z-20 h-full w-full cursor-crosshair rounded-lg bg-transparent p-0 hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-100"
+        />
+        <div className="pointer-events-none absolute inset-0 z-10">
+          {isHorse ? (
+            <>
+              <div className="absolute left-[13%] top-[42%] h-[27%] w-[34%] rounded-md border bg-background shadow-sm" />
+              <div className="absolute left-[44%] top-[28%] h-[41%] w-[24%] rounded-t-md border bg-card shadow-sm" />
+              <div className="absolute left-[56%] top-[36%] h-[14%] w-[9%] rounded-sm bg-muted" />
+              <div className="absolute left-[24%] top-[66%] h-[15%] w-[15%] rounded-full border-4 border-muted-foreground/40 bg-background" />
+              <div className="absolute left-[55%] top-[66%] h-[15%] w-[15%] rounded-full border-4 border-muted-foreground/40 bg-background" />
+              <div className="absolute left-[8%] top-[54%] h-[11%] w-[8%] rounded-l-md border bg-card" />
+            </>
+          ) : (
+            <>
+              <div className="absolute left-[12%] top-[28%] h-[42%] w-[76%] rounded-md border bg-card shadow-sm" />
+              <div className="absolute left-[17%] top-[35%] h-[28%] w-[66%] rounded border border-dashed border-muted-foreground/40 bg-background/70" />
+              <div className="absolute left-[20%] top-[66%] h-[14%] w-[14%] rounded-full border-4 border-muted-foreground/40 bg-background" />
+              <div className="absolute left-[66%] top-[66%] h-[14%] w-[14%] rounded-full border-4 border-muted-foreground/40 bg-background" />
+            </>
+          )}
+        </div>
+        {points.map((point) => {
+          const pointNumber = getPointNumber(point.id);
+          return (
+            <Button
+              key={point.id}
+              type="button"
+              variant="default"
+              size="icon"
+              aria-label={`Remover câmera ${pointNumber} do ${CAMERA_AREA_LABELS[area]}`}
+              className="absolute z-30 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background p-0 text-xs font-bold shadow-md"
+              style={{ left: `${point.x}%`, top: `${point.y}%` }}
+              onClick={() => onRemove(point.id)}
+            >
+              {pointNumber}
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // --- Installation Locations Section (refactored) ---
 interface InstallationLocationsSectionProps {
   installationLocations: InstallationLocation[];
@@ -329,6 +458,16 @@ export const KickoffDetailsModal = ({
 
   // Camera extra locations state - stores location text for each vehicle with camera extra
   const [cameraExtraLocations, setCameraExtraLocations] = useState<Map<string, string>>(new Map());
+  const [copilotoCameraTotals, setCopilotoCameraTotals] = useState<Map<string, number>>(
+    new Map(
+      vehicles
+        .filter((vehicle) => isCopilotoProduct(vehicle.usage_type))
+        .map((vehicle) => [vehicle.id, getDefaultCopilotoCameraTotal(vehicle)]),
+    ),
+  );
+  const [copilotoCameraPlacements, setCopilotoCameraPlacements] = useState<Map<string, CameraPlacementPoint[]>>(
+    new Map(),
+  );
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -343,32 +482,62 @@ export const KickoffDetailsModal = ({
   }
   const [accessoriesSaleItems] = useState<AccessorySaleItem[]>([]);
 
+  const copilotoVehicles = useMemo(() => {
+    return vehicles.filter((vehicle) => isCopilotoProduct(vehicle.usage_type));
+  }, [vehicles]);
 
-  // Helper to normalize text for accessory detection
-  const normalizeForSearch = (text: string): string => {
-    return (text || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
-  // Copiloto 2 Câmeras já inclui câmeras — não exige configuração de câmera extra
-  const isCopiloto2Cameras = (usageType: string | null | undefined): boolean => {
-    return normalizeForSearch(usageType || "").replace(/_/g, " ").includes("copiloto 2");
-  };
-
-  // Identify vehicles with "camera extra" accessory (exclui Copiloto 2 Câmeras)
+  // Identify vehicles with "camera extra" accessory (Copiloto usa o bloco de Localização)
   const vehiclesWithCameraExtra = useMemo(() => {
     return vehicles.filter((vehicle) => {
-      if (isCopiloto2Cameras(vehicle.usage_type)) return false;
-      return vehicle.modules.some((m) => {
-        const normalizedName = normalizeForSearch(m.name);
-        return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
-      });
+      if (isCopilotoProduct(vehicle.usage_type)) return false;
+      return vehicle.modules.some((m) => isCameraExtraModule(m.name));
     });
   }, [vehicles]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const copilotoVehicleIds = new Set(copilotoVehicles.map((vehicle) => vehicle.id));
+
+    setCopilotoCameraTotals((prev) => {
+      const next = new Map(prev);
+      let changed = false;
+
+      copilotoVehicles.forEach((vehicle) => {
+        const baseCount = getBaseCopilotoCameraCount(vehicle.usage_type);
+        const defaultTotal = getDefaultCopilotoCameraTotal(vehicle);
+        const currentTotal = next.get(vehicle.id);
+
+        if (!currentTotal || currentTotal < baseCount) {
+          next.set(vehicle.id, defaultTotal);
+          changed = true;
+        }
+      });
+
+      Array.from(next.keys()).forEach((vehicleId) => {
+        if (!copilotoVehicleIds.has(vehicleId)) {
+          next.delete(vehicleId);
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+
+    setCopilotoCameraPlacements((prev) => {
+      const next = new Map(prev);
+      let changed = false;
+
+      Array.from(next.keys()).forEach((vehicleId) => {
+        if (!copilotoVehicleIds.has(vehicleId)) {
+          next.delete(vehicleId);
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [open, copilotoVehicles]);
 
   // Load existing customer data when modal opens
   // Segsale import is manual-only to avoid unintended Edge Function executions.
@@ -596,6 +765,42 @@ export const KickoffDetailsModal = ({
         });
         return next;
       });
+
+      setCopilotoCameraTotals((prev) => {
+        const next = new Map(prev);
+        vehicles.forEach((v) => {
+          const match = byModel.get(key(v.brand, v.model));
+          const localization = match?.camera_localization;
+          if (isCopilotoProduct(v.usage_type) && localization && Number(localization.total_cameras) > 0) {
+            const baseCount = getBaseCopilotoCameraCount(v.usage_type);
+            next.set(v.id, Math.max(baseCount, Number(localization.total_cameras) || baseCount));
+          }
+        });
+        return next;
+      });
+
+      setCopilotoCameraPlacements((prev) => {
+        const next = new Map(prev);
+        vehicles.forEach((v) => {
+          const match = byModel.get(key(v.brand, v.model));
+          const localization = match?.camera_localization;
+          const points = Array.isArray(localization?.points) ? localization.points : [];
+          if (!isCopilotoProduct(v.usage_type) || points.length === 0) return;
+
+          next.set(
+            v.id,
+            points
+              .filter((point: any) => point?.area === "cavalo" || point?.area === "bau")
+              .map((point: any, index: number) => ({
+                id: String(point.id || `${v.id}-${index}`),
+                area: point.area,
+                x: Math.max(0, Math.min(100, Number(point.x) || 0)),
+                y: Math.max(0, Math.min(100, Number(point.y) || 0)),
+              })),
+          );
+        });
+        return next;
+      });
     }
 
     toast.success("Dados do kickoff anterior aplicados. Revise antes de concluir.");
@@ -797,10 +1002,105 @@ export const KickoffDetailsModal = ({
     }
   };
 
+  const getCopilotoCameraTotal = (vehicle: KickoffVehicle): number => {
+    return copilotoCameraTotals.get(vehicle.id) || getDefaultCopilotoCameraTotal(vehicle);
+  };
+
+  const getCameraLocalizationForVehicle = (vehicle: KickoffVehicle): CameraLocalizationData | null => {
+    if (!isCopilotoProduct(vehicle.usage_type)) return null;
+
+    const totalCameras = getCopilotoCameraTotal(vehicle);
+    const baseCameras = getBaseCopilotoCameraCount(vehicle.usage_type);
+    const points = copilotoCameraPlacements.get(vehicle.id) || [];
+
+    return {
+      product: vehicle.usage_type,
+      base_cameras: baseCameras,
+      total_cameras: totalCameras,
+      camera_extra_quantity: Math.max(0, totalCameras - baseCameras),
+      points: points.map((point, index) => ({
+        ...point,
+        order: index + 1,
+        area_label: CAMERA_AREA_LABELS[point.area],
+      })),
+    };
+  };
+
+  const handleCameraPlacementAdd = (
+    vehicleId: string,
+    area: CameraArea,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    const vehicle = copilotoVehicles.find((item) => item.id === vehicleId);
+    if (!vehicle) return;
+
+    const totalCameras = getCopilotoCameraTotal(vehicle);
+    const currentPoints = copilotoCameraPlacements.get(vehicleId) || [];
+    if (currentPoints.length >= totalCameras) {
+      toast.error("A quantidade de câmeras desse veículo já foi marcada.");
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+
+    setCopilotoCameraPlacements((prev) => {
+      const next = new Map(prev);
+      const nextPoints = [...(next.get(vehicleId) || [])];
+      nextPoints.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        area,
+        x: Number(x.toFixed(2)),
+        y: Number(y.toFixed(2)),
+      });
+      next.set(vehicleId, nextPoints);
+      return next;
+    });
+  };
+
+  const handleCameraPlacementRemove = (vehicleId: string, pointId: string) => {
+    setCopilotoCameraPlacements((prev) => {
+      const next = new Map(prev);
+      next.set(
+        vehicleId,
+        (next.get(vehicleId) || []).filter((point) => point.id !== pointId),
+      );
+      return next;
+    });
+  };
+
+  const handleCopilotoCameraTotalChange = (vehicle: KickoffVehicle, value: string) => {
+    const baseCount = getBaseCopilotoCameraCount(vehicle.usage_type);
+    const parsedValue = Number.parseInt(value, 10);
+    const totalCameras = Math.max(baseCount, Math.min(20, Number.isFinite(parsedValue) ? parsedValue : baseCount));
+
+    setCopilotoCameraTotals((prev) => {
+      const next = new Map(prev);
+      next.set(vehicle.id, totalCameras);
+      return next;
+    });
+
+    setCopilotoCameraPlacements((prev) => {
+      const currentPoints = prev.get(vehicle.id) || [];
+      if (currentPoints.length <= totalCameras) return prev;
+
+      const next = new Map(prev);
+      next.set(vehicle.id, currentPoints.slice(0, totalCameras));
+      return next;
+    });
+  };
+
   // Validation checks
   const hasValidLocations = installationLocations.some((loc) => loc.city.trim() !== "" && loc.state.trim() !== "");
   const hasAtLeastOneValidatedPlate = validatedPlates.size > 0;
-  const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations && notes.trim() !== "";
+  const hasValidCopilotoCameraLocations = copilotoVehicles.every((vehicle) => {
+    if (!validatedPlates.has(vehicle.id)) return true;
+    const totalCameras = getCopilotoCameraTotal(vehicle);
+    const points = copilotoCameraPlacements.get(vehicle.id) || [];
+    return totalCameras > 0 && points.length === totalCameras;
+  });
+  const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations && notes.trim() !== "" && hasValidCopilotoCameraLocations;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -814,6 +1114,11 @@ export const KickoffDetailsModal = ({
     // Verificar se há pelo menos um local de instalação preenchido
     if (!hasValidLocations) {
       toast.error("Por favor, preencha pelo menos um local de instalação (cidade e estado).");
+      return;
+    }
+
+    if (!hasValidCopilotoCameraLocations) {
+      toast.error("Marque a localização de todas as câmeras dos veículos Copiloto validados.");
       return;
     }
 
@@ -847,6 +1152,7 @@ export const KickoffDetailsModal = ({
         };
         const sirenData = vehicleSiren.get(vehicle.id) || { hasSiren: false, quantity: 1 };
         const videoMonitoring = vehicleVideoMonitoring.get(vehicle.id);
+        const cameraLocalization = getCameraLocalizationForVehicle(vehicle);
 
         return {
           id: vehicle.id,
@@ -860,6 +1166,7 @@ export const KickoffDetailsModal = ({
           blocking_info: blocking,
           siren_info: sirenData,
           has_video_monitoring: videoMonitoring,
+          camera_localization: cameraLocalization,
           accessories: vehicle.modules.filter((m) => {
             const normalize = (s: string) =>
               s
@@ -981,11 +1288,10 @@ export const KickoffDetailsModal = ({
 
         // Save camera extra info to incoming_vehicles
         const hasCameraExtra = vehicle.modules.some((m) => {
-          const normalizedName = normalizeForSearch(m.name);
-          return normalizedName.includes("camera extra") || normalizedName.includes("camara extra");
+          return isCameraExtraModule(m.name);
         });
 
-        if (hasCameraExtra && !isCopiloto2Cameras(vehicle.usage_type)) {
+        if (hasCameraExtra && !isCopilotoProduct(vehicle.usage_type)) {
           const cameraQuantity = vehicleCameraExtra.get(vehicle.id) || 1;
           const cameraLocation = cameraExtraLocations.get(vehicle.id) || null;
 
@@ -1003,6 +1309,21 @@ export const KickoffDetailsModal = ({
             console.log(
               `Successfully saved camera extra info for vehicle ${vehicle.id}: ${cameraQuantity}x at ${cameraLocation}`,
             );
+          }
+        }
+
+        const cameraLocalization = getCameraLocalizationForVehicle(vehicle);
+        if (cameraLocalization) {
+          const { error: cameraLocalizationError } = await supabase
+            .from("incoming_vehicles")
+            .update({
+              camera_extra_quantity: cameraLocalization.camera_extra_quantity,
+              camera_extra_locations: JSON.stringify(cameraLocalization),
+            })
+            .eq("id", vehicle.id);
+
+          if (cameraLocalizationError) {
+            console.error(`Error saving camera localization for vehicle ${vehicle.id}:`, cameraLocalizationError);
           }
         }
       }
@@ -1277,6 +1598,78 @@ export const KickoffDetailsModal = ({
                 }}
               />
             </div>
+
+            {copilotoVehicles.length > 0 && (
+              <div className="space-y-4 border rounded-lg p-4 shadow-sm bg-card">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <h3 className="font-bold text-lg">Localização</h3>
+                </div>
+
+                {copilotoVehicles.map((vehicle) => {
+                  const baseCameras = getBaseCopilotoCameraCount(vehicle.usage_type);
+                  const totalCameras = getCopilotoCameraTotal(vehicle);
+                  const points = copilotoCameraPlacements.get(vehicle.id) || [];
+                  const horsePoints = points.filter((point) => point.area === "cavalo");
+                  const cargoPoints = points.filter((point) => point.area === "bau");
+                  const isComplete = points.length === totalCameras;
+                  const getPointNumber = (pointId: string) => points.findIndex((point) => point.id === pointId) + 1;
+
+                  return (
+                    <div key={vehicle.id} className="space-y-4 rounded-lg border p-4">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold">
+                              {vehicle.brand} {vehicle.model}
+                            </span>
+                            {vehicle.plate && <Badge variant="secondary">{vehicle.plate}</Badge>}
+                            <Badge variant="outline">{baseCameras} base</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{vehicle.usage_type?.replace(/_/g, " ")}</p>
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                          <div className="w-full sm:w-48">
+                            <Label className="text-sm">Quantidade total de câmeras</Label>
+                            <Input
+                              type="number"
+                              min={baseCameras}
+                              max={20}
+                              value={totalCameras}
+                              onChange={(event) => handleCopilotoCameraTotalChange(vehicle, event.target.value)}
+                              className="mt-1"
+                            />
+                          </div>
+                          <Badge variant={isComplete ? "default" : "outline"} className="h-10 justify-center px-3">
+                            {points.length}/{totalCameras} marcadas
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <CameraPlacementImage
+                          area="cavalo"
+                          points={horsePoints}
+                          canAdd={points.length < totalCameras}
+                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "cavalo", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(vehicle.id, pointId)}
+                          getPointNumber={getPointNumber}
+                        />
+                        <CameraPlacementImage
+                          area="bau"
+                          points={cargoPoints}
+                          canAdd={points.length < totalCameras}
+                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "bau", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(vehicle.id, pointId)}
+                          getPointNumber={getPointNumber}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Câmeras Extras Section - Only show if any vehicle has camera extra */}
             {vehiclesWithCameraExtra.length > 0 && (
