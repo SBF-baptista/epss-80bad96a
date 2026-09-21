@@ -69,6 +69,11 @@ const normalizeForSearch = (text: string): string => {
     .trim();
 };
 
+const isCopilotoProduct = (usageType: string | null | undefined): boolean => {
+  const normalizedUsageType = normalizeForSearch(usageType || "").replace(/_/g, " ");
+  return normalizedUsageType.includes("copiloto 2") || normalizedUsageType.includes("copiloto 4");
+};
+
 export const KickoffVehiclesTable = ({
   vehicles,
   selectedModules,
@@ -416,12 +421,13 @@ export const KickoffVehiclesTable = ({
                     <div className="flex gap-1 flex-wrap">
                       {accessoriesList.map((item, idx) => {
                         const isCameraExtra = normalizeForSearch(item.name).includes("camera extra");
+                        const showCameraExtraQuantityControl = isCameraExtra && !isCopilotoProduct(vehicle.usage_type);
                         return (
                           <div key={`acc-${idx}`} className="flex items-center gap-1">
                             <Badge variant="outline" className="text-xs">
                               {cleanItemName(item.name)}
                             </Badge>
-                            {isCameraExtra && onCameraExtraQuantityChange && (
+                            {showCameraExtraQuantityControl && onCameraExtraQuantityChange && (
                               <Input
                                 type="number"
                                 min="1"
@@ -626,16 +632,17 @@ export const KickoffVehiclesTable = ({
                       <div className="flex gap-1 flex-wrap">
                         {accessoriesList.map((item, idx) => {
                           const isCameraExtra = normalizeForSearch(item.name).includes("camera extra");
+                          const showCameraExtraQuantityControl = isCameraExtra && !isCopilotoProduct(vehicle.usage_type);
                           return (
                             <div key={`acc-${idx}`} className="flex items-center gap-1">
                               <Badge variant="outline" className="text-xs">
                                 {item.name} (
-                                {isCameraExtra && vehicleCameraExtra
+                                {showCameraExtraQuantityControl && vehicleCameraExtra
                                   ? vehicleCameraExtra.get(vehicle.id) || item.quantity
                                   : item.quantity}
                                 x)
                               </Badge>
-                              {isCameraExtra && onCameraExtraQuantityChange && (
+                              {showCameraExtraQuantityControl && onCameraExtraQuantityChange && (
                                 <Input
                                   type="number"
                                   min="1"
