@@ -18,6 +18,8 @@ import { PlateSelectionModal } from "./PlateSelectionModal";
 import { processKickoffVehicles } from "@/services/kickoffProcessingService";
 import type { KickoffVehicle } from "@/services/kickoffService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
+import interiorTruckAsset from "@/assets/interior-caminhao.png.asset.json";
+import exteriorTruckAsset from "@/assets/caminhao-frontal.png.asset.json";
 
 import { logCreate } from "@/services/logService";
 import { fetchAddressByCEP, isValidCEP, formatCEP } from "@/services/cepService";
@@ -48,7 +50,7 @@ interface Contact {
   phone: string;
 }
 
-type CameraArea = "cavalo" | "bau";
+type CameraArea = "interior" | "exterior";
 
 interface CameraPlacementPoint {
   id: string;
@@ -60,14 +62,16 @@ interface CameraPlacementPoint {
 interface CameraLocalizationData {
   product: string | null;
   base_cameras: number;
+  vehicle_quantity: number;
+  cameras_per_vehicle: number;
   total_cameras: number;
   camera_extra_quantity: number;
   points: Array<CameraPlacementPoint & { order: number; area_label: string }>;
 }
 
 const CAMERA_AREA_LABELS: Record<CameraArea, string> = {
-  cavalo: "Cavalo",
-  bau: "Baú",
+  interior: "Interior",
+  exterior: "Exterior",
 };
 
 const normalizeForSearch = (text: string): string => {
@@ -103,8 +107,15 @@ const getVehicleCameraExtraModuleQuantity = (vehicle: KickoffVehicle): number =>
   }, 0);
 };
 
-const getDefaultCopilotoCameraTotal = (vehicle: KickoffVehicle): number => {
-  return getBaseCopilotoCameraCount(vehicle.usage_type) + getVehicleCameraExtraModuleQuantity(vehicle);
+const getCopilotoCamerasPerVehicle = (vehicle: KickoffVehicle): number => {
+  const vehicleQuantity = Math.max(1, Number(vehicle.quantity) || 1);
+  const extraCameraQuantity = getVehicleCameraExtraModuleQuantity(vehicle);
+  return getBaseCopilotoCameraCount(vehicle.usage_type) + Math.ceil(extraCameraQuantity / vehicleQuantity);
+};
+
+const getCopilotoTotalSoldCameras = (vehicle: KickoffVehicle): number => {
+  const vehicleQuantity = Math.max(1, Number(vehicle.quantity) || 1);
+  return getBaseCopilotoCameraCount(vehicle.usage_type) * vehicleQuantity + getVehicleCameraExtraModuleQuantity(vehicle);
 };
 
 interface CameraPlacementImageProps {
@@ -117,7 +128,7 @@ interface CameraPlacementImageProps {
 }
 
 const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointNumber }: CameraPlacementImageProps) => {
-  const isHorse = area === "cavalo";
+  const imageAsset = area === "interior" ? interiorTruckAsset : exteriorTruckAsset;
 
   return (
     <div className="space-y-2">
@@ -127,7 +138,7 @@ const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointN
           {points.length}
         </Badge>
       </div>
-      <div className="relative h-48 overflow-hidden rounded-lg border bg-muted/30 shadow-inner">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-lg border bg-muted/30 shadow-inner">
         <Button
           type="button"
           variant="ghost"
@@ -136,25 +147,11 @@ const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointN
           onClick={onAdd}
           className="absolute inset-0 z-20 h-full w-full cursor-crosshair rounded-lg bg-transparent p-0 hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-100"
         />
-        <div className="pointer-events-none absolute inset-0 z-10">
-          {isHorse ? (
-            <>
-              <div className="absolute left-[13%] top-[42%] h-[27%] w-[34%] rounded-md border bg-background shadow-sm" />
-              <div className="absolute left-[44%] top-[28%] h-[41%] w-[24%] rounded-t-md border bg-card shadow-sm" />
-              <div className="absolute left-[56%] top-[36%] h-[14%] w-[9%] rounded-sm bg-muted" />
-              <div className="absolute left-[24%] top-[66%] h-[15%] w-[15%] rounded-full border-4 border-muted-foreground/40 bg-background" />
-              <div className="absolute left-[55%] top-[66%] h-[15%] w-[15%] rounded-full border-4 border-muted-foreground/40 bg-background" />
-              <div className="absolute left-[8%] top-[54%] h-[11%] w-[8%] rounded-l-md border bg-card" />
-            </>
-          ) : (
-            <>
-              <div className="absolute left-[12%] top-[28%] h-[42%] w-[76%] rounded-md border bg-card shadow-sm" />
-              <div className="absolute left-[17%] top-[35%] h-[28%] w-[66%] rounded border border-dashed border-muted-foreground/40 bg-background/70" />
-              <div className="absolute left-[20%] top-[66%] h-[14%] w-[14%] rounded-full border-4 border-muted-foreground/40 bg-background" />
-              <div className="absolute left-[66%] top-[66%] h-[14%] w-[14%] rounded-full border-4 border-muted-foreground/40 bg-background" />
-            </>
-          )}
-        </div>
+        <img
+          src={imageAsset.url}
+          alt={area === "interior" ? "Interior da cabine do caminhão" : "Parte externa frontal do caminhão"}
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
+        />
         {points.map((point) => {
           const pointNumber = getPointNumber(point.id);
           return (
@@ -462,7 +459,7 @@ export const KickoffDetailsModal = ({
     new Map(
       vehicles
         .filter((vehicle) => isCopilotoProduct(vehicle.usage_type))
-        .map((vehicle) => [vehicle.id, getDefaultCopilotoCameraTotal(vehicle)]),
+        .map((vehicle) => [vehicle.id, getCopilotoCamerasPerVehicle(vehicle)]),
     ),
   );
   const [copilotoCameraPlacements, setCopilotoCameraPlacements] = useState<Map<string, CameraPlacementPoint[]>>(
@@ -505,7 +502,7 @@ export const KickoffDetailsModal = ({
 
       copilotoVehicles.forEach((vehicle) => {
         const baseCount = getBaseCopilotoCameraCount(vehicle.usage_type);
-        const defaultTotal = getDefaultCopilotoCameraTotal(vehicle);
+        const defaultTotal = getCopilotoCamerasPerVehicle(vehicle);
         const currentTotal = next.get(vehicle.id);
 
         if (!currentTotal || currentTotal < baseCount) {
@@ -790,10 +787,10 @@ export const KickoffDetailsModal = ({
           next.set(
             v.id,
             points
-              .filter((point: any) => point?.area === "cavalo" || point?.area === "bau")
+              .filter((point: any) => ["interior", "exterior", "cavalo", "bau"].includes(point?.area))
               .map((point: any, index: number) => ({
                 id: String(point.id || `${v.id}-${index}`),
-                area: point.area,
+                area: point.area === "cavalo" ? "interior" : point.area === "bau" ? "exterior" : point.area,
                 x: Math.max(0, Math.min(100, Number(point.x) || 0)),
                 y: Math.max(0, Math.min(100, Number(point.y) || 0)),
               })),
@@ -1003,7 +1000,7 @@ export const KickoffDetailsModal = ({
   };
 
   const getCopilotoCameraTotal = (vehicle: KickoffVehicle): number => {
-    return copilotoCameraTotals.get(vehicle.id) || getDefaultCopilotoCameraTotal(vehicle);
+    return copilotoCameraTotals.get(vehicle.id) || getCopilotoCamerasPerVehicle(vehicle);
   };
 
   const getCameraLocalizationForVehicle = (vehicle: KickoffVehicle): CameraLocalizationData | null => {
@@ -1011,13 +1008,17 @@ export const KickoffDetailsModal = ({
 
     const totalCameras = getCopilotoCameraTotal(vehicle);
     const baseCameras = getBaseCopilotoCameraCount(vehicle.usage_type);
+    const vehicleQuantity = Math.max(1, Number(vehicle.quantity) || 1);
+    const totalSoldCameras = getCopilotoTotalSoldCameras(vehicle);
     const points = copilotoCameraPlacements.get(vehicle.id) || [];
 
     return {
       product: vehicle.usage_type,
       base_cameras: baseCameras,
-      total_cameras: totalCameras,
-      camera_extra_quantity: Math.max(0, totalCameras - baseCameras),
+      vehicle_quantity: vehicleQuantity,
+      cameras_per_vehicle: totalCameras,
+      total_cameras: totalSoldCameras,
+      camera_extra_quantity: getVehicleCameraExtraModuleQuantity(vehicle),
       points: points.map((point, index) => ({
         ...point,
         order: index + 1,
@@ -1037,7 +1038,7 @@ export const KickoffDetailsModal = ({
     const totalCameras = getCopilotoCameraTotal(vehicle);
     const currentPoints = copilotoCameraPlacements.get(vehicleId) || [];
     if (currentPoints.length >= totalCameras) {
-      toast.error("A quantidade de câmeras desse veículo já foi marcada.");
+      toast.error("Todas as posições do padrão deste veículo já foram marcadas.");
       return;
     }
 
@@ -1608,11 +1609,12 @@ export const KickoffDetailsModal = ({
 
                 {copilotoVehicles.map((vehicle) => {
                   const baseCameras = getBaseCopilotoCameraCount(vehicle.usage_type);
-                  const totalCameras = getCopilotoCameraTotal(vehicle);
+                  const camerasPerVehicle = getCopilotoCameraTotal(vehicle);
+                  const totalSoldCameras = getCopilotoTotalSoldCameras(vehicle);
                   const points = copilotoCameraPlacements.get(vehicle.id) || [];
-                  const horsePoints = points.filter((point) => point.area === "cavalo");
-                  const cargoPoints = points.filter((point) => point.area === "bau");
-                  const isComplete = points.length === totalCameras;
+                  const interiorPoints = points.filter((point) => point.area === "interior");
+                  const exteriorPoints = points.filter((point) => point.area === "exterior");
+                  const isComplete = points.length === camerasPerVehicle;
                   const getPointNumber = (pointId: string) => points.findIndex((point) => point.id === pointId) + 1;
 
                   return (
@@ -1624,25 +1626,24 @@ export const KickoffDetailsModal = ({
                               {vehicle.brand} {vehicle.model}
                             </span>
                             {vehicle.plate && <Badge variant="secondary">{vehicle.plate}</Badge>}
-                            <Badge variant="outline">{baseCameras} base</Badge>
+                            <Badge variant="outline">{vehicle.quantity} veículo(s)</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">{vehicle.usage_type?.replace(/_/g, " ")}</p>
                         </div>
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                          <div className="w-full sm:w-48">
-                            <Label className="text-sm">Quantidade total de câmeras</Label>
-                            <Input
-                              type="number"
-                              min={baseCameras}
-                              max={20}
-                              value={totalCameras}
-                              onChange={(event) => handleCopilotoCameraTotalChange(vehicle, event.target.value)}
-                              className="mt-1"
-                            />
+                          <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
+                            <div className="rounded-md border bg-muted/40 px-3 py-2 text-center">
+                              <p className="text-xs text-muted-foreground">Total vendido</p>
+                              <p className="font-semibold">{totalSoldCameras} câmeras</p>
+                            </div>
+                            <div className="rounded-md border bg-muted/40 px-3 py-2 text-center">
+                              <p className="text-xs text-muted-foreground">Padrão por veículo</p>
+                              <p className="font-semibold">{camerasPerVehicle} posições</p>
+                            </div>
                           </div>
                           <Badge variant={isComplete ? "default" : "outline"} className="h-10 justify-center px-3">
-                            {points.length}/{totalCameras} marcadas
+                            {points.length}/{camerasPerVehicle} marcadas
                           </Badge>
                         </div>
                       </div>
@@ -1650,17 +1651,18 @@ export const KickoffDetailsModal = ({
                       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         <CameraPlacementImage
                           area="cavalo"
-                          points={horsePoints}
-                          canAdd={points.length < totalCameras}
-                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "cavalo", event)}
+                          area="interior"
+                          points={interiorPoints}
+                          canAdd={points.length < camerasPerVehicle}
+                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "interior", event)}
                           onRemove={(pointId) => handleCameraPlacementRemove(vehicle.id, pointId)}
                           getPointNumber={getPointNumber}
                         />
                         <CameraPlacementImage
-                          area="bau"
-                          points={cargoPoints}
-                          canAdd={points.length < totalCameras}
-                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "bau", event)}
+                          area="exterior"
+                          points={exteriorPoints}
+                          canAdd={points.length < camerasPerVehicle}
+                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "exterior", event)}
                           onRemove={(pointId) => handleCameraPlacementRemove(vehicle.id, pointId)}
                           getPointNumber={getPointNumber}
                         />
