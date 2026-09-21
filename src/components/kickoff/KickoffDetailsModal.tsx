@@ -462,7 +462,7 @@ export const KickoffDetailsModal = ({
     new Map(
       vehicles
         .filter((vehicle) => isCopilotoProduct(vehicle.usage_type))
-        .map((vehicle) => [vehicle.id, getCopilotoCamerasPerVehicle(vehicle)]),
+        .map((vehicle) => [getCopilotoGroupKey(vehicle), getCopilotoCamerasPerVehicle(vehicle)]),
     ),
   );
   const [copilotoCameraPlacements, setCopilotoCameraPlacements] = useState<Map<string, CameraPlacementPoint[]>>(
@@ -497,26 +497,27 @@ export const KickoffDetailsModal = ({
   useEffect(() => {
     if (!open) return;
 
-    const copilotoVehicleIds = new Set(copilotoVehicles.map((vehicle) => vehicle.id));
+    const copilotoGroupKeys = new Set(copilotoVehicles.map((vehicle) => getCopilotoGroupKey(vehicle)));
 
     setCopilotoCameraTotals((prev) => {
       const next = new Map(prev);
       let changed = false;
 
       copilotoVehicles.forEach((vehicle) => {
+        const groupKey = getCopilotoGroupKey(vehicle);
         const baseCount = getBaseCopilotoCameraCount(vehicle.usage_type);
         const defaultTotal = getCopilotoCamerasPerVehicle(vehicle);
-        const currentTotal = next.get(vehicle.id);
+        const currentTotal = next.get(groupKey);
 
         if (!currentTotal || currentTotal < baseCount) {
-          next.set(vehicle.id, defaultTotal);
+          next.set(groupKey, defaultTotal);
           changed = true;
         }
       });
 
-      Array.from(next.keys()).forEach((vehicleId) => {
-        if (!copilotoVehicleIds.has(vehicleId)) {
-          next.delete(vehicleId);
+      Array.from(next.keys()).forEach((groupKey) => {
+        if (!copilotoGroupKeys.has(groupKey)) {
+          next.delete(groupKey);
           changed = true;
         }
       });
@@ -528,9 +529,9 @@ export const KickoffDetailsModal = ({
       const next = new Map(prev);
       let changed = false;
 
-      Array.from(next.keys()).forEach((vehicleId) => {
-        if (!copilotoVehicleIds.has(vehicleId)) {
-          next.delete(vehicleId);
+      Array.from(next.keys()).forEach((groupKey) => {
+        if (!copilotoGroupKeys.has(groupKey)) {
+          next.delete(groupKey);
           changed = true;
         }
       });
@@ -1085,7 +1086,7 @@ export const KickoffDetailsModal = ({
   const hasValidCopilotoCameraLocations = copilotoVehicles.every((vehicle) => {
     if (!validatedPlates.has(vehicle.id)) return true;
     const totalCameras = getCopilotoCameraTotal(vehicle);
-    const points = copilotoCameraPlacements.get(vehicle.id) || [];
+    const points = copilotoCameraPlacements.get(getCopilotoGroupKey(vehicle)) || [];
     return totalCameras > 0 && points.length === totalCameras;
   });
   const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations && notes.trim() !== "" && hasValidCopilotoCameraLocations;
