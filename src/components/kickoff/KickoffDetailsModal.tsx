@@ -128,12 +128,13 @@ const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointN
         </Badge>
       </div>
       <div className="relative h-48 overflow-hidden rounded-lg border bg-muted/30 shadow-inner">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           aria-label={`Marcar câmera no ${CAMERA_AREA_LABELS[area]}`}
           disabled={!canAdd}
           onClick={onAdd}
-          className="absolute inset-0 z-20 rounded-lg cursor-crosshair bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed"
+          className="absolute inset-0 z-20 h-full w-full cursor-crosshair rounded-lg bg-transparent p-0 hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-100"
         />
         <div className="pointer-events-none absolute inset-0 z-10">
           {isHorse ? (
