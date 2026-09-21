@@ -118,6 +118,9 @@ const getCopilotoTotalSoldCameras = (vehicle: KickoffVehicle): number => {
   return getBaseCopilotoCameraCount(vehicle.usage_type) * vehicleQuantity + getVehicleCameraExtraModuleQuantity(vehicle);
 };
 
+const getCopilotoGroupKey = (vehicle: KickoffVehicle): string =>
+  getBaseCopilotoCameraCount(vehicle.usage_type) === 4 ? "copiloto-4" : "copiloto-2";
+
 interface CameraPlacementImageProps {
   area: CameraArea;
   points: CameraPlacementPoint[];
@@ -768,9 +771,10 @@ export const KickoffDetailsModal = ({
         vehicles.forEach((v) => {
           const match = byModel.get(key(v.brand, v.model));
           const localization = match?.camera_localization;
-          if (isCopilotoProduct(v.usage_type) && localization && Number(localization.total_cameras) > 0) {
+          if (isCopilotoProduct(v.usage_type) && localization) {
             const baseCount = getBaseCopilotoCameraCount(v.usage_type);
-            next.set(v.id, Math.max(baseCount, Number(localization.total_cameras) || baseCount));
+            const restoredPatternCount = Number(localization.cameras_per_vehicle) || Number(localization.total_cameras);
+            next.set(getCopilotoGroupKey(v), Math.max(baseCount, restoredPatternCount || baseCount));
           }
         });
         return next;
@@ -785,7 +789,7 @@ export const KickoffDetailsModal = ({
           if (!isCopilotoProduct(v.usage_type) || points.length === 0) return;
 
           next.set(
-            v.id,
+            getCopilotoGroupKey(v),
             points
               .filter((point: any) => ["interior", "exterior", "cavalo", "bau"].includes(point?.area))
               .map((point: any, index: number) => ({
@@ -1000,7 +1004,11 @@ export const KickoffDetailsModal = ({
   };
 
   const getCopilotoCameraTotal = (vehicle: KickoffVehicle): number => {
-    return copilotoCameraTotals.get(vehicle.id) || getCopilotoCamerasPerVehicle(vehicle);
+    const groupVehicles = copilotoVehicles.filter((item) => getCopilotoGroupKey(item) === getCopilotoGroupKey(vehicle));
+    const totalVehicles = groupVehicles.reduce((sum, item) => sum + Math.max(1, Number(item.quantity) || 1), 0);
+    const totalExtras = groupVehicles.reduce((sum, item) => sum + getVehicleCameraExtraModuleQuantity(item), 0);
+    const defaultPatternCount = getBaseCopilotoCameraCount(vehicle.usage_type) + Math.ceil(totalExtras / Math.max(1, totalVehicles));
+    return copilotoCameraTotals.get(getCopilotoGroupKey(vehicle)) || defaultPatternCount;
   };
 
   const getCameraLocalizationForVehicle = (vehicle: KickoffVehicle): CameraLocalizationData | null => {
@@ -1010,7 +1018,7 @@ export const KickoffDetailsModal = ({
     const baseCameras = getBaseCopilotoCameraCount(vehicle.usage_type);
     const vehicleQuantity = Math.max(1, Number(vehicle.quantity) || 1);
     const totalSoldCameras = getCopilotoTotalSoldCameras(vehicle);
-    const points = copilotoCameraPlacements.get(vehicle.id) || [];
+    const points = copilotoCameraPlacements.get(getCopilotoGroupKey(vehicle)) || [];
 
     return {
       product: vehicle.usage_type,
@@ -1028,15 +1036,15 @@ export const KickoffDetailsModal = ({
   };
 
   const handleCameraPlacementAdd = (
-    vehicleId: string,
+    groupKey: string,
     area: CameraArea,
     event: React.MouseEvent<HTMLButtonElement>,
   ) => {
-    const vehicle = copilotoVehicles.find((item) => item.id === vehicleId);
+    const vehicle = copilotoVehicles.find((item) => getCopilotoGroupKey(item) === groupKey);
     if (!vehicle) return;
 
     const totalCameras = getCopilotoCameraTotal(vehicle);
-    const currentPoints = copilotoCameraPlacements.get(vehicleId) || [];
+    const currentPoints = copilotoCameraPlacements.get(groupKey) || [];
     if (currentPoints.length >= totalCameras) {
       toast.error("Todas as posições do padrão deste veículo já foram marcadas.");
       return;
@@ -1048,46 +1056,25 @@ export const KickoffDetailsModal = ({
 
     setCopilotoCameraPlacements((prev) => {
       const next = new Map(prev);
-      const nextPoints = [...(next.get(vehicleId) || [])];
+      const nextPoints = [...(next.get(groupKey) || [])];
       nextPoints.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         area,
         x: Number(x.toFixed(2)),
         y: Number(y.toFixed(2)),
       });
-      next.set(vehicleId, nextPoints);
+      next.set(groupKey, nextPoints);
       return next;
     });
   };
 
-  const handleCameraPlacementRemove = (vehicleId: string, pointId: string) => {
+  const handleCameraPlacementRemove = (groupKey: string, pointId: string) => {
     setCopilotoCameraPlacements((prev) => {
       const next = new Map(prev);
       next.set(
-        vehicleId,
-        (next.get(vehicleId) || []).filter((point) => point.id !== pointId),
+        groupKey,
+        (next.get(groupKey) || []).filter((point) => point.id !== pointId),
       );
-      return next;
-    });
-  };
-
-  const handleCopilotoCameraTotalChange = (vehicle: KickoffVehicle, value: string) => {
-    const baseCount = getBaseCopilotoCameraCount(vehicle.usage_type);
-    const parsedValue = Number.parseInt(value, 10);
-    const totalCameras = Math.max(baseCount, Math.min(20, Number.isFinite(parsedValue) ? parsedValue : baseCount));
-
-    setCopilotoCameraTotals((prev) => {
-      const next = new Map(prev);
-      next.set(vehicle.id, totalCameras);
-      return next;
-    });
-
-    setCopilotoCameraPlacements((prev) => {
-      const currentPoints = prev.get(vehicle.id) || [];
-      if (currentPoints.length <= totalCameras) return prev;
-
-      const next = new Map(prev);
-      next.set(vehicle.id, currentPoints.slice(0, totalCameras));
       return next;
     });
   };
@@ -1607,28 +1594,44 @@ export const KickoffDetailsModal = ({
                   <h3 className="font-bold text-lg">Localização</h3>
                 </div>
 
-                {copilotoVehicles.map((vehicle) => {
+                {Array.from(
+                  copilotoVehicles.reduce((groups, vehicle) => {
+                    const groupKey = getCopilotoGroupKey(vehicle);
+                    const group = groups.get(groupKey) || [];
+                    group.push(vehicle);
+                    groups.set(groupKey, group);
+                    return groups;
+                  }, new Map<string, KickoffVehicle[]>()),
+                ).map(([groupKey, groupVehicles]) => {
+                  const vehicle = groupVehicles[0];
+                  if (!vehicle) return null;
                   const baseCameras = getBaseCopilotoCameraCount(vehicle.usage_type);
                   const camerasPerVehicle = getCopilotoCameraTotal(vehicle);
-                  const totalSoldCameras = getCopilotoTotalSoldCameras(vehicle);
-                  const points = copilotoCameraPlacements.get(vehicle.id) || [];
+                  const vehicleQuantity = groupVehicles.reduce(
+                    (sum, item) => sum + Math.max(1, Number(item.quantity) || 1),
+                    0,
+                  );
+                  const totalSoldCameras = groupVehicles.reduce(
+                    (sum, item) => sum + getCopilotoTotalSoldCameras(item),
+                    0,
+                  );
+                  const points = copilotoCameraPlacements.get(groupKey) || [];
                   const interiorPoints = points.filter((point) => point.area === "interior");
                   const exteriorPoints = points.filter((point) => point.area === "exterior");
                   const isComplete = points.length === camerasPerVehicle;
                   const getPointNumber = (pointId: string) => points.findIndex((point) => point.id === pointId) + 1;
 
                   return (
-                    <div key={vehicle.id} className="space-y-4 rounded-lg border p-4">
+                    <div key={groupKey} className="space-y-4 rounded-lg border p-4">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div className="min-w-0 space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-semibold">
-                              {vehicle.brand} {vehicle.model}
+                              Copiloto {baseCameras} Câmeras
                             </span>
-                            {vehicle.plate && <Badge variant="secondary">{vehicle.plate}</Badge>}
-                            <Badge variant="outline">{vehicle.quantity} veículo(s)</Badge>
+                            <Badge variant="outline">{vehicleQuantity} veículo(s)</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{vehicle.usage_type?.replace(/_/g, " ")}</p>
+                          <p className="text-sm text-muted-foreground">Um único padrão será aplicado a todo o grupo.</p>
                         </div>
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -1650,20 +1653,19 @@ export const KickoffDetailsModal = ({
 
                       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         <CameraPlacementImage
-                          area="cavalo"
                           area="interior"
                           points={interiorPoints}
                           canAdd={points.length < camerasPerVehicle}
-                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "interior", event)}
-                          onRemove={(pointId) => handleCameraPlacementRemove(vehicle.id, pointId)}
+                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "interior", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
                           getPointNumber={getPointNumber}
                         />
                         <CameraPlacementImage
                           area="exterior"
                           points={exteriorPoints}
                           canAdd={points.length < camerasPerVehicle}
-                          onAdd={(event) => handleCameraPlacementAdd(vehicle.id, "exterior", event)}
-                          onRemove={(pointId) => handleCameraPlacementRemove(vehicle.id, pointId)}
+                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "exterior", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
                           getPointNumber={getPointNumber}
                         />
                       </div>
