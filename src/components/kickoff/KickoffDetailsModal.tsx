@@ -1361,6 +1361,7 @@ export const KickoffDetailsModal = ({
             kickoff_notes: notes || null,
             vehicles_data: vehiclesData as any,
             approved_by: user?.id || null,
+            approved_by_email: user?.email || null,
             camera_extra_sale: cameraExtraSaleData as any,
             accessories_sale: (accessoriesSaleData.length > 0 ? accessoriesSaleData : null) as any,
           },

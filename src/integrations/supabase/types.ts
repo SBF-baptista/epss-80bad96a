@@ -1846,6 +1846,7 @@ export type Database = {
           accessories_sale: Json | null
           approved_at: string
           approved_by: string | null
+          approved_by_email: string | null
           camera_extra_sale: Json | null
           company_name: string
           contacts: Json | null
@@ -1864,6 +1865,7 @@ export type Database = {
           accessories_sale?: Json | null
           approved_at?: string
           approved_by?: string | null
+          approved_by_email?: string | null
           camera_extra_sale?: Json | null
           company_name: string
           contacts?: Json | null
@@ -1882,6 +1884,7 @@ export type Database = {
           accessories_sale?: Json | null
           approved_at?: string
           approved_by?: string | null
+          approved_by_email?: string | null
           camera_extra_sale?: Json | null
           company_name?: string
           contacts?: Json | null

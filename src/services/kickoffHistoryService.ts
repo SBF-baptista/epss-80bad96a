@@ -41,7 +41,10 @@ export const getKickoffHistory = async (): Promise<KickoffHistoryRecord[]> => {
       .in('id', approverIds);
     const emailById = new Map((users || []).map(u => [u.id, u.email]));
     records.forEach(r => {
-      r.approved_by_email = r.approved_by ? (emailById.get(r.approved_by) ?? null) : null;
+      // Prefer the e-mail stored at approval time; fall back to the users table
+      if (!r.approved_by_email) {
+        r.approved_by_email = r.approved_by ? (emailById.get(r.approved_by) ?? null) : null;
+      }
     });
   }
 
