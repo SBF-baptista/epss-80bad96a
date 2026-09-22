@@ -1017,12 +1017,11 @@ export const KickoffDetailsModal = ({
     }
   };
 
+  // Total de câmeras do grupo = soma de todas as câmeras vendidas (base x veículos + câmeras extras)
   const getCopilotoCameraTotal = (vehicle: KickoffVehicle): number => {
-    const groupVehicles = copilotoVehicles.filter((item) => getCopilotoGroupKey(item) === getCopilotoGroupKey(vehicle));
-    const totalVehicles = groupVehicles.reduce((sum, item) => sum + Math.max(1, Number(item.quantity) || 1), 0);
-    const totalExtras = groupVehicles.reduce((sum, item) => sum + getVehicleCameraExtraModuleQuantity(item), 0);
-    const defaultPatternCount = getBaseCopilotoCameraCount(vehicle.usage_type) + Math.ceil(totalExtras / Math.max(1, totalVehicles));
-    return copilotoCameraTotals.get(getCopilotoGroupKey(vehicle)) || defaultPatternCount;
+    const groupKey = getCopilotoGroupKey(vehicle);
+    const groupVehicles = copilotoVehicles.filter((item) => getCopilotoGroupKey(item) === groupKey);
+    return groupVehicles.reduce((sum, item) => sum + getCopilotoTotalSoldCameras(item), 0);
   };
 
   const getCameraLocalizationForVehicle = (vehicle: KickoffVehicle): CameraLocalizationData | null => {
