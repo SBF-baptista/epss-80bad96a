@@ -20,6 +20,8 @@ import type { KickoffVehicle } from "@/services/kickoffService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
 import interiorTruckAsset from "@/assets/interior-caminhao.png.asset.json";
 import exteriorTruckAsset from "@/assets/caminhao-frontal.png.asset.json";
+import frontalTruckAsset from "@/assets/caminhao-frontal-3q.png.asset.json";
+import traseiraTruckAsset from "@/assets/caminhao-traseira-3q.png.asset.json";
 
 import { logCreate } from "@/services/logService";
 import { fetchAddressByCEP, isValidCEP, formatCEP } from "@/services/cepService";
@@ -50,7 +52,7 @@ interface Contact {
   phone: string;
 }
 
-type CameraArea = "interior" | "exterior";
+type CameraArea = "interior" | "exterior" | "frontal" | "traseira";
 
 interface CameraPlacementPoint {
   id: string;
@@ -72,6 +74,15 @@ interface CameraLocalizationData {
 const CAMERA_AREA_LABELS: Record<CameraArea, string> = {
   interior: "Interior",
   exterior: "Exterior",
+  frontal: "Frontal",
+  traseira: "Traseira",
+};
+
+const CAMERA_AREA_ASSET: Record<CameraArea, { url: string; alt: string }> = {
+  interior: { url: interiorTruckAsset.url, alt: "Interior da cabine do caminhão" },
+  exterior: { url: exteriorTruckAsset.url, alt: "Parte externa frontal do caminhão" },
+  frontal: { url: frontalTruckAsset.url, alt: "Vista frontal do caminhão" },
+  traseira: { url: traseiraTruckAsset.url, alt: "Vista traseira do caminhão" },
 };
 
 const normalizeForSearch = (text: string): string => {
@@ -131,7 +142,7 @@ interface CameraPlacementImageProps {
 }
 
 const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointNumber }: CameraPlacementImageProps) => {
-  const imageAsset = area === "interior" ? interiorTruckAsset : exteriorTruckAsset;
+  const imageAsset = CAMERA_AREA_ASSET[area];
 
   return (
     <div className="space-y-2">
@@ -152,7 +163,7 @@ const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointN
         />
         <img
           src={imageAsset.url}
-          alt={area === "interior" ? "Interior da cabine do caminhão" : "Parte externa frontal do caminhão"}
+          alt={imageAsset.alt}
           className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
         />
         {points.map((point) => {
