@@ -178,7 +178,7 @@ export const KickoffHistoryDetailsModal = ({ open, onOpenChange, record }: Kicko
 
           {/* 2. Câmeras Extras - from vehicles_data */}
           {Array.isArray(record.vehicles_data) &&
-            record.vehicles_data.some((v: any) => v.camera_extra_quantity > 0) && (
+            record.vehicles_data.some((v: any) => v.camera_extra_quantity > 0 && !v.camera_localization) && (
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Camera className="h-4 w-4" />
@@ -195,7 +195,7 @@ export const KickoffHistoryDetailsModal = ({ open, onOpenChange, record }: Kicko
                     </TableHeader>
                     <TableBody>
                       {record.vehicles_data
-                        .filter((v: any) => v.camera_extra_quantity > 0)
+                        .filter((v: any) => v.camera_extra_quantity > 0 && !v.camera_localization)
                         .map((v: any, idx: number) => (
                           <TableRow key={idx}>
                             <TableCell className="font-medium">
@@ -210,6 +210,74 @@ export const KickoffHistoryDetailsModal = ({ open, onOpenChange, record }: Kicko
                 </div>
               </div>
             )}
+
+          {/* 2b. Localização das câmeras (Copiloto) */}
+          {(() => {
+            const groups = new Map<string, any>();
+            if (Array.isArray(record.vehicles_data)) {
+              record.vehicles_data.forEach((v: any) => {
+                const loc = v.camera_localization;
+                if (!loc || !Array.isArray(loc.points) || loc.points.length === 0) return;
+                const key = `${loc.base_cameras || 0}-cameras`;
+                if (!groups.has(key)) {
+                  groups.set(key, { ...loc, vehicles: [] as any[] });
+                }
+                groups.get(key).vehicles.push(v);
+              });
+            }
+            if (groups.size === 0) return null;
+
+            return (
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Localização das Câmeras
+                </h3>
+                <div className="space-y-4">
+                  {Array.from(groups.entries()).map(([key, group]) => (
+                    <div key={key} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">Copiloto {group.base_cameras} Câmeras</span>
+                        <Badge variant="outline">{group.vehicles.length} veículo(s)</Badge>
+                        <Badge variant="secondary">{group.points.length} câmera(s) marcada(s)</Badge>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        {CAMERA_AREAS.map((area) => {
+                          const areaPoints = group.points.filter((p: any) => p.area === area.key);
+                          return (
+                            <div key={area.key} className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm font-semibold">{area.label}</span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {areaPoints.length}
+                                </Badge>
+                              </div>
+                              <div className="relative aspect-[16/10] overflow-hidden rounded-lg border bg-muted/30">
+                                <img
+                                  src={area.url}
+                                  alt={area.label}
+                                  className="absolute inset-0 h-full w-full object-contain"
+                                />
+                                {areaPoints.map((point: any) => (
+                                  <span
+                                    key={point.id || `${point.x}-${point.y}`}
+                                    className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow"
+                                    style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                                  >
+                                    {point.order ?? ""}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 3. Venda Câmeras Extras */}
           {(record as any).camera_extra_sale && (
