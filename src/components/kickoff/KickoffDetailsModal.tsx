@@ -1017,12 +1017,11 @@ export const KickoffDetailsModal = ({
     }
   };
 
+  // Total de câmeras do grupo = soma de todas as câmeras vendidas (base x veículos + câmeras extras)
   const getCopilotoCameraTotal = (vehicle: KickoffVehicle): number => {
-    const groupVehicles = copilotoVehicles.filter((item) => getCopilotoGroupKey(item) === getCopilotoGroupKey(vehicle));
-    const totalVehicles = groupVehicles.reduce((sum, item) => sum + Math.max(1, Number(item.quantity) || 1), 0);
-    const totalExtras = groupVehicles.reduce((sum, item) => sum + getVehicleCameraExtraModuleQuantity(item), 0);
-    const defaultPatternCount = getBaseCopilotoCameraCount(vehicle.usage_type) + Math.ceil(totalExtras / Math.max(1, totalVehicles));
-    return copilotoCameraTotals.get(getCopilotoGroupKey(vehicle)) || defaultPatternCount;
+    const groupKey = getCopilotoGroupKey(vehicle);
+    const groupVehicles = copilotoVehicles.filter((item) => getCopilotoGroupKey(item) === groupKey);
+    return groupVehicles.reduce((sum, item) => sum + getCopilotoTotalSoldCameras(item), 0);
   };
 
   const getCameraLocalizationForVehicle = (vehicle: KickoffVehicle): CameraLocalizationData | null => {
@@ -1647,18 +1646,20 @@ export const KickoffDetailsModal = ({
                             </span>
                             <Badge variant="outline">{vehicleQuantity} veículo(s)</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">Um único padrão será aplicado a todo o grupo.</p>
+                          <p className="text-sm text-muted-foreground">
+                            Marque todas as câmeras do grupo (soma de todos os veículos, incluindo câmeras extras).
+                          </p>
                         </div>
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                           <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
                             <div className="rounded-md border bg-muted/40 px-3 py-2 text-center">
-                              <p className="text-xs text-muted-foreground">Total vendido</p>
-                              <p className="font-semibold">{totalSoldCameras} câmeras</p>
+                              <p className="text-xs text-muted-foreground">Veículos</p>
+                              <p className="font-semibold">{vehicleQuantity}</p>
                             </div>
                             <div className="rounded-md border bg-muted/40 px-3 py-2 text-center">
-                              <p className="text-xs text-muted-foreground">Padrão por veículo</p>
-                              <p className="font-semibold">{camerasPerVehicle} posições</p>
+                              <p className="text-xs text-muted-foreground">Total de câmeras</p>
+                              <p className="font-semibold">{totalSoldCameras}</p>
                             </div>
                           </div>
                           <Badge variant={isComplete ? "default" : "outline"} className="h-10 justify-center px-3">
