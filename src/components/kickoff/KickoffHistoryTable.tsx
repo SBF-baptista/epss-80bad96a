@@ -210,6 +210,9 @@ export const KickoffHistoryTable = ({ history, onRefresh }: KickoffHistoryTableP
                               locale: ptBR,
                             })}
                           </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            por {record.approved_by_email ?? "usuário não identificado"}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="text-xs">
