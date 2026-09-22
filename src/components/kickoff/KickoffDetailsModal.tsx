@@ -68,6 +68,7 @@ interface CameraLocalizationData {
   cameras_per_vehicle: number;
   total_cameras: number;
   camera_extra_quantity: number;
+  observation?: string;
   points: Array<CameraPlacementPoint & { order: number; area_label: string }>;
 }
 
@@ -479,6 +480,7 @@ export const KickoffDetailsModal = ({
   const [copilotoCameraPlacements, setCopilotoCameraPlacements] = useState<Map<string, CameraPlacementPoint[]>>(
     new Map(),
   );
+  const [copilotoCameraObservations, setCopilotoCameraObservations] = useState<Map<string, string>>(new Map());
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -792,6 +794,18 @@ export const KickoffDetailsModal = ({
         return next;
       });
 
+      setCopilotoCameraObservations((prev) => {
+        const next = new Map(prev);
+        vehicles.forEach((v) => {
+          const match = byModel.get(key(v.brand, v.model));
+          const observation = match?.camera_localization?.observation;
+          if (isCopilotoProduct(v.usage_type) && typeof observation === "string" && observation.trim() !== "") {
+            next.set(getCopilotoGroupKey(v), observation);
+          }
+        });
+        return next;
+      });
+
       setCopilotoCameraPlacements((prev) => {
         const next = new Map(prev);
         vehicles.forEach((v) => {
@@ -1040,6 +1054,7 @@ export const KickoffDetailsModal = ({
       cameras_per_vehicle: totalCameras,
       total_cameras: totalSoldCameras,
       camera_extra_quantity: getVehicleCameraExtraModuleQuantity(vehicle),
+      observation: copilotoCameraObservations.get(getCopilotoGroupKey(vehicle)) || "",
       points: points.map((point, index) => ({
         ...point,
         order: index + 1,
@@ -1708,6 +1723,24 @@ export const KickoffDetailsModal = ({
                           onAdd={(event) => handleCameraPlacementAdd(groupKey, "traseira", event)}
                           onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
                           getPointNumber={getPointNumber}
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Observação das câmeras (opcional)</Label>
+                        <Textarea
+                          value={copilotoCameraObservations.get(groupKey) || ""}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setCopilotoCameraObservations((prev) => {
+                              const next = new Map(prev);
+                              next.set(groupKey, value);
+                              return next;
+                            });
+                          }}
+                          placeholder="Ex.: câmera 3 com ângulo voltado para a lateral direita, câmera extra no baú..."
+                          rows={2}
+                          className="mt-1"
                         />
                       </div>
                     </div>
