@@ -1646,18 +1646,20 @@ export const KickoffDetailsModal = ({
                             </span>
                             <Badge variant="outline">{vehicleQuantity} veículo(s)</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">Um único padrão será aplicado a todo o grupo.</p>
+                          <p className="text-sm text-muted-foreground">
+                            Marque todas as câmeras do grupo (soma de todos os veículos, incluindo câmeras extras).
+                          </p>
                         </div>
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                           <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
                             <div className="rounded-md border bg-muted/40 px-3 py-2 text-center">
-                              <p className="text-xs text-muted-foreground">Total vendido</p>
-                              <p className="font-semibold">{totalSoldCameras} câmeras</p>
+                              <p className="text-xs text-muted-foreground">Veículos</p>
+                              <p className="font-semibold">{vehicleQuantity}</p>
                             </div>
                             <div className="rounded-md border bg-muted/40 px-3 py-2 text-center">
-                              <p className="text-xs text-muted-foreground">Padrão por veículo</p>
-                              <p className="font-semibold">{camerasPerVehicle} posições</p>
+                              <p className="text-xs text-muted-foreground">Total de câmeras</p>
+                              <p className="font-semibold">{totalSoldCameras}</p>
                             </div>
                           </div>
                           <Badge variant={isComplete ? "default" : "outline"} className="h-10 justify-center px-3">
