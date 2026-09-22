@@ -6,6 +6,17 @@ import type { KickoffHistoryRecord } from "@/services/kickoffHistoryService";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, Mail, Phone, MapPin, FileText, AlertCircle, Camera, Package } from "lucide-react";
 import { cleanItemName } from "@/utils/itemNormalization";
+import interiorTruckAsset from "@/assets/interior-caminhao.png.asset.json";
+import exteriorTruckAsset from "@/assets/caminhao-frontal.png.asset.json";
+import frontalTruckAsset from "@/assets/caminhao-frontal-3q.png.asset.json";
+import traseiraTruckAsset from "@/assets/caminhao-traseira-3q.png.asset.json";
+
+const CAMERA_AREAS = [
+  { key: "interior", label: "Interior", url: interiorTruckAsset.url },
+  { key: "exterior", label: "Exterior", url: exteriorTruckAsset.url },
+  { key: "frontal", label: "Frontal", url: frontalTruckAsset.url },
+  { key: "traseira", label: "Traseira", url: traseiraTruckAsset.url },
+] as const;
 
 interface KickoffHistoryDetailsModalProps {
   open: boolean;
