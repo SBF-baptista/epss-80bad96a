@@ -803,7 +803,9 @@ export const KickoffDetailsModal = ({
           next.set(
             getCopilotoGroupKey(v),
             points
-              .filter((point: any) => ["interior", "exterior", "cavalo", "bau"].includes(point?.area))
+              .filter((point: any) =>
+                ["interior", "exterior", "frontal", "traseira", "cavalo", "bau"].includes(point?.area),
+              )
               .map((point: any, index: number) => ({
                 id: String(point.id || `${v.id}-${index}`),
                 area: point.area === "cavalo" ? "interior" : point.area === "bau" ? "exterior" : point.area,
@@ -1630,6 +1632,8 @@ export const KickoffDetailsModal = ({
                   const points = copilotoCameraPlacements.get(groupKey) || [];
                   const interiorPoints = points.filter((point) => point.area === "interior");
                   const exteriorPoints = points.filter((point) => point.area === "exterior");
+                  const frontalPoints = points.filter((point) => point.area === "frontal");
+                  const traseiraPoints = points.filter((point) => point.area === "traseira");
                   const isComplete = points.length === camerasPerVehicle;
                   const getPointNumber = (pointId: string) => points.findIndex((point) => point.id === pointId) + 1;
 
@@ -1677,6 +1681,22 @@ export const KickoffDetailsModal = ({
                           points={exteriorPoints}
                           canAdd={points.length < camerasPerVehicle}
                           onAdd={(event) => handleCameraPlacementAdd(groupKey, "exterior", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
+                          getPointNumber={getPointNumber}
+                        />
+                        <CameraPlacementImage
+                          area="frontal"
+                          points={frontalPoints}
+                          canAdd={points.length < camerasPerVehicle}
+                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "frontal", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
+                          getPointNumber={getPointNumber}
+                        />
+                        <CameraPlacementImage
+                          area="traseira"
+                          points={traseiraPoints}
+                          canAdd={points.length < camerasPerVehicle}
+                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "traseira", event)}
                           onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
                           getPointNumber={getPointNumber}
                         />
