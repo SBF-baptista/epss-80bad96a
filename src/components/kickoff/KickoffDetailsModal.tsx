@@ -1154,6 +1154,8 @@ export const KickoffDetailsModal = ({
         const sirenData = vehicleSiren.get(vehicle.id) || { hasSiren: false, quantity: 1 };
         const videoMonitoring = vehicleVideoMonitoring.get(vehicle.id);
         const cameraLocalization = getCameraLocalizationForVehicle(vehicle);
+        const isCopiloto = isCopilotoProduct(vehicle.usage_type);
+        const hasCameraExtraModule = vehicle.modules.some((m) => isCameraExtraModule(m.name));
 
         return {
           id: vehicle.id,
@@ -1163,11 +1165,16 @@ export const KickoffDetailsModal = ({
           plate: vehicle.plate,
           quantity: vehicle.quantity,
           usage_type: (vehicle as any).usage_type,
+          validated: true,
           selected_modules: modules,
           blocking_info: blocking,
           siren_info: sirenData,
           has_video_monitoring: videoMonitoring,
           camera_localization: cameraLocalization,
+          camera_extra_quantity:
+            !isCopiloto && hasCameraExtraModule ? vehicleCameraExtra.get(vehicle.id) || 1 : 0,
+          camera_extra_locations:
+            !isCopiloto && hasCameraExtraModule ? cameraExtraLocations.get(vehicle.id) || null : null,
           accessories: vehicle.modules.filter((m) => {
             const normalize = (s: string) =>
               s
