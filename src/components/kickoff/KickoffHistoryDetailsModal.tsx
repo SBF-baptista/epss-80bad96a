@@ -270,9 +270,15 @@ export const KickoffHistoryDetailsModal = ({ open, onOpenChange, record }: Kicko
                               </div>
                             </div>
                           );
-                        })}
-                      </div>
-                    </div>
+                         })}
+                       </div>
+                       {typeof group.observation === "string" && group.observation.trim() !== "" && (
+                         <p className="text-sm p-3 bg-muted rounded-lg whitespace-pre-wrap">
+                           <span className="font-medium">Observação das câmeras: </span>
+                           {group.observation}
+                         </p>
+                       )}
+                     </div>
                   ))}
                 </div>
               </div>
