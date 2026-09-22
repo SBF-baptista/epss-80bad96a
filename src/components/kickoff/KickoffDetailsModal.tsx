@@ -20,6 +20,8 @@ import type { KickoffVehicle } from "@/services/kickoffService";
 import { KickoffVehiclesTable } from "./KickoffVehiclesTable";
 import interiorTruckAsset from "@/assets/interior-caminhao.png.asset.json";
 import exteriorTruckAsset from "@/assets/caminhao-frontal.png.asset.json";
+import frontalTruckAsset from "@/assets/caminhao-frontal-3q.png.asset.json";
+import traseiraTruckAsset from "@/assets/caminhao-traseira-3q.png.asset.json";
 
 import { logCreate } from "@/services/logService";
 import { fetchAddressByCEP, isValidCEP, formatCEP } from "@/services/cepService";
@@ -50,7 +52,7 @@ interface Contact {
   phone: string;
 }
 
-type CameraArea = "interior" | "exterior";
+type CameraArea = "interior" | "exterior" | "frontal" | "traseira";
 
 interface CameraPlacementPoint {
   id: string;
@@ -72,6 +74,15 @@ interface CameraLocalizationData {
 const CAMERA_AREA_LABELS: Record<CameraArea, string> = {
   interior: "Interior",
   exterior: "Exterior",
+  frontal: "Frontal",
+  traseira: "Traseira",
+};
+
+const CAMERA_AREA_ASSET: Record<CameraArea, { url: string; alt: string }> = {
+  interior: { url: interiorTruckAsset.url, alt: "Interior da cabine do caminhão" },
+  exterior: { url: exteriorTruckAsset.url, alt: "Parte externa frontal do caminhão" },
+  frontal: { url: frontalTruckAsset.url, alt: "Vista frontal do caminhão" },
+  traseira: { url: traseiraTruckAsset.url, alt: "Vista traseira do caminhão" },
 };
 
 const normalizeForSearch = (text: string): string => {
@@ -131,7 +142,7 @@ interface CameraPlacementImageProps {
 }
 
 const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointNumber }: CameraPlacementImageProps) => {
-  const imageAsset = area === "interior" ? interiorTruckAsset : exteriorTruckAsset;
+  const imageAsset = CAMERA_AREA_ASSET[area];
 
   return (
     <div className="space-y-2">
@@ -152,7 +163,7 @@ const CameraPlacementImage = ({ area, points, canAdd, onAdd, onRemove, getPointN
         />
         <img
           src={imageAsset.url}
-          alt={area === "interior" ? "Interior da cabine do caminhão" : "Parte externa frontal do caminhão"}
+          alt={imageAsset.alt}
           className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
         />
         {points.map((point) => {
@@ -792,7 +803,9 @@ export const KickoffDetailsModal = ({
           next.set(
             getCopilotoGroupKey(v),
             points
-              .filter((point: any) => ["interior", "exterior", "cavalo", "bau"].includes(point?.area))
+              .filter((point: any) =>
+                ["interior", "exterior", "frontal", "traseira", "cavalo", "bau"].includes(point?.area),
+              )
               .map((point: any, index: number) => ({
                 id: String(point.id || `${v.id}-${index}`),
                 area: point.area === "cavalo" ? "interior" : point.area === "bau" ? "exterior" : point.area,
@@ -1619,6 +1632,8 @@ export const KickoffDetailsModal = ({
                   const points = copilotoCameraPlacements.get(groupKey) || [];
                   const interiorPoints = points.filter((point) => point.area === "interior");
                   const exteriorPoints = points.filter((point) => point.area === "exterior");
+                  const frontalPoints = points.filter((point) => point.area === "frontal");
+                  const traseiraPoints = points.filter((point) => point.area === "traseira");
                   const isComplete = points.length === camerasPerVehicle;
                   const getPointNumber = (pointId: string) => points.findIndex((point) => point.id === pointId) + 1;
 
@@ -1666,6 +1681,22 @@ export const KickoffDetailsModal = ({
                           points={exteriorPoints}
                           canAdd={points.length < camerasPerVehicle}
                           onAdd={(event) => handleCameraPlacementAdd(groupKey, "exterior", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
+                          getPointNumber={getPointNumber}
+                        />
+                        <CameraPlacementImage
+                          area="frontal"
+                          points={frontalPoints}
+                          canAdd={points.length < camerasPerVehicle}
+                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "frontal", event)}
+                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
+                          getPointNumber={getPointNumber}
+                        />
+                        <CameraPlacementImage
+                          area="traseira"
+                          points={traseiraPoints}
+                          canAdd={points.length < camerasPerVehicle}
+                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "traseira", event)}
                           onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
                           getPointNumber={getPointNumber}
                         />
