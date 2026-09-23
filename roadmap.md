@@ -7,3 +7,4 @@
 - [x] Implantar e validar uma sincronização automática completa
 - [x] Adicionar flag de homologação aos acessórios e liberar veículos elegíveis para Planejamento
 - [x] Ajustar a localização do Copiloto para padrão por veículo e usar as imagens de interior e exterior
+- [ ] Adicionar abas Caminhão e Ônibus à localização, com imagens, salvamento e histórico
