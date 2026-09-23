@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Truck, Users, MapPin, Settings, FileText, Package, Camera, X, Info, History as HistoryIcon } from "lucide-react";
@@ -22,6 +23,9 @@ import interiorTruckAsset from "@/assets/interior-caminhao.png.asset.json";
 import exteriorTruckAsset from "@/assets/caminhao-frontal.png.asset.json";
 import frontalTruckAsset from "@/assets/caminhao-frontal-3q.png.asset.json";
 import traseiraTruckAsset from "@/assets/caminhao-traseira-3q.png.asset.json";
+import busInteriorAsset from "@/assets/onibus-interior-superior.png.asset.json";
+import busLateralAsset from "@/assets/onibus-lateral.png.asset.json";
+import busFrontalAsset from "@/assets/onibus-frontal.png.asset.json";
 
 import { logCreate } from "@/services/logService";
 import { fetchAddressByCEP, isValidCEP, formatCEP } from "@/services/cepService";
@@ -52,7 +56,8 @@ interface Contact {
   phone: string;
 }
 
-type CameraArea = "interior" | "exterior" | "frontal" | "traseira";
+type VehicleBodyType = "truck" | "bus";
+type CameraArea = "interior" | "exterior" | "frontal" | "traseira" | "bus_interior" | "bus_lateral" | "bus_frontal";
 
 interface CameraPlacementPoint {
   id: string;
@@ -63,6 +68,7 @@ interface CameraPlacementPoint {
 
 interface CameraLocalizationData {
   product: string | null;
+  vehicle_type: VehicleBodyType;
   base_cameras: number;
   vehicle_quantity: number;
   cameras_per_vehicle: number;
@@ -77,6 +83,9 @@ const CAMERA_AREA_LABELS: Record<CameraArea, string> = {
   exterior: "Exterior",
   frontal: "Frontal",
   traseira: "Traseira",
+  bus_interior: "Interior",
+  bus_lateral: "Lateral",
+  bus_frontal: "Frontal",
 };
 
 const CAMERA_AREA_ASSET: Record<CameraArea, { url: string; alt: string }> = {
@@ -84,6 +93,14 @@ const CAMERA_AREA_ASSET: Record<CameraArea, { url: string; alt: string }> = {
   exterior: { url: exteriorTruckAsset.url, alt: "Parte externa frontal do caminhão" },
   frontal: { url: frontalTruckAsset.url, alt: "Vista frontal do caminhão" },
   traseira: { url: traseiraTruckAsset.url, alt: "Vista traseira do caminhão" },
+  bus_interior: { url: busInteriorAsset.url, alt: "Vista superior do interior do ônibus" },
+  bus_lateral: { url: busLateralAsset.url, alt: "Vista lateral do ônibus" },
+  bus_frontal: { url: busFrontalAsset.url, alt: "Vista frontal do ônibus" },
+};
+
+const CAMERA_AREAS_BY_VEHICLE: Record<VehicleBodyType, CameraArea[]> = {
+  truck: ["interior", "exterior", "frontal", "traseira"],
+  bus: ["bus_interior", "bus_lateral", "bus_frontal"],
 };
 
 const normalizeForSearch = (text: string): string => {
@@ -481,6 +498,7 @@ export const KickoffDetailsModal = ({
     new Map(),
   );
   const [copilotoCameraObservations, setCopilotoCameraObservations] = useState<Map<string, string>>(new Map());
+  const [copilotoVehicleTypes, setCopilotoVehicleTypes] = useState<Map<string, VehicleBodyType>>(new Map());
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -806,6 +824,18 @@ export const KickoffDetailsModal = ({
         return next;
       });
 
+      setCopilotoVehicleTypes((prev) => {
+        const next = new Map(prev);
+        vehicles.forEach((v) => {
+          const match = byModel.get(key(v.brand, v.model));
+          const vehicleType = match?.camera_localization?.vehicle_type;
+          if (isCopilotoProduct(v.usage_type) && (vehicleType === "truck" || vehicleType === "bus")) {
+            next.set(getCopilotoGroupKey(v), vehicleType);
+          }
+        });
+        return next;
+      });
+
       setCopilotoCameraPlacements((prev) => {
         const next = new Map(prev);
         vehicles.forEach((v) => {
@@ -818,7 +848,7 @@ export const KickoffDetailsModal = ({
             getCopilotoGroupKey(v),
             points
               .filter((point: any) =>
-                ["interior", "exterior", "frontal", "traseira", "cavalo", "bau"].includes(point?.area),
+                ["interior", "exterior", "frontal", "traseira", "bus_interior", "bus_lateral", "bus_frontal", "cavalo", "bau"].includes(point?.area),
               )
               .map((point: any, index: number) => ({
                 id: String(point.id || `${v.id}-${index}`),
@@ -1049,6 +1079,7 @@ export const KickoffDetailsModal = ({
 
     return {
       product: vehicle.usage_type,
+      vehicle_type: copilotoVehicleTypes.get(getCopilotoGroupKey(vehicle)) || "truck",
       base_cameras: baseCameras,
       vehicle_quantity: vehicleQuantity,
       cameras_per_vehicle: totalCameras,
@@ -1105,6 +1136,21 @@ export const KickoffDetailsModal = ({
       );
       return next;
     });
+  };
+
+  const handleVehicleTypeChange = (groupKey: string, nextType: VehicleBodyType) => {
+    const currentType = copilotoVehicleTypes.get(groupKey) || "truck";
+    if (currentType === nextType) return;
+
+    const currentPoints = copilotoCameraPlacements.get(groupKey) || [];
+    if (currentPoints.length > 0 && !window.confirm("Ao trocar o tipo de veículo, as marcações atuais serão apagadas. Deseja continuar?")) {
+      return;
+    }
+
+    setCopilotoVehicleTypes((prev) => new Map(prev).set(groupKey, nextType));
+    if (currentPoints.length > 0) {
+      setCopilotoCameraPlacements((prev) => new Map(prev).set(groupKey, []));
+    }
   };
 
   // Validation checks
@@ -1652,10 +1698,7 @@ export const KickoffDetailsModal = ({
                     0,
                   );
                   const points = copilotoCameraPlacements.get(groupKey) || [];
-                  const interiorPoints = points.filter((point) => point.area === "interior");
-                  const exteriorPoints = points.filter((point) => point.area === "exterior");
-                  const frontalPoints = points.filter((point) => point.area === "frontal");
-                  const traseiraPoints = points.filter((point) => point.area === "traseira");
+                  const vehicleType = copilotoVehicleTypes.get(groupKey) || "truck";
                   const isComplete = points.length === camerasPerVehicle;
                   const getPointNumber = (pointId: string) => points.findIndex((point) => point.id === pointId) + 1;
 
@@ -1691,40 +1734,32 @@ export const KickoffDetailsModal = ({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <CameraPlacementImage
-                          area="interior"
-                          points={interiorPoints}
-                          canAdd={points.length < camerasPerVehicle}
-                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "interior", event)}
-                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
-                          getPointNumber={getPointNumber}
-                        />
-                        <CameraPlacementImage
-                          area="exterior"
-                          points={exteriorPoints}
-                          canAdd={points.length < camerasPerVehicle}
-                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "exterior", event)}
-                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
-                          getPointNumber={getPointNumber}
-                        />
-                        <CameraPlacementImage
-                          area="frontal"
-                          points={frontalPoints}
-                          canAdd={points.length < camerasPerVehicle}
-                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "frontal", event)}
-                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
-                          getPointNumber={getPointNumber}
-                        />
-                        <CameraPlacementImage
-                          area="traseira"
-                          points={traseiraPoints}
-                          canAdd={points.length < camerasPerVehicle}
-                          onAdd={(event) => handleCameraPlacementAdd(groupKey, "traseira", event)}
-                          onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
-                          getPointNumber={getPointNumber}
-                        />
-                      </div>
+                      <Tabs
+                        value={vehicleType}
+                        onValueChange={(value) => handleVehicleTypeChange(groupKey, value as VehicleBodyType)}
+                      >
+                        <TabsList className="grid w-full max-w-sm grid-cols-2">
+                          <TabsTrigger value="truck">Caminhão</TabsTrigger>
+                          <TabsTrigger value="bus">Ônibus</TabsTrigger>
+                        </TabsList>
+                        {(["truck", "bus"] as const).map((type) => (
+                          <TabsContent key={type} value={type} className="mt-4">
+                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                              {CAMERA_AREAS_BY_VEHICLE[type].map((area) => (
+                                <CameraPlacementImage
+                                  key={area}
+                                  area={area}
+                                  points={points.filter((point) => point.area === area)}
+                                  canAdd={points.length < camerasPerVehicle}
+                                  onAdd={(event) => handleCameraPlacementAdd(groupKey, area, event)}
+                                  onRemove={(pointId) => handleCameraPlacementRemove(groupKey, pointId)}
+                                  getPointNumber={getPointNumber}
+                                />
+                              ))}
+                            </div>
+                          </TabsContent>
+                        ))}
+                      </Tabs>
 
                       <div>
                         <Label className="text-sm">Observação das câmeras (opcional)</Label>
