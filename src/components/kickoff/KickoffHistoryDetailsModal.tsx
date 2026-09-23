@@ -10,12 +10,21 @@ import interiorTruckAsset from "@/assets/interior-caminhao.png.asset.json";
 import exteriorTruckAsset from "@/assets/caminhao-frontal.png.asset.json";
 import frontalTruckAsset from "@/assets/caminhao-frontal-3q.png.asset.json";
 import traseiraTruckAsset from "@/assets/caminhao-traseira-3q.png.asset.json";
+import busInteriorAsset from "@/assets/onibus-interior-superior.png.asset.json";
+import busLateralAsset from "@/assets/onibus-lateral.png.asset.json";
+import busFrontalAsset from "@/assets/onibus-frontal.png.asset.json";
 
-const CAMERA_AREAS = [
+const TRUCK_CAMERA_AREAS = [
   { key: "interior", label: "Interior", url: interiorTruckAsset.url },
   { key: "exterior", label: "Exterior", url: exteriorTruckAsset.url },
   { key: "frontal", label: "Frontal", url: frontalTruckAsset.url },
   { key: "traseira", label: "Traseira", url: traseiraTruckAsset.url },
+] as const;
+
+const BUS_CAMERA_AREAS = [
+  { key: "bus_interior", label: "Interior", url: busInteriorAsset.url },
+  { key: "bus_lateral", label: "Lateral", url: busLateralAsset.url },
+  { key: "bus_frontal", label: "Frontal", url: busFrontalAsset.url },
 ] as const;
 
 interface KickoffHistoryDetailsModalProps {
@@ -218,7 +227,7 @@ export const KickoffHistoryDetailsModal = ({ open, onOpenChange, record }: Kicko
               record.vehicles_data.forEach((v: any) => {
                 const loc = v.camera_localization;
                 if (!loc || !Array.isArray(loc.points) || loc.points.length === 0) return;
-                const key = `${loc.base_cameras || 0}-cameras`;
+                const key = `${loc.base_cameras || 0}-cameras-${loc.vehicle_type || "truck"}`;
                 if (!groups.has(key)) {
                   groups.set(key, { ...loc, vehicles: [] as any[] });
                 }
@@ -238,11 +247,12 @@ export const KickoffHistoryDetailsModal = ({ open, onOpenChange, record }: Kicko
                     <div key={key} className="rounded-lg border p-4 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">Copiloto {group.base_cameras} Câmeras</span>
+                        <Badge variant="outline">{group.vehicle_type === "bus" ? "Ônibus" : "Caminhão"}</Badge>
                         <Badge variant="outline">{group.vehicles.length} veículo(s)</Badge>
                         <Badge variant="secondary">{group.points.length} câmera(s) marcada(s)</Badge>
                       </div>
                       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        {CAMERA_AREAS.map((area) => {
+                        {(group.vehicle_type === "bus" ? BUS_CAMERA_AREAS : TRUCK_CAMERA_AREAS).map((area) => {
                           const areaPoints = group.points.filter((p: any) => p.area === area.key);
                           return (
                             <div key={area.key} className="space-y-2">
