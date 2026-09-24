@@ -24,6 +24,10 @@ interface SelectOrCreateInputProps {
   extraItemTypes?: ItemType[];
   /** Extra static option names (e.g. Segsale catalogue) merged into the list */
   extraOptionNames?: string[];
+  /** Overrides the search box placeholder inside the dropdown */
+  searchPlaceholder?: string;
+  /** Overrides the "item not found" hint shown when creation is not allowed */
+  notFoundMessage?: string;
 }
 
 const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
@@ -34,7 +38,9 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
   className,
   allowCreate = true,
   extraItemTypes = [],
-  extraOptionNames = []
+  extraOptionNames = [],
+  searchPlaceholder,
+  notFoundMessage
 }) => {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -169,7 +175,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
       <PopoverContent className="dropdown-content w-80 p-0" align="start">
         <Command>
           <CommandInput 
-            placeholder={`Buscar ${itemType === 'equipment' ? 'equipamentos' : itemType === 'accessory' ? 'acessórios' : itemType === 'module' ? 'módulos' : 'insumos'}...`}
+            placeholder={searchPlaceholder ?? `Buscar ${itemType === 'equipment' ? 'equipamentos' : itemType === 'accessory' ? 'acessórios' : itemType === 'module' ? 'módulos' : itemType === 'tracker' ? 'rastreadores' : itemType === 'camera' ? 'câmeras' : 'insumos'}...`}
             value={newItemName}
             onValueChange={setNewItemName}
           />
