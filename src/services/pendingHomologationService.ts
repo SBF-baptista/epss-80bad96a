@@ -24,6 +24,9 @@ export interface PendingItemsResponse {
   accessories: PendingItem[];
   supplies: PendingItem[];
   equipment: PendingItem[];
+  modules: PendingItem[];
+  trackers: PendingItem[];
+  cameras: PendingItem[];
 }
 
 // Get all items that are used in kits but are not homologated
@@ -248,6 +251,15 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
           break;
         case 'equipment':
           result.equipment.push(item);
+          break;
+        case 'module':
+          result.modules.push(item);
+          break;
+        case 'tracker':
+          result.trackers.push(item);
+          break;
+        case 'camera':
+          result.cameras.push(item);
           break;
       }
     });
