@@ -148,6 +148,7 @@ export async function processVehicleGroups(
         if (normalizedUsageType === 'telemetria can') normalizedUsageType = 'telemetria_can'
         if (normalizedUsageType === 'copiloto 2 cameras') normalizedUsageType = 'copiloto_2_cameras'
         if (normalizedUsageType === 'copiloto 4 cameras') normalizedUsageType = 'copiloto_4_cameras'
+        if (normalizedUsageType === 'plus ii - gps' || normalizedUsageType === 'plus 2 gps') normalizedUsageType = 'plus_2_gps'
         
         // Vehicles from Segsale should NOT be processed until kickoff is completed
         const isFromSegsale = !!group.sale_summary_id

@@ -98,7 +98,8 @@ export function validateRequestBody(requestBody: any, timestamp: string, request
       'TELEMETRIA GPS',
       'TELEMETRIA CAN', 
       'COPILOTO 2 CAMERAS', 
-      'COPILOTO 4 CAMERAS'
+      'COPILOTO 4 CAMERAS',
+      'PLUS II - GPS'
     ]
     
     if (!validUsageTypes.includes(group.usage_type)) {
