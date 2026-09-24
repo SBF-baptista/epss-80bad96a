@@ -1,0 +1,1 @@
+REVOKE ALL ON public.kit_configuration_options FROM anon;
