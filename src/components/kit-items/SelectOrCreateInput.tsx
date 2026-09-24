@@ -99,7 +99,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
       });
 
       // Add to options list
-      setOptions(prev => [...prev, newOption].sort((a, b) => a.item_name.localeCompare(b.item_name)));
+      setOptions(null);
       
       // Select the new item
       onChange(newOption.item_name);
@@ -128,7 +128,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
   const handleDeleteOption = async (option: KitItemOption) => {
     try {
       await deleteKitItemOption(option.id);
-      setOptions(prev => prev.filter(opt => opt.id !== option.id));
+      setOptions(null);
       
       // If the deleted item was selected, clear the selection
       if (value === option.item_name) {
