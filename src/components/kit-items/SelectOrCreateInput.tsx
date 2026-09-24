@@ -283,7 +283,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
                   <span className="font-medium">Item não encontrado</span>
                 </div>
                 <p className="text-xs">
-                  {notFoundMessage ?? (itemType === 'equipment' ? 'Para adicionar novos equipamentos, acesse a página de Homologação de Acessórios e Insumos.' : `Para adicionar novos ${itemType === 'equipment' ? 'equipamentos' : itemType === 'accessory' ? 'acessórios' : 'insumos'}, acesse a página de Homologação de Acessórios e Insumos.`)}
+                  {notFoundMessage ?? `Para adicionar novos ${itemType === 'accessory' ? 'acessórios' : itemType === 'module' ? 'módulos' : itemType === 'tracker' ? 'rastreadores' : itemType === 'camera' ? 'câmeras' : 'equipamentos'}, acesse a página de Homologação de Acessórios e Insumos.`}
                 </p>
               </div>
             )}
