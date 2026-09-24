@@ -1107,6 +1107,8 @@ export type Database = {
       homologation_kits: {
         Row: {
           category: string | null
+          configuration_count: number | null
+          configurations: string[]
           created_at: string
           description: string | null
           homologation_card_id: string | null
@@ -1119,6 +1121,8 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          configuration_count?: number | null
+          configurations?: string[]
           created_at?: string
           description?: string | null
           homologation_card_id?: string | null
@@ -1131,6 +1135,8 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          configuration_count?: number | null
+          configurations?: string[]
           created_at?: string
           description?: string | null
           homologation_card_id?: string | null
@@ -1898,6 +1904,27 @@ export type Database = {
           total_vehicles?: number
           updated_at?: string
           vehicles_data?: Json
+        }
+        Relationships: []
+      }
+      kit_configuration_options: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
         }
         Relationships: []
       }

@@ -8,3 +8,6 @@
 - [x] Adicionar flag de homologação aos acessórios e liberar veículos elegíveis para Planejamento
 - [x] Ajustar a localização do Copiloto para padrão por veículo e usar as imagens de interior e exterior
 - [x] Adicionar abas Caminhão e Ônibus à localização, com imagens, salvamento e histórico
+- [x] Sincronizar itens da aba Acessórios e Insumos com a criação de kits
+- [x] Escolha de 1 ou 2 configurações (com cadastro) na criação do kit
+- [x] Alerta de pendências por tipo na tela de Homologação

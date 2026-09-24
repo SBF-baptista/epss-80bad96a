@@ -28,6 +28,8 @@ export interface HomologationKit {
   segsale_product?: string | null;
   segsale_modules?: string[] | null;
   segsale_accessories?: string[] | null;
+  configuration_count?: number | null;
+  configurations?: string[] | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -44,6 +46,8 @@ export interface CreateKitRequest {
   segsale_product?: string;
   segsale_modules?: string[];
   segsale_accessories?: string[];
+  configuration_count?: number;
+  configurations?: string[];
 }
 
 export interface UpdateKitRequest {

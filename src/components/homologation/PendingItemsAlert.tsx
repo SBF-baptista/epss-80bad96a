@@ -54,6 +54,9 @@ export const PendingItemsAlert = () => {
     ...pendingItems.accessories,
     ...pendingItems.supplies,
     ...pendingItems.equipment,
+    ...(pendingItems.modules || []),
+    ...(pendingItems.trackers || []),
+    ...(pendingItems.cameras || []),
   ];
 
   if (allPendingItems.length === 0) {
@@ -110,6 +113,18 @@ export const PendingItemsAlert = () => {
     .sort((a, b) => b.pendingDays - a.pendingDays);
 
   const totalPendingItems = allPendingItems.length;
+  const TYPE_GROUPS: Array<{ type: string; label: string }> = [
+    { type: 'equipment', label: 'Equipamentos' },
+    { type: 'tracker', label: 'Rastreadores' },
+    { type: 'camera', label: 'Câmeras' },
+    { type: 'accessory', label: 'Acessórios' },
+    { type: 'module', label: 'Módulos' },
+    { type: 'supply', label: 'Insumos' },
+  ];
+  const typeLabel = (t: string) => ({ accessory: 'Acessório', supply: 'Insumo', equipment: 'Equipamento', module: 'Módulo', tracker: 'Rastreador', camera: 'Câmera' } as Record<string, string>)[t] || t;
+  const groupedItems = TYPE_GROUPS
+    .map(g => ({ ...g, items: sortedItems.filter(i => i.item_type === g.type) }))
+    .filter(g => g.items.length > 0);
   const maxPendingDays = Math.max(...itemsWithMetrics.map(item => item.pendingDays), 0);
 
   return (
@@ -125,6 +140,11 @@ export const PendingItemsAlert = () => {
               <Package className="h-3 w-3 mr-1" />
               {totalPendingItems} {totalPendingItems === 1 ? 'item' : 'itens'}
             </Badge>
+            {groupedItems.map(g => (
+              <Badge key={g.type} variant="outline" className="bg-white border-orange-300 text-orange-800">
+                {g.label}: {g.items.length}
+              </Badge>
+            ))}
             
             {maxPendingDays > 0 && (
               <Badge variant="outline" className="bg-orange-100 border-orange-400 text-orange-900">
@@ -136,8 +156,13 @@ export const PendingItemsAlert = () => {
 
           <div className="space-y-2 pt-2">
             <p className="text-sm font-medium text-orange-900">Itens aguardando homologação:</p>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {sortedItems.map((item, index) => (
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {groupedItems.map(group => (
+                <div key={group.type} className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-orange-800">
+                    {group.label} ({group.items.length})
+                  </p>
+              {group.items.map((item, index) => (
                 <div 
                   key={`${item.item_name}-${index}`}
                   className="flex items-start justify-between text-sm bg-white p-3 rounded border border-orange-200 hover:border-orange-300 transition-colors"
@@ -146,11 +171,7 @@ export const PendingItemsAlert = () => {
                       <Package className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-orange-900 break-words">{cleanItemName(item.item_name)}</p>
-                        <p className="text-xs text-orange-700 mt-0.5 capitalize">
-                          {item.item_type === 'accessory' ? 'Acessório' : 
-                           item.item_type === 'supply' ? 'Insumo' : 
-                           item.item_type === 'equipment' ? 'Equipamento' : item.item_type}
-                        </p>
+                        <p className="text-xs text-orange-700 mt-0.5">{typeLabel(item.item_type)}</p>
                       </div>
                     </div>
                   <div className="flex items-center gap-3 text-xs ml-3 flex-shrink-0">
@@ -163,6 +184,8 @@ export const PendingItemsAlert = () => {
                       <div className="text-red-600">{item.pendingDays === 1 ? 'dia pendente' : 'dias pendentes'}</div>
                     </div>
                   </div>
+                </div>
+              ))}
                 </div>
               ))}
             </div>

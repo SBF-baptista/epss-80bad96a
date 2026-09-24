@@ -416,6 +416,7 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                   value={item.item_name}
                   onChange={(value) => updateItem(type, index, "item_name", value)}
                   itemType={type}
+                  extraItemTypes={type === "equipment" ? ["tracker", "camera"] : []}
                   placeholder={`Selecione ${type === "equipment" ? "equipamento" : type === "accessory" ? "acessório" : "insumo"}...`}
                   className="w-full"
                 />

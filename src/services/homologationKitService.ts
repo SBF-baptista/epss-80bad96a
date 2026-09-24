@@ -106,7 +106,9 @@ export async function createHomologationKit(kitData: CreateKitRequest): Promise<
         segsale_product: kitData.segsale_product || null,
         segsale_module: kitData.segsale_modules || null,
         segsale_accessory: kitData.segsale_accessories || null,
-      })
+        configuration_count: kitData.configuration_count ?? null,
+        configurations: kitData.configurations ?? [],
+      } as any)
       .select()
       .single();
 

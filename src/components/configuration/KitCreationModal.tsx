@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +41,8 @@ interface KitFormData {
   modules: Omit<HomologationKitItem, "id">[];
   supplies: Omit<HomologationKitItem, "id">[];
   segsaleMirror: SegsaleMirror;
+  configurationCount: 1 | 2;
+  configurations: string[];
 }
 
 const KIT_CATEGORIES = [
@@ -55,6 +60,8 @@ const initialFormData: KitFormData = {
   modules: [{ item_name: "", item_type: "module", quantity: 1, description: "", notes: "" }],
   supplies: [{ item_name: "", item_type: "supply", quantity: 1, description: "", notes: "" }],
   segsaleMirror: { product: "", modules: [], accessories: [] },
+  configurationCount: 1,
+  configurations: [""],
 };
 
 export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModalProps) => {
@@ -68,6 +75,72 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     products: segsaleProducts,
     loading: segsaleLoading,
   } = useSegsaleExtras();
+  const queryClient = useQueryClient();
+  const [newConfigName, setNewConfigName] = useState("");
+  const [isCreatingConfig, setIsCreatingConfig] = useState(false);
+
+  const { data: configOptions = [] } = useQuery({
+    queryKey: ["kit-configuration-options"],
+    enabled: isOpen,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kit_configuration_options" as any)
+        .select("name")
+        .order("name");
+      if (error) throw error;
+      return ((data as any[]) || []).map((r) => r.name as string);
+    },
+  });
+
+  const invalidateOptions = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["kit-item-options"] });
+    queryClient.invalidateQueries({ queryKey: ["kit-configuration-options"] });
+  }, [queryClient]);
+  useCentralRealtime("kit_item_options", invalidateOptions);
+
+  const setConfigurationCount = (count: 1 | 2) => {
+    setFormData((prev) => {
+      const configs = [...prev.configurations];
+      while (configs.length < count) configs.push("");
+      return { ...prev, configurationCount: count, configurations: configs.slice(0, count) };
+    });
+  };
+
+  const setConfigurationAt = (index: number, value: string) => {
+    setFormData((prev) => {
+      const configs = [...prev.configurations];
+      configs[index] = value;
+      return { ...prev, configurations: configs };
+    });
+  };
+
+  const handleCreateConfiguration = async () => {
+    const name = newConfigName.trim();
+    if (!name) return;
+    if (configOptions.some((c) => c.toLowerCase() === name.toLowerCase())) {
+      toast({ title: "Configuração já cadastrada", description: "Selecione-a na lista.", variant: "destructive" });
+      return;
+    }
+    try {
+      setIsCreatingConfig(true);
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("kit_configuration_options" as any)
+        .insert({ name, created_by: userData.user?.id } as any);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["kit-configuration-options"] });
+      const emptyIndex = formData.configurations.findIndex((c) => !c);
+      if (emptyIndex >= 0) setConfigurationAt(emptyIndex, name);
+      setNewConfigName("");
+      toast({ title: "Configuração cadastrada", description: `"${name}" já está disponível.` });
+    } catch (err) {
+      console.error("Error creating configuration:", err);
+      toast({ title: "Erro", description: "Não foi possível cadastrar a configuração.", variant: "destructive" });
+    } finally {
+      setIsCreatingConfig(false);
+    }
+  };
 
   const addItem = (type: "equipment" | "accessories" | "modules" | "supplies") => {
     const itemTypeMap: Record<string, string> = {
@@ -179,6 +252,20 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       return;
     }
 
+    const selectedConfigs = formData.configurations.slice(0, formData.configurationCount).map((c) => c.trim());
+    if (selectedConfigs.some((c) => !c)) {
+      toast({
+        title: "Erro de validação",
+        description: formData.configurationCount === 2 ? "Selecione as duas configurações do kit" : "Selecione a configuração do kit",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (formData.configurationCount === 2 && selectedConfigs[0] === selectedConfigs[1]) {
+      toast({ title: "Erro de validação", description: "As duas configurações devem ser diferentes", variant: "destructive" });
+      return;
+    }
+
     try {
       setIsSaving(true);
 
@@ -196,9 +283,12 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         segsale_product: product || undefined,
         segsale_modules: segsaleMods.length > 0 ? segsaleMods : undefined,
         segsale_accessories: segsaleAccs.length > 0 ? segsaleAccs : undefined,
+        configuration_count: formData.configurationCount,
+        configurations: selectedConfigs,
       };
 
       await createHomologationKit(kitData);
+      queryClient.invalidateQueries({ queryKey: ["homologation-kits"] });
 
       toast({
         title: "Kit criado",
@@ -309,6 +399,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   value={item.item_name}
                   onChange={(value) => handleItemNameChange("equipment", index, value)}
                   itemType="equipment"
+                  extraItemTypes={["tracker", "camera"]}
                   placeholder="Nome do equipamento"
                   className="h-8"
                   allowCreate={false}
@@ -384,18 +475,15 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         {items.map((item, index) => (
           <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
             <div className="col-span-4">
-              <Select value={item.item_name} onValueChange={(value) => handleItemNameChange(type, index, value)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder={`Selecione ${type === "accessories" ? "acessório" : "módulo"}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {segsaleOptions.map((option) => (
-                    <SelectItem key={option.id} value={option.nome}>
-                      {option.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SelectOrCreateInput
+                value={item.item_name}
+                onChange={(value) => handleItemNameChange(type, index, value)}
+                itemType={type === "accessories" ? "accessory" : "module"}
+                extraOptionNames={segsaleOptions.map((o) => o.nome)}
+                placeholder={`Selecione ${type === "accessories" ? "acessório" : "módulo"}`}
+                className="h-8 w-full"
+                allowCreate={false}
+              />
             </div>
             <div className="col-span-2">
               <Input
@@ -550,6 +638,66 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Configurações */}
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <Label className="text-base font-medium">Configurações do Kit *</Label>
+              <p className="text-xs text-muted-foreground">Este kit precisa de quantas configurações?</p>
+              <div className="flex gap-2">
+                {[1, 2].map((n) => (
+                  <Button
+                    key={n}
+                    type="button"
+                    size="sm"
+                    variant={formData.configurationCount === n ? "default" : "outline"}
+                    onClick={() => setConfigurationCount(n as 1 | 2)}
+                  >
+                    {n === 1 ? "Uma configuração" : "Duas configurações"}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {Array.from({ length: formData.configurationCount }).map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Label className="text-xs">Configuração {i + 1}</Label>
+                    <Select value={formData.configurations[i] || ""} onValueChange={(v) => setConfigurationAt(i, v)}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Selecione uma configuração cadastrada" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {configOptions.length === 0 && (
+                          <div className="px-2 py-2 text-sm text-muted-foreground">Nenhuma configuração cadastrada</div>
+                        )}
+                        {configOptions.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Não encontrou? Cadastre uma nova configuração</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newConfigName}
+                    onChange={(e) => setNewConfigName(e.target.value)}
+                    placeholder="Nome da nova configuração"
+                    className="h-9"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleCreateConfiguration();
+                      }
+                    }}
+                  />
+                  <Button type="button" variant="outline" size="sm" className="h-9" onClick={handleCreateConfiguration} disabled={isCreatingConfig || !newConfigName.trim()}>
+                    {isCreatingConfig ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3 mr-1" />}
+                    Cadastrar
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Items Sections - 2x2 Grid Layout */}

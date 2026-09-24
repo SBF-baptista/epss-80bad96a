@@ -10,6 +10,7 @@ const KitManagement = () => {
   const invalidateKitData = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['homologation-kits'] });
     queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
   }, [queryClient]);
 
   useCentralRealtime('homologation_kits', invalidateKitData);
