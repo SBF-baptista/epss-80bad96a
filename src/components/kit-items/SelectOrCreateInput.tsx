@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,10 @@ interface SelectOrCreateInputProps {
   placeholder?: string;
   className?: string;
   allowCreate?: boolean; // New prop to control creation capability
+  /** Extra item types to include in the options (e.g. trackers and cameras for equipment) */
+  extraItemTypes?: ItemType[];
+  /** Extra static option names (e.g. Segsale catalogue) merged into the list */
+  extraOptionNames?: string[];
 }
 
 const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
@@ -27,38 +32,48 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
   itemType,
   placeholder = "Selecione ou digite um item...",
   className,
-  allowCreate = true
+  allowCreate = true,
+  extraItemTypes = [],
+  extraOptionNames = []
 }) => {
   const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState<KitItemOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const allTypes = useMemo(() => [itemType, ...extraItemTypes.filter(t => t !== itemType)], [itemType, extraItemTypes.join(',')]);
+  const { data: dbOptions = [], isLoading: loading } = useQuery({
+    queryKey: ['kit-item-options', 'picker', ...allTypes],
+    queryFn: async () => {
+      const results = await Promise.all(allTypes.map(t => fetchKitItemOptions(t)));
+      return results.flat();
+    },
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+  });
+  const options = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: KitItemOption[] = [];
+    for (const o of dbOptions) {
+      const k = o.item_name.trim().toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      merged.push(o);
+    }
+    for (const name of extraOptionNames) {
+      const k = name.trim().toLowerCase();
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      merged.push({ id: `extra-${name}`, item_name: name, item_type: itemType, requires_homologation: false, created_at: '', updated_at: '' });
+    }
+    return merged.sort((a, b) => a.item_name.localeCompare(b.item_name));
+  }, [dbOptions, extraOptionNames.join('|'), itemType]);
+  const setOptions = (_: unknown) => {
+    queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
+  };
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const { isAdmin, canManageModule } = useUserRole();
   const canDeleteOptions = isAdmin() || canManageModule('homologation') || canManageModule('accessories_supplies');
-
-  // Load options when component mounts or itemType changes
-  useEffect(() => {
-    loadOptions();
-  }, [itemType]);
-
-  const loadOptions = async () => {
-    try {
-      setLoading(true);
-      const fetchedOptions = await fetchKitItemOptions(itemType);
-      setOptions(fetchedOptions);
-    } catch (error) {
-      console.error('Error loading options:', error);
-      toast({
-        title: "Erro ao carregar opções",
-        description: "Não foi possível carregar as opções disponíveis.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateNewItem = async () => {
     if (!newItemName.trim()) return;
@@ -154,7 +169,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
       <PopoverContent className="dropdown-content w-80 p-0" align="start">
         <Command>
           <CommandInput 
-            placeholder={`Buscar ${itemType === 'equipment' ? 'equipamentos' : itemType === 'accessory' ? 'acessórios' : 'insumos'}...`}
+            placeholder={`Buscar ${itemType === 'equipment' ? 'equipamentos' : itemType === 'accessory' ? 'acessórios' : itemType === 'module' ? 'módulos' : 'insumos'}...`}
             value={newItemName}
             onValueChange={setNewItemName}
           />
@@ -201,7 +216,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
                       </div>
                     </div>
                     
-                    {canDeleteOptions && (
+                    {canDeleteOptions && !option.id.startsWith('extra-') && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
