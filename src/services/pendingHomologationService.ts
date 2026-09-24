@@ -218,7 +218,7 @@ export async function fetchPendingHomologationItems(): Promise<PendingItemsRespo
     const result: PendingItemsResponse = {
       accessories: [],
       supplies: [],
-      equipment: []
+      equipment: [], modules: [], trackers: [], cameras: []
     };
 
     // Add items from kits and vehicles
