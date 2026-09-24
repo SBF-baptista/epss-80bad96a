@@ -1,0 +1,2 @@
+UPDATE public.incoming_vehicles SET usage_type='plus_2_gps' WHERE usage_type='particular' AND sale_summary_id IS NOT NULL;
+UPDATE public.accessories SET usage_type='plus_2_gps' WHERE usage_type='particular';
