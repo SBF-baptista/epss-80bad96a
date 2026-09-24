@@ -415,8 +415,10 @@ const HomologationKitsSection: React.FC<HomologationKitsSectionProps> = ({ homol
                 <SelectOrCreateInput
                   value={item.item_name}
                   onChange={(value) => updateItem(type, index, "item_name", value)}
-                  itemType={type}
-                  extraItemTypes={type === "equipment" ? ["tracker", "camera"] : []}
+                  itemType={type === "equipment" ? "tracker" : type}
+                  extraItemTypes={type === "equipment" ? ["camera"] : []}
+                  searchPlaceholder={type === "equipment" ? "Buscar rastreadores e câmeras..." : undefined}
+                  notFoundMessage={type === "equipment" ? "Para adicionar novos equipamentos, acesse as abas de Rastreadores ou Câmeras na Homologação." : undefined}
                   placeholder={`Selecione ${type === "equipment" ? "equipamento" : type === "accessory" ? "acessório" : "insumo"}...`}
                   className="w-full"
                 />

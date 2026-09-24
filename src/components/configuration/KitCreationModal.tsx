@@ -398,8 +398,10 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 <SelectOrCreateInput
                   value={item.item_name}
                   onChange={(value) => handleItemNameChange("equipment", index, value)}
-                  itemType="equipment"
-                  extraItemTypes={["tracker", "camera"]}
+                  itemType="tracker"
+                  extraItemTypes={["camera"]}
+                  searchPlaceholder="Buscar rastreadores e câmeras..."
+                  notFoundMessage="Para adicionar novos equipamentos, acesse as abas de Rastreadores ou Câmeras na Homologação."
                   placeholder="Nome do equipamento"
                   className="h-8"
                   allowCreate={false}
