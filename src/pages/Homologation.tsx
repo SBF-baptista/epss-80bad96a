@@ -1,5 +1,7 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCentralRealtime } from "@/hooks/useCentralRealtime";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { 
@@ -58,6 +60,13 @@ const Homologation = () => {
 
   // Realtime subscription for homologation cards
   useRealtimeSubscription('homologation_cards', 'homologation-cards');
+
+  const queryClient = useQueryClient();
+  const invalidatePending = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['pending-homologation-items'] });
+  }, [queryClient]);
+  useCentralRealtime('kit_item_options', invalidatePending);
+  useCentralRealtime('homologation_kit_accessories', invalidatePending);
 
   // Filter cards based on active filters
   const filteredCards = useMemo(() => {
