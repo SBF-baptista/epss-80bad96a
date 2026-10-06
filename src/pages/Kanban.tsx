@@ -100,7 +100,7 @@ const Kanban = () => {
       <div className="max-w-7xl mx-auto space-y-5 md:space-y-6">
         {/* Enhanced page header */}
         <div className="flex flex-col gap-1">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Kanban</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">Produção</h2>
           <p className="text-sm md:text-base text-muted-foreground">Esteira de Pedidos</p>
         </div>
 
