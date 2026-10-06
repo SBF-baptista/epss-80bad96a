@@ -8,6 +8,11 @@ import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessoriesWithoutModulesToObjects, VehicleAccessory } from "@/services/vehicleAccessoryService";
 import { logKanbanMove } from "@/services/logService";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+
+const FREE_DRAG_EMAILS = ["pedro.albuquerque@segsat.com"];
+const STATUS_TITLES: Record<string, string> = { scheduled: "Pedidos", counting: "Contagem", in_progress: "Em Produção", verifying: "Em Verificação", completed: "Aguardando Envio", shipped: "Enviado" };
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -40,6 +45,9 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const [accessoriesByVehicleId, setAccessoriesByVehicleId] = useState<Map<string, VehicleAccessory[]>>(new Map());
   const [orders, setOrders] = useState<Order[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const canFreeDrag = !!user?.email && FREE_DRAG_EMAILS.includes(user.email.toLowerCase());
+  const draggedRef = useRef<Order | null>(null);
 
   // Fetch real accessories from database by vehicle IDs and fallback to plates
   useEffect(() => {
@@ -237,7 +245,18 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
     e.preventDefault();
   };
 
-  const handleDrop = () => undefined;
+  const handleDrop = async (targetStatus: string) => {
+    const order = draggedRef.current;
+    draggedRef.current = null;
+    if (!canFreeDrag || !order) return;
+    const schedule = schedules.find(s => s.id === order.id);
+    if (!schedule || schedule.status === targetStatus) return;
+    const { error } = await supabase.from("kit_schedules").update({ status: targetStatus }).eq("id", order.id);
+    if (error) { toast.error("Não foi possível mover o card"); return; }
+    await logKanbanMove(mode === "production" ? "Produção" : "Expedição", order.id, STATUS_TITLES[schedule.status || ""] || schedule.status || "", STATUS_TITLES[targetStatus] || targetStatus, order.company_name || "Cliente não identificado");
+    toast.success(`Card movido para ${STATUS_TITLES[targetStatus] || targetStatus}`);
+    onOrderUpdate();
+  };
 
   const handleWorkflow = async (order: Order, status: string) => {
     if (status === "scheduled") {
@@ -278,7 +297,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             color={column.color}
             status={column.id}
             onDragOver={handleDragOver}
-            onDrop={handleDrop}
+            onDrop={() => handleDrop(column.id)}
             onOrderClick={(order) => {
               const schedule = schedules.find(s => s.id === order.id);
               if (schedule) {
@@ -293,7 +312,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 setSelectedSchedule(schedule);
               }
             }}
-            onDragStart={() => undefined}
+            onDragStart={(o) => { draggedRef.current = o; }}
+            canDrag={canFreeDrag}
             onScanClick={onScanClick}
             onShipmentClick={onShipmentClick}
             onWorkflowClick={(order) => handleWorkflow(order, column.id)}
@@ -317,7 +337,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 color={column.color}
                 status={column.id}
                 onDragOver={handleDragOver}
-                onDrop={handleDrop}
+                onDrop={() => handleDrop(column.id)}
                 onOrderClick={(order) => {
                   const schedule = schedules.find(s => s.id === order.id);
                   if (schedule) {
@@ -332,7 +352,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                     setSelectedSchedule(schedule);
                   }
                 }}
-                onDragStart={() => undefined}
+                onDragStart={(o) => { draggedRef.current = o; }}
+            canDrag={canFreeDrag}
                 onScanClick={onScanClick}
                 onShipmentClick={onShipmentClick}
                 onWorkflowClick={(order) => handleWorkflow(order, column.id)}

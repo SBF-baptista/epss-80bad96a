@@ -10,6 +10,7 @@ interface GroupedOrderCardProps {
   groupedOrder: GroupedOrder;
   onClick: () => void;
   onDragStart: () => void;
+  canDrag?: boolean;
   onViewDetailsClick?: () => void;
   onScanClick?: () => void;
   onShipmentClick?: () => void;
@@ -21,6 +22,7 @@ const GroupedOrderCard = ({
   groupedOrder, 
   onClick, 
   onDragStart, 
+  canDrag = false,
   onViewDetailsClick,
   onScanClick, 
   onShipmentClick,
@@ -65,7 +67,7 @@ const GroupedOrderCard = ({
           ? "border-l-success border-border/40 bg-card"
           : "border-l-muted border-border/40 hover:border-l-primary"
       }`}
-      draggable={false}
+      draggable={canDrag}
       onDragStart={onDragStart}
       onClick={onClick}
     >

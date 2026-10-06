@@ -21,6 +21,7 @@ interface KanbanColumnProps {
   onShipmentClick?: (order: Order) => void;
   onWorkflowClick?: (order: Order) => void;
   workflowLabel?: string;
+  canDrag?: boolean;
 }
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -51,6 +52,7 @@ const KanbanColumn = ({
   onOrderClick,
   onOrderViewDetailsClick,
   onDragStart,
+  canDrag = false,
   onScanClick,
   onShipmentClick,
   onWorkflowClick,
@@ -121,6 +123,7 @@ const KanbanColumn = ({
                 groupedOrder={groupedOrder}
                 onClick={() => handleGroupClick(groupedOrder)}
                 onDragStart={() => handleGroupDragStart(groupedOrder)}
+                canDrag={canDrag}
                 onViewDetailsClick={onOrderViewDetailsClick ? () => handleGroupViewDetailsClick(groupedOrder) : undefined}
                 onScanClick={onScanClick ? () => handleGroupScanClick(groupedOrder) : undefined}
                 onShipmentClick={onShipmentClick ? () => handleGroupShipmentClick(groupedOrder) : undefined}
