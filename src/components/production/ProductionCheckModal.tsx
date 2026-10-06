@@ -135,6 +135,25 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
                 </div>
               ))}
             </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {(["Equipamentos", "Acessórios", "Módulos", "Insumos"] as const).map((category) => {
+                const items = expectedItems.filter((item) => item.category === category);
+                if (items.length === 0) return null;
+                return (
+                  <div key={category} className="rounded-md border border-border bg-card p-2">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{category}</p>
+                    <ul className="space-y-1">
+                      {items.map((item, index) => (
+                        <li key={`${item.key}-${index}`} className="flex items-center justify-between gap-2 text-xs">
+                          <span className="truncate text-foreground">{cleanItemName(item.name)}</span>
+                          <span className="shrink-0 font-semibold text-foreground">{item.quantity}x</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {stage === "verification" && (
