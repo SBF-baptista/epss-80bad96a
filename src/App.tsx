@@ -15,6 +15,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import History from "./pages/History";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 import Kanban from "./pages/Kanban";
+import Expedition from "./pages/Expedition";
 import Homologation from "./pages/Homologation";
 const KitManagement = lazy(() => import("./pages/KitManagement"));
 const CustomerTracking = lazy(() => import("./pages/CustomerTracking"));
@@ -119,6 +120,16 @@ function AppContent() {
                 </ProtectedRoute>
               } />
               
+              <Route path="/expedition" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="kanban">
+                    <Layout>
+                      <Expedition />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+
               {/* Homologation - requires homologation module access */}
               <Route path="/homologation" element={
                 <ProtectedRoute>

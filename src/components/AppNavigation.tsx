@@ -9,6 +9,7 @@ import {
   UserCog,
   LogOut,
   Package,
+  Truck,
   Cog,
   ChevronRight,
   ChevronDown,
@@ -93,8 +94,9 @@ const navigationGroups: NavGroup[] = [
     label: "Logística",
     icon: BarChart3,
     items: [
-      { to: "/kanban", label: "Kanban", icon: Kanban, module: "kanban" },
-      { to: "/dashboard", label: "Dash Logística", icon: BarChart3, module: "dashboard" },
+      { to: "/kanban", label: "Produção", icon: Kanban, module: "kanban" },
+      { to: "/expedition", label: "Expedição", icon: Truck, module: "kanban" },
+      { to: "/dashboard", label: "Dash logística", icon: BarChart3, module: "dashboard" },
     ]
   },
   {
@@ -373,8 +375,8 @@ export function AppNavigation() {
               {/* Logística Group */}
               {visibleGroups.filter(g => g.label === "Logística").map((group) => {
                 const GroupIcon = group.icon;
-                const isOpen = openGroups[group.label] || false;
                 const groupActive = isGroupActive(group.items);
+                const isOpen = !isCollapsed && (openGroups[group.label] ?? groupActive);
                 
                 return (
                   <SidebarMenuItem key={group.label}>

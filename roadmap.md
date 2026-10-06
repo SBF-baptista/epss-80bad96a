@@ -11,3 +11,4 @@
 - [x] Sincronizar itens da aba Acessórios e Insumos com a criação de kits
 - [x] Escolha de 1 ou 2 configurações (com cadastro) na criação do kit
 - [x] Alerta de pendências por tipo na tela de Homologação
+- [x] Organizar Logística em Produção, Expedição e Dash logística, adicionando apenas navegação para Expedição

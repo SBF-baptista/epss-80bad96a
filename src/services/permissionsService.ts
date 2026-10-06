@@ -21,6 +21,7 @@ export const ROUTE_TO_MODULE: Record<string, AppModule> = {
   '/config': 'configuration',
   '/whatsapp-control': 'whatsapp_control',
   '/kanban': 'kanban',
+  '/expedition': 'kanban',
   '/orders': 'orders',
   '/dashboard': 'dashboard',
   '/technicians': 'technicians',
@@ -84,9 +85,10 @@ export const getNavigationItems = (
       { to: '/accessories-supplies', label: 'Acessórios & Insumos' },
       { to: '/config', label: 'Agendamento' },
       { to: '/planning', label: 'Planejamento' },
-      { to: '/kanban', label: 'Kanban' },
+      { to: '/kanban', label: 'Produção' },
+      { to: '/expedition', label: 'Expedição' },
       { to: '/orders', label: 'Pedidos' },
-      { to: '/dashboard', label: 'Dashboard' },
+      { to: '/dashboard', label: 'Dash logística' },
       { to: '/technicians', label: 'Técnicos' },
       { to: '/users', label: 'Usuários' },
     ]
@@ -109,9 +111,12 @@ export const getNavigationItems = (
   if (canAccessModule('accessories_supplies')) items.push({ to: '/accessories-supplies', label: 'Acessórios & Insumos' })
   if (canAccessModule('scheduling')) items.push({ to: '/config', label: 'Agendamento' })
   if (canAccessModule('planning')) items.push({ to: '/planning', label: 'Planejamento' })
-  if (canAccessModule('kanban')) items.push({ to: '/kanban', label: 'Kanban' })
+  if (canAccessModule('kanban')) {
+    items.push({ to: '/kanban', label: 'Produção' })
+    items.push({ to: '/expedition', label: 'Expedição' })
+  }
   if (canAccessModule('orders')) items.push({ to: '/orders', label: 'Pedidos' })
-  if (canAccessModule('dashboard')) items.push({ to: '/dashboard', label: 'Dashboard' })
+  if (canAccessModule('dashboard')) items.push({ to: '/dashboard', label: 'Dash logística' })
   if (canAccessModule('technicians')) items.push({ to: '/technicians', label: 'Técnicos' })
   if (canAccessModule('users')) items.push({ to: '/users', label: 'Usuários' })
 
