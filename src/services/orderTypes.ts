@@ -27,9 +27,17 @@ export interface Order {
     name: string
     quantity: number
   }>
+  modules?: Array<{
+    name: string
+    quantity: number
+  }>
+  supplies?: Array<{
+    name: string
+    quantity: number
+  }>
   configurationType: string
   selectedKitNames?: string[]
-  status: "novos" | "producao" | "aguardando" | "enviado" | "standby"
+  status: "novos" | "contagem" | "producao" | "verificacao" | "aguardando" | "enviado" | "standby"
   priority?: "high" | "medium" | "low"
   createdAt: string
   estimatedDelivery?: string

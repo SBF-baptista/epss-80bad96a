@@ -15,6 +15,16 @@ export interface ProductionItem {
   created_by?: string;
 }
 
+export const getProductionItemsByScheduleId = async (scheduleId: string): Promise<ProductionItem[]> => {
+  const { data, error } = await supabase
+    .from('production_items')
+    .select('*')
+    .eq('kit_schedule_id', scheduleId)
+    .order('scanned_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+};
+
 export const useProductionItems = (
   order: Order | null, 
   isOpen: boolean, 
@@ -278,37 +288,16 @@ export const useProductionItems = (
     }
   };
 
-  // Complete production: update status from 'in_progress' to 'completed' for ALL schedules of same company
+  // Complete production for this order/vehicle and send it to final verification.
   const handleCompleteProduction = async () => {
     const currentScheduleId = getScheduleId();
-    const currentCompanyName = getCompanyName();
     if (!currentScheduleId) return false;
 
     try {
-      let scheduleIds: string[] = [currentScheduleId];
-      
-      // If we have a company name, find all schedules for that company with 'in_progress' status
-      if (currentCompanyName) {
-        const normalizedCompanyName = currentCompanyName.trim().toUpperCase();
-        const { data: companySchedules } = await supabase
-          .from('kit_schedules')
-          .select('id, customer_name')
-          .eq('status', 'in_progress');
-        
-        if (companySchedules) {
-          const matchingIds = companySchedules
-            .filter(s => s.customer_name?.trim().toUpperCase() === normalizedCompanyName)
-            .map(s => s.id);
-          if (matchingIds.length > 0) {
-            scheduleIds = matchingIds;
-          }
-        }
-      }
-
       const { data: updated, error } = await supabase
         .from('kit_schedules')
-        .update({ status: 'completed' })
-        .in('id', scheduleIds)
+        .update({ status: 'verifying' })
+        .eq('id', currentScheduleId)
         .select('id');
 
       if (error) {
@@ -331,21 +320,11 @@ export const useProductionItems = (
       }
 
 
-      // Log each schedule movement
-      for (const id of scheduleIds) {
-        await logUpdate(
-          "Logística",
-          "status do pedido",
-          id,
-          "Status alterado de Em Produção para Aguardando Envio"
-        );
-      }
+      await logUpdate("Logística", "status do pedido", currentScheduleId, "Status alterado de Em Produção para Em Verificação");
 
       toast({
         title: "Produção concluída",
-        description: scheduleIds.length > 1 
-          ? `${scheduleIds.length} pedidos movidos para Aguardando Envio`
-          : "Pedido movido para Aguardando Envio"
+        description: "Pedido movido para Em Verificação"
       });
       
       onStatusChange?.();

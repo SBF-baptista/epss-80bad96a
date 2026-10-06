@@ -60,7 +60,7 @@ const GroupedOrderCard = ({
           ? "border-l-success border-border/40 bg-card"
           : "border-l-muted border-border/40 hover:border-l-primary"
       }`}
-      draggable
+      draggable={false}
       onDragStart={onDragStart}
       onClick={onClick}
     >
