@@ -104,6 +104,39 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Consolidated summary: client info, product type and totals */}
+          <div className="rounded-md border border-border bg-muted/40 p-3 space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">{order.company_name}</p>
+                <div className="mt-0.5 space-y-0.5 text-xs text-muted-foreground">
+                  {order.customer_document_number && <p>CNPJ/CPF: {order.customer_document_number}</p>}
+                  {order.customer_phone && <p>Telefone: {order.customer_phone}</p>}
+                </div>
+              </div>
+              <Badge variant="secondary" className="shrink-0">{order.configurationType !== "N/A" ? order.configurationType : order.configuration || "Sem configuração"}</Badge>
+            </div>
+            {(order.plate || order.vehicles.length > 0) && (
+              <p className="text-xs text-muted-foreground">
+                {order.vehicles.map((v) => `${v.brand} ${v.model}${v.year ? ` ${v.year}` : ""}`).join(", ")}
+                {order.plate ? ` · Placa ${order.plate}` : ""}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                { label: "Equipamentos", total: order.trackers.reduce((sum, item) => sum + item.quantity, 0) },
+                { label: "Acessórios", total: order.accessories.reduce((sum, item) => sum + item.quantity, 0) },
+                { label: "Módulos", total: (order.modules ?? []).reduce((sum, item) => sum + item.quantity, 0) },
+                { label: "Insumos", total: (order.supplies ?? []).reduce((sum, item) => sum + item.quantity, 0) },
+              ].map(({ label, total }) => (
+                <div key={label} className="rounded-md border border-border bg-card p-2 text-center">
+                  <p className="text-lg font-bold text-foreground">{total}</p>
+                  <p className="text-[11px] text-muted-foreground">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {stage === "verification" && (
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
               <span className="text-sm font-medium">IMEI/serial registrados</span>
