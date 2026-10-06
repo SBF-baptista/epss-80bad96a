@@ -23,7 +23,7 @@ const Expedition = () => {
 
   const { data: kits = [] } = useQuery({
     queryKey: ["homologation-kits"],
-    queryFn: fetchHomologationKits,
+    queryFn: () => fetchHomologationKits(),
     enabled: !!user,
     staleTime: 1000 * 60 * 10,
     retry: (count, error) => !/401|403|404/.test(String(error)) && count < 2,

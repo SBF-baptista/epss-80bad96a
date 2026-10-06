@@ -15,16 +15,6 @@ export interface ProductionItem {
   created_by?: string;
 }
 
-export const getProductionItemsByScheduleId = async (scheduleId: string): Promise<ProductionItem[]> => {
-  const { data, error } = await supabase
-    .from('production_items')
-    .select('*')
-    .eq('kit_schedule_id', scheduleId)
-    .order('scanned_at', { ascending: false });
-  if (error) throw error;
-  return data ?? [];
-};
-
 export const useProductionItems = (
   order: Order | null, 
   isOpen: boolean, 

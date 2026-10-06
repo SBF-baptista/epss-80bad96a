@@ -34,6 +34,7 @@ const Kanban = () => {
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: (count, error) => !/401|403|404/.test(String(error)) && count < 2,
   });
 
   const { data: kits = [] } = useQuery({
@@ -44,6 +45,7 @@ const Kanban = () => {
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: (count, error) => !/401|403|404/.test(String(error)) && count < 2,
   });
 
   const invalidateKanban = useCallback(() => {

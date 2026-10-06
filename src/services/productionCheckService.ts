@@ -37,7 +37,10 @@ export const loadProductionChecks = async (
     .order("item_name");
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((item) => ({
+    ...item,
+    stage: item.stage as ProductionCheckStage,
+  }));
 };
 
 export const saveProductionChecks = async (

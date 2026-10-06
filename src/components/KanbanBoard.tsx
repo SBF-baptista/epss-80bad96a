@@ -278,7 +278,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             color={column.color}
             status={column.id}
             onDragOver={handleDragOver}
-            onDrop={() => handleDrop(column.id)}
+            onDrop={handleDrop}
             onOrderClick={(order) => {
               const schedule = schedules.find(s => s.id === order.id);
               if (schedule) {
@@ -317,7 +317,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 color={column.color}
                 status={column.id}
                 onDragOver={handleDragOver}
-                onDrop={() => handleDrop(column.id)}
+                onDrop={handleDrop}
                 onOrderClick={(order) => {
                   const schedule = schedules.find(s => s.id === order.id);
                   if (schedule) {
