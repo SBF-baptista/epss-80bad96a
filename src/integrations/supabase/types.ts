@@ -2296,6 +2296,65 @@ export type Database = {
         }
         Relationships: []
       }
+      production_check_items: {
+        Row: {
+          checked_at: string | null
+          checked_by: string | null
+          counted_quantity: number
+          created_at: string
+          created_by: string
+          expected_quantity: number
+          id: string
+          is_checked: boolean
+          item_category: string
+          item_key: string
+          item_name: string
+          kit_schedule_id: string
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          checked_at?: string | null
+          checked_by?: string | null
+          counted_quantity?: number
+          created_at?: string
+          created_by: string
+          expected_quantity?: number
+          id?: string
+          is_checked?: boolean
+          item_category: string
+          item_key: string
+          item_name: string
+          kit_schedule_id: string
+          stage: string
+          updated_at?: string
+        }
+        Update: {
+          checked_at?: string | null
+          checked_by?: string | null
+          counted_quantity?: number
+          created_at?: string
+          created_by?: string
+          expected_quantity?: number
+          id?: string
+          is_checked?: boolean
+          item_category?: string
+          item_key?: string
+          item_name?: string
+          kit_schedule_id?: string
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_check_items_kit_schedule_id_fkey"
+            columns: ["kit_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "kit_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_items: {
         Row: {
           created_at: string

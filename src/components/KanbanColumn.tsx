@@ -5,7 +5,7 @@ import OrderCard from "./OrderCard";
 import GroupedOrderCard from "./GroupedOrderCard";
 import { Order } from "@/services/orderService";
 import { GroupedOrder, groupOrdersByCompany } from "@/types/groupedOrder";
-import { ClipboardList, Cog, Clock, Truck, Package } from "lucide-react";
+import { ClipboardCheck, ClipboardList, Cog, Clock, Truck, Package } from "lucide-react";
 
 interface KanbanColumnProps {
   title: string;
@@ -19,18 +19,24 @@ interface KanbanColumnProps {
   onDragStart: (order: Order) => void;
   onScanClick?: (order: Order) => void;
   onShipmentClick?: (order: Order) => void;
+  onWorkflowClick?: (order: Order) => void;
+  workflowLabel?: string;
 }
 
 const statusIcons: Record<string, React.ElementType> = {
   "scheduled": ClipboardList,
+  "counting": ClipboardCheck,
   "in_progress": Cog,
+  "verifying": ClipboardCheck,
   "completed": Clock,
   "shipped": Truck,
 };
 
 const statusColors: Record<string, { badge: string; icon: string }> = {
   "scheduled": { badge: "bg-primary/10 text-primary border-primary/20", icon: "text-primary" },
+  "counting": { badge: "bg-warning/10 text-warning border-warning/20", icon: "text-warning" },
   "in_progress": { badge: "bg-warning/10 text-warning border-warning/20", icon: "text-warning" },
+  "verifying": { badge: "bg-primary/10 text-primary border-primary/20", icon: "text-primary" },
   "completed": { badge: "bg-orange-100 text-orange-600 border-orange-200", icon: "text-orange-500" },
   "shipped": { badge: "bg-success/10 text-success border-success/20", icon: "text-success" },
 };
@@ -46,12 +52,12 @@ const KanbanColumn = ({
   onOrderViewDetailsClick,
   onDragStart,
   onScanClick,
-  onShipmentClick
+  onShipmentClick,
+  onWorkflowClick,
+  workflowLabel,
 }: KanbanColumnProps) => {
-  // Group orders in 'scheduled' (Pedidos), 'in_progress' (Em Produção) and 'shipped' (Enviado)
-  // Keep individual in 'completed' (Aguardando envio)
-  const shouldGroup = status === 'scheduled' || status === 'in_progress' || status === 'shipped';
-  const groupedOrders = groupOrdersByCompany(orders, shouldGroup);
+  // Production and expedition are controlled per order/vehicle.
+  const groupedOrders = groupOrdersByCompany(orders, false);
   
   const handleGroupClick = (groupedOrder: GroupedOrder) => {
     // Click on the first order in the group
@@ -118,6 +124,8 @@ const KanbanColumn = ({
                 onViewDetailsClick={onOrderViewDetailsClick ? () => handleGroupViewDetailsClick(groupedOrder) : undefined}
                 onScanClick={onScanClick ? () => handleGroupScanClick(groupedOrder) : undefined}
                 onShipmentClick={onShipmentClick ? () => handleGroupShipmentClick(groupedOrder) : undefined}
+                onWorkflowClick={onWorkflowClick ? () => onWorkflowClick(groupedOrder.orders[0]) : undefined}
+                workflowLabel={workflowLabel}
               />
             ))}
           </div>

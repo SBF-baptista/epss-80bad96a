@@ -8,12 +8,16 @@ export interface GroupedOrder {
   totalAccessories: number;
   status:
     | "novos"
+    | "contagem"
     | "producao"
+    | "verificacao"
     | "aguardando"
     | "enviado"
     | "standby"
     | "scheduled"
+    | "counting"
     | "in_progress"
+    | "verifying"
     | "completed"
     | "shipped";
   configurations: string[];

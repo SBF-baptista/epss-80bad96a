@@ -1,6 +1,8 @@
 import { Order } from "@/services/orderService";
 import { ProductionItem } from "@/services/productionService";
 import ProductionScannerTabs from "./ProductionScannerTabs";
+import { Button } from "@/components/ui/button";
+import { ClipboardCheck } from "lucide-react";
 
 interface ProductionFormProps {
   order: Order;
@@ -74,6 +76,12 @@ const ProductionForm = ({
         onKeyPress={onKeyPress}
         onRegisterForceCleanup={onRegisterForceCleanup}
       />
+      <div className="flex justify-end">
+        <Button onClick={onCompleteProduction} disabled={!isProductionComplete || totalTrackers === 0}>
+          <ClipboardCheck className="h-4 w-4" />
+          Enviar para verificação
+        </Button>
+      </div>
     </div>
   );
 };

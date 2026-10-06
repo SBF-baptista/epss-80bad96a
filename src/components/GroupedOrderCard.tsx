@@ -4,6 +4,7 @@ import { Eye, Package } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { cleanItemName } from "@/utils/itemNormalization";
+import { Button } from "@/components/ui/button";
 
 interface GroupedOrderCardProps {
   groupedOrder: GroupedOrder;
@@ -12,6 +13,8 @@ interface GroupedOrderCardProps {
   onViewDetailsClick?: () => void;
   onScanClick?: () => void;
   onShipmentClick?: () => void;
+  onWorkflowClick?: () => void;
+  workflowLabel?: string;
 }
 
 const GroupedOrderCard = ({ 
@@ -20,7 +23,9 @@ const GroupedOrderCard = ({
   onDragStart, 
   onViewDetailsClick,
   onScanClick, 
-  onShipmentClick 
+  onShipmentClick,
+  onWorkflowClick,
+  workflowLabel,
 }: GroupedOrderCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -60,7 +65,7 @@ const GroupedOrderCard = ({
           ? "border-l-success border-border/40 bg-card"
           : "border-l-muted border-border/40 hover:border-l-primary"
       }`}
-      draggable
+      draggable={false}
       onDragStart={onDragStart}
       onClick={onClick}
     >
@@ -160,6 +165,20 @@ const GroupedOrderCard = ({
               <span className="text-error">⚠️</span>
               <p className="text-xs text-error font-medium">Em Stand-by</p>
             </div>
+          )}
+
+          {onWorkflowClick && workflowLabel && (
+            <Button
+              className="w-full"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                onWorkflowClick();
+              }}
+            >
+              <Package className="h-4 w-4" />
+              {workflowLabel}
+            </Button>
           )}
 
         </div>

@@ -34,8 +34,10 @@ const homologationStatusLabels: Record<string, string> = {
 
 const scheduleStatusLabels: Record<string, string> = {
   scheduled: "Pedido Criado",
+  counting: "Em Contagem",
   confirmed: "Confirmado",
   in_progress: "Em Produção",
+  verifying: "Em Verificação",
   completed: "Aguardando Envio",
   shipped: "Enviado",
   cancelled: "Cancelado"

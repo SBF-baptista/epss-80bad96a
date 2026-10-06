@@ -70,7 +70,7 @@ const OrderCard = ({ order, onClick, onDragStart, onScanClick, onShipmentClick }
       className={`cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] ${
         isStandby ? "border-error bg-error-light" : ""
       }`}
-      draggable
+      draggable={false}
       onDragStart={onDragStart}
       onClick={onClick}
     >

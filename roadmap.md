@@ -12,3 +12,4 @@
 - [x] Escolha de 1 ou 2 configurações (com cadastro) na criação do kit
 - [x] Alerta de pendências por tipo na tela de Homologação
 - [x] Organizar Logística em Produção, Expedição e Dash logística, adicionando apenas navegação para Expedição
+- [x] Reorganizar Produção com Contagem e Verificação por pedido e mover envio para Expedição

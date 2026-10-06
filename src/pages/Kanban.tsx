@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
 import ProductionScannerModal from "@/components/ProductionScannerModal";
-import ShipmentPreparationModal from "@/components/ShipmentPreparationModal";
+import ProductionCheckModal from "@/components/production/ProductionCheckModal";
 import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
 import { useCentralRealtime } from "@/hooks/useCentralRealtime";
@@ -20,7 +20,7 @@ const Kanban = () => {
   });
 
   const [selectedOrderForScanner, setSelectedOrderForScanner] = useState<Order | null>(null);
-  const [selectedOrderForShipment, setSelectedOrderForShipment] = useState<Order | null>(null);
+  const [selectedOrderForCheck, setSelectedOrderForCheck] = useState<{ order: Order; stage: "counting" | "verification" } | null>(null);
 
   const {
     data: schedules = [],
@@ -34,6 +34,7 @@ const Kanban = () => {
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: (count, error) => !/401|403|404/.test(String(error)) && count < 2,
   });
 
   const { data: kits = [] } = useQuery({
@@ -44,6 +45,7 @@ const Kanban = () => {
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: (count, error) => !/401|403|404/.test(String(error)) && count < 2,
   });
 
   const invalidateKanban = useCallback(() => {
@@ -111,7 +113,7 @@ const Kanban = () => {
           kits={kits}
           onOrderUpdate={refetch}
           onScanClick={setSelectedOrderForScanner}
-          onShipmentClick={setSelectedOrderForShipment}
+          onCheckClick={(order, stage) => setSelectedOrderForCheck({ order, stage })}
         />
       </div>
 
@@ -123,15 +125,14 @@ const Kanban = () => {
         onUpdate={refetch}
       />
 
-      {/* Shipment Preparation Modal */}
-      {selectedOrderForShipment && (
-        <ShipmentPreparationModal
-          order={selectedOrderForShipment}
-          isOpen={!!selectedOrderForShipment}
-          onClose={() => setSelectedOrderForShipment(null)}
-          onUpdate={refetch}
-        />
-      )}
+      <ProductionCheckModal
+        order={selectedOrderForCheck?.order ?? null}
+        stage={selectedOrderForCheck?.stage ?? "counting"}
+        isOpen={!!selectedOrderForCheck}
+        onClose={() => setSelectedOrderForCheck(null)}
+        onUpdate={refetch}
+      />
+
     </div>
   );
 };

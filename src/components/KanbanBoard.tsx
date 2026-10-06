@@ -4,7 +4,6 @@ import KanbanColumn from "./KanbanColumn";
 import OrderModal from "./OrderModal";
 import { KitScheduleWithDetails } from "@/services/kitScheduleService";
 import { HomologationKit } from "@/types/homologationKit";
-import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccessoriesWithoutModulesToObjects, VehicleAccessory } from "@/services/vehicleAccessoryService";
@@ -16,18 +15,24 @@ interface KanbanBoardProps {
   onOrderUpdate: () => void;
   onScanClick?: (order: Order) => void;
   onShipmentClick?: (order: Order) => void;
+  onCheckClick?: (order: Order, stage: "counting" | "verification") => void;
+  mode?: "production" | "expedition";
 }
 
-const columns = [
+const productionColumns = [
   { id: "scheduled", title: "Pedidos", color: "bg-primary/5 hover:bg-primary/8" },
+  { id: "counting", title: "Contagem", color: "bg-warning-light/40 hover:bg-warning-light/50" },
   { id: "in_progress", title: "Em Produção", color: "bg-warning-light/40 hover:bg-warning-light/50" },
-  { id: "completed", title: "Aguardando Envio", color: "bg-orange-50/60 hover:bg-orange-50/80" },
+  { id: "verifying", title: "Em Verificação", color: "bg-primary/5 hover:bg-primary/8" },
+];
+
+const expeditionColumns = [
+  { id: "completed", title: "Aguardando Envio", color: "bg-warning-light/40 hover:bg-warning-light/50" },
   { id: "shipped", title: "Enviado", color: "bg-success-light/40 hover:bg-success-light/50" },
 ];
 
-const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentClick }: KanbanBoardProps) => {
-  const { toast } = useToast();
-  const [draggedSchedules, setDraggedSchedules] = useState<KitScheduleWithDetails[]>([]);
+const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentClick, onCheckClick, mode = "production" }: KanbanBoardProps) => {
+  const columns = mode === "production" ? productionColumns : expeditionColumns;
   const [selectedSchedule, setSelectedSchedule] = useState<KitScheduleWithDetails | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [modalMode, setModalMode] = useState<"scanner" | "details">("scanner");
@@ -150,8 +155,10 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       installation_address_state: schedule.installation_address_state,
       installation_address_postal_code: schedule.installation_address_postal_code,
       installation_address_complement: schedule.installation_address_complement,
-      status: schedule.status === 'scheduled' ? 'novos' : 
-              schedule.status === 'in_progress' ? 'producao' : 
+      status: schedule.status === 'scheduled' ? 'novos' :
+              schedule.status === 'counting' ? 'contagem' :
+              schedule.status === 'in_progress' ? 'producao' :
+              schedule.status === 'verifying' ? 'verificacao' :
               schedule.status === 'completed' ? 'aguardando' : 'enviado',
       configurationType: (schedule as any).configuration || kit?.name || 'N/A',
       selectedKitNames,
@@ -167,6 +174,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
         quantity: eq.quantity,
       })) || [],
       accessories: accessoriesList,
+      modules: kit?.modules?.map((item) => ({ name: item.item_name, quantity: item.quantity })) || [],
+      supplies: kit?.supplies?.map((item) => ({ name: item.item_name, quantity: item.quantity })) || [],
       technicianName: schedule.technician?.name,
       // New fields for Kanban cards
       plate: schedule.vehicle_plate || undefined,
@@ -224,105 +233,32 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
     }
   };
 
-  const handleDragStart = (order: Order) => {
-    // Find ALL schedules for the same company_name to move them together
-    const companyName = order.company_name?.trim().toUpperCase();
-    if (!companyName) {
-      const schedule = schedules.find(s => s.id === order.id);
-      setDraggedSchedules(schedule ? [schedule] : []);
-      return;
-    }
-    
-    // Get all schedules with the same company name and status
-    const allCompanySchedules = schedules.filter(s => {
-      const scheduleCompany = s.customer_name?.trim().toUpperCase();
-      return scheduleCompany === companyName && s.status === order.status.replace('novos', 'scheduled').replace('producao', 'in_progress').replace('aguardando', 'completed').replace('enviado', 'shipped');
-    });
-    
-    setDraggedSchedules(allCompanySchedules.length > 0 ? allCompanySchedules : []);
-  };
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
 
-  const handleDrop = async (columnId: string) => {
-    if (draggedSchedules.length > 0) {
-      try {
-        const statusMap: Record<string, string> = {
-          'scheduled': 'scheduled',
-          'in_progress': 'in_progress',
-          'completed': 'completed',
-          'shipped': 'shipped',
-        };
-        
-        const newStatus = statusMap[columnId] || 'scheduled';
-        const previousStatus = draggedSchedules[0].status;
-        
-        // Validate tracking code is required before moving to "shipped"
-        if (newStatus === 'shipped') {
-          const schedulesWithoutTracking = draggedSchedules.filter(s => !s.tracking_code || s.tracking_code.trim() === '');
-          if (schedulesWithoutTracking.length > 0) {
-            toast({
-              title: "Código de rastreio obrigatório",
-              description: "Preencha o código de rastreio antes de mover para Enviado",
-              variant: "destructive"
-            });
-            setDraggedSchedules([]);
-            return;
-          }
-        }
-        
-        const targetColumn = columns.find(c => c.id === columnId);
-        const previousColumn = columns.find(c => {
-          const reverseMap: Record<string, string> = {
-            'scheduled': 'scheduled',
-            'in_progress': 'in_progress',
-            'completed': 'completed',
-            'shipped': 'shipped',
-          };
-          return reverseMap[previousStatus] === c.id;
-        });
-        
-        // Update all schedules in the group
-        const scheduleIds = draggedSchedules.map(s => s.id);
-        await supabase
-          .from('kit_schedules')
-          .update({ status: newStatus })
-          .in('id', scheduleIds);
-        
-        // Log each movement
-        for (const schedule of draggedSchedules) {
-          await logKanbanMove(
-            "Pedidos",
-            schedule.id,
-            previousColumn?.title || previousStatus,
-            targetColumn?.title || columnId,
-            schedule.customer_name || "Cliente não identificado"
-          );
-        }
-        
-        onOrderUpdate();
-        toast({
-          title: "Status atualizado",
-          description: `${draggedSchedules.length} pedido${draggedSchedules.length > 1 ? 's movidos' : ' movido'} para ${columns.find(c => c.id === columnId)?.title}`
-        });
-      } catch (error) {
-        console.error("Error updating schedule status:", error);
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar status dos pedidos",
-          variant: "destructive"
-        });
-      }
+  const handleDrop = () => undefined;
+
+  const handleWorkflow = async (order: Order, status: string) => {
+    if (status === "scheduled") {
+      const { error } = await supabase.from("kit_schedules").update({ status: "counting" }).eq("id", order.id);
+      if (error) throw error;
+      await logKanbanMove("Produção", order.id, "Pedidos", "Contagem", order.company_name || "Cliente não identificado");
+      onOrderUpdate();
+      return;
     }
-    setDraggedSchedules([]);
+    if (status === "counting") onCheckClick?.(order, "counting");
+    if (status === "in_progress") onScanClick?.(order);
+    if (status === "verifying") onCheckClick?.(order, "verification");
+    if (status === "completed" || status === "shipped") onShipmentClick?.(order);
   };
 
   const getOrdersByStatus = (status: string) => {
     const statusMap: Record<string, string> = {
       'scheduled': 'novos',
+      'counting': 'contagem',
       'in_progress': 'producao',
+      'verifying': 'verificacao',
       'completed': 'aguardando',
       'shipped': 'enviado',
     };
@@ -342,7 +278,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             color={column.color}
             status={column.id}
             onDragOver={handleDragOver}
-            onDrop={() => handleDrop(column.id)}
+            onDrop={handleDrop}
             onOrderClick={(order) => {
               const schedule = schedules.find(s => s.id === order.id);
               if (schedule) {
@@ -357,9 +293,11 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 setSelectedSchedule(schedule);
               }
             }}
-            onDragStart={handleDragStart}
+            onDragStart={() => undefined}
             onScanClick={onScanClick}
             onShipmentClick={onShipmentClick}
+            onWorkflowClick={(order) => handleWorkflow(order, column.id)}
+            workflowLabel={column.id === "scheduled" ? "Iniciar contagem" : column.id === "counting" ? "Conferir itens" : column.id === "in_progress" ? "Registrar produção" : column.id === "verifying" ? "Fazer verificação" : column.id === "completed" ? "Preparar envio" : "Ver envio"}
           />
         ))}
       </div>
@@ -379,7 +317,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 color={column.color}
                 status={column.id}
                 onDragOver={handleDragOver}
-                onDrop={() => handleDrop(column.id)}
+                onDrop={handleDrop}
                 onOrderClick={(order) => {
                   const schedule = schedules.find(s => s.id === order.id);
                   if (schedule) {
@@ -394,9 +332,11 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                     setSelectedSchedule(schedule);
                   }
                 }}
-                onDragStart={handleDragStart}
+                onDragStart={() => undefined}
                 onScanClick={onScanClick}
                 onShipmentClick={onShipmentClick}
+                onWorkflowClick={(order) => handleWorkflow(order, column.id)}
+                workflowLabel={column.id === "scheduled" ? "Iniciar contagem" : column.id === "counting" ? "Conferir itens" : column.id === "in_progress" ? "Registrar produção" : column.id === "verifying" ? "Fazer verificação" : column.id === "completed" ? "Preparar envio" : "Ver envio"}
               />
             </div>
           ))}

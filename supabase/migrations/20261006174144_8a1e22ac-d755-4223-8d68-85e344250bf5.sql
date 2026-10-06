@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.production_check_items IS E'@graphql({"omit": true})';
