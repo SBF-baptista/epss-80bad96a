@@ -1,0 +1,2 @@
+ALTER TABLE public.kit_schedules DROP CONSTRAINT kit_schedules_status_check;
+ALTER TABLE public.kit_schedules ADD CONSTRAINT kit_schedules_status_check CHECK (status = ANY (ARRAY['scheduled','counting','in_progress','verifying','completed','cancelled','shipped']));
