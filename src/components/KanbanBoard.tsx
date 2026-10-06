@@ -298,13 +298,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             status={column.id}
             onDragOver={handleDragOver}
             onDrop={() => handleDrop(column.id)}
-            onOrderClick={(order) => {
-              const schedule = schedules.find(s => s.id === order.id);
-              if (schedule) {
-                setModalMode("scanner");
-                setSelectedSchedule(schedule);
-              }
-            }}
+            onOrderClick={(order) => handleWorkflow(order, column.id)}
             onOrderViewDetailsClick={(order) => {
               const schedule = schedules.find(s => s.id === order.id);
               if (schedule) {
@@ -338,13 +332,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 status={column.id}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(column.id)}
-                onOrderClick={(order) => {
-                  const schedule = schedules.find(s => s.id === order.id);
-                  if (schedule) {
-                    setModalMode("scanner");
-                    setSelectedSchedule(schedule);
-                  }
-                }}
+                onOrderClick={(order) => handleWorkflow(order, column.id)}
                 onOrderViewDetailsClick={(order) => {
                   const schedule = schedules.find(s => s.id === order.id);
                   if (schedule) {
