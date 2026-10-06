@@ -116,25 +116,6 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
               </div>
               <Badge variant="secondary" className="shrink-0">{order.configurationType !== "N/A" ? order.configurationType : order.configuration || "Sem configuração"}</Badge>
             </div>
-            {(order.plate || order.vehicles.length > 0) && (
-              <p className="text-xs text-muted-foreground">
-                {order.vehicles.map((v) => `${v.brand} ${v.model}${v.year ? ` ${v.year}` : ""}`).join(", ")}
-                {order.plate ? ` · Placa ${order.plate}` : ""}
-              </p>
-            )}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {[
-                { label: "Equipamentos", total: order.trackers.reduce((sum, item) => sum + item.quantity, 0) },
-                { label: "Acessórios", total: order.accessories.reduce((sum, item) => sum + item.quantity, 0) },
-                { label: "Módulos", total: (order.modules ?? []).reduce((sum, item) => sum + item.quantity, 0) },
-                { label: "Insumos", total: (order.supplies ?? []).reduce((sum, item) => sum + item.quantity, 0) },
-              ].map(({ label, total }) => (
-                <div key={label} className="rounded-md border border-border bg-card p-2 text-center">
-                  <p className="text-lg font-bold text-foreground">{total}</p>
-                  <p className="text-[11px] text-muted-foreground">{label}</p>
-                </div>
-              ))}
-            </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {(["Equipamentos", "Acessórios", "Módulos", "Insumos"] as const).map((category) => {
                 const items = expectedItems.filter((item) => item.category === category);
