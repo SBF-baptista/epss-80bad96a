@@ -19,6 +19,8 @@ interface KanbanColumnProps {
   onDragStart: (order: Order) => void;
   onScanClick?: (order: Order) => void;
   onShipmentClick?: (order: Order) => void;
+  onWorkflowClick?: (order: Order) => void;
+  workflowLabel?: string;
 }
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -50,7 +52,9 @@ const KanbanColumn = ({
   onOrderViewDetailsClick,
   onDragStart,
   onScanClick,
-  onShipmentClick
+  onShipmentClick,
+  onWorkflowClick,
+  workflowLabel,
 }: KanbanColumnProps) => {
   // Production and expedition are controlled per order/vehicle.
   const groupedOrders = groupOrdersByCompany(orders, false);
@@ -120,6 +124,8 @@ const KanbanColumn = ({
                 onViewDetailsClick={onOrderViewDetailsClick ? () => handleGroupViewDetailsClick(groupedOrder) : undefined}
                 onScanClick={onScanClick ? () => handleGroupScanClick(groupedOrder) : undefined}
                 onShipmentClick={onShipmentClick ? () => handleGroupShipmentClick(groupedOrder) : undefined}
+                onWorkflowClick={onWorkflowClick ? () => onWorkflowClick(groupedOrder.orders[0]) : undefined}
+                workflowLabel={workflowLabel}
               />
             ))}
           </div>

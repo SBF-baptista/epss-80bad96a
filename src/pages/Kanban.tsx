@@ -4,6 +4,7 @@ import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
 import ProductionScannerModal from "@/components/ProductionScannerModal";
 import ShipmentPreparationModal from "@/components/ShipmentPreparationModal";
+import ProductionCheckModal from "@/components/production/ProductionCheckModal";
 import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
 import { useCentralRealtime } from "@/hooks/useCentralRealtime";
@@ -21,6 +22,7 @@ const Kanban = () => {
 
   const [selectedOrderForScanner, setSelectedOrderForScanner] = useState<Order | null>(null);
   const [selectedOrderForShipment, setSelectedOrderForShipment] = useState<Order | null>(null);
+  const [selectedOrderForCheck, setSelectedOrderForCheck] = useState<{ order: Order; stage: "counting" | "verification" } | null>(null);
 
   const {
     data: schedules = [],
@@ -112,6 +114,7 @@ const Kanban = () => {
           onOrderUpdate={refetch}
           onScanClick={setSelectedOrderForScanner}
           onShipmentClick={setSelectedOrderForShipment}
+          onCheckClick={(order, stage) => setSelectedOrderForCheck({ order, stage })}
         />
       </div>
 
@@ -120,6 +123,14 @@ const Kanban = () => {
         order={selectedOrderForScanner}
         isOpen={!!selectedOrderForScanner}
         onClose={() => setSelectedOrderForScanner(null)}
+        onUpdate={refetch}
+      />
+
+      <ProductionCheckModal
+        order={selectedOrderForCheck?.order ?? null}
+        stage={selectedOrderForCheck?.stage ?? "counting"}
+        isOpen={!!selectedOrderForCheck}
+        onClose={() => setSelectedOrderForCheck(null)}
         onUpdate={refetch}
       />
 
