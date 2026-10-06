@@ -155,8 +155,10 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       installation_address_state: schedule.installation_address_state,
       installation_address_postal_code: schedule.installation_address_postal_code,
       installation_address_complement: schedule.installation_address_complement,
-      status: schedule.status === 'scheduled' ? 'novos' : 
-              schedule.status === 'in_progress' ? 'producao' : 
+      status: schedule.status === 'scheduled' ? 'novos' :
+              schedule.status === 'counting' ? 'contagem' :
+              schedule.status === 'in_progress' ? 'producao' :
+              schedule.status === 'verifying' ? 'verificacao' :
               schedule.status === 'completed' ? 'aguardando' : 'enviado',
       configurationType: (schedule as any).configuration || kit?.name || 'N/A',
       selectedKitNames,

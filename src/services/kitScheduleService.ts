@@ -297,7 +297,7 @@ export const getSchedulesByCustomer = async (customerName?: string, customerId?:
       supplies: (schedule.supplies as string[]) || [],
       kit: schedule.kit ? {
         ...schedule.kit,
-        equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
+        equipment: kitItems.filter((item: any) => ['equipment', 'tracker', 'camera'].includes(item.item_type)),
         accessories: kitItems.filter((item: any) => item.item_type === 'accessory'),
         modules: kitItems.filter((item: any) => item.item_type === 'module'),
         supplies: kitItems.filter((item: any) => item.item_type === 'supply'),
@@ -358,7 +358,7 @@ export const getKitSchedules = async (): Promise<KitScheduleWithDetails[]> => {
       supplies: (schedule.supplies as string[]) || [],
       kit: schedule.kit ? {
         ...schedule.kit,
-        equipment: kitItems.filter((item: any) => item.item_type === 'equipment'),
+        equipment: kitItems.filter((item: any) => ['equipment', 'tracker', 'camera'].includes(item.item_type)),
         accessories: kitItems.filter((item: any) => item.item_type === 'accessory'),
         modules: kitItems.filter((item: any) => item.item_type === 'module'),
         supplies: kitItems.filter((item: any) => item.item_type === 'supply'),

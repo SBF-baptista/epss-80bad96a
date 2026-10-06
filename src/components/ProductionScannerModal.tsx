@@ -49,7 +49,6 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     isLoading,
     isScanning,
     handleScanItem,
-    handleStartProduction,
     handleCompleteProduction,
   } = useProductionItems(order, isOpen, undefined, handleStatusChange);
 
@@ -57,13 +56,6 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
     const success = await handleScanItem(imei, productionLineCode, serialNumber);
     if (success) {
       clearForm();
-    }
-  };
-
-  const onStartProduction = async () => {
-    const success = await handleStartProduction();
-    if (success) {
-      onUpdate();
     }
   };
 
@@ -125,7 +117,7 @@ const ProductionScannerModal = ({ order, isOpen, onClose, onUpdate }: Production
             onScanError={handleScanError}
             onScanItem={onScanItemClick}
             onKeyPress={onKeyPress}
-            onStartProduction={onStartProduction}
+            onStartProduction={() => undefined}
             onCompleteProduction={onCompleteProduction}
             onRegisterForceCleanup={registerForceCleanup}
           />

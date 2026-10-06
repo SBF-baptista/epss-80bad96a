@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import FilterBar from "@/components/FilterBar";
 import ProductionScannerModal from "@/components/ProductionScannerModal";
-import ShipmentPreparationModal from "@/components/ShipmentPreparationModal";
 import ProductionCheckModal from "@/components/production/ProductionCheckModal";
 import { getKitSchedules } from "@/services/kitScheduleService";
 import { fetchHomologationKits } from "@/services/homologationKitService";
@@ -21,7 +20,6 @@ const Kanban = () => {
   });
 
   const [selectedOrderForScanner, setSelectedOrderForScanner] = useState<Order | null>(null);
-  const [selectedOrderForShipment, setSelectedOrderForShipment] = useState<Order | null>(null);
   const [selectedOrderForCheck, setSelectedOrderForCheck] = useState<{ order: Order; stage: "counting" | "verification" } | null>(null);
 
   const {
@@ -113,7 +111,6 @@ const Kanban = () => {
           kits={kits}
           onOrderUpdate={refetch}
           onScanClick={setSelectedOrderForScanner}
-          onShipmentClick={setSelectedOrderForShipment}
           onCheckClick={(order, stage) => setSelectedOrderForCheck({ order, stage })}
         />
       </div>
@@ -134,15 +131,6 @@ const Kanban = () => {
         onUpdate={refetch}
       />
 
-      {/* Shipment Preparation Modal */}
-      {selectedOrderForShipment && (
-        <ShipmentPreparationModal
-          order={selectedOrderForShipment}
-          isOpen={!!selectedOrderForShipment}
-          onClose={() => setSelectedOrderForShipment(null)}
-          onUpdate={refetch}
-        />
-      )}
     </div>
   );
 };
