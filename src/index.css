@@ -122,6 +122,10 @@ All colors MUST be HSL.
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 213 84% 44%;
     --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-icon: 214 60% 82%;
+    --sidebar-section-label: 214 45% 72%;
+    --sidebar-active-bar: 199 95% 70%;
+    --sidebar-gradient: linear-gradient(180deg, hsl(214 85% 33%) 0%, hsl(214 90% 29%) 45%, hsl(215 92% 23%) 100%);
     --sidebar-border: 214 90% 29%;
     --sidebar-ring: 214 90% 29%;
     
@@ -187,6 +191,10 @@ All colors MUST be HSL.
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 213 84% 44%;
     --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-icon: 214 60% 82%;
+    --sidebar-section-label: 214 45% 72%;
+    --sidebar-active-bar: 199 95% 70%;
+    --sidebar-gradient: linear-gradient(180deg, hsl(214 85% 33%) 0%, hsl(214 90% 29%) 45%, hsl(215 92% 23%) 100%);
     --sidebar-border: 214 90% 29%;
     --sidebar-ring: 217 91% 60%;
     
@@ -498,4 +506,22 @@ All colors MUST be HSL.
   .banner-critico {
     animation: none;
   }
+}
+
+@layer components {
+  .nav-surface { background: var(--sidebar-gradient); }
+  .nav-link { position: relative; transition: background-color .15s, color .15s; }
+  .nav-link:hover { background-color: hsl(var(--sidebar-foreground) / 0.06) !important; }
+  .nav-link[data-active="true"] {
+    background-color: hsl(var(--sidebar-accent) / 0.28) !important;
+    color: hsl(var(--sidebar-foreground)) !important;
+    font-weight: 600;
+  }
+  .nav-link[data-active="true"]::before {
+    content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
+    border-radius: 9999px; background: hsl(var(--sidebar-active-bar));
+  }
+  .nav-link .nav-icon { color: hsl(var(--sidebar-icon) / 0.85); }
+  .nav-link[data-active="true"] .nav-icon,
+  .nav-link[data-active-group] .nav-icon { color: hsl(var(--sidebar-active-bar)); }
 }

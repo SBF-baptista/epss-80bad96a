@@ -46,6 +46,13 @@ export function AppNavigation() {
   const { count: editRequestsCount } = useEditRequestsCount();
   const { count: frotaFailedCount } = useFrotaUnitFailedCount();
 
+  const displayName: string = (user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuário").toString();
+  const initials = (() => {
+    const parts = displayName.replace(/[._-]+/g, " ").trim().split(/\s+/).filter(Boolean);
+    const v = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0]?.[0] ?? "U");
+    return v.toUpperCase();
+  })();
+
   const storageKey = `nav-groups:${user?.id ?? "anon"}`;
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -111,9 +118,9 @@ export function AppNavigation() {
     const Icon = item.icon;
     return (
       <SidebarMenuItem key={item.to}>
-        <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.label} className="h-auto min-h-9 py-2 items-start touch-manipulation [&>span:last-child]:whitespace-normal">
+        <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.label} className="nav-link h-auto min-h-9 py-2 items-start touch-manipulation [&>span:last-child]:whitespace-normal">
           <NavLink to={item.to} onClick={onNavigate} className="flex items-start gap-3">
-            <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+            <Icon className="nav-icon h-4 w-4 shrink-0 mt-0.5" />
             <span className="flex-1 min-w-0 text-sm font-medium leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
             {!isCollapsed && renderBadge(item)}
           </NavLink>
@@ -131,8 +138,8 @@ export function AppNavigation() {
       <Collapsible key={g.id} open={isOpen} onOpenChange={() => toggleGroup(g, isOpen)} asChild>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton tooltip={g.label} className="h-auto min-h-9 py-2 items-start touch-manipulation data-[state=open]:font-semibold" data-active-group={groupActive || undefined}>
-              <GroupIcon className="h-4 w-4 shrink-0 mt-0.5" />
+            <SidebarMenuButton tooltip={g.label} className="nav-link h-auto min-h-9 py-2 items-start touch-manipulation data-[state=open]:font-semibold" data-active-group={groupActive || undefined}>
+              <GroupIcon className="nav-icon h-4 w-4 shrink-0 mt-0.5" />
               <span className={`text-sm font-medium flex-1 min-w-0 leading-snug !whitespace-normal !overflow-visible break-words ${groupActive ? "text-sidebar-accent-foreground" : ""}`}>{g.label}</span>
                             <ChevronRight className={`h-4 w-4 shrink-0 opacity-60 mt-0.5 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
             </SidebarMenuButton>
@@ -143,9 +150,9 @@ export function AppNavigation() {
                 const Icon = item.icon;
                 return (
                   <SidebarMenuSubItem key={item.to}>
-                    <SidebarMenuSubButton asChild isActive={isActive(item.to)} className="h-auto min-h-8 py-1.5 items-start [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible">
+                    <SidebarMenuSubButton asChild isActive={isActive(item.to)} className="nav-link h-auto min-h-8 py-1.5 items-start [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible">
                       <NavLink to={item.to} onClick={onNavigate} className="flex items-start gap-2">
-                        <Icon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <Icon className="nav-icon h-3.5 w-3.5 shrink-0 mt-0.5" />
                         <span className="flex-1 min-w-0 text-sm leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
                         {renderBadge(item)}
                       </NavLink>
@@ -161,16 +168,24 @@ export function AppNavigation() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
-      <SidebarHeader className="px-4 pt-4 pb-1">
-        {!isCollapsed && <span className="text-base font-bold text-sidebar-foreground">Menu</span>}
+    <Sidebar collapsible="icon" className="border-r [&_[data-sidebar=sidebar]]:nav-surface">
+      <SidebarHeader className="px-3 pt-4 pb-3 border-b border-sidebar-foreground/10">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 shrink-0 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground grid place-items-center text-xs font-bold shadow-md ring-1 ring-sidebar-foreground/15">OPM</div>
+          {!isCollapsed && (
+            <div className="min-w-0 leading-tight">
+              <div className="text-sm font-bold text-sidebar-foreground">OPM</div>
+              <div className="text-[10px] tracking-[0.18em] text-sidebar-foreground/55">SEGSAT</div>
+            </div>
+          )}
+        </div>
       </SidebarHeader>
 
       <SidebarContent className="safe-area-inset gap-0">
         {visibleSections.map((section) => (
-          <SidebarGroup key={section.id} className="py-1">
+          <SidebarGroup key={section.id} className="py-1.5">
             {section.label && (
-              <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/40">
                 {section.label}
               </SidebarGroupLabel>
             )}
@@ -183,25 +198,20 @@ export function AppNavigation() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
-        {!isCollapsed && (
-          <div className="px-2 pt-1 text-xs text-sidebar-foreground/70">
-            <div className="font-medium truncate">{user?.email}</div>
-            <div className="text-sidebar-foreground/50">{accessProfileName || getRoleLabel(role)}</div>
-          </div>
-        )}
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => signOut()}
-              tooltip="Sair"
-              className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              <span className="text-sm font-medium">Sair</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="p-2">
+        <div className={`flex items-center gap-2.5 rounded-lg bg-sidebar-foreground/[0.07] ring-1 ring-sidebar-foreground/10 ${isCollapsed ? "flex-col p-1" : "p-2"}`}>
+          <div className="h-8 w-8 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground grid place-items-center text-xs font-semibold" title={displayName}>{initials}</div>
+          {!isCollapsed && (
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="text-xs font-semibold text-sidebar-foreground break-words">{displayName}</div>
+              <div className="text-[11px] text-sidebar-foreground/55">{accessProfileName || getRoleLabel(role)}</div>
+            </div>
+          )}
+          <SidebarMenuButton onClick={() => signOut()} tooltip="Sair" aria-label="Sair"
+            className="h-8 w-8 shrink-0 justify-center p-0 text-destructive-foreground/80 hover:text-destructive-foreground hover:bg-destructive/40">
+            <LogOut className="h-4 w-4" />
+          </SidebarMenuButton>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
