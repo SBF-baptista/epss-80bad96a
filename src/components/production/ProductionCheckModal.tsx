@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { ExpectedProductionItem, loadProductionChecks, ProductionCheckStage, saveProductionChecks, updateProductionStage } from "@/services/productionCheckService";
@@ -28,9 +30,13 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
   const [registeredIdentifiers, setRegisteredIdentifiers] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState("");
+  const [activeCategory, setActiveCategory] = useState("Equipamentos");
 
   useEffect(() => {
-    if (isOpen) setNotes(order?.countingNotes ?? "");
+    if (isOpen) {
+      setNotes(order?.countingNotes ?? "");
+      setActiveCategory("Equipamentos");
+    }
   }, [isOpen, order]);
 
   const expectedItems = useMemo<ExpectedProductionItem[]>(() => {
@@ -48,6 +54,14 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
       quantity: item.quantity,
     })));
   }, [order]);
+
+  const checkCategories = useMemo(() => {
+    const order = ["Equipamentos", "Acessórios", "Módulos", "Insumos"];
+    return order.filter((category) => expectedItems.some((item) => item.category === category));
+  }, [expectedItems]);
+
+  const activeTab = checkCategories.includes(activeCategory) ? activeCategory : checkCategories[0];
+
 
   useEffect(() => {
     if (!isOpen || !order) return;
@@ -163,34 +177,64 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
             </div>
           )}
 
-          {expectedItems.map((item) => {
-            const quantityMatches = quantities[item.key] === item.quantity;
-            return (
-              <div key={item.key} className="grid grid-cols-[1fr_88px_28px] items-center gap-3 rounded-md border border-border p-3">
-                <div className="min-w-0">
-                  <Badge variant="outline" className="mb-1">{item.category}</Badge>
-                  <p className="truncate text-sm font-medium text-foreground">{cleanItemName(item.name)}</p>
-                  <p className="text-xs text-muted-foreground">Previsto: {item.quantity}</p>
-                </div>
-                <Input
-                  type="number"
-                  min={0}
-                  aria-label={`Quantidade conferida de ${item.name}`}
-                  value={quantities[item.key] ?? 0}
-                  onChange={(event) => setQuantities((current) => ({ ...current, [item.key]: Number(event.target.value) }))}
-                  className={quantityMatches ? "border-success" : undefined}
-                />
-                <Checkbox
-                  aria-label={`Confirmar ${item.name}`}
-                  checked={checked[item.key] ?? false}
-                  disabled={!quantityMatches}
-                  onCheckedChange={(value) => setChecked((current) => ({ ...current, [item.key]: value === true }))}
-                />
-              </div>
-            );
-          })}
-
           {expectedItems.length === 0 && <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">Este pedido não possui itens cadastrados no kit.</p>}
+
+          {expectedItems.length > 0 && (
+            <Tabs value={activeTab} onValueChange={setActiveCategory}>
+              <TabsList className="h-auto w-full flex-wrap justify-start gap-1.5 bg-transparent p-0">
+                {checkCategories.map((category) => {
+                  const items = expectedItems.filter((item) => item.category === category);
+                  const done = items.filter((item) => checked[item.key] && quantities[item.key] === item.quantity).length;
+                  const complete = done === items.length;
+                  return (
+                    <TabsTrigger
+                      key={category}
+                      value={category}
+                      className={cn(
+                        "gap-2 rounded-md border px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none",
+                        complete ? "border-success/50 text-success" : "border-border text-muted-foreground"
+                      )}
+                    >
+                      {category}
+                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", complete ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>
+                        {done}/{items.length}
+                      </span>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+
+              {checkCategories.map((category) => (
+                <TabsContent key={category} value={category} className="mt-3 space-y-2">
+                  {expectedItems.filter((item) => item.category === category).map((item) => {
+                    const quantityMatches = quantities[item.key] === item.quantity;
+                    return (
+                      <div key={item.key} className="grid grid-cols-[1fr_88px_28px] items-center gap-3 rounded-md border border-border p-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">{cleanItemName(item.name)}</p>
+                          <p className="text-xs text-muted-foreground">Previsto: {item.quantity}</p>
+                        </div>
+                        <Input
+                          type="number"
+                          min={0}
+                          aria-label={`Quantidade conferida de ${item.name}`}
+                          value={quantities[item.key] ?? 0}
+                          onChange={(event) => setQuantities((current) => ({ ...current, [item.key]: Number(event.target.value) }))}
+                          className={quantityMatches ? "border-success" : undefined}
+                        />
+                        <Checkbox
+                          aria-label={`Confirmar ${item.name}`}
+                          checked={checked[item.key] ?? false}
+                          disabled={!quantityMatches}
+                          onCheckedChange={(value) => setChecked((current) => ({ ...current, [item.key]: value === true }))}
+                        />
+                      </div>
+                    );
+                  })}
+                </TabsContent>
+              ))}
+            </Tabs>
+          )}
 
           {stage === "counting" && (
             <div className="space-y-1">
