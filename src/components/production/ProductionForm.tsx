@@ -51,9 +51,8 @@ const ProductionForm = ({
   onCompleteProduction,
   onRegisterForceCleanup,
 }: ProductionFormProps) => {
-  const totalTrackers = order.trackers.reduce((sum, tracker) => sum + tracker.quantity, 0);
   const scannedCount = productionItems.length;
-  const isProductionComplete = scannedCount >= totalTrackers;
+  const isProductionComplete = scannedCount > 0;
 
   return (
     <div className="space-y-6">
@@ -77,7 +76,7 @@ const ProductionForm = ({
         onRegisterForceCleanup={onRegisterForceCleanup}
       />
       <div className="flex justify-end">
-        <Button onClick={onCompleteProduction} disabled={!isProductionComplete || totalTrackers === 0}>
+        <Button onClick={onCompleteProduction} disabled={!isProductionComplete}>
           <ClipboardCheck className="h-4 w-4" />
           Enviar para verificação
         </Button>
