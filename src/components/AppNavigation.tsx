@@ -138,10 +138,10 @@ export function AppNavigation() {
       <Collapsible key={g.id} open={isOpen} onOpenChange={() => toggleGroup(g, isOpen)} asChild>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton tooltip={g.label} className="nav-link h-auto min-h-9 py-2 items-start touch-manipulation data-[state=open]:font-semibold" data-active-group={groupActive || undefined}>
+            <SidebarMenuButton tooltip={g.label} className="nav-link h-auto min-h-9 py-2 items-start touch-manipulation" data-active-group={groupActive || undefined}>
               <GroupIcon className="nav-icon h-4 w-4 shrink-0 mt-0.5" />
               <span className={`nav-group-label text-sm font-medium flex-1 min-w-0 leading-snug !whitespace-normal !overflow-visible break-words`}>{g.label}</span>
-                            <ChevronRight className={`nav-chevron h-4 w-4 shrink-0 opacity-60 mt-0.5 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
+                            <ChevronRight className={`nav-chevron h-4 w-4 shrink-0 mt-0.5 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
             </SidebarMenuButton>
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
@@ -185,7 +185,7 @@ export function AppNavigation() {
         {visibleSections.map((section) => (
           <SidebarGroup key={section.id} className="py-1.5">
             {section.label && (
-              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/40">
+              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.16em] nav-section-label">
                 {section.label}
               </SidebarGroupLabel>
             )}
