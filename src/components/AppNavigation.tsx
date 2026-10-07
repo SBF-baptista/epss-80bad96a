@@ -91,8 +91,8 @@ export function AppNavigation() {
     : item.badgeKind === "frota-unit-failed" ? frotaFailedCount : 0;
 
   const renderBadge = (item: NavItem) => {
-    const c = badgeCount(item);
-    return c > 0 ? <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-5">{c}</Badge> : null;
+    void badgeCount(item);
+    return null; // contadores de notificação não são exibidos no menu
   };
 
   if (loading) {
@@ -111,10 +111,10 @@ export function AppNavigation() {
     const Icon = item.icon;
     return (
       <SidebarMenuItem key={item.to}>
-        <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.label} className="h-9 touch-manipulation">
-          <NavLink to={item.to} onClick={onNavigate} className="flex items-center gap-3">
-            <Icon className="h-4 w-4 shrink-0" />
-            <span className="text-sm font-medium leading-tight whitespace-normal break-words">{item.label}</span>
+        <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.label} className="h-auto min-h-9 py-2 items-start touch-manipulation [&>span:last-child]:whitespace-normal">
+          <NavLink to={item.to} onClick={onNavigate} className="flex items-start gap-3">
+            <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+            <span className="flex-1 min-w-0 text-sm font-medium leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
             {!isCollapsed && renderBadge(item)}
           </NavLink>
         </SidebarMenuButton>
@@ -126,17 +126,15 @@ export function AppNavigation() {
     const GroupIcon = g.icon;
     const groupActive = g.items.some((i) => isActive(i.to));
     const stored = openGroups[g.id];
-    const isOpen = !isCollapsed && (groupActive || (stored ?? g.defaultOpen));
-    const groupBadge = g.items.reduce((s, i) => s + badgeCount(i), 0);
-    return (
+    const isOpen = !isCollapsed && (stored ?? (groupActive || g.defaultOpen));
+        return (
       <Collapsible key={g.id} open={isOpen} onOpenChange={() => toggleGroup(g, isOpen)} asChild>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton tooltip={g.label} className="h-9 touch-manipulation data-[state=open]:font-semibold" data-active-group={groupActive || undefined}>
-              <GroupIcon className="h-4 w-4 shrink-0" />
-              <span className={`text-sm font-medium flex-1 truncate ${groupActive ? "text-sidebar-accent-foreground" : ""}`}>{g.label}</span>
-              {!isOpen && groupBadge > 0 && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">{groupBadge}</Badge>}
-              <ChevronRight className={`h-4 w-4 shrink-0 opacity-60 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
+            <SidebarMenuButton tooltip={g.label} className="h-auto min-h-9 py-2 items-start touch-manipulation data-[state=open]:font-semibold" data-active-group={groupActive || undefined}>
+              <GroupIcon className="h-4 w-4 shrink-0 mt-0.5" />
+              <span className={`text-sm font-medium flex-1 min-w-0 leading-snug !whitespace-normal !overflow-visible break-words ${groupActive ? "text-sidebar-accent-foreground" : ""}`}>{g.label}</span>
+                            <ChevronRight className={`h-4 w-4 shrink-0 opacity-60 mt-0.5 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
             </SidebarMenuButton>
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
@@ -145,10 +143,10 @@ export function AppNavigation() {
                 const Icon = item.icon;
                 return (
                   <SidebarMenuSubItem key={item.to}>
-                    <SidebarMenuSubButton asChild isActive={isActive(item.to)} className="h-auto min-h-8 py-1.5">
-                      <NavLink to={item.to} onClick={onNavigate} className="flex items-center gap-2">
-                        <Icon className="h-3.5 w-3.5 shrink-0" />
-                        <span className="text-sm leading-tight whitespace-normal break-words">{item.label}</span>
+                    <SidebarMenuSubButton asChild isActive={isActive(item.to)} className="h-auto min-h-8 py-1.5 items-start [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible">
+                      <NavLink to={item.to} onClick={onNavigate} className="flex items-start gap-2">
+                        <Icon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <span className="flex-1 min-w-0 text-sm leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
                         {renderBadge(item)}
                       </NavLink>
                     </SidebarMenuSubButton>
