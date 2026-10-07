@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { ExpectedProductionItem, loadProductionChecks, ProductionCheckStage, saveProductionChecks, updateProductionStage } from "@/services/productionCheckService";
 import { getProductionItemsByScheduleId } from "@/hooks/useProductionItems";
+import type { ProductionItem } from "@/services/productionService";
 import { cleanItemName } from "@/utils/itemNormalization";
 
 interface ProductionCheckModalProps {
@@ -28,6 +29,8 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [registeredIdentifiers, setRegisteredIdentifiers] = useState(0);
+  const [producedItems, setProducedItems] = useState<ProductionItem[]>([]);
+  const isVerification = stage === "verification";
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState("");
   const [activeCategory, setActiveCategory] = useState("Equipamentos");
@@ -69,10 +72,11 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
       setIsLoading(true);
       try {
         const [saved, identifiers] = await Promise.all([
-          loadProductionChecks(order.id, stage),
+          loadProductionChecks(order.id, "counting"),
           stage === "verification" ? getProductionItemsByScheduleId(order.id) : Promise.resolve([]),
         ]);
         setRegisteredIdentifiers(identifiers.length);
+        setProducedItems(identifiers as ProductionItem[]);
         setQuantities(Object.fromEntries(expectedItems.map((item) => [item.key, saved.find((row) => row.item_key === item.key)?.counted_quantity ?? 0])));
         setChecked(Object.fromEntries(expectedItems.map((item) => [item.key, saved.find((row) => row.item_key === item.key)?.is_checked ?? false])));
       } catch (error) {
@@ -89,13 +93,13 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
 
   const expectedIdentifiers = order.trackers.reduce((total, item) => total + item.quantity, 0);
   const itemsValid = expectedItems.length > 0 && expectedItems.every((item) => checked[item.key] && quantities[item.key] === item.quantity);
-  const identifiersValid = stage === "counting" || registeredIdentifiers >= expectedIdentifiers;
-  const canAdvance = itemsValid && identifiersValid;
+  const identifiersValid = stage === "counting" || registeredIdentifiers > 0;
+  const canAdvance = isVerification ? true : itemsValid;
 
   const handleSave = async (advance: boolean) => {
     setIsLoading(true);
     try {
-      await saveProductionChecks(order.id, stage, expectedItems, quantities, checked);
+      if (!isVerification) await saveProductionChecks(order.id, stage, expectedItems, quantities, checked);
       if (stage === "counting") {
         const { data: authData } = await supabase.auth.getUser();
         const u = authData.user;
@@ -170,10 +174,31 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
             </div>
           </div>
 
-          {stage === "verification" && (
-            <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
-              <span className="text-sm font-medium">IMEI/serial registrados</span>
-              <Badge variant={identifiersValid ? "default" : "destructive"}>{registeredIdentifiers}/{expectedIdentifiers}</Badge>
+          {isVerification && (
+            <div className="space-y-3">
+              <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
+                <p className="text-sm font-semibold text-foreground">Contagem</p>
+                <p>Responsável: <span className="text-foreground">{order.countingCompletedByEmail || "Não informado"}</span>{order.countingCompletedAt && ` · ${new Date(order.countingCompletedAt).toLocaleString("pt-BR")}`}</p>
+                {order.countingNotes && <p>Observação: <span className="text-foreground">{order.countingNotes}</span></p>}
+              </div>
+              <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">Em produção · IMEI/serial registrados</p>
+                  <Badge variant={identifiersValid ? "default" : "destructive"}>{registeredIdentifiers}</Badge>
+                </div>
+                {producedItems.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhum rastreador registrado na produção.</p>
+                ) : (
+                  <ul className="max-h-48 space-y-1 overflow-y-auto">
+                    {producedItems.map((item, index) => (
+                      <li key={item.id} className="flex items-center justify-between gap-2 rounded border border-border bg-card px-2 py-1 text-xs">
+                        <span className="font-mono text-foreground">#{index + 1} {item.imei}{item.serial_number ? ` · Serial ${item.serial_number}` : ""}</span>
+                        <span className="text-muted-foreground">{new Date(item.scanned_at).toLocaleString("pt-BR")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
 
@@ -219,13 +244,15 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
                           min={0}
                           aria-label={`Quantidade conferida de ${item.name}`}
                           value={quantities[item.key] ?? 0}
+                          readOnly={isVerification}
+                          disabled={isVerification}
                           onChange={(event) => setQuantities((current) => ({ ...current, [item.key]: Number(event.target.value) }))}
                           className={quantityMatches ? "border-success" : undefined}
                         />
                         <Checkbox
                           aria-label={`Confirmar ${item.name}`}
                           checked={checked[item.key] ?? false}
-                          disabled={!quantityMatches}
+                          disabled={isVerification || !quantityMatches}
                           onCheckedChange={(value) => setChecked((current) => ({ ...current, [item.key]: value === true }))}
                         />
                       </div>
@@ -244,7 +271,7 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
           )}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={isLoading}>Salvar andamento</Button>
+            {!isVerification && <Button variant="outline" onClick={() => handleSave(false)} disabled={isLoading}>Salvar andamento</Button>}
             <Button onClick={() => handleSave(true)} disabled={isLoading || !canAdvance}>
               <CheckCircle2 className="h-4 w-4" />
               {stage === "counting" ? "Liberar para produção" : "Liberar para expedição"}
