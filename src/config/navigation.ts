@@ -46,7 +46,6 @@ export const NAV_SECTIONS: NavSection[] = [
     id: "top",
     entries: [
       item({ to: "/modules", label: "Início", icon: Home, public: true }),
-      item({ to: "/chamados", label: "Chamados", icon: Headset, module: "chamados" }),
     ],
   },
   {
@@ -75,6 +74,7 @@ export const NAV_SECTIONS: NavSection[] = [
       item({ to: "/scheduling", label: "Agendamento", icon: Clock, module: "scheduling" }),
       item({ to: "/installation", label: "Instalação", icon: Wrench, adminOnly: true }),
       item({ to: "/customer-tracking", label: "Acompanhamento de Clientes", icon: UserCheck, module: "customer_tracking" }),
+      item({ to: "/chamados", label: "Chamados", icon: Headset, module: "chamados" }),
     ],
   },
   {
