@@ -126,6 +126,15 @@ All colors MUST be HSL.
     --sidebar-section-label: 214 45% 72%;
     --sidebar-active-bar: 199 95% 70%;
     --sidebar-active-bg: 205 95% 65%;
+    --nav-section-label: 219 28% 55%;
+    --nav-top-fg: 219 51% 89%;
+    --nav-top-icon: 218 35% 67%;
+    --nav-sub-fg: 220 36% 75%;
+    --nav-sub-icon: 219 30% 61%;
+    --nav-active-fg: 0 0% 100%;
+    --nav-active-icon: 218 100% 74%;
+    --nav-hover-fg: 220 60% 95%;
+    --nav-chevron: 219 27% 51%;
     --sidebar-guide: 214 60% 82%;
     --sidebar-sub-fg: 214 45% 80%;
     --sidebar-scroll-thumb: 214 60% 85%;
@@ -200,6 +209,15 @@ All colors MUST be HSL.
     --sidebar-section-label: 214 45% 72%;
     --sidebar-active-bar: 199 95% 70%;
     --sidebar-active-bg: 205 95% 65%;
+    --nav-section-label: 219 28% 55%;
+    --nav-top-fg: 219 51% 89%;
+    --nav-top-icon: 218 35% 67%;
+    --nav-sub-fg: 220 36% 75%;
+    --nav-sub-icon: 219 30% 61%;
+    --nav-active-fg: 0 0% 100%;
+    --nav-active-icon: 218 100% 74%;
+    --nav-hover-fg: 220 60% 95%;
+    --nav-chevron: 219 27% 51%;
     --sidebar-guide: 214 60% 82%;
     --sidebar-sub-fg: 214 45% 80%;
     --sidebar-scroll-thumb: 214 60% 85%;
@@ -520,26 +538,30 @@ All colors MUST be HSL.
 
 @layer components {
   .nav-surface { background: var(--sidebar-gradient); }
-  .nav-link { position: relative; transition: background-color .15s, color .15s; }
-  .nav-link:hover { background-color: hsl(var(--sidebar-active-bg) / 0.08) !important; color: hsl(var(--sidebar-foreground)) !important; }
-  .nav-link[data-active="true"] {
-    background-color: hsl(var(--sidebar-active-bg) / 0.16) !important;
-    color: hsl(var(--sidebar-active-bar)) !important;
+  .nav-link { position: relative; transition: background-color .15s, color .15s; color: hsl(var(--nav-top-fg)) !important; font-weight: 500; }
+  .nav-link .nav-icon { color: hsl(var(--nav-top-icon)); transition: color .15s; }
+  .nav-link .nav-chevron { color: hsl(var(--nav-chevron)); opacity: 1; }
+  .nav-link:hover { background-color: hsl(var(--sidebar-active-bg) / 0.07) !important; color: hsl(var(--nav-hover-fg)) !important; }
+  .nav-link:hover .nav-icon { color: hsl(var(--nav-top-fg)); }
+  .nav-section-label { color: hsl(var(--nav-section-label)) !important; }
+  .nav-sub { border-left: 1px solid hsl(var(--sidebar-guide) / 0.18) !important; margin-left: 1.1rem; padding-left: 0.5rem; }
+  .nav-sub .nav-link { color: hsl(var(--nav-sub-fg)) !important; }
+  .nav-sub .nav-icon { color: hsl(var(--nav-sub-icon)); }
+  .nav-sub .nav-link:hover { color: hsl(var(--nav-top-fg)) !important; }
+  .nav-sub .nav-link:hover .nav-icon { color: hsl(var(--nav-top-icon)); }
+  /* Group containing the active route: only slightly lighter, never accent */
+  .nav-link[data-active-group] { color: hsl(var(--nav-hover-fg)) !important; }
+  .nav-link[data-active="true"], .nav-sub .nav-link[data-active="true"] {
+    background-color: hsl(var(--sidebar-accent) / 0.45) !important;
+    color: hsl(var(--nav-active-fg)) !important;
     font-weight: 600;
   }
+  .nav-link[data-active="true"] .nav-icon { color: hsl(var(--nav-active-icon)); }
   .nav-link[data-active="true"]::before {
     content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
     border-radius: 9999px; background: hsl(var(--sidebar-active-bar));
   }
-  .nav-link .nav-icon { color: hsl(var(--sidebar-icon) / 0.85); }
-  .nav-link[data-active="true"] .nav-icon,
-  .nav-link[data-active-group] .nav-icon,
-  .nav-link[data-active-group] .nav-chevron { color: hsl(var(--sidebar-active-bar)); opacity: 1; }
-  .nav-link[data-active-group] .nav-group-label { color: hsl(var(--sidebar-active-bar)); }
-  .nav-sub { border-left: 1px solid hsl(var(--sidebar-guide) / 0.18) !important; margin-left: 1.1rem; padding-left: 0.5rem; }
-  .nav-sub .nav-link { color: hsl(var(--sidebar-sub-fg) / 0.85); }
   .nav-sub .nav-link[data-active="true"]::before { left: calc(-0.5rem - 2px); top: 4px; bottom: 4px; }
-  .nav-sub .nav-icon { color: hsl(var(--sidebar-icon) / 0.6); }
   .nav-scroll { scrollbar-width: thin; scrollbar-color: hsl(var(--sidebar-scroll-thumb) / 0.22) transparent; }
   .nav-scroll::-webkit-scrollbar { width: 6px; }
   .nav-scroll::-webkit-scrollbar-track { background: transparent; }
