@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
 import { ExpectedProductionItem, loadProductionChecks, ProductionCheckStage, saveProductionChecks, updateProductionStage } from "@/services/productionCheckService";
@@ -28,9 +30,13 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
   const [registeredIdentifiers, setRegisteredIdentifiers] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState("");
+  const [activeCategory, setActiveCategory] = useState("Equipamentos");
 
   useEffect(() => {
-    if (isOpen) setNotes(order?.countingNotes ?? "");
+    if (isOpen) {
+      setNotes(order?.countingNotes ?? "");
+      setActiveCategory("Equipamentos");
+    }
   }, [isOpen, order]);
 
   const expectedItems = useMemo<ExpectedProductionItem[]>(() => {
