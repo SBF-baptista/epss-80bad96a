@@ -183,7 +183,11 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       })) || [],
       accessories: accessoriesList,
       modules: kit?.modules?.map((item) => ({ name: item.item_name, quantity: item.quantity })) || [],
-      supplies: kit?.supplies?.map((item) => ({ name: item.item_name, quantity: item.quantity })) || [],
+      supplies: kit?.supplies?.length
+        ? kit.supplies.map((item) => ({ name: item.item_name, quantity: item.quantity }))
+        : Array.isArray((schedule as any).supplies)
+          ? ((schedule as any).supplies as string[]).map((name) => ({ name, quantity: 1 }))
+          : [],
       technicianName: schedule.technician?.name,
       // New fields for Kanban cards
       plate: schedule.vehicle_plate || undefined,
