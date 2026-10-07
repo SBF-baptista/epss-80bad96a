@@ -2006,6 +2006,10 @@ export type Database = {
         Row: {
           accessories: string[] | null
           configuration: string | null
+          counting_completed_at: string | null
+          counting_completed_by: string | null
+          counting_completed_by_email: string | null
+          counting_notes: string | null
           created_at: string
           created_by: string | null
           customer_document_number: string | null
@@ -2046,6 +2050,10 @@ export type Database = {
         Insert: {
           accessories?: string[] | null
           configuration?: string | null
+          counting_completed_at?: string | null
+          counting_completed_by?: string | null
+          counting_completed_by_email?: string | null
+          counting_notes?: string | null
           created_at?: string
           created_by?: string | null
           customer_document_number?: string | null
@@ -2086,6 +2094,10 @@ export type Database = {
         Update: {
           accessories?: string[] | null
           configuration?: string | null
+          counting_completed_at?: string | null
+          counting_completed_by?: string | null
+          counting_completed_by_email?: string | null
+          counting_notes?: string | null
           created_at?: string
           created_by?: string | null
           customer_document_number?: string | null
