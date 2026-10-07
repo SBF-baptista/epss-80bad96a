@@ -91,7 +91,6 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
 
   if (!order) return null;
 
-  const expectedIdentifiers = order.trackers.reduce((total, item) => total + item.quantity, 0);
   const itemsValid = expectedItems.length > 0 && expectedItems.every((item) => checked[item.key] && quantities[item.key] === item.quantity);
   const identifiersValid = stage === "counting" || registeredIdentifiers > 0;
   const canAdvance = isVerification ? true : itemsValid;
