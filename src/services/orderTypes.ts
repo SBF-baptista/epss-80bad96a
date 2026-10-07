@@ -58,4 +58,7 @@ export interface Order {
   scheduledDate?: string
   scheduledTime?: string
   configuration?: string
+  countingNotes?: string
+  countingCompletedByEmail?: string
+  countingCompletedAt?: string
 }

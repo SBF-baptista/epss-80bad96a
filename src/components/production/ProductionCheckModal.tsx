@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/services/orderService";
@@ -25,6 +27,11 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [registeredIdentifiers, setRegisteredIdentifiers] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (isOpen) setNotes(order?.countingNotes ?? "");
+  }, [isOpen, order]);
 
   const expectedItems = useMemo<ExpectedProductionItem[]>(() => {
     if (!order) return [];
@@ -75,6 +82,18 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
     setIsLoading(true);
     try {
       await saveProductionChecks(order.id, stage, expectedItems, quantities, checked);
+      if (stage === "counting") {
+        const { data: authData } = await supabase.auth.getUser();
+        const u = authData.user;
+        const patch: Record<string, unknown> = { counting_notes: notes.trim() || null };
+        if (advance && canAdvance && u) {
+          patch.counting_completed_by = u.id;
+          patch.counting_completed_by_email = u.email ?? null;
+          patch.counting_completed_at = new Date().toISOString();
+        }
+        const { error } = await supabase.from("kit_schedules").update(patch as any).eq("id", order.id);
+        if (error) throw error;
+      }
       if (advance) {
         if (!canAdvance) return;
         await updateProductionStage(order.id, stage === "counting" ? "in_progress" : "completed");
@@ -172,6 +191,13 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
           })}
 
           {expectedItems.length === 0 && <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">Este pedido não possui itens cadastrados no kit.</p>}
+
+          {stage === "counting" && (
+            <div className="space-y-1">
+              <label htmlFor="counting-notes" className="text-sm font-medium text-foreground">Observação da contagem</label>
+              <Textarea id="counting-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional: anote algo sobre a contagem" rows={3} />
+            </div>
+          )}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => handleSave(false)} disabled={isLoading}>Salvar andamento</Button>

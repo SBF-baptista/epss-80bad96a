@@ -169,6 +169,16 @@ const GroupedOrderCard = ({
             </div>
           )}
 
+          {groupedOrder.orders.filter((o) => o.countingCompletedByEmail).map((o) => (
+            <div key={`count-${o.id}`} className="rounded-md border border-border bg-muted/40 p-2 text-xs space-y-0.5">
+              <p className="text-muted-foreground">
+                Contagem por <span className="font-medium text-foreground break-all">{o.countingCompletedByEmail}</span>
+                {o.countingCompletedAt && <> em {new Date(o.countingCompletedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</>}
+              </p>
+              {o.countingNotes && <p className="text-foreground whitespace-pre-wrap">Obs.: {o.countingNotes}</p>}
+            </div>
+          ))}
+
           {onWorkflowClick && workflowLabel && (
             <Button
               className="w-full"
