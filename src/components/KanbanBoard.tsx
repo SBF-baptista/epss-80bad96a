@@ -192,6 +192,9 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       scheduledTime: schedule.installation_time || undefined,
       configuration: (schedule as any).configuration || kit?.name || undefined,
       trackingCode: schedule.tracking_code || undefined,
+      countingNotes: (schedule as any).counting_notes || undefined,
+      countingCompletedByEmail: (schedule as any).counting_completed_by_email || undefined,
+      countingCompletedAt: (schedule as any).counting_completed_at || undefined,
     };
   };
 
