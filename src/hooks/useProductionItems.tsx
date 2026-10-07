@@ -167,7 +167,7 @@ export const useProductionItems = (
       
       toast({
         title: "Item adicionado com sucesso",
-        description: `IMEI ${imei} adicionado à produção na linha ${productionLineCode} (${totalScanned + 1}/${totalVehicles})`
+        description: `IMEI ${imei} adicionado à produção na linha ${productionLineCode}`
       });
 
       // Reload items
