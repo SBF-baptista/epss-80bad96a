@@ -140,20 +140,20 @@ export function AppNavigation() {
           <CollapsibleTrigger asChild>
             <SidebarMenuButton tooltip={g.label} className="nav-link h-auto min-h-9 py-2 items-start touch-manipulation data-[state=open]:font-semibold" data-active-group={groupActive || undefined}>
               <GroupIcon className="nav-icon h-4 w-4 shrink-0 mt-0.5" />
-              <span className={`text-sm font-medium flex-1 min-w-0 leading-snug !whitespace-normal !overflow-visible break-words ${groupActive ? "text-sidebar-accent-foreground" : ""}`}>{g.label}</span>
-                            <ChevronRight className={`h-4 w-4 shrink-0 opacity-60 mt-0.5 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
+              <span className={`nav-group-label text-sm font-medium flex-1 min-w-0 leading-snug !whitespace-normal !overflow-visible break-words`}>{g.label}</span>
+                            <ChevronRight className={`nav-chevron h-4 w-4 shrink-0 opacity-60 mt-0.5 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
             </SidebarMenuButton>
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <SidebarMenuSub>
+            <SidebarMenuSub className="nav-sub mx-0 border-l-0 px-0">
               {g.items.map((item) => {
                 const Icon = item.icon;
                 return (
                   <SidebarMenuSubItem key={item.to}>
                     <SidebarMenuSubButton asChild isActive={isActive(item.to)} className="nav-link h-auto min-h-8 py-1.5 items-start [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible">
                       <NavLink to={item.to} onClick={onNavigate} className="flex items-start gap-2">
-                        <Icon className="nav-icon h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <span className="flex-1 min-w-0 text-sm leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
+                        <Icon className="nav-icon h-3 w-3 shrink-0 mt-0.5" />
+                        <span className="flex-1 min-w-0 text-[13px] leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
                         {renderBadge(item)}
                       </NavLink>
                     </SidebarMenuSubButton>
@@ -181,7 +181,7 @@ export function AppNavigation() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="safe-area-inset gap-0">
+      <SidebarContent className="nav-scroll safe-area-inset gap-0">
         {visibleSections.map((section) => (
           <SidebarGroup key={section.id} className="py-1.5">
             {section.label && (
@@ -200,7 +200,7 @@ export function AppNavigation() {
 
       <SidebarFooter className="p-2">
         <div className={`flex items-center gap-2.5 rounded-lg bg-sidebar-foreground/[0.07] ring-1 ring-sidebar-foreground/10 ${isCollapsed ? "flex-col p-1" : "p-2"}`}>
-          <div className="h-8 w-8 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground grid place-items-center text-xs font-semibold" title={displayName}>{initials}</div>
+          <div className="h-8 w-8 shrink-0 rounded-full nav-monogram grid place-items-center text-xs font-semibold" title={displayName}>{initials}</div>
           {!isCollapsed && (
             <div className="min-w-0 flex-1 leading-tight">
               <div className="text-xs font-semibold text-sidebar-foreground break-words">{displayName}</div>
@@ -208,7 +208,7 @@ export function AppNavigation() {
             </div>
           )}
           <SidebarMenuButton onClick={() => signOut()} tooltip="Sair" aria-label="Sair"
-            className="h-8 w-8 shrink-0 justify-center p-0 text-destructive-foreground/80 hover:text-destructive-foreground hover:bg-destructive/40">
+            className="h-8 w-8 shrink-0 justify-center p-0 text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-destructive/30">
             <LogOut className="h-4 w-4" />
           </SidebarMenuButton>
         </div>
