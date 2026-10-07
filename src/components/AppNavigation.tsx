@@ -114,7 +114,7 @@ export function AppNavigation() {
         <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.label} className="h-auto min-h-9 py-2 items-start touch-manipulation [&>span:last-child]:whitespace-normal">
           <NavLink to={item.to} onClick={onNavigate} className="flex items-start gap-3">
             <Icon className="h-4 w-4 shrink-0 mt-0.5" />
-            <span className="flex-1 min-w-0 text-sm font-medium leading-snug whitespace-normal break-words [overflow:visible] [text-overflow:clip]">{item.label}</span>
+            <span className="flex-1 min-w-0 text-sm font-medium leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
             {!isCollapsed && renderBadge(item)}
           </NavLink>
         </SidebarMenuButton>
@@ -133,7 +133,7 @@ export function AppNavigation() {
           <CollapsibleTrigger asChild>
             <SidebarMenuButton tooltip={g.label} className="h-auto min-h-9 py-2 items-start touch-manipulation data-[state=open]:font-semibold" data-active-group={groupActive || undefined}>
               <GroupIcon className="h-4 w-4 shrink-0 mt-0.5" />
-              <span className={`text-sm font-medium flex-1 min-w-0 leading-snug whitespace-normal break-words ${groupActive ? "text-sidebar-accent-foreground" : ""}`}>{g.label}</span>
+              <span className={`text-sm font-medium flex-1 min-w-0 leading-snug !whitespace-normal !overflow-visible break-words ${groupActive ? "text-sidebar-accent-foreground" : ""}`}>{g.label}</span>
                             <ChevronRight className={`h-4 w-4 shrink-0 opacity-60 mt-0.5 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
             </SidebarMenuButton>
           </CollapsibleTrigger>
@@ -146,7 +146,7 @@ export function AppNavigation() {
                     <SidebarMenuSubButton asChild isActive={isActive(item.to)} className="h-auto min-h-8 py-1.5 items-start [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible">
                       <NavLink to={item.to} onClick={onNavigate} className="flex items-start gap-2">
                         <Icon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <span className="flex-1 min-w-0 text-sm leading-snug whitespace-normal break-words">{item.label}</span>
+                        <span className="flex-1 min-w-0 text-sm leading-snug !whitespace-normal !overflow-visible break-words">{item.label}</span>
                         {renderBadge(item)}
                       </NavLink>
                     </SidebarMenuSubButton>
