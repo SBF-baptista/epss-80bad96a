@@ -20,7 +20,7 @@ const ProductionItemsList = ({
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Itens Processados</h3>
         <Badge variant="outline" className="font-mono">
-          {productionItems.length} / {totalTrackers}
+          {productionItems.length} {productionItems.length === 1 ? "registrado" : "registrados"}
         </Badge>
       </div>
       

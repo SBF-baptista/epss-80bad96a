@@ -135,18 +135,9 @@ export const useProductionItems = (
         return false;
       }
 
-      // Check vehicle count limit
-      const totalVehicles = await getTotalVehicleCount();
-      const totalScanned = await getTotalScannedForCompany();
-      
-      if (totalScanned >= totalVehicles) {
-        toast({
-          title: "Limite atingido",
-          description: `Já foram escaneados ${totalScanned} de ${totalVehicles} veículos para este cliente. Não é possível adicionar mais.`,
-          variant: "destructive"
-        });
-        return false;
-      }
+      // Sem limite de quantidade: o usuário pode bipar quantos rastreadores precisar.
+
+
       
       const { data: user } = await supabase.auth.getUser();
       
@@ -176,7 +167,7 @@ export const useProductionItems = (
       
       toast({
         title: "Item adicionado com sucesso",
-        description: `IMEI ${imei} adicionado à produção na linha ${productionLineCode} (${totalScanned + 1}/${totalVehicles})`
+        description: `IMEI ${imei} adicionado à produção na linha ${productionLineCode}`
       });
 
       // Reload items
