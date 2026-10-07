@@ -55,6 +55,14 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
     })));
   }, [order]);
 
+  const checkCategories = useMemo(() => {
+    const order = ["Equipamentos", "Acessórios", "Módulos", "Insumos"];
+    return order.filter((category) => expectedItems.some((item) => item.category === category));
+  }, [expectedItems]);
+
+  const activeTab = checkCategories.includes(activeCategory) ? activeCategory : checkCategories[0];
+
+
   useEffect(() => {
     if (!isOpen || !order) return;
     const load = async () => {
