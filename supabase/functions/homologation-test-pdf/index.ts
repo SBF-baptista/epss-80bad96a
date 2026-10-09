@@ -197,6 +197,29 @@ Deno.serve(async (req) => {
     }
     if (template.highlight) { y -= 4; text(template.highlight, 9, font, gray); }
 
+    // Connections block
+    y -= 8;
+    text("Conexões", 12, bold, navy); y -= 2;
+    const connRows: [string, unknown][] = [
+      ["Equipamento testado", card.equipment_model],
+      ["Conexão elétrica", card.electrical_connection_type],
+      ["Local do teste", card.test_location],
+    ];
+    for (const [k, v] of connRows) {
+      ensure(14);
+      page.drawText(safe(k + ":"), { x: M, y: y - 10, size: 10, font: bold, color: gray });
+      page.drawText(safe(v), { x: M + 130, y: y - 10, size: 10, font });
+      y -= 15;
+    }
+    if (card.notes) text(`Notas: ${card.notes}`, 10);
+    y -= 4;
+    text("Pontos de conexão fotografados", 10, bold, gray);
+    const present = new Set(withUrls.map((f) => f.photo_type));
+    for (const t of template.photoOrder.filter((t) => t !== "outros" && t !== "installation")) {
+      const ok = present.has(t);
+      text(`${ok ? "[OK]" : "[--]"} ${PHOTO_LABELS[t]}${ok ? "" : ": sem foto"}`, 10, font, ok ? rgb(0, 0.45, 0.2) : rgb(0.7, 0.1, 0.1));
+    }
+
     y -= 8;
     text("Checklist do teste", 12, bold, navy);
     const checklist = Array.isArray(card.test_checklist) ? card.test_checklist : [];
