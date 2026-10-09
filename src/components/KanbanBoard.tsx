@@ -230,6 +230,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       countingNotes: (schedule as any).counting_notes || undefined,
       countingCompletedByEmail: (schedule as any).counting_completed_by_email || undefined,
       countingCompletedAt: (schedule as any).counting_completed_at || undefined,
+      countingInProgressByEmail: (schedule as any).counting_in_progress_by_email || undefined,
+      countingInProgressAt: (schedule as any).counting_in_progress_at || undefined,
       trackingCorreios: (schedule as any).tracking_code_correios || undefined,
       trackingGolog: (schedule as any).tracking_code_golog || undefined,
       trackingAzul: (schedule as any).tracking_code_azul || undefined,

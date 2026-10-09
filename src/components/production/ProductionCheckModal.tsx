@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -36,11 +37,15 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState("");
   const [activeCategory, setActiveCategory] = useState("Equipamentos");
+  const [dirty, setDirty] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setNotes(order?.countingNotes ?? "");
       setActiveCategory("Equipamentos");
+      setDirty(false);
+      setConfirmExit(false);
     }
   }, [isOpen, order]);
 
@@ -104,6 +109,7 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
     const next = Math.max(0, value);
     setQuantities((c) => ({ ...c, [key]: next }));
     setChecked((c) => ({ ...c, [key]: next === expected }));
+    setDirty(true);
   };
 
   const handleSave = async (advance: boolean) => {
@@ -114,6 +120,10 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
         const { data: authData } = await supabase.auth.getUser();
         const u = authData.user;
         const patch: Record<string, unknown> = { counting_notes: notes.trim() || null };
+        if (!advance && u) {
+          patch.counting_in_progress_by_email = u.email ?? null;
+          patch.counting_in_progress_at = new Date().toISOString();
+        }
         if (advance && canAdvance && u) {
           patch.counting_completed_by = u.id;
           patch.counting_completed_by_email = u.email ?? null;
@@ -132,6 +142,7 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
           ? stage === "counting" ? "Pedido liberado para produção." : variant === "expedition" ? "Pedido liberado para envio." : "Pedido liberado para expedição."
           : "O andamento foi salvo.",
       });
+      setDirty(false);
       onUpdate();
       if (advance) onClose();
     } catch (error) {
@@ -145,7 +156,20 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
   const title = stage === "counting" ? "Contagem do kit" : variant === "expedition" ? "Conferência de expedição" : variant === "summary" ? "Resumo do envio" : "Verificação final";
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <>
+    <AlertDialog open={confirmExit} onOpenChange={setConfirmExit}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Você está saindo sem salvar o andamento</AlertDialogTitle>
+          <AlertDialogDescription>Se sair agora, a contagem feita desde o último salvamento será perdida. Deseja sair mesmo assim?</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continuar contagem</AlertDialogCancel>
+          <AlertDialogAction onClick={() => { setConfirmExit(false); setDirty(false); onClose(); }}>Sair sem salvar</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (open) return; if (stage === "counting" && !isLoading) setConfirmExit(true); else onClose(); }}>
       <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0">
         <DialogHeader className="border-b border-border px-4 py-3 sm:px-6 text-left">
           <DialogTitle className="flex items-center gap-2 text-base font-medium"><ClipboardCheck className="h-5 w-5 text-primary" />{title}</DialogTitle>
