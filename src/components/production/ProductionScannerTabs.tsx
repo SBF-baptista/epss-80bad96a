@@ -67,12 +67,13 @@ const ProductionScannerTabs = ({
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="scanned-imei">IMEI Escaneado</Label>
+            <Label htmlFor="scanned-imei">IMEI</Label>
             <Input
               id="scanned-imei"
+              autoFocus
               value={imei}
               onChange={(e) => onImeiChange(e.target.value)}
-              placeholder="Resultado do scanner aparecerá aqui"
+              placeholder="Bipe o código com o leitor"
               onKeyPress={onKeyPress}
             />
           </div>
@@ -115,14 +116,14 @@ const ProductionScannerTabs = ({
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />
-              {isScanning ? "Adicionando..." : "Adicionar Item"}
+              {isScanning ? "Adicionando..." : "Adicionar item"}
             </Button>
           </div>
         </div>
       </TabsContent>
 
       <TabsContent value="manual" className="space-y-4">
-        <h3 className="font-semibold">Entrada Manual de Dados</h3>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="manual-imei">IMEI</Label>
@@ -173,7 +174,7 @@ const ProductionScannerTabs = ({
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />
-              {isScanning ? "Adicionando..." : "Adicionar Item"}
+              {isScanning ? "Adicionando..." : "Adicionar item"}
             </Button>
           </div>
         </div>
