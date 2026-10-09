@@ -16,6 +16,9 @@ export const STAGE_ACCENT: Record<string, { border: string; text: string; bg: st
   counting: { border: "border-l-stage-counting", text: "text-stage-counting", bg: "bg-stage-counting" },
   in_progress: { border: "border-l-stage-production", text: "text-stage-production", bg: "bg-stage-production" },
   verifying: { border: "border-l-stage-verification", text: "text-stage-verification", bg: "bg-stage-verification" },
+  expedition_check: { border: "border-l-stage-orders", text: "text-stage-orders", bg: "bg-stage-orders" },
+  completed: { border: "border-l-stage-counting", text: "text-stage-counting", bg: "bg-stage-counting" },
+  shipped: { border: "border-l-stage-verification", text: "text-stage-verification", bg: "bg-stage-verification" },
 };
 
 interface Props {
@@ -59,14 +62,16 @@ const ProductionOrderCard = ({ order, status, progress, canDrag, workflowLabel, 
           </div>
         </div>
         {onViewDetails && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
-            className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="h-7 w-7 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
             title="Ver detalhes do pedido"
             aria-label="Ver detalhes do pedido"
           >
             <Eye className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -95,6 +100,25 @@ const ProductionOrderCard = ({ order, status, progress, canDrag, workflowLabel, 
             ? "Pronto para expedição"
             : !order.countingCompletedAt ? "Falta concluir a contagem" : "Falta registrar IMEI"}
         </p>
+      )}
+
+      {status === "expedition_check" && (
+        <p className="text-xs text-muted-foreground">{order.countingCompletedAt ? "Contagem concluída" : "Contagem não informada"} · Conferência da produção</p>
+      )}
+
+      {status === "completed" && (
+        <p className="text-xs text-muted-foreground">{[order.installation_address_city, order.installation_address_state].filter(Boolean).join(" / ") || "Endereço não informado"}</p>
+      )}
+
+      {status === "shipped" && (
+        <div className="space-y-1 text-xs text-muted-foreground">
+          {order.trackingCorreios && <p className="break-words">Correios: <span className="font-mono text-foreground">{order.trackingCorreios}</span></p>}
+          {order.trackingGolog && <p className="break-words">GoLog: <span className="font-mono text-foreground">{order.trackingGolog}</span></p>}
+          {order.trackingAzul && <p className="break-words">Azul: <span className="font-mono text-foreground">{order.trackingAzul}</span></p>}
+          {!order.trackingCorreios && !order.trackingGolog && !order.trackingAzul && order.trackingCode && <p className="break-words">Rastreio: <span className="font-mono text-foreground">{order.trackingCode}</span></p>}
+          {order.shippedByEmail && <p className="break-all">Enviado por {order.shippedByEmail}</p>}
+          {order.shippedAt && <p>{new Date(order.shippedAt).toLocaleString("pt-BR")}</p>}
+        </div>
       )}
 
       {order.countingCompletedByEmail && status !== "counting" && (

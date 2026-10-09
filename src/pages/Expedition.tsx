@@ -41,9 +41,8 @@ const Expedition = () => {
   return (
     <div className="min-h-full bg-muted/30 p-4 md:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-5 md:space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground md:text-3xl">Expedição</h2>
-          <p className="text-sm text-muted-foreground md:text-base">Preparação e acompanhamento dos envios</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-2xl font-semibold text-foreground md:text-3xl">Expedição</h2>
         </div>
 
         {isLoading ? (
