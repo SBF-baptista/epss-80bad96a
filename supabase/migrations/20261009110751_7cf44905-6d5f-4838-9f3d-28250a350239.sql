@@ -1,0 +1,3 @@
+ALTER TABLE public.kit_schedules DROP CONSTRAINT kit_schedules_status_check;
+ALTER TABLE public.kit_schedules ADD CONSTRAINT kit_schedules_status_check CHECK (status = ANY (ARRAY['scheduled','counting','in_progress','verifying','expedition_check','completed','cancelled','shipped']));
+ALTER TABLE public.kit_schedules ADD COLUMN IF NOT EXISTS tracking_code_correios text, ADD COLUMN IF NOT EXISTS tracking_code_golog text, ADD COLUMN IF NOT EXISTS tracking_code_azul text, ADD COLUMN IF NOT EXISTS shipped_at timestamptz, ADD COLUMN IF NOT EXISTS shipped_by_email text;

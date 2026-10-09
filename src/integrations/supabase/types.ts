@@ -2037,10 +2037,15 @@ export type Database = {
           notes: string | null
           scheduled_date: string
           selected_kit_ids: string[] | null
+          shipped_at: string | null
+          shipped_by_email: string | null
           status: string
           supplies: string[] | null
           technician_id: string
           tracking_code: string | null
+          tracking_code_azul: string | null
+          tracking_code_correios: string | null
+          tracking_code_golog: string | null
           updated_at: string
           vehicle_brand: string | null
           vehicle_model: string | null
@@ -2081,10 +2086,15 @@ export type Database = {
           notes?: string | null
           scheduled_date: string
           selected_kit_ids?: string[] | null
+          shipped_at?: string | null
+          shipped_by_email?: string | null
           status?: string
           supplies?: string[] | null
           technician_id: string
           tracking_code?: string | null
+          tracking_code_azul?: string | null
+          tracking_code_correios?: string | null
+          tracking_code_golog?: string | null
           updated_at?: string
           vehicle_brand?: string | null
           vehicle_model?: string | null
@@ -2125,10 +2135,15 @@ export type Database = {
           notes?: string | null
           scheduled_date?: string
           selected_kit_ids?: string[] | null
+          shipped_at?: string | null
+          shipped_by_email?: string | null
           status?: string
           supplies?: string[] | null
           technician_id?: string
           tracking_code?: string | null
+          tracking_code_azul?: string | null
+          tracking_code_correios?: string | null
+          tracking_code_golog?: string | null
           updated_at?: string
           vehicle_brand?: string | null
           vehicle_model?: string | null
