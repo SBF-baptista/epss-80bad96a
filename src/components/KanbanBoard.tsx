@@ -10,6 +10,7 @@ import { fetchAccessoriesByVehicleIds, fetchAccessoriesByPlates, aggregateAccess
 import { logKanbanMove } from "@/services/logService";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import type { CardStageProgress } from "./production/ProductionOrderCard";
 
 const FREE_DRAG_EMAILS = ["pedro.albuquerque@segsat.com"];
 const STATUS_TITLES: Record<string, string> = { scheduled: "Pedidos", counting: "Contagem", in_progress: "Em Produção", verifying: "Em Verificação", expedition_check: "Conferência", completed: "Em Preparação de Envio", shipped: "Enviado" };
@@ -49,6 +50,34 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   const { user } = useAuth();
   const canFreeDrag = !!user?.email && FREE_DRAG_EMAILS.includes(user.email.toLowerCase());
   const draggedRef = useRef<Order | null>(null);
+  const [progressById, setProgressById] = useState<Record<string, CardStageProgress>>({});
+
+  // Per-card stage progress (saved counting checks + registered IMEIs)
+  useEffect(() => {
+    if (mode !== "production") return;
+    const ids = schedules.filter((s) => ["counting", "in_progress", "verifying"].includes(s.status || "")).map((s) => s.id);
+    if (ids.length === 0) { setProgressById({}); return; }
+    let cancelled = false;
+    (async () => {
+      const [checksRes, itemsRes] = await Promise.all([
+        supabase.from("production_check_items").select("kit_schedule_id,item_category,is_checked,counted_quantity,expected_quantity").eq("stage", "counting").in("kit_schedule_id", ids),
+        supabase.from("production_items").select("kit_schedule_id").in("kit_schedule_id", ids),
+      ]);
+      if (cancelled) return;
+      const map: Record<string, CardStageProgress> = {};
+      const get = (id: string) => (map[id] ??= { accessoriesDone: 0, suppliesDone: 0, totalDone: 0, imeiCount: 0 });
+      (checksRes.data ?? []).forEach((r: any) => {
+        if (!r.is_checked || r.counted_quantity !== r.expected_quantity) return;
+        const p = get(r.kit_schedule_id);
+        p.totalDone++;
+        if (r.item_category === "Acessórios") p.accessoriesDone++;
+        if (r.item_category === "Insumos") p.suppliesDone++;
+      });
+      (itemsRes.data ?? []).forEach((r: any) => { if (r.kit_schedule_id) get(r.kit_schedule_id).imeiCount++; });
+      setProgressById(map);
+    })().catch((e) => console.error("Error loading card progress:", e));
+    return () => { cancelled = true; };
+  }, [schedules, mode]);
 
   // Fetch real accessories from database by vehicle IDs and fallback to plates
   useEffect(() => {
@@ -304,7 +333,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   return (
     <>
       {/* Desktop and Tablet: Grid layout */}
-      <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className={mode === "production" ? "hidden md:grid md:grid-cols-2 xl:grid-cols-4 gap-4" : "hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"}>
         {columns.map(column => (
           <KanbanColumn
             key={column.id}
@@ -324,6 +353,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             }}
             onDragStart={(o) => { draggedRef.current = o; }}
             canDrag={canFreeDrag}
+            mode={mode}
+            progressById={progressById}
             onScanClick={onScanClick}
             onShipmentClick={onShipmentClick}
             onWorkflowClick={(order) => handleWorkflow(order, column.id)}
@@ -358,6 +389,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 }}
                 onDragStart={(o) => { draggedRef.current = o; }}
             canDrag={canFreeDrag}
+            mode={mode}
+            progressById={progressById}
                 onScanClick={onScanClick}
                 onShipmentClick={onShipmentClick}
                 onWorkflowClick={(order) => handleWorkflow(order, column.id)}

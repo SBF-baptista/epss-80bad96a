@@ -1,9 +1,8 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ClipboardCheck } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardCheck, Minus, Plus } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +95,16 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
 
   const itemsValid = expectedItems.length > 0 && expectedItems.every((item) => checked[item.key] && quantities[item.key] === item.quantity);
   const identifiersValid = stage === "counting" || registeredIdentifiers > 0;
-  const canAdvance = isVerification ? true : itemsValid;
+  const verificationReady = !!order.countingCompletedAt && registeredIdentifiers > 0;
+  const canAdvance = isVerification ? (variant === "production" ? verificationReady : true) : itemsValid;
+  const doneCount = expectedItems.filter((item) => checked[item.key] && quantities[item.key] === item.quantity).length;
+  const missing = expectedItems.length - doneCount;
+  const progressPct = expectedItems.length ? Math.round((doneCount / expectedItems.length) * 100) : 0;
+  const setQty = (key: string, expected: number, value: number) => {
+    const next = Math.max(0, value);
+    setQuantities((c) => ({ ...c, [key]: next }));
+    setChecked((c) => ({ ...c, [key]: next === expected }));
+  };
 
   const handleSave = async (advance: boolean) => {
     setIsLoading(true);
@@ -134,68 +142,57 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
     }
   };
 
+  const title = stage === "counting" ? "Contagem do kit" : variant === "expedition" ? "Conferência de expedição" : variant === "summary" ? "Resumo do envio" : "Verificação final";
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5" />{stage === "counting" ? "Contagem do kit" : variant === "expedition" ? "Conferência de expedição" : variant === "summary" ? "Resumo do envio" : "Verificação final"}</DialogTitle>
-          <DialogDescription>{order.company_name} · {order.plate || `Pedido ${order.number}`}</DialogDescription>
+      <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-border px-4 py-3 sm:px-6 text-left">
+          <DialogTitle className="flex items-center gap-2 text-base font-medium"><ClipboardCheck className="h-5 w-5 text-primary" />{title}</DialogTitle>
+          <DialogDescription>{order.company_name} · <span className="font-mono">{order.plate || `Pedido ${order.number}`}</span></DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Consolidated summary: client info, product type and totals */}
-          <div className="rounded-md border border-border bg-muted/40 p-3 space-y-3">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{order.company_name}</p>
-                <div className="mt-0.5 space-y-0.5 text-xs text-muted-foreground">
-                  {order.customer_document_number && <p>CNPJ/CPF: {order.customer_document_number}</p>}
-                  {order.customer_phone && <p>Telefone: {order.customer_phone}</p>}
-                </div>
-              </div>
-              <Badge variant="secondary" className="shrink-0">{order.configurationType !== "N/A" ? order.configurationType : order.configuration || "Sem configuração"}</Badge>
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-2 rounded-md border border-border bg-muted/40 p-3">
+            <div className="min-w-0 text-xs text-muted-foreground space-y-0.5">
+              <p className="text-sm font-medium text-foreground">{order.company_name}</p>
+              {order.customer_document_number && <p>CNPJ/CPF: {order.customer_document_number}</p>}
+              {order.customer_phone && <p>Telefone: {order.customer_phone}</p>}
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {(["Equipamentos", "Acessórios", "Módulos", "Insumos"] as const).map((category) => {
-                const items = expectedItems.filter((item) => item.category === category);
-                if (items.length === 0) return null;
-                return (
-                  <div key={category} className="rounded-md border border-border bg-card p-2">
-                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{category}</p>
-                    <ul className="space-y-1">
-                      {items.map((item, index) => (
-                        <li key={`${item.key}-${index}`} className="flex items-center justify-between gap-2 text-xs">
-                          <span className="truncate text-foreground">{cleanItemName(item.name)}</span>
-                          <span className="shrink-0 font-semibold text-foreground">{item.quantity}x</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
+            <Badge variant="secondary" className="shrink-0">{order.configurationType !== "N/A" ? order.configurationType : order.configuration || "Sem configuração"}</Badge>
           </div>
 
+          {expectedItems.length > 0 && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Progresso geral</span>
+                <span>{doneCount}/{expectedItems.length} itens conferidos</span>
+              </div>
+              <Progress value={progressPct} className="h-2" />
+            </div>
+          )}
+
           {isVerification && (
-            <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
-                <p className="text-sm font-semibold text-foreground">Contagem</p>
-                <p>Responsável: <span className="text-foreground">{order.countingCompletedByEmail || "Não informado"}</span>{order.countingCompletedAt && ` · ${new Date(order.countingCompletedAt).toLocaleString("pt-BR")}`}</p>
+                <p className="text-sm font-medium text-foreground">Contagem</p>
+                <p>Responsável: <span className="text-foreground break-all">{order.countingCompletedByEmail || "Não informado"}</span></p>
+                {order.countingCompletedAt && <p>Concluída em {new Date(order.countingCompletedAt).toLocaleString("pt-BR")}</p>}
                 {order.countingNotes && <p>Observação: <span className="text-foreground">{order.countingNotes}</span></p>}
               </div>
               <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-foreground">Em produção · IMEI/serial registrados</p>
-                  <Badge variant={identifiersValid ? "default" : "destructive"}>{registeredIdentifiers}</Badge>
+                  <p className="text-sm font-medium text-foreground">Em produção</p>
+                  <Badge variant={identifiersValid ? "secondary" : "destructive"}>{registeredIdentifiers} IMEI/serial</Badge>
                 </div>
                 {producedItems.length === 0 ? (
                   <p className="text-xs text-muted-foreground">Nenhum rastreador registrado na produção.</p>
                 ) : (
-                  <ul className="max-h-48 space-y-1 overflow-y-auto">
-                    {producedItems.map((item, index) => (
-                      <li key={item.id} className="flex items-center justify-between gap-2 rounded border border-border bg-card px-2 py-1 text-xs">
-                        <span className="font-mono text-foreground">#{index + 1} {item.imei}{item.serial_number ? ` · Serial ${item.serial_number}` : ""}</span>
-                        <span className="text-muted-foreground">{new Date(item.scanned_at).toLocaleString("pt-BR")}</span>
+                  <ul className="max-h-40 space-y-1 overflow-y-auto">
+                    {producedItems.map((item) => (
+                      <li key={item.id} className="flex items-center gap-2 rounded border border-border bg-card px-2 py-1 text-xs">
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
+                        <span className="font-mono text-foreground break-all">{item.imei}{item.serial_number ? ` · ${item.serial_number}` : ""}</span>
                       </li>
                     ))}
                   </ul>
@@ -206,28 +203,20 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
 
           {extraContent}
 
+          {isLoading && expectedItems.length > 0 && Object.keys(quantities).length === 0 && <p className="text-sm text-muted-foreground">Carregando…</p>}
           {expectedItems.length === 0 && <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">Este pedido não possui itens cadastrados no kit.</p>}
 
           {expectedItems.length > 0 && (
             <Tabs value={activeTab} onValueChange={setActiveCategory}>
-              <TabsList className="h-auto w-full flex-wrap justify-start gap-1.5 bg-transparent p-0">
+              <TabsList className="grid h-auto w-full auto-cols-fr grid-flow-col gap-1 bg-muted p-1">
                 {checkCategories.map((category) => {
                   const items = expectedItems.filter((item) => item.category === category);
                   const done = items.filter((item) => checked[item.key] && quantities[item.key] === item.quantity).length;
                   const complete = done === items.length;
                   return (
-                    <TabsTrigger
-                      key={category}
-                      value={category}
-                      className={cn(
-                        "gap-2 rounded-md border px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none",
-                        complete ? "border-success/50 text-success" : "border-border text-muted-foreground"
-                      )}
-                    >
-                      {category}
-                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", complete ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>
-                        {done}/{items.length}
-                      </span>
+                    <TabsTrigger key={category} value={category} className="min-h-9 gap-1.5 px-2 text-xs">
+                      <span className="truncate">{category}</span>
+                      <span className={cn("rounded-full px-1.5 text-[10px]", complete ? "bg-success/15 text-success" : "bg-background text-muted-foreground")}>{done}/{items.length}</span>
                     </TabsTrigger>
                   );
                 })}
@@ -236,29 +225,30 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
               {checkCategories.map((category) => (
                 <TabsContent key={category} value={category} className="mt-3 space-y-2">
                   {expectedItems.filter((item) => item.category === category).map((item) => {
-                    const quantityMatches = quantities[item.key] === item.quantity;
+                    const value = quantities[item.key] ?? 0;
+                    const ok = checked[item.key] && value === item.quantity;
                     return (
-                      <div key={item.key} className="grid grid-cols-[1fr_88px_28px] items-center gap-3 rounded-md border border-border p-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground">{cleanItemName(item.name)}</p>
+                      <div key={item.key} className={cn("flex items-center gap-3 rounded-md border p-2.5 transition-colors", ok ? "border-success-border bg-success-light" : "border-border bg-card")}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-foreground break-words">{cleanItemName(item.name)}</p>
                           <p className="text-xs text-muted-foreground">Previsto: {item.quantity}</p>
                         </div>
-                        <Input
-                          type="number"
-                          min={0}
-                          aria-label={`Quantidade conferida de ${item.name}`}
-                          value={quantities[item.key] ?? 0}
-                          readOnly={isVerification}
-                          disabled={isVerification}
-                          onChange={(event) => setQuantities((current) => ({ ...current, [item.key]: Number(event.target.value) }))}
-                          className={quantityMatches ? "border-success" : undefined}
-                        />
-                        <Checkbox
-                          aria-label={`Confirmar ${item.name}`}
-                          checked={checked[item.key] ?? false}
-                          disabled={isVerification || !quantityMatches}
-                          onCheckedChange={(value) => setChecked((current) => ({ ...current, [item.key]: value === true }))}
-                        />
+                        {isVerification ? (
+                          <span className="font-mono text-sm text-foreground">{value}</span>
+                        ) : (
+                          <div className="flex items-center rounded-md border border-border bg-background">
+                            <Button type="button" variant="ghost" size="icon" className="h-11 w-11" aria-label={`Diminuir ${item.name}`} onClick={() => setQty(item.key, item.quantity, value - 1)}><Minus className="h-4 w-4" /></Button>
+                            <input
+                              inputMode="numeric"
+                              aria-label={`Quantidade conferida de ${item.name}`}
+                              value={value}
+                              onChange={(e) => setQty(item.key, item.quantity, Number(e.target.value.replace(/\D/g, "")) || 0)}
+                              className="h-11 w-10 bg-transparent text-center font-mono text-sm outline-none"
+                            />
+                            <Button type="button" variant="ghost" size="icon" className="h-11 w-11" aria-label={`Aumentar ${item.name}`} onClick={() => setQty(item.key, item.quantity, value + 1)}><Plus className="h-4 w-4" /></Button>
+                          </div>
+                        )}
+                        <span className="w-5 shrink-0">{ok ? <CheckCircle2 className="h-5 w-5 text-success" aria-label="Conferido" /> : <Circle className="h-5 w-5 text-muted-foreground/40" aria-label="Pendente" />}</span>
                       </div>
                     );
                   })}
@@ -269,21 +259,28 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
 
           {stage === "counting" && (
             <div className="space-y-1">
-              <label htmlFor="counting-notes" className="text-sm font-medium text-foreground">Observação da contagem</label>
+              <label htmlFor="counting-notes" className="text-sm text-foreground">Observação da contagem</label>
               <Textarea id="counting-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional: anote algo sobre a contagem" rows={3} />
             </div>
           )}
+        </div>
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            {!isVerification && <Button variant="outline" onClick={() => handleSave(false)} disabled={isLoading}>Salvar andamento</Button>}
+        {variant !== "summary" || !isVerification ? (
+          <div className="flex flex-col-reverse gap-2 border-t border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+            {!canAdvance && (
+              <p className="text-xs text-muted-foreground sm:mr-auto">
+                {stage === "counting" ? `Faltam ${missing} ${missing === 1 ? "item" : "itens"}` : !order.countingCompletedAt ? "Falta concluir a contagem" : "Falta registrar IMEI na produção"}
+              </p>
+            )}
+            {!isVerification && <Button variant="outline" className="min-h-11 sm:min-h-9" onClick={() => handleSave(false)} disabled={isLoading}>Salvar andamento</Button>}
             {variant !== "summary" && (
-              <Button onClick={() => handleSave(true)} disabled={isLoading || !canAdvance}>
+              <Button className="min-h-11 sm:min-h-9" onClick={() => handleSave(true)} disabled={isLoading || !canAdvance}>
                 <CheckCircle2 className="h-4 w-4" />
                 {stage === "counting" ? "Liberar para produção" : variant === "expedition" ? "Liberar para preparação" : "Liberar para expedição"}
               </Button>
             )}
           </div>
-        </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
