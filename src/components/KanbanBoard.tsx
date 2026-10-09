@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const FREE_DRAG_EMAILS = ["pedro.albuquerque@segsat.com"];
-const STATUS_TITLES: Record<string, string> = { scheduled: "Pedidos", counting: "Contagem", in_progress: "Em Produção", verifying: "Em Verificação", expedition_check: "Conferência", completed: "Aguardando Envio", shipped: "Enviado" };
+const STATUS_TITLES: Record<string, string> = { scheduled: "Pedidos", counting: "Contagem", in_progress: "Em Produção", verifying: "Em Verificação", expedition_check: "Conferência", completed: "Em Preparação de Envio", shipped: "Enviado" };
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -33,7 +33,7 @@ const productionColumns = [
 
 const expeditionColumns = [
   { id: "expedition_check", title: "Conferência", color: "bg-primary/5 hover:bg-primary/8" },
-  { id: "completed", title: "Aguardando Envio", color: "bg-warning-light/40 hover:bg-warning-light/50" },
+  { id: "completed", title: "Em Preparação de Envio", color: "bg-warning-light/40 hover:bg-warning-light/50" },
   { id: "shipped", title: "Enviado", color: "bg-success-light/40 hover:bg-success-light/50" },
 ];
 
