@@ -2,7 +2,7 @@ import {
   BarChart3, Kanban, Settings, CheckSquare, Users, UserCog, Package, Truck, Cog,
   Calendar, UserCheck, Rocket, Clock, FileEdit, Home, MessageSquare, Wrench, Activity,
   Search, ShieldAlert, Headset, History, Store, ScanSearch, Power, Gauge, FlaskConical,
-  ClipboardList, MonitorCog, ShieldCheck, Send, ListChecks,
+  ClipboardList, MonitorCog, ShieldCheck, Send, ListChecks, FileText,
 } from "lucide-react";
 import type { AppModule } from "@/types/permissions";
 
@@ -112,6 +112,7 @@ export const NAV_SECTIONS: NavSection[] = [
           item({ to: "/technicians", label: "Técnicos", icon: Users, module: "technicians" }),
           item({ to: "/whatsapp-control", label: "Controle de Mensagens", icon: MessageSquare, adminOnly: true }),
           item({ to: "/history", label: "Histórico", icon: History, module: "users" }),
+          item({ to: "/homologation-pdfs", label: "PDFs de Homologação", icon: FileText, module: "users" }),
         ],
       }),
     ],

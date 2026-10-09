@@ -13,6 +13,7 @@ import { UserRoleProvider } from "@/hooks/useUserRole";
 import { FullScreenLoader } from "@/components/ui/loading";
 import ScrollToTop from "@/components/ScrollToTop";
 import History from "./pages/History";
+import HomologationPdfs from "./pages/HomologationPdfs";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 import Kanban from "./pages/Kanban";
 import Expedition from "./pages/Expedition";
@@ -95,6 +96,15 @@ function AppContent() {
               <Route path="/" element={
                 <ProtectedRoute>
                   <SmartRedirect />
+                </ProtectedRoute>
+              } />
+              <Route path="/homologation-pdfs" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredModule="users">
+                    <Layout>
+                      <HomologationPdfs />
+                    </Layout>
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
               
