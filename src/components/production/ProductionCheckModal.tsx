@@ -307,6 +307,7 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
         ) : null}
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
