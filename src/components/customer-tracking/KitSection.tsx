@@ -148,7 +148,7 @@ export const KitSection = ({ kitData, onUpdate }: KitSectionProps) => {
         };
       case "completed":
         return {
-          label: "Aguardando Envio",
+          label: "Em Preparação de Envio",
           color: "bg-orange-50 text-orange-700 border-orange-200",
           dotColor: "bg-orange-500",
         };

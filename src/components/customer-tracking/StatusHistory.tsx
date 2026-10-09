@@ -22,7 +22,7 @@ const statusLabels: Record<string, string> = {
   scheduled: "Pedidos",
   confirmed: "Confirmado",
   in_progress: "Em Produção",
-  completed: "Aguardando Envio",
+  completed: "Em Preparação de Envio",
   shipped: "Enviado",
   cancelled: "Cancelado",
 };
