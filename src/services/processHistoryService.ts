@@ -38,6 +38,7 @@ const scheduleStatusLabels: Record<string, string> = {
   confirmed: "Confirmado",
   in_progress: "Em Produção",
   verifying: "Em Verificação",
+  expedition_check: "Conferência de Expedição",
   completed: "Aguardando Envio",
   shipped: "Enviado",
   cancelled: "Cancelado"

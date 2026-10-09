@@ -29,6 +29,7 @@ const statusIcons: Record<string, React.ElementType> = {
   "counting": ClipboardCheck,
   "in_progress": Cog,
   "verifying": ClipboardCheck,
+  "expedition_check": ClipboardCheck,
   "completed": Clock,
   "shipped": Truck,
 };
@@ -38,6 +39,7 @@ const statusColors: Record<string, { badge: string; icon: string }> = {
   "counting": { badge: "bg-warning/10 text-warning border-warning/20", icon: "text-warning" },
   "in_progress": { badge: "bg-warning/10 text-warning border-warning/20", icon: "text-warning" },
   "verifying": { badge: "bg-primary/10 text-primary border-primary/20", icon: "text-primary" },
+  "expedition_check": { badge: "bg-primary/10 text-primary border-primary/20", icon: "text-primary" },
   "completed": { badge: "bg-orange-100 text-orange-600 border-orange-200", icon: "text-orange-500" },
   "shipped": { badge: "bg-success/10 text-success border-success/20", icon: "text-success" },
 };

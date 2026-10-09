@@ -37,7 +37,7 @@ export interface Order {
   }>
   configurationType: string
   selectedKitNames?: string[]
-  status: "novos" | "contagem" | "producao" | "verificacao" | "aguardando" | "enviado" | "standby"
+  status: "novos" | "contagem" | "producao" | "verificacao" | "conferencia" | "aguardando" | "enviado" | "standby"
   priority?: "high" | "medium" | "low"
   createdAt: string
   estimatedDelivery?: string
@@ -61,4 +61,9 @@ export interface Order {
   countingNotes?: string
   countingCompletedByEmail?: string
   countingCompletedAt?: string
+  trackingCorreios?: string
+  trackingGolog?: string
+  trackingAzul?: string
+  shippedAt?: string
+  shippedByEmail?: string
 }
