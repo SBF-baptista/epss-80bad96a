@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import KanbanBoard from "@/components/KanbanBoard";
 import ShipmentPreparationModal from "@/components/ShipmentPreparationModal";
+import ProductionCheckModal from "@/components/production/ProductionCheckModal";
 import { fetchHomologationKits } from "@/services/homologationKitService";
 import { getKitSchedules } from "@/services/kitScheduleService";
 import { Order } from "@/services/orderService";
@@ -12,6 +13,9 @@ const Expedition = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [checkOrder, setCheckOrder] = useState<Order | null>(null);
+  const isShipped = checkOrder?.status === "enviado";
+  const address = checkOrder ? [checkOrder.installation_address_street, checkOrder.installation_address_number, checkOrder.installation_address_neighborhood, checkOrder.installation_address_city, checkOrder.installation_address_state, checkOrder.installation_address_postal_code].filter(Boolean).join(", ") : "";
 
   const { data: schedules = [], isLoading, refetch } = useQuery({
     queryKey: ["kit-schedules"],
@@ -43,8 +47,8 @@ const Expedition = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {[0, 1].map((item) => <div key={item} className="h-96 animate-pulse rounded-md bg-muted" />)}
+          <div className="grid gap-4 md:grid-cols-3">
+            {[0, 1, 2].map((item) => <div key={item} className="h-96 animate-pulse rounded-md bg-muted" />)}
           </div>
         ) : (
           <KanbanBoard
@@ -52,10 +56,31 @@ const Expedition = () => {
             kits={kits}
             onOrderUpdate={refetch}
             onShipmentClick={setSelectedOrder}
+            onCheckClick={(order) => setCheckOrder(order)}
             mode="expedition"
           />
         )}
       </div>
+
+      <ProductionCheckModal
+        order={checkOrder}
+        stage="verification"
+        variant={isShipped ? "summary" : "expedition"}
+        isOpen={!!checkOrder}
+        onClose={() => setCheckOrder(null)}
+        onUpdate={refetch}
+        extraContent={isShipped && checkOrder ? (
+          <div className="space-y-1 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground">Envio</p>
+            <p>Endereço: <span className="text-foreground">{address || "Não informado"}</span></p>
+            <p>Correios: <span className="font-mono text-foreground">{checkOrder.trackingCorreios || "—"}</span></p>
+            <p>GoLog: <span className="font-mono text-foreground">{checkOrder.trackingGolog || "—"}</span></p>
+            <p>Azul: <span className="font-mono text-foreground">{checkOrder.trackingAzul || "—"}</span></p>
+            {checkOrder.trackingCode && <p>Rastreio anterior: <span className="font-mono text-foreground">{checkOrder.trackingCode}</span></p>}
+            <p>Enviado por: <span className="text-foreground">{checkOrder.shippedByEmail || "Não informado"}</span>{checkOrder.shippedAt && ` · ${new Date(checkOrder.shippedAt).toLocaleString("pt-BR")}`}</p>
+          </div>
+        ) : undefined}
+      />
 
       {selectedOrder && (
         <ShipmentPreparationModal
