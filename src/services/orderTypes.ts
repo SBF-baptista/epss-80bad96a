@@ -61,6 +61,8 @@ export interface Order {
   countingNotes?: string
   countingCompletedByEmail?: string
   countingCompletedAt?: string
+  countingInProgressByEmail?: string
+  countingInProgressAt?: string
   trackingCorreios?: string
   trackingGolog?: string
   trackingAzul?: string

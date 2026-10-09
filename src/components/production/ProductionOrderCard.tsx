@@ -121,6 +121,13 @@ const ProductionOrderCard = ({ order, status, progress, canDrag, workflowLabel, 
         </div>
       )}
 
+      {status === "counting" && order.countingInProgressByEmail && (
+        <p className="text-xs text-muted-foreground break-all">
+          Em contagem por: <span className="text-foreground">{order.countingInProgressByEmail}</span>
+          {order.countingInProgressAt && <span className="block">{new Date(order.countingInProgressAt).toLocaleString("pt-BR")}</span>}
+        </p>
+      )}
+
       {order.countingCompletedByEmail && status !== "counting" && (
         <p className="text-xs text-muted-foreground break-all">
           Contagem por {order.countingCompletedByEmail}
