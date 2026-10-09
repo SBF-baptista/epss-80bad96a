@@ -279,7 +279,7 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
             {variant !== "summary" && (
               <Button onClick={() => handleSave(true)} disabled={isLoading || !canAdvance}>
                 <CheckCircle2 className="h-4 w-4" />
-                {stage === "counting" ? "Liberar para produção" : variant === "expedition" ? "Liberar para envio" : "Liberar para expedição"}
+                {stage === "counting" ? "Liberar para produção" : variant === "expedition" ? "Liberar para preparação" : "Liberar para expedição"}
               </Button>
             )}
           </div>
