@@ -18,6 +18,7 @@ export interface GroupedOrder {
     | "counting"
     | "in_progress"
     | "verifying"
+    | "conferencia"
     | "completed"
     | "shipped";
   configurations: string[];

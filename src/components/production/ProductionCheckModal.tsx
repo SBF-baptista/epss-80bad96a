@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, ClipboardCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,12 @@ interface ProductionCheckModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  /** production: Em Verificação; expedition: Conferência da Expedição; summary: somente leitura (Enviado) */
+  variant?: "production" | "expedition" | "summary";
+  extraContent?: ReactNode;
 }
 
-const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: ProductionCheckModalProps) => {
+const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant = "production", extraContent }: ProductionCheckModalProps) => {
   const { toast } = useToast();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [checked, setChecked] = useState<Record<string, boolean>>({});
@@ -113,12 +116,12 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
       }
       if (advance) {
         if (!canAdvance) return;
-        await updateProductionStage(order.id, stage === "counting" ? "in_progress" : "completed");
+        await updateProductionStage(order.id, stage === "counting" ? "in_progress" : variant === "expedition" ? "completed" : "expedition_check");
       }
       toast({
         title: advance ? "Conferência concluída" : "Conferência salva",
         description: advance
-          ? stage === "counting" ? "Pedido liberado para produção." : "Pedido liberado para expedição."
+          ? stage === "counting" ? "Pedido liberado para produção." : variant === "expedition" ? "Pedido liberado para envio." : "Pedido liberado para expedição."
           : "O andamento foi salvo.",
       });
       onUpdate();
@@ -135,7 +138,7 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5" />{stage === "counting" ? "Contagem do kit" : "Verificação final"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5" />{stage === "counting" ? "Contagem do kit" : variant === "expedition" ? "Conferência de expedição" : variant === "summary" ? "Resumo do envio" : "Verificação final"}</DialogTitle>
           <DialogDescription>{order.company_name} · {order.plate || `Pedido ${order.number}`}</DialogDescription>
         </DialogHeader>
 
@@ -200,6 +203,8 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
               </div>
             </div>
           )}
+
+          {extraContent}
 
           {expectedItems.length === 0 && <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">Este pedido não possui itens cadastrados no kit.</p>}
 
@@ -271,10 +276,12 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate }: Produ
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             {!isVerification && <Button variant="outline" onClick={() => handleSave(false)} disabled={isLoading}>Salvar andamento</Button>}
-            <Button onClick={() => handleSave(true)} disabled={isLoading || !canAdvance}>
-              <CheckCircle2 className="h-4 w-4" />
-              {stage === "counting" ? "Liberar para produção" : "Liberar para expedição"}
-            </Button>
+            {variant !== "summary" && (
+              <Button onClick={() => handleSave(true)} disabled={isLoading || !canAdvance}>
+                <CheckCircle2 className="h-4 w-4" />
+                {stage === "counting" ? "Liberar para produção" : variant === "expedition" ? "Liberar para envio" : "Liberar para expedição"}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

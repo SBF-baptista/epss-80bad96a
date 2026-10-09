@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const FREE_DRAG_EMAILS = ["pedro.albuquerque@segsat.com"];
-const STATUS_TITLES: Record<string, string> = { scheduled: "Pedidos", counting: "Contagem", in_progress: "Em Produção", verifying: "Em Verificação", completed: "Aguardando Envio", shipped: "Enviado" };
+const STATUS_TITLES: Record<string, string> = { scheduled: "Pedidos", counting: "Contagem", in_progress: "Em Produção", verifying: "Em Verificação", expedition_check: "Conferência", completed: "Aguardando Envio", shipped: "Enviado" };
 
 interface KanbanBoardProps {
   schedules: KitScheduleWithDetails[];
@@ -32,6 +32,7 @@ const productionColumns = [
 ];
 
 const expeditionColumns = [
+  { id: "expedition_check", title: "Conferência", color: "bg-primary/5 hover:bg-primary/8" },
   { id: "completed", title: "Aguardando Envio", color: "bg-warning-light/40 hover:bg-warning-light/50" },
   { id: "shipped", title: "Enviado", color: "bg-success-light/40 hover:bg-success-light/50" },
 ];
@@ -167,6 +168,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
               schedule.status === 'counting' ? 'contagem' :
               schedule.status === 'in_progress' ? 'producao' :
               schedule.status === 'verifying' ? 'verificacao' :
+              schedule.status === 'expedition_check' ? 'conferencia' :
               schedule.status === 'completed' ? 'aguardando' : 'enviado',
       configurationType: (schedule as any).configuration || kit?.name || 'N/A',
       selectedKitNames,
@@ -199,6 +201,11 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       countingNotes: (schedule as any).counting_notes || undefined,
       countingCompletedByEmail: (schedule as any).counting_completed_by_email || undefined,
       countingCompletedAt: (schedule as any).counting_completed_at || undefined,
+      trackingCorreios: (schedule as any).tracking_code_correios || undefined,
+      trackingGolog: (schedule as any).tracking_code_golog || undefined,
+      trackingAzul: (schedule as any).tracking_code_azul || undefined,
+      shippedAt: (schedule as any).shipped_at || undefined,
+      shippedByEmail: (schedule as any).shipped_by_email || undefined,
     };
   };
 
@@ -276,7 +283,8 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
     if (status === "counting") onCheckClick?.(order, "counting");
     if (status === "in_progress") onScanClick?.(order);
     if (status === "verifying") onCheckClick?.(order, "verification");
-    if (status === "completed" || status === "shipped") onShipmentClick?.(order);
+    if (status === "expedition_check" || status === "shipped") onCheckClick?.(order, "verification");
+    if (status === "completed") onShipmentClick?.(order);
   };
 
   const getOrdersByStatus = (status: string) => {
@@ -285,6 +293,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
       'counting': 'contagem',
       'in_progress': 'producao',
       'verifying': 'verificacao',
+      'expedition_check': 'conferencia',
       'completed': 'aguardando',
       'shipped': 'enviado',
     };
@@ -318,7 +327,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
             onScanClick={onScanClick}
             onShipmentClick={onShipmentClick}
             onWorkflowClick={(order) => handleWorkflow(order, column.id)}
-            workflowLabel={column.id === "scheduled" ? "Iniciar contagem" : column.id === "counting" ? "Conferir itens" : column.id === "in_progress" ? "Registrar produção" : column.id === "verifying" ? "Fazer verificação" : column.id === "completed" ? "Preparar envio" : "Ver envio"}
+            workflowLabel={column.id === "scheduled" ? "Iniciar contagem" : column.id === "counting" ? "Conferir itens" : column.id === "in_progress" ? "Registrar produção" : column.id === "verifying" ? "Fazer verificação" : column.id === "expedition_check" ? "Conferir pedido" : column.id === "completed" ? "Preparar envio" : "Ver envio"}
           />
         ))}
       </div>
@@ -352,7 +361,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
                 onScanClick={onScanClick}
                 onShipmentClick={onShipmentClick}
                 onWorkflowClick={(order) => handleWorkflow(order, column.id)}
-                workflowLabel={column.id === "scheduled" ? "Iniciar contagem" : column.id === "counting" ? "Conferir itens" : column.id === "in_progress" ? "Registrar produção" : column.id === "verifying" ? "Fazer verificação" : column.id === "completed" ? "Preparar envio" : "Ver envio"}
+                workflowLabel={column.id === "scheduled" ? "Iniciar contagem" : column.id === "counting" ? "Conferir itens" : column.id === "in_progress" ? "Registrar produção" : column.id === "verifying" ? "Fazer verificação" : column.id === "expedition_check" ? "Conferir pedido" : column.id === "completed" ? "Preparar envio" : "Ver envio"}
               />
             </div>
           ))}

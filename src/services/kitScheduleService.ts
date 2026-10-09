@@ -7,7 +7,7 @@ export interface KitSchedule {
   technician_id: string;
   scheduled_date: string;
   installation_time?: string;
-  status: 'scheduled' | 'counting' | 'in_progress' | 'verifying' | 'completed' | 'shipped' | 'cancelled';
+  status: 'scheduled' | 'counting' | 'in_progress' | 'verifying' | 'expedition_check' | 'completed' | 'shipped' | 'cancelled';
   notes?: string;
   configuration?: string;
   selected_kit_ids?: string[];

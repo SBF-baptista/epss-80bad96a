@@ -7,6 +7,10 @@ import { Order } from "@/services/orderService";
 import { updateKitScheduleShipment, ShipmentAddress } from "@/services/shipmentService";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector, AddressForm } from "./shipment";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ShipmentPreparationModalProps {
   order: Order;
@@ -32,9 +36,11 @@ const ShipmentPreparationModal = ({ order, isOpen, onClose, onUpdate }: Shipment
   });
 
   const isReadOnly = order.status === "enviado";
+  const [tracking, setTracking] = useState({ correios: "", golog: "", azul: "" });
+  const hasTracking = Object.values(tracking).some((v) => v.trim() !== "");
 
   const updateShipmentMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       installation_address_street: string;
       installation_address_number: string;
       installation_address_neighborhood: string;
@@ -42,11 +48,26 @@ const ShipmentPreparationModal = ({ order, isOpen, onClose, onUpdate }: Shipment
       installation_address_state: string;
       installation_address_postal_code: string;
       installation_address_complement?: string;
-    }) => updateKitScheduleShipment(order.id, data),
+    }) => {
+      await updateKitScheduleShipment(order.id, data);
+      const { data: auth } = await supabase.auth.getUser();
+      const patch: Record<string, unknown> = {
+        tracking_code_correios: tracking.correios.trim() || null,
+        tracking_code_golog: tracking.golog.trim() || null,
+        tracking_code_azul: tracking.azul.trim() || null,
+      };
+      if (hasTracking) {
+        patch.status = "shipped";
+        patch.shipped_at = new Date().toISOString();
+        patch.shipped_by_email = auth.user?.email ?? null;
+      }
+      const { error } = await supabase.from("kit_schedules").update(patch as any).eq("id", order.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       toast({
         title: "Envio preparado",
-        description: "Informações de envio salvas com sucesso.",
+        description: hasTracking ? "Pedido marcado como enviado." : "Informações de envio salvas com sucesso.",
       });
       queryClient.invalidateQueries({ queryKey: ["kit-schedules"] });
       onUpdate();
@@ -63,6 +84,7 @@ const ShipmentPreparationModal = ({ order, isOpen, onClose, onUpdate }: Shipment
 
   // Load existing shipment data (kit_schedules fields)
   useEffect(() => {
+    setTracking({ correios: order.trackingCorreios || "", golog: order.trackingGolog || "", azul: order.trackingAzul || "" });
     if (order.installation_address_state) setSelectedUF(order.installation_address_state);
     if (order.installation_address_city) setSelectedCity(order.installation_address_city);
 
@@ -125,6 +147,34 @@ const ShipmentPreparationModal = ({ order, isOpen, onClose, onUpdate }: Shipment
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6 p-1">
+          <div className="rounded-md border border-border bg-muted/40 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">{order.company_name}</p>
+                <div className="mt-0.5 space-y-0.5 text-xs text-muted-foreground">
+                  {order.customer_document_number && <p>CNPJ/CPF: {order.customer_document_number}</p>}
+                  {order.customer_phone && <p>Telefone: {order.customer_phone}</p>}
+                </div>
+              </div>
+              <Badge variant="secondary" className="shrink-0">{order.configurationType !== "N/A" ? order.configurationType : order.configuration || "Sem configuração"}</Badge>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Código de rastreio</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              {([["correios", "Correios"], ["golog", "GoLog"], ["azul", "Azul"]] as const).map(([key, label]) => (
+                <div key={key} className="space-y-1">
+                  <Label htmlFor={`tracking-${key}`}>{label}</Label>
+                  <Input id={`tracking-${key}`} value={tracking[key]} disabled={isReadOnly} placeholder="Código de rastreio"
+                    onChange={(e) => setTracking((t) => ({ ...t, [key]: e.target.value }))} />
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground sm:col-span-3">Ao salvar com pelo menos um código, o pedido vai para Enviado.</p>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Localização</CardTitle>
@@ -155,7 +205,7 @@ const ShipmentPreparationModal = ({ order, isOpen, onClose, onUpdate }: Shipment
                 Cancelar
               </Button>
               <Button onClick={handleSave} disabled={!isFormValid() || updateShipmentMutation.isPending}>
-                {updateShipmentMutation.isPending ? "Salvando..." : "Salvar Informações"}
+                {updateShipmentMutation.isPending ? "Salvando..." : hasTracking ? "Salvar e marcar como enviado" : "Salvar Informações"}
               </Button>
             </div>
           )}
