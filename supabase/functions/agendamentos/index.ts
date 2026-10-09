@@ -52,7 +52,69 @@ Deno.serve(async (req) => {
     const { data, error } = await query;
     if (error) return json({ ok: false, error: error.message }, 200);
 
-    const agendamentos = (data ?? []).map((s: Record<string, unknown>) => ({
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+
+    // ===== contractcode (incoming_vehicles.pending_contract_id) =====
+    // 1) Fluxo normal: installation_schedules.kit_schedule_id -> kit_schedules.incoming_vehicle_id
+    // 2) Externos (sem kit_schedule_id): fallback por placa exata
+    const kitScheduleIds = Array.from(
+      new Set(rows.map((r) => r.kit_schedule_id).filter(Boolean) as string[]),
+    );
+
+    const incomingByVehicleId = new Map<string, string>();
+    const incomingByPlate = new Map<string, string>();
+
+    if (kitScheduleIds.length > 0) {
+      const { data: kits } = await supabase
+        .from("kit_schedules")
+        .select("id, incoming_vehicle_id")
+        .in("id", kitScheduleIds)
+        .not("incoming_vehicle_id", "is", null);
+
+      const vehicleIds = Array.from(
+        new Set((kits ?? []).map((k: any) => k.incoming_vehicle_id) as string[]),
+      );
+      if (vehicleIds.length > 0) {
+        const { data: vehicles } = await supabase
+          .from("incoming_vehicles")
+          .select("id, pending_contract_id")
+          .in("id", vehicleIds)
+          .not("pending_contract_id", "is", null);
+        for (const v of vehicles ?? []) incomingByVehicleId.set(v.id, String(v.pending_contract_id));
+      }
+    }
+
+    const plates = Array.from(
+      new Set(
+        rows
+          .filter((r) => !r.kit_schedule_id)
+          .map((r) => String(r.plate ?? "").toUpperCase().trim())
+          .filter(Boolean),
+      ),
+    );
+    if (plates.length > 0) {
+      const { data: vehiclesByPlate } = await supabase
+        .from("incoming_vehicles")
+        .select("id, plate, pending_contract_id, created_at")
+        .in("plate", plates)
+        .not("pending_contract_id", "is", null)
+        .order("created_at", { ascending: false });
+      for (const v of vehiclesByPlate ?? []) {
+        const key = String(v.plate ?? "").toUpperCase().trim();
+        if (!incomingByPlate.has(key)) incomingByPlate.set(key, String(v.pending_contract_id));
+      }
+    }
+
+    const resolveContractCode = (r: Record<string, unknown>): string | null => {
+      const plate = String(r.plate ?? "").toUpperCase().trim();
+      return (
+        (r.kit_schedule_id ? incomingByVehicleId.get(String(r.kit_schedule_id)) : undefined) ??
+        incomingByPlate.get(plate) ??
+        null
+      );
+    };
+
+    const agendamentos = rows.map((s) => ({
       data: s.scheduled_date,
       hora: s.scheduled_time,
       servico: s.service,
@@ -61,6 +123,7 @@ Deno.serve(async (req) => {
       modelo_rastreador: s.tracker_model,
       tipo_contrato: s.tipo_contrato,
       tecnico: s.technician_name,
+      contractcode: resolveContractCode(s),
     }));
 
     return json({ agendamentos });
