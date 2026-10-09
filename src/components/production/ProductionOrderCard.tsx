@@ -31,7 +31,7 @@ interface Props {
 
 const ProductionOrderCard = ({ order, status, progress, canDrag, workflowLabel, onClick, onDragStart, onViewDetails }: Props) => {
   const accent = STAGE_ACCENT[status] ?? STAGE_ACCENT.scheduled;
-  const plates = (order.plate ? [order.plate] : order.vehicles.map((v: any) => v.plate).filter(Boolean)) as string[];
+  const plates = order.plate && order.plate !== "Placa pendente" ? [order.plate] : [];
   const accN = order.accessories?.length ?? 0;
   const supN = order.supplies?.length ?? 0;
   const totalItems = order.trackers.length + accN + (order.modules?.length ?? 0) + supN;

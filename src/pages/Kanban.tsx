@@ -101,9 +101,11 @@ const Kanban = () => {
     <div className="p-4 md:p-6 lg:p-8 bg-muted/30 min-h-full">
       <div className="max-w-7xl mx-auto space-y-5 md:space-y-6">
         {/* Enhanced page header */}
-        <div className="flex flex-col gap-1">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">Produção</h2>
-          <p className="text-sm md:text-base text-muted-foreground">Esteira de Pedidos</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-2xl md:text-3xl font-semibold text-foreground">Produção</h2>
+          <span className="rounded-full border border-border bg-card px-3 py-1 text-sm text-muted-foreground">
+            Na esteira: <span className="font-medium text-foreground">{filteredSchedules.filter((s) => ["scheduled", "counting", "in_progress", "verifying"].includes(s.status || "")).length}</span>
+          </span>
         </div>
 
         <FilterBar filters={filters} onFiltersChange={setFilters} orders={[]} />
