@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, Eye, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PdfCanvasViewer } from "@/components/homologation/PdfCanvasViewer";
 
 const TRACKERS = ["FMC150", "FMC130"];
 
@@ -67,7 +68,7 @@ const HomologationPdfs = () => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [preview, setPreview] = useState<{ url: string; title: string } | null>(null);
+  const [preview, setPreview] = useState<{ url: string; data: ArrayBuffer; fileName: string; title: string } | null>(null);
   const closePreview = () => { if (preview) URL.revokeObjectURL(preview.url); setPreview(null); };
 
   const { data = [], isLoading } = useQuery({ queryKey: ["homologation-pdfs"], queryFn: fetchRows, enabled: !!user, retry: false });
@@ -103,13 +104,15 @@ const HomologationPdfs = () => {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error || "Não foi possível gerar o PDF");
       }
-      const url = URL.createObjectURL(new Blob([await res.arrayBuffer()], { type: "application/pdf" }));
+      const buf = await res.arrayBuffer();
+      const url = URL.createObjectURL(new Blob([buf], { type: "application/pdf" }));
+      const fileName = `homologacao_${r.brand}_${r.model}_${r.year ?? ""}_${t ?? "padrao"}.pdf`.replace(/[^A-Za-z0-9_.-]+/g, "_");
       if (mode === "view") {
-        setPreview({ url, title: `${r.brand} ${r.model} ${r.year ?? ""}` });
+        setPreview({ url, data: buf, fileName, title: `${r.brand} ${r.model} ${r.year ?? ""}` });
       } else {
         const a = document.createElement("a");
         a.href = url;
-        a.download = `homologacao_${r.brand}_${r.model}_${r.year ?? ""}_${t ?? "padrao"}.pdf`.replace(/[^A-Za-z0-9_.-]+/g, "_");
+        a.download = fileName;
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 60000);
       }
@@ -189,9 +192,13 @@ const HomologationPdfs = () => {
       <Dialog open={!!preview} onOpenChange={(o) => !o && closePreview()}>
         <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
           <DialogHeader><DialogTitle>{preview?.title}</DialogTitle></DialogHeader>
-          {preview && <object data={preview.url} type="application/pdf" className="w-full flex-1 rounded border">
-            <p className="p-4 text-sm text-muted-foreground">Seu navegador não exibe PDFs aqui. Use o botão Baixar.</p>
-          </object>}
+          {preview && <PdfCanvasViewer data={preview.data} />}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={closePreview}>Fechar</Button>
+            <Button onClick={() => { if (!preview) return; const a = document.createElement("a"); a.href = preview.url; a.download = preview.fileName; a.click(); }}>
+              <Download className="mr-1 h-4 w-4" />Baixar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
