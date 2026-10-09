@@ -333,7 +333,7 @@ const KanbanBoard = ({ schedules, kits, onOrderUpdate, onScanClick, onShipmentCl
   return (
     <>
       {/* Desktop and Tablet: Grid layout */}
-      <div className={mode === "production" ? "hidden md:grid md:grid-cols-2 xl:grid-cols-4 gap-4" : "hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"}>
+      <div className={mode === "production" ? "hidden md:grid md:grid-cols-2 xl:grid-cols-4 gap-4" : "hidden md:grid md:grid-cols-3 gap-4"}>
         {columns.map(column => (
           <KanbanColumn
             key={column.id}
