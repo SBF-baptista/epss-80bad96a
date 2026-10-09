@@ -74,3 +74,6 @@ verify_jwt = false
 [functions.enviar-email-frota]
 verify_jwt = false
 
+
+[functions.homologation-test-pdf]
+verify_jwt = false
