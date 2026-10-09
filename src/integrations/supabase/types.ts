@@ -2009,6 +2009,8 @@ export type Database = {
           counting_completed_at: string | null
           counting_completed_by: string | null
           counting_completed_by_email: string | null
+          counting_in_progress_at: string | null
+          counting_in_progress_by_email: string | null
           counting_notes: string | null
           created_at: string
           created_by: string | null
@@ -2058,6 +2060,8 @@ export type Database = {
           counting_completed_at?: string | null
           counting_completed_by?: string | null
           counting_completed_by_email?: string | null
+          counting_in_progress_at?: string | null
+          counting_in_progress_by_email?: string | null
           counting_notes?: string | null
           created_at?: string
           created_by?: string | null
@@ -2107,6 +2111,8 @@ export type Database = {
           counting_completed_at?: string | null
           counting_completed_by?: string | null
           counting_completed_by_email?: string | null
+          counting_in_progress_at?: string | null
+          counting_in_progress_by_email?: string | null
           counting_notes?: string | null
           created_at?: string
           created_by?: string | null

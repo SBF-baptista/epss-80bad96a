@@ -1,0 +1,1 @@
+ALTER TABLE public.kit_schedules ADD COLUMN IF NOT EXISTS counting_in_progress_by_email text, ADD COLUMN IF NOT EXISTS counting_in_progress_at timestamptz;
