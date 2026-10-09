@@ -130,11 +130,15 @@ Deno.serve(async (req) => {
       .eq("homologation_card_id", card.id)
       .order("created_at", { ascending: true });
 
-    const withUrls = (photos ?? []).map((ph) => ({
+    // Only photos whose file really exists and is not an empty/black capture
+    const { data: valid } = await supabase.rpc("get_valid_homologation_photo_ids", { p_card_ids: [card.id] });
+    const validIds = new Set((valid ?? []).map((v: { photo_id: string }) => v.photo_id));
+    const withUrls = (photos ?? []).filter((ph) => validIds.has(ph.id)).map((ph) => ({
       ...ph,
       photo_type: ph.photo_type && PHOTO_LABELS[ph.photo_type] ? ph.photo_type : "outros",
       url: supabase.storage.from("homologation-photos").getPublicUrl(ph.file_path).data.publicUrl,
     }));
+    if (!withUrls.length) return json({ error: "Homologação sem fotos válidas na execução de teste" });
 
     if (p.formato === "json") {
       return json({

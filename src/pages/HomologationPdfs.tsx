@@ -27,12 +27,11 @@ interface Row {
 }
 
 const fetchRows = async (): Promise<Row[]> => {
-  const { data: photos, error: pErr } = await supabase
-    .from("homologation_photos")
-    .select("homologation_card_id");
+  // Only photos that really exist and are not empty/black captures
+  const { data: photos, error: pErr } = await (supabase.rpc as any)("get_valid_homologation_photo_ids", { p_card_ids: null });
   if (pErr) throw pErr;
   const counts = new Map<string, number>();
-  for (const p of photos ?? []) {
+  for (const p of (photos ?? []) as { homologation_card_id: string | null }[]) {
     if (p.homologation_card_id) counts.set(p.homologation_card_id, (counts.get(p.homologation_card_id) ?? 0) + 1);
   }
   const ids = [...counts.keys()];
