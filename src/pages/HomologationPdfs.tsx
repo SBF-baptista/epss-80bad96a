@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Eye, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const TRACKERS = ["FMC150", "FMC130"];
 
@@ -27,12 +28,11 @@ interface Row {
 }
 
 const fetchRows = async (): Promise<Row[]> => {
-  const { data: photos, error: pErr } = await supabase
-    .from("homologation_photos")
-    .select("homologation_card_id");
+  // Only photos that really exist and are not empty/black captures
+  const { data: photos, error: pErr } = await (supabase.rpc as any)("get_valid_homologation_photo_ids", { p_card_ids: null });
   if (pErr) throw pErr;
   const counts = new Map<string, number>();
-  for (const p of photos ?? []) {
+  for (const p of (photos ?? []) as { homologation_card_id: string | null }[]) {
     if (p.homologation_card_id) counts.set(p.homologation_card_id, (counts.get(p.homologation_card_id) ?? 0) + 1);
   }
   const ids = [...counts.keys()];
@@ -67,6 +67,8 @@ const HomologationPdfs = () => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ url: string; title: string } | null>(null);
+  const closePreview = () => { if (preview) URL.revokeObjectURL(preview.url); setPreview(null); };
 
   const { data = [], isLoading } = useQuery({ queryKey: ["homologation-pdfs"], queryFn: fetchRows, enabled: !!user, retry: false });
 
@@ -101,15 +103,16 @@ const HomologationPdfs = () => {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error || "Não foi possível gerar o PDF");
       }
-      const url = URL.createObjectURL(await res.blob());
-      if (mode === "view") window.open(url, "_blank");
-      else {
+      const url = URL.createObjectURL(new Blob([await res.arrayBuffer()], { type: "application/pdf" }));
+      if (mode === "view") {
+        setPreview({ url, title: `${r.brand} ${r.model} ${r.year ?? ""}` });
+      } else {
         const a = document.createElement("a");
         a.href = url;
         a.download = `homologacao_${r.brand}_${r.model}_${r.year ?? ""}_${t ?? "padrao"}.pdf`.replace(/[^A-Za-z0-9_.-]+/g, "_");
         a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
       }
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar PDF");
     } finally {
@@ -183,6 +186,14 @@ const HomologationPdfs = () => {
           )}
         </CardContent>
       </Card>
+      <Dialog open={!!preview} onOpenChange={(o) => !o && closePreview()}>
+        <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
+          <DialogHeader><DialogTitle>{preview?.title}</DialogTitle></DialogHeader>
+          {preview && <object data={preview.url} type="application/pdf" className="w-full flex-1 rounded border">
+            <p className="p-4 text-sm text-muted-foreground">Seu navegador não exibe PDFs aqui. Use o botão Baixar.</p>
+          </object>}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

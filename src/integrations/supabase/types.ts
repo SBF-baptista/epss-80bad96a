@@ -3206,6 +3206,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_valid_homologation_photo_ids: {
+        Args: { p_card_ids?: string[] }
+        Returns: {
+          homologation_card_id: string
+          photo_id: string
+        }[]
+      }
       has_module_access: {
         Args: {
           _min_permission: Database["public"]["Enums"]["permission_level"]
