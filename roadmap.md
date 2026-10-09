@@ -13,4 +13,4 @@
 - [x] Alerta de pendências por tipo na tela de Homologação
 - [x] Organizar Logística em Produção, Expedição e Dash logística, adicionando apenas navegação para Expedição
 - [x] Reorganizar Produção com Contagem e Verificação por pedido e mover envio para Expedição
-- [ ] Aplicar à Expedição o mesmo visual de colunas e cards da Produção, preservando as ações
+- [x] Aplicar à Expedição o mesmo visual de colunas e cards da Produção, preservando as ações
