@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     // Auth: x-api-key or logged-in user
     const apiKey = req.headers.get("x-api-key");
-    const expected = Deno.env.get("HOMOLOGATION_PDF_API_KEY");
+    const expected = Deno.env.get("HOMOLOGATION_PDF_API_KEY") ?? Deno.env.get("OPM_API_KEY");
     let authorized = !!(apiKey && expected && apiKey === expected);
     if (!authorized) {
       const token = req.headers.get("Authorization")?.replace("Bearer ", "");
