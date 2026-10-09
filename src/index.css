@@ -153,6 +153,11 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 100%;
     --warning-light: 38 92% 96%;
     --warning-border: 38 92% 85%;
+
+    --stage-orders: 214 90% 40%;
+    --stage-counting: 38 92% 48%;
+    --stage-production: 262 60% 52%;
+    --stage-verification: 142 70% 36%;
     
     --error: 0 84% 60%;
     --error-foreground: 0 0% 100%;
@@ -236,6 +241,11 @@ All colors MUST be HSL.
     --warning-foreground: 222 47% 11%;
     --warning-light: 38 80% 20%;
     --warning-border: 38 80% 35%;
+
+    --stage-orders: 214 85% 60%;
+    --stage-counting: 38 92% 58%;
+    --stage-production: 262 70% 68%;
+    --stage-verification: 142 60% 50%;
     
     --error: 0 84% 60%;
     --error-foreground: 222 47% 11%;

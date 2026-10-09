@@ -62,6 +62,12 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				stage: {
+					orders: 'hsl(var(--stage-orders))',
+					counting: 'hsl(var(--stage-counting))',
+					production: 'hsl(var(--stage-production))',
+					verification: 'hsl(var(--stage-verification))'
+				},
 				success: {
 					DEFAULT: 'hsl(var(--success))',
 					foreground: 'hsl(var(--success-foreground))',
