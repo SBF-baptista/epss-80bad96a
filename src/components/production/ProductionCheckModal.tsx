@@ -144,7 +144,7 @@ const ProductionCheckModal = ({ order, stage, isOpen, onClose, onUpdate, variant
       });
       setDirty(false);
       onUpdate();
-      if (advance) onClose();
+      onClose();
     } catch (error) {
       console.error("Error saving production check:", error);
       toast({ title: "Erro", description: "Não foi possível salvar a conferência.", variant: "destructive" });
