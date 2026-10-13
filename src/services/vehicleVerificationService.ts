@@ -47,10 +47,9 @@ export const verifyVehicle = async (
     }
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `HTTP ${response.status}`);
+  const data = await response.json();
+  if (response.status === 401 || response.status === 400) {
+    throw new Error(data.error || `HTTP ${response.status}`);
   }
-
-  return response.json();
+  return data;
 };
