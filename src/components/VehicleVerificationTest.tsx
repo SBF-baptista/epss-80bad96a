@@ -96,7 +96,7 @@ const VehicleVerificationTest = () => {
 
         {result && (
           <div className="space-y-3">
-            {'success' in result ? (
+            {result.success ? (
               <div className="space-y-3">
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center space-x-2 mb-3">
@@ -147,10 +147,10 @@ const VehicleVerificationTest = () => {
           <div className="space-y-1 text-sm text-gray-600">
             <p><strong>URL:</strong> https://eeidevcyxpnorbgcskdf.supabase.co/functions/v1/verify-vehicle</p>
             <p><strong>Method:</strong> GET</p>
-            <p><strong>Query Parameters:</strong> brand, model, create_order (optional)</p>
-            <p><strong>Headers:</strong> x-api-key</p>
-            <p><strong>Response:</strong> 200 (found) or 404 (not found)</p>
-            <p><strong>New Feature:</strong> Set create_order=true to automatically create an order when vehicle is found</p>
+            <p><strong>Query Parameters:</strong> plate, ou brand + model; create_order e create_homologation (opcionais)</p>
+            <p><strong>Headers:</strong> x-api-key (chave OPM) ou Authorization: Bearer (usuário logado)</p>
+            <p><strong>Response:</strong> 200 com success/found no corpo; 401 sem acesso</p>
+            <p><strong>Homologação:</strong> só cria card quando create_homologation=true</p>
           </div>
         </div>
       </CardContent>

@@ -164,196 +164,115 @@ async function createAutomaticOrder(supabase: any, vehicle: any, orderNumber: st
   }
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-  // Only allow GET requests
-  if (req.method !== 'GET') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { 
-        status: 405, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
-  }
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+  if (req.method !== 'GET') return json({ success: false, error: 'Method not allowed' }, 405)
 
   try {
-    // Initialize Supabase client with service role for system operations
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-    // Get JWT token from Authorization header
-    const authorization = req.headers.get('Authorization')
-    if (!authorization) {
-      console.log('Missing Authorization header')
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+    // Auth: x-api-key (OPM) OR valid user JWT
+    const apiKey = req.headers.get('x-api-key')
+    const expectedKey = Deno.env.get('OPM_API_KEY')
+    let authorized = !!(apiKey && expectedKey && apiKey === expectedKey)
+    if (!authorized) {
+      const token = (req.headers.get('Authorization') || '').replace('Bearer ', '')
+      if (token) {
+        const { data: { user } } = await supabase.auth.getUser(token)
+        authorized = !!user
+      }
     }
+    if (!authorized) return json({ success: false, error: 'Unauthorized' }, 401)
 
-    // Verify JWT token
-    const token = authorization.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
-    if (authError || !user) {
-      console.log('Invalid JWT token:', authError)
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    // Parse query parameters
     const url = new URL(req.url)
+    const plateRaw = url.searchParams.get('plate') || url.searchParams.get('placa')
     const brand = url.searchParams.get('brand')
     const model = url.searchParams.get('model')
     const createOrder = url.searchParams.get('create_order') === 'true'
+    const createHomologation = url.searchParams.get('create_homologation') === 'true'
 
-    // Validate required parameters
-    if (!brand || !model) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Missing required parameters', 
-          message: 'Both brand and model parameters are required' 
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+    // ---- Plate lookup ----
+    if (plateRaw) {
+      const plate = plateRaw.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      if (plate.length !== 7) return json({ success: false, plate, error: 'Placa inválida (7 caracteres)' })
+      const { data: schedules, error } = await supabase
+        .from('kit_schedules')
+        .select('id, status, customer_name, configuration, vehicle_brand, vehicle_model, vehicle_year, scheduled_date, updated_at')
+        .eq('vehicle_plate', plate)
+        .order('updated_at', { ascending: false })
+        .limit(5)
+      if (error) { console.error(error); return json({ success: false, plate, error: 'Erro ao consultar' }) }
+      const { data: incoming } = await supabase
+        .from('incoming_vehicles')
+        .select('id, brand, vehicle, year, company_name, sale_summary_id, received_at')
+        .eq('plate', plate)
+        .order('received_at', { ascending: false })
+        .limit(1)
+      const s = schedules?.[0]
+      const iv = incoming?.[0]
+      return json({
+        success: true,
+        plate,
+        found: !!(s || iv),
+        status: s?.status ?? (iv ? 'recebido' : null),
+        vehicle: s ? { brand: s.vehicle_brand, model: s.vehicle_model, year: s.vehicle_year }
+          : iv ? { brand: iv.brand, model: iv.vehicle, year: iv.year } : null,
+        customer: s?.customer_name ?? iv?.company_name ?? null,
+        configuration: s?.configuration ?? null,
+        kit_schedule_id: s?.id ?? null,
+        sale_summary_id: iv?.sale_summary_id ?? null,
+        history: schedules ?? [],
+      })
     }
 
-    console.log(`Searching for vehicle: ${brand} ${model}`)
+    if (!brand || !model) {
+      return json({ success: false, error: 'Missing required parameters', message: 'Informe plate, ou brand e model' }, 400)
+    }
 
-    // Search for vehicle in database
+    // ---- Brand/model lookup (legacy) ----
     const { data: vehicles, error } = await supabase
       .from('veiculos')
       .select('id, marca, modelo, quantidade, tipo, created_at')
       .ilike('marca', brand.trim())
       .ilike('modelo', model.trim())
       .limit(1)
+    if (error) { console.error(error); return json({ success: false, error: 'Database error' }) }
 
-    if (error) {
-      console.error('Database error:', error)
-      return new Response(
-        JSON.stringify({ error: 'Database error' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    // Check if vehicle was found
     if (!vehicles || vehicles.length === 0) {
-      console.log(`Vehicle not found: ${brand} ${model}`)
-      
-      // Create homologation card for the missing vehicle
-      try {
-        // First check if a homologation card already exists for this brand/model
-        const { data: existingCard } = await supabase
-          .from('homologation_cards')
-          .select('id')
-          .eq('brand', brand.trim())
-          .eq('model', model.trim())
-          .limit(1)
-
-        if (!existingCard || existingCard.length === 0) {
-          // Create new homologation card
-          const { data: newCard, error: cardError } = await supabase
-            .from('homologation_cards')
-            .insert({
-              brand: brand.trim(),
-              model: model.trim(),
-              status: 'homologar',
-              notes: `Automatically created from vehicle verification request on ${new Date().toISOString()}`
-            })
-            .select()
-
-          if (cardError) {
-            console.error('Error creating homologation card:', cardError)
-          } else {
-            console.log(`Created homologation card for ${brand} ${model}`)
-          }
-        } else {
-          console.log(`Homologation card already exists for ${brand} ${model}`)
+      let homologation_created = false
+      if (createHomologation) {
+        const { data: existing } = await supabase.from('homologation_cards').select('id')
+          .eq('brand', brand.trim()).eq('model', model.trim()).limit(1)
+        if (!existing || existing.length === 0) {
+          const { error: cardError } = await supabase.from('homologation_cards').insert({
+            brand: brand.trim(), model: model.trim(), status: 'homologar',
+            notes: `Criado via verify-vehicle em ${new Date().toISOString()}`,
+          })
+          homologation_created = !cardError
+          if (cardError) console.error(cardError)
         }
-      } catch (cardCreationError) {
-        console.error('Error in homologation card creation process:', cardCreationError)
       }
-
-      return new Response(
-        JSON.stringify({ 
-          error: 'Vehicle not found',
-          message: `No vehicle found with brand "${brand}" and model "${model}"`
-        }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+      return json({ success: false, found: false, error: 'Vehicle not found',
+        message: `No vehicle found with brand "${brand}" and model "${model}"`, homologation_created })
     }
 
     const vehicle = vehicles[0]
-    console.log(`Vehicle found: ${vehicle.marca} ${vehicle.modelo}`)
-
-    let automaticOrderInfo = null
-
-    // If createOrder is true, create an automatic order
+    let automaticOrderInfo: any = null
     if (createOrder) {
       try {
-        const orderNumber = await generateAutoOrderNumber(supabase)
-        automaticOrderInfo = await createAutomaticOrder(supabase, vehicle, orderNumber)
-        console.log('Automatic order created:', automaticOrderInfo)
-      } catch (orderError) {
-        console.error('Error creating automatic order:', orderError)
-        // Don't fail the whole request if order creation fails
-        automaticOrderInfo = { error: 'Failed to create automatic order' }
-      }
+        automaticOrderInfo = await createAutomaticOrder(supabase, vehicle, await generateAutoOrderNumber(supabase))
+      } catch (e) { console.error(e); automaticOrderInfo = { error: 'Failed to create automatic order' } }
     }
-
-    // Return vehicle details with optional order information
-    const response = {
-      success: true,
-      vehicle: {
-        id: vehicle.id,
-        brand: vehicle.marca,
-        model: vehicle.modelo,
-        quantity: vehicle.quantidade,
-        type: vehicle.tipo,
-        created_at: vehicle.created_at
-      },
-      ...(automaticOrderInfo && { automatic_order: automaticOrderInfo })
-    }
-
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
-
+    return json({
+      success: true, found: true,
+      vehicle: { id: vehicle.id, brand: vehicle.marca, model: vehicle.modelo, quantity: vehicle.quantidade, type: vehicle.tipo, created_at: vehicle.created_at },
+      ...(automaticOrderInfo && { automatic_order: automaticOrderInfo }),
+    })
   } catch (error) {
     console.error('Unexpected error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
+    return json({ success: false, error: 'Internal server error' })
   }
 })
