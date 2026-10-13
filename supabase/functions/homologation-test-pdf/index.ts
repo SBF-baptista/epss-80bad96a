@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
         const dims = img ? img.scale(Math.min(maxW / img.width, maxH / img.height, 1)) : null;
         ensure((dims?.height ?? 30) + 40);
         y -= 10;
-        text(`${PHOTO_LABELS[type]} - ${f.file_name}`, 11, bold, navy);
+        text(PHOTO_LABELS[type], 11, bold, navy);
         if (img && dims) {
           page.drawImage(img, { x: M + (maxW - dims.width) / 2, y: y - dims.height, width: dims.width, height: dims.height });
           y -= dims.height + 6;
