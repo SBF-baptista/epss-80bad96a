@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { getKitCatalogOptions } from './kitCatalogOptions';
-import type { ItemType } from '../types/homologationKit';
+import { getKitCatalogOptions } from '../src/utils/kitCatalogOptions';
+import type { ItemType } from '../src/types/homologationKit';
 
 const catalog: { item_name: string; item_type: ItemType }[] = [
   { item_name: 'FMC150', item_type: 'tracker' },

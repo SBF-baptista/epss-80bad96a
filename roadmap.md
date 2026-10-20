@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Corrigir as listas do Criar Novo Kit para usar somente o cadastro local e atualizar ao abrir a seleção
+- [x] Corrigir as listas do Criar Novo Kit para usar somente o cadastro local e atualizar ao abrir a seleção
 
 - [x] Corrigir o cursor automático do Segsale para ignorar IDs manuais
 - [x] Separar descoberta de vendas e tentativas com falha da etapa de Kickoff
