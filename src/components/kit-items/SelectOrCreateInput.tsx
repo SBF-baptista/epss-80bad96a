@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { ItemType } from '@/types/homologationKit';
 import { KitItemOption, fetchKitItemOptions, createKitItemOption, deleteKitItemOption, checkIfItemExists } from '@/services/kitItemOptionsService';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
+import { getKitCatalogOptions } from '@/utils/kitCatalogOptions';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -22,8 +24,6 @@ interface SelectOrCreateInputProps {
   allowCreate?: boolean; // New prop to control creation capability
   /** Extra item types to include in the options (e.g. trackers and cameras for equipment) */
   extraItemTypes?: ItemType[];
-  /** Extra static option names (e.g. Segsale catalogue) merged into the list */
-  extraOptionNames?: string[];
   /** Overrides the search box placeholder inside the dropdown */
   searchPlaceholder?: string;
   /** Overrides the "item not found" hint shown when creation is not allowed */
@@ -38,40 +38,31 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
   className,
   allowCreate = true,
   extraItemTypes = [],
-  extraOptionNames = [],
   searchPlaceholder,
   notFoundMessage
 }) => {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const allTypes = useMemo(() => [itemType, ...extraItemTypes.filter(t => t !== itemType)], [itemType, extraItemTypes.join(',')]);
-  const { data: dbOptions = [], isLoading: loading } = useQuery({
-    queryKey: ['kit-item-options', 'picker', ...allTypes],
-    queryFn: async () => {
-      const results = await Promise.all(allTypes.map(t => fetchKitItemOptions(t)));
-      return results.flat();
-    },
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+  const optionQueries = useQueries({
+    queries: allTypes.map(type => ({
+      queryKey: ['kit-item-options', type],
+      queryFn: () => fetchKitItemOptions(type),
+      enabled: !!user,
+      staleTime: 0,
+      refetchOnMount: 'always' as const,
+      refetchOnWindowFocus: true,
+      retry: false,
+    })),
   });
-  const options = useMemo(() => {
-    const seen = new Set<string>();
-    const merged: KitItemOption[] = [];
-    for (const o of dbOptions) {
-      const k = o.item_name.trim().toLowerCase();
-      if (seen.has(k)) continue;
-      seen.add(k);
-      merged.push(o);
-    }
-    for (const name of extraOptionNames) {
-      const k = name.trim().toLowerCase();
-      if (!k || seen.has(k)) continue;
-      seen.add(k);
-      merged.push({ id: `extra-${name}`, item_name: name, item_type: itemType, requires_homologation: false, created_at: '', updated_at: '' });
-    }
-    return merged.sort((a, b) => a.item_name.localeCompare(b.item_name));
-  }, [dbOptions, extraOptionNames.join('|'), itemType]);
+  const loading = optionQueries.some(query => query.isLoading);
+  const loadError = optionQueries.some(query => query.isError);
+  const options = getKitCatalogOptions(optionQueries.flatMap(query => query.data ?? []), allTypes);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen && user) optionQueries.forEach(query => { void query.refetch(); });
+  };
   const setOptions = (_: unknown) => {
     queryClient.invalidateQueries({ queryKey: ['kit-item-options'] });
   };
@@ -158,7 +149,7 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
   const selectedOption = options.find(opt => opt.item_name === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -186,7 +177,12 @@ const SelectOrCreateInput: React.FC<SelectOrCreateInputProps> = ({
               </div>
             )}
             
-            {!loading && options.length === 0 && (
+            {loadError && (
+              <div role="alert" className="px-3 py-4 text-sm text-destructive">
+                Não foi possível atualizar os itens cadastrados. Feche e abra a lista para tentar novamente.
+              </div>
+            )}
+            {!loading && !loadError && options.length === 0 && (
               <CommandEmpty>
                 Nenhum item encontrado.
               </CommandEmpty>
