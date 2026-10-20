@@ -453,19 +453,17 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
     </div>
   );
 
-  const renderSegsaleDropdownSection = (
+  const renderCatalogDropdownSection = (
     title: string,
     type: "accessories" | "modules",
     icon: React.ReactNode,
     items: Omit<HomologationKitItem, "id">[],
-    segsaleOptions: { id: number; nome: string }[],
   ) => (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label className="flex items-center gap-2 text-base font-medium">
           {icon}
           {title}
-          {segsaleLoading && <Loader2 className="w-3 h-3 animate-spin" />}
         </Label>
         <Button type="button" variant="outline" size="sm" onClick={() => addItem(type)}>
           <Plus className="w-3 h-3 mr-1" />
@@ -481,7 +479,6 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
                 value={item.item_name}
                 onChange={(value) => handleItemNameChange(type, index, value)}
                 itemType={type === "accessories" ? "accessory" : "module"}
-                extraOptionNames={segsaleOptions.map((o) => o.nome)}
                 placeholder={`Selecione ${type === "accessories" ? "acessório" : "módulo"}`}
                 className="h-8 w-full"
                 allowCreate={false}
@@ -706,21 +703,19 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>{renderEquipmentSection()}</div>
               <div>
-                {renderSegsaleDropdownSection(
+                {renderCatalogDropdownSection(
                   "Acessórios",
                   "accessories",
                   <Package className="w-4 h-4" />,
                   formData.accessories,
-                  segsaleAccessories,
                 )}
               </div>
               <div>
-                {renderSegsaleDropdownSection(
+                {renderCatalogDropdownSection(
                   "Módulos",
                   "modules",
                   <Cpu className="w-4 h-4" />,
                   formData.modules,
-                  segsaleModules,
                 )}
               </div>
               <div>{renderSuppliesSection()}</div>
