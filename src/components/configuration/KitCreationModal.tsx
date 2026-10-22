@@ -263,7 +263,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       });
       return;
     }
-    if (formData.configurationCount === 2 && selectedConfigs[0] === selectedConfigs[1]) {
+    if (hasConfigSelection && formData.configurationCount === 2 && selectedConfigs[0] === selectedConfigs[1]) {
       toast({ title: "Erro de validação", description: "As duas configurações devem ser diferentes", variant: "destructive" });
       return;
     }
