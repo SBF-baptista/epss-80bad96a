@@ -84,10 +84,8 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
       throw error;
     }
 
-    // Criar Set com nomes normalizados para comparação
-    const homologatedSet = new Set(
-      homologatedItems?.map(item => `${normalizeItemName(item.item_name)}:${item.item_type}`) || []
-    );
+    // Criar Set com nomes normalizados para comparação (tracker/camera contam como equipment)
+    const homologatedSet = buildHomologatedKeySet(homologatedItems || []);
 
     // Verificar cada categoria de itens do kit
     const pendingItems = {
