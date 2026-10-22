@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Integrar os dados do veículo que sai da Expedição ao endpoint agendamentos e validar
+
 - [x] Corrigir as listas do Criar Novo Kit para usar somente o cadastro local e atualizar ao abrir a seleção
 
 - [x] Corrigir o cursor automático do Segsale para ignorar IDs manuais
