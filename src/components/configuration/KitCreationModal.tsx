@@ -285,8 +285,8 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         segsale_product: product || undefined,
         segsale_modules: segsaleMods.length > 0 ? segsaleMods : undefined,
         segsale_accessories: segsaleAccs.length > 0 ? segsaleAccs : undefined,
-        configuration_count: formData.configurationCount,
-        configurations: selectedConfigs,
+        configuration_count: hasConfigSelection ? formData.configurationCount : undefined,
+        configurations: hasConfigSelection ? selectedConfigs : undefined,
       };
 
       await createHomologationKit(kitData);
