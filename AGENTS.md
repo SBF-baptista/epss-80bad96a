@@ -7,3 +7,4 @@
 - Persist production counting and final verification per kit schedule; each vehicle advances independently and only through validated workflow actions.
 - Define sidebar menu sections, groups and items declaratively in `src/config/navigation.ts`; `AppNavigation` only filters them with the existing per-screen access rules, so regrouping never touches routes or permissions.
 - Reuse the same stage column and per-vehicle order card presentation in Production and Expedition; stage-specific content keeps shipment actions separate without duplicating layouts.
+- The agendamentos read endpoint combines shipped kit schedules with installation appointments by kit_schedule_id, resolving contract codes through incoming_vehicle_id; this publishes expedition completion immediately without fictitious appointments, duplicate writes, or plate-based cross-sale matching.
