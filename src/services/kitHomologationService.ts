@@ -16,17 +16,40 @@ export interface HomologationStatus {
   };
 }
 
+/** Equipamentos de kit correspondem a rastreadores e câmeras cadastrados. */
+const EQUIPMENT_ITEM_TYPES = ['equipment', 'tracker', 'camera'];
+
+/**
+ * Converte o tipo cadastrado para a categoria usada na composição do kit.
+ * Rastreadores e câmeras contam como equipamento na verificação de homologação.
+ */
+export function canonicalHomologationType(itemType: string): string {
+  return itemType === 'tracker' || itemType === 'camera' ? 'equipment' : itemType;
+}
+
+/**
+ * Monta o conjunto de chaves "nomeNormalizado:categoria" dos itens homologados.
+ */
+export function buildHomologatedKeySet(records: { item_name: string; item_type: string }[]): Set<string> {
+  return new Set(
+    records.map(item => `${normalizeItemName(item.item_name)}:${canonicalHomologationType(item.item_type)}`)
+  );
+}
+
 /**
  * Verifica se um item específico está homologado (existe na tabela kit_item_options)
  * Usa normalização de nomes para lidar com variações como "SIRENE" vs "Sirene"
  */
 export async function checkItemHomologation(itemName: string, itemType: string): Promise<boolean> {
   try {
+    // Equipamentos podem estar cadastrados como tracker ou camera
+    const types = itemType === 'equipment' ? EQUIPMENT_ITEM_TYPES : [itemType];
+
     // Buscar todos os itens do tipo e comparar usando normalização
     const { data, error } = await supabase
       .from('kit_item_options')
       .select('item_name')
-      .eq('item_type', itemType);
+      .in('item_type', types);
 
     if (error) {
       console.error('Error checking item homologation:', error);
@@ -61,10 +84,8 @@ export async function checkKitHomologationStatus(kit: HomologationKit): Promise<
       throw error;
     }
 
-    // Criar Set com nomes normalizados para comparação
-    const homologatedSet = new Set(
-      homologatedItems?.map(item => `${normalizeItemName(item.item_name)}:${item.item_type}`) || []
-    );
+    // Criar Set com nomes normalizados para comparação (tracker/camera contam como equipment)
+    const homologatedSet = buildHomologatedKeySet(homologatedItems || []);
 
     // Verificar cada categoria de itens do kit
     const pendingItems = {
@@ -164,10 +185,8 @@ export async function checkMultipleKitsHomologation(kits: HomologationKit[]): Pr
       throw error;
     }
 
-    // Criar Set com nomes normalizados para comparação
-    const homologatedSet = new Set(
-      homologatedItems?.map(item => `${normalizeItemName(item.item_name)}:${item.item_type}`) || []
-    );
+    // Criar Set com nomes normalizados para comparação (tracker/camera contam como equipment)
+    const homologatedSet = buildHomologatedKeySet(homologatedItems || []);
 
     // Verificar cada kit
     kits.forEach(kit => {
