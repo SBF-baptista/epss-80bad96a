@@ -252,8 +252,10 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       return;
     }
 
+    // Configurações são opcionais: só validam quando o usuário seleciona alguma
     const selectedConfigs = formData.configurations.slice(0, formData.configurationCount).map((c) => c.trim());
-    if (selectedConfigs.some((c) => !c)) {
+    const hasConfigSelection = selectedConfigs.some((c) => c);
+    if (hasConfigSelection && selectedConfigs.some((c) => !c)) {
       toast({
         title: "Erro de validação",
         description: formData.configurationCount === 2 ? "Selecione as duas configurações do kit" : "Selecione a configuração do kit",
@@ -641,8 +643,8 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
 
             {/* Configurações */}
             <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-              <Label className="text-base font-medium">Configurações do Kit *</Label>
-              <p className="text-xs text-muted-foreground">Este kit precisa de quantas configurações?</p>
+              <Label className="text-base font-medium">Configurações do Kit (opcional)</Label>
+              <p className="text-xs text-muted-foreground">Se quiser, informe quantas configurações este kit precisa</p>
               <div className="flex gap-2">
                 {[1, 2].map((n) => (
                   <Button
