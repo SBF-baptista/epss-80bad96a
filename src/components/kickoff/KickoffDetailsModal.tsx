@@ -1166,6 +1166,7 @@ export const KickoffDetailsModal = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     // Verificar se pelo menos um veículo foi validado
     if (!hasAtLeastOneValidatedPlate) {
@@ -1181,6 +1182,11 @@ export const KickoffDetailsModal = ({
 
     if (!hasValidCopilotoCameraLocations) {
       toast.error("Marque a localização de todas as câmeras dos veículos Copiloto validados.");
+      return;
+    }
+
+    if (!notes.trim()) {
+      toast.error("Preencha o objetivo principal do cliente antes de concluir o Kickoff.");
       return;
     }
 
@@ -1452,6 +1458,7 @@ export const KickoffDetailsModal = ({
       if (!processingResult.success) {
         console.error("Errors during vehicle processing:", processingResult.errors);
         toast.error(`Kickoff salvo, mas houve erros ao processar veículos: ${processingResult.errors.join(", ")}`);
+        return;
       } else {
         const messages = [];
         if (processingResult.homologations_created > 0) {
@@ -1467,11 +1474,17 @@ export const KickoffDetailsModal = ({
       // Refetch final após processamento dos veículos
       await queryClient.invalidateQueries({ queryKey: ["kickoff-history"] });
 
+      setConfirmOpen(false);
       onSuccess();
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving kickoff details:", error);
-      toast.error("Erro ao salvar detalhes do kickoff");
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : "Não foi possível salvar. Tente novamente.";
+      toast.error(`Erro ao concluir Kickoff: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -1479,7 +1492,10 @@ export const KickoffDetailsModal = ({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(nextOpen) => {
+      if (!nextOpen && (confirmOpen || loading)) return;
+      onOpenChange(nextOpen);
+    }}>
       <DialogContent
         className="max-w-[95vw] xl:max-w-[90vw] 2xl:max-w-[85vw] h-[90vh] flex flex-col p-0"
         aria-describedby="kickoff-details-desc"
@@ -1994,7 +2010,9 @@ export const KickoffDetailsModal = ({
       </DialogContent>
     </Dialog>
 
-    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+    <AlertDialog open={confirmOpen} onOpenChange={(nextOpen) => {
+      if (!loading) setConfirmOpen(nextOpen);
+    }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmar conclusão do Kickoff</AlertDialogTitle>
@@ -2010,15 +2028,13 @@ export const KickoffDetailsModal = ({
           <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             disabled={loading}
-            onClick={(e) => {
+            onClick={async (e) => {
               e.preventDefault();
-              setConfirmOpen(false);
-              setTimeout(() => {
-                handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-              }, 0);
+              await handleSubmit(e);
             }}
           >
-            Sim, concluir Kickoff
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading ? "Concluindo Kickoff..." : "Sim, concluir Kickoff"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

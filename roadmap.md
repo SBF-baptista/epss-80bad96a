@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Ajustar a confirmação do Kickoff para aguardar a conclusão, preservar a janela e exibir erros
+- [ ] Validar a progressão real do Kickoff de LUIS EDUARDO TAVARES GOMES DA SILVA — bloqueado: sessão autenticada indisponível no Supabase externo; veículo permanece pendente
+
 - [x] Integrar os dados do veículo que sai da Expedição ao endpoint agendamentos; testes e consulta implantada validados (não há veículo Enviado para conferir uma saída real)
 
 - [x] Corrigir as listas do Criar Novo Kit para usar somente o cadastro local e atualizar ao abrir a seleção
