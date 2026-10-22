@@ -252,8 +252,10 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       return;
     }
 
+    // Configurações são opcionais: só validam quando o usuário seleciona alguma
     const selectedConfigs = formData.configurations.slice(0, formData.configurationCount).map((c) => c.trim());
-    if (selectedConfigs.some((c) => !c)) {
+    const hasConfigSelection = selectedConfigs.some((c) => c);
+    if (hasConfigSelection && selectedConfigs.some((c) => !c)) {
       toast({
         title: "Erro de validação",
         description: formData.configurationCount === 2 ? "Selecione as duas configurações do kit" : "Selecione a configuração do kit",
@@ -261,7 +263,7 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
       });
       return;
     }
-    if (formData.configurationCount === 2 && selectedConfigs[0] === selectedConfigs[1]) {
+    if (hasConfigSelection && formData.configurationCount === 2 && selectedConfigs[0] === selectedConfigs[1]) {
       toast({ title: "Erro de validação", description: "As duas configurações devem ser diferentes", variant: "destructive" });
       return;
     }
@@ -283,8 +285,8 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         segsale_product: product || undefined,
         segsale_modules: segsaleMods.length > 0 ? segsaleMods : undefined,
         segsale_accessories: segsaleAccs.length > 0 ? segsaleAccs : undefined,
-        configuration_count: formData.configurationCount,
-        configurations: selectedConfigs,
+        configuration_count: hasConfigSelection ? formData.configurationCount : undefined,
+        configurations: hasConfigSelection ? selectedConfigs : undefined,
       };
 
       await createHomologationKit(kitData);
@@ -641,8 +643,8 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
 
             {/* Configurações */}
             <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-              <Label className="text-base font-medium">Configurações do Kit *</Label>
-              <p className="text-xs text-muted-foreground">Este kit precisa de quantas configurações?</p>
+              <Label className="text-base font-medium">Configurações do Kit (opcional)</Label>
+              <p className="text-xs text-muted-foreground">Se quiser, informe quantas configurações este kit precisa</p>
               <div className="flex gap-2">
                 {[1, 2].map((n) => (
                   <Button
