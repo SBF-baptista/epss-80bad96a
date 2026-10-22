@@ -48,7 +48,6 @@ interface KitFormData {
 const KIT_CATEGORIES = [
   { value: "telemetria", label: "Telemetria" },
   { value: "videomonitoramento", label: "Videomonitoramento" },
-  { value: "rastreamento", label: "Rastreamento" },
 ];
 
 const initialFormData: KitFormData = {
