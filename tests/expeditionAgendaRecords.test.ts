@@ -32,3 +32,12 @@ describe('Expedição no endpoint agendamentos', () => {
     expect(agenda([], [kit, { ...kit, id: 'kit-b' }], { page: 2, limit: 1 })).toHaveLength(1);
   });
 });
+import { combineAgendaRecords as combineWithAccessories } from "../supabase/functions/agendamentos/records.ts";
+test("envia acessórios com quantidade do próprio veículo, sem módulos", () => {
+  const [r] = combineWithAccessories([], [{ id: "k1", status: "shipped", incoming_vehicle_id: "v1", vehicle_plate: "ABC1234" }], [], [{ id: "v1", plate: "ABC1234" }], { limit: 10, page: 1 }, [
+    { vehicle_id: "v1", name: "Bloqueador", quantity: 2, categories: "Acessórios" },
+    { vehicle_id: "v1", name: "Módulo Ranking", quantity: 1, categories: "Módulos" },
+    { vehicle_id: "v2", name: "Sirene", quantity: 1, categories: "Acessórios" },
+  ]);
+  expect(r.acessorios).toEqual([{ nome: "Bloqueador", quantidade: 2 }]);
+});

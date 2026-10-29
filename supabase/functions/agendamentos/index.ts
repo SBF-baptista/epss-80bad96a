@@ -71,7 +71,8 @@ Deno.serve(async (req) => {
       ]),
     ]);
     const vehicles = [...linkedVehicles, ...externalVehicles].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-    return json({ agendamentos: combineAgendaRecords(installations, shipments, kits, vehicles, parsed.data) });
+    const accessories = await readIds("accessories", "id,vehicle_id,name,quantity,categories", "vehicle_id", vehicles.map(v => String(v.id ?? "")));
+    return json({ agendamentos: combineAgendaRecords(installations, shipments, kits, vehicles, parsed.data, accessories) });
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) });
   }

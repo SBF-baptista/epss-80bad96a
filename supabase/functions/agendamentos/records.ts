@@ -17,7 +17,16 @@ export function combineAgendaRecords(
   kits: Row[],
   vehicles: Row[],
   filters: AgendaFilters,
+  accessories: Row[] = [],
 ) {
+  const accessoriesByVehicle = new Map<string, { nome: string; quantidade: number }[]>();
+  for (const a of accessories) {
+    if (!a.vehicle_id || String(a.categories ?? '') === 'Módulos') continue;
+    const list = accessoriesByVehicle.get(String(a.vehicle_id)) ?? [];
+    list.push({ nome: String(a.name ?? ''), quantidade: Number(a.quantity ?? 1) || 1 });
+    accessoriesByVehicle.set(String(a.vehicle_id), list);
+  }
+  const accessoriesFor = (vehicle: Row | undefined) => vehicle ? accessoriesByVehicle.get(String(vehicle.id)) ?? [] : [];
   const kitById = new Map(kits.map(k => [String(k.id), k]));
   const vehicleById = new Map(vehicles.map(v => [String(v.id), v]));
   // Vehicles arrive newest-first. Plate fallback is only for legacy external appointments.
@@ -35,6 +44,7 @@ export function combineAgendaRecords(
 
   const records = installations.map(s => {
     const kit = kitById.get(String(s.kit_schedule_id ?? ''));
+    const vehicle = vehicleFor(kit, s.plate);
     return {
       data: s.scheduled_date ?? null,
       hora: s.scheduled_time ?? null,
@@ -44,13 +54,14 @@ export function combineAgendaRecords(
       modelo_rastreador: s.tracker_model ?? null,
       tipo_contrato: s.tipo_contrato ?? null,
       tecnico: s.technician_name ?? null,
-      contractcode: contractCode(vehicleFor(kit, s.plate)),
+      contractcode: contractCode(vehicle),
       kit_schedule_id: s.kit_schedule_id ?? null,
       status: 'agendado',
       marca_veiculo: kit?.vehicle_brand ?? null,
       modelo_veiculo: s.vehicle_model ?? kit?.vehicle_model ?? null,
       ano_veiculo: s.vehicle_year ?? kit?.vehicle_year ?? null,
       enviado_em: kit?.shipped_at ?? null,
+      acessorios: accessoriesFor(vehicle),
     };
   });
 
@@ -74,6 +85,7 @@ export function combineAgendaRecords(
       modelo_veiculo: shipment.vehicle_model ?? vehicle?.vehicle ?? null,
       ano_veiculo: shipment.vehicle_year ?? vehicle?.year ?? null,
       enviado_em: shipment.shipped_at ?? null,
+      acessorios: accessoriesFor(vehicle),
     });
   }
 
