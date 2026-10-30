@@ -476,14 +476,35 @@ export const KitCreationModal = ({ isOpen, onClose, onSuccess }: KitCreationModa
         {items.map((item, index) => (
           <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
             <div className="col-span-4">
-              <SelectOrCreateInput
-                value={item.item_name}
-                onChange={(value) => handleItemNameChange(type, index, value)}
-                itemType={type === "accessories" ? "accessory" : "module"}
-                placeholder={`Selecione ${type === "accessories" ? "acessório" : "módulo"}`}
-                className="h-8 w-full"
-                allowCreate={false}
-              />
+              {type === "modules" ? (
+                <Select
+                  value={item.item_name || undefined}
+                  onValueChange={(value) => handleItemNameChange(type, index, value)}
+                  disabled={segsaleLoading}
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder={segsaleLoading ? "Carregando módulos..." : "Selecione módulo"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {moduleOptions.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhum módulo disponível no Segsale</div>
+                    ) : (
+                      moduleOptions.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <SelectOrCreateInput
+                  value={item.item_name}
+                  onChange={(value) => handleItemNameChange(type, index, value)}
+                  itemType="accessory"
+                  placeholder="Selecione acessório"
+                  className="h-8 w-full"
+                  allowCreate={false}
+                />
+              )}
             </div>
             <div className="col-span-2">
               <Input
