@@ -3264,6 +3264,7 @@ export type Database = {
         }
         Returns: string
       }
+      normalize_item_name: { Args: { p_value: string }; Returns: string }
       relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
       sync_user_permissions_from_profile: {
         Args: { _access_profile_id: string; _user_id: string }
