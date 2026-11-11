@@ -499,6 +499,51 @@ export const KickoffDetailsModal = ({
   );
   const [copilotoCameraObservations, setCopilotoCameraObservations] = useState<Map<string, string>>(new Map());
   const [copilotoVehicleTypes, setCopilotoVehicleTypes] = useState<Map<string, VehicleBodyType>>(new Map());
+  const cameraDraftKey = saleSummaryId ? `kickoff-camera-draft-${saleSummaryId}` : null;
+  const [cameraDraftLoaded, setCameraDraftLoaded] = useState(false);
+
+  // Marcações ficam guardadas por tipo (caminhão e ônibus); cada aba mostra só as suas
+  const getGroupPoints = (groupKey: string, type?: VehicleBodyType): CameraPlacementPoint[] => {
+    const vehicleType = type || copilotoVehicleTypes.get(groupKey) || "truck";
+    const areas = CAMERA_AREAS_BY_VEHICLE[vehicleType];
+    return (copilotoCameraPlacements.get(groupKey) || []).filter((point) => areas.includes(point.area));
+  };
+
+  // Restaura o rascunho das marcações ao reabrir o kickoff
+  useEffect(() => {
+    if (!open || !cameraDraftKey) {
+      setCameraDraftLoaded(false);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(cameraDraftKey);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft?.placements) setCopilotoCameraPlacements(new Map(Object.entries(draft.placements)) as Map<string, CameraPlacementPoint[]>);
+        if (draft?.types) setCopilotoVehicleTypes(new Map(Object.entries(draft.types)) as Map<string, VehicleBodyType>);
+        if (draft?.observations) setCopilotoCameraObservations(new Map(Object.entries(draft.observations)) as Map<string, string>);
+      }
+    } catch (e) {
+      console.warn("Não foi possível restaurar as marcações de câmera:", e);
+    }
+    setCameraDraftLoaded(true);
+  }, [open, cameraDraftKey]);
+
+  useEffect(() => {
+    if (!open || !cameraDraftKey || !cameraDraftLoaded) return;
+    try {
+      localStorage.setItem(
+        cameraDraftKey,
+        JSON.stringify({
+          placements: Object.fromEntries(copilotoCameraPlacements),
+          types: Object.fromEntries(copilotoVehicleTypes),
+          observations: Object.fromEntries(copilotoCameraObservations),
+        }),
+      );
+    } catch {
+      // armazenamento indisponível: segue sem rascunho
+    }
+  }, [open, cameraDraftKey, cameraDraftLoaded, copilotoCameraPlacements, copilotoVehicleTypes, copilotoCameraObservations]);
 
   const [validatedPlates, setValidatedPlates] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -1075,7 +1120,7 @@ export const KickoffDetailsModal = ({
     const baseCameras = getBaseCopilotoCameraCount(vehicle.usage_type);
     const vehicleQuantity = Math.max(1, Number(vehicle.quantity) || 1);
     const totalSoldCameras = getCopilotoTotalSoldCameras(vehicle);
-    const points = copilotoCameraPlacements.get(getCopilotoGroupKey(vehicle)) || [];
+    const points = getGroupPoints(getCopilotoGroupKey(vehicle));
 
     return {
       product: vehicle.usage_type,
@@ -1103,7 +1148,7 @@ export const KickoffDetailsModal = ({
     if (!vehicle) return;
 
     const totalCameras = getCopilotoCameraTotal(vehicle);
-    const currentPoints = copilotoCameraPlacements.get(groupKey) || [];
+    const currentPoints = getGroupPoints(groupKey);
     if (currentPoints.length >= totalCameras) {
       toast.error("Todas as posições do padrão deste veículo já foram marcadas.");
       return;
@@ -1142,15 +1187,8 @@ export const KickoffDetailsModal = ({
     const currentType = copilotoVehicleTypes.get(groupKey) || "truck";
     if (currentType === nextType) return;
 
-    const currentPoints = copilotoCameraPlacements.get(groupKey) || [];
-    if (currentPoints.length > 0 && !window.confirm("Ao trocar o tipo de veículo, as marcações atuais serão apagadas. Deseja continuar?")) {
-      return;
-    }
-
+    // Não apaga marcações: cada tipo mantém as suas e o kickoff salva as do tipo selecionado
     setCopilotoVehicleTypes((prev) => new Map(prev).set(groupKey, nextType));
-    if (currentPoints.length > 0) {
-      setCopilotoCameraPlacements((prev) => new Map(prev).set(groupKey, []));
-    }
   };
 
   // Validation checks
@@ -1159,7 +1197,7 @@ export const KickoffDetailsModal = ({
   const hasValidCopilotoCameraLocations = copilotoVehicles.every((vehicle) => {
     if (!validatedPlates.has(vehicle.id)) return true;
     const totalCameras = getCopilotoCameraTotal(vehicle);
-    const points = copilotoCameraPlacements.get(getCopilotoGroupKey(vehicle)) || [];
+    const points = getGroupPoints(getCopilotoGroupKey(vehicle));
     return totalCameras > 0 && points.length === totalCameras;
   });
   const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations && notes.trim() !== "" && hasValidCopilotoCameraLocations;
@@ -1475,6 +1513,7 @@ export const KickoffDetailsModal = ({
       await queryClient.invalidateQueries({ queryKey: ["kickoff-history"] });
 
       setConfirmOpen(false);
+      if (cameraDraftKey) localStorage.removeItem(cameraDraftKey);
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -1713,7 +1752,7 @@ export const KickoffDetailsModal = ({
                     (sum, item) => sum + getCopilotoTotalSoldCameras(item),
                     0,
                   );
-                  const points = copilotoCameraPlacements.get(groupKey) || [];
+                  const points = getGroupPoints(groupKey);
                   const vehicleType = copilotoVehicleTypes.get(groupKey) || "truck";
                   const isComplete = points.length === camerasPerVehicle;
                   const getPointNumber = (pointId: string) => points.findIndex((point) => point.id === pointId) + 1;
