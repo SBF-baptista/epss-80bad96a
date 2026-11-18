@@ -1202,6 +1202,20 @@ export const KickoffDetailsModal = ({
   });
   const isFormValid = hasAtLeastOneValidatedPlate && hasValidLocations && notes.trim() !== "" && hasValidCopilotoCameraLocations;
 
+  const withStepTimeout = async <T,>(label: string, promise: PromiseLike<T>, ms = 25000): Promise<T> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        Promise.resolve(promise),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`Tempo esgotado na etapa: ${label}. Tente novamente.`)), ms);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -1233,8 +1247,9 @@ export const KickoffDetailsModal = ({
     // Watchdog: nunca deixar o botão girando para sempre
     const watchdog = setTimeout(() => {
       setLoading(false);
+      console.error("Kickoff watchdog disparou");
       toast.error("A conclusão do Kickoff está demorando demais. Verifique sua conexão ou faça login novamente e tente de novo.");
-    }, 60000);
+    }, 120000);
 
     try {
       // Garantir sessão válida antes de gravar (sessão expirada faz as requisições travarem)
@@ -1244,7 +1259,7 @@ export const KickoffDetailsModal = ({
       ]);
       let session = sessionResult?.data?.session ?? null;
       if (session && session.expires_at && session.expires_at * 1000 < Date.now() + 60000) {
-        const refreshed = await supabase.auth.refreshSession();
+        const refreshed = await withStepTimeout("renovar sessão", supabase.auth.refreshSession(), 15000);
         session = refreshed.data.session;
       }
       if (!session) {
@@ -1254,7 +1269,7 @@ export const KickoffDetailsModal = ({
       // Filtrar apenas os veículos validados
       const validatedVehicles = vehicles.filter((v) => validatedPlates.has(v.id));
       // Save customer kickoff details
-      const { error: customerError } = await supabase
+      const { error: customerError } = await withStepTimeout("salvar dados do cliente", supabase
         .from("customers")
         .update({
           contacts: contacts.filter((c) => c.name) as any,
@@ -1263,7 +1278,7 @@ export const KickoffDetailsModal = ({
           installation_particularity_details: particularityDetails || null,
           kickoff_notes: notes || null,
         })
-        .eq("sale_summary_id", saleSummaryId);
+        .eq("sale_summary_id", saleSummaryId));
 
       if (customerError) throw customerError;
 
@@ -1464,7 +1479,7 @@ export const KickoffDetailsModal = ({
       // Get current user ID
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await withStepTimeout("identificar usuário", supabase.auth.getUser(), 15000);
 
       // Prepare sales data
       const cameraExtraSaleData = null;
@@ -1472,7 +1487,7 @@ export const KickoffDetailsModal = ({
       const accessoriesSaleData: any[] = [];
 
       // Save to kickoff history
-      const { error: historyError } = await supabase
+      const { error: historyError } = await withStepTimeout("salvar histórico do kickoff", supabase
         .from("kickoff_history")
         .upsert(
           {
@@ -1491,12 +1506,12 @@ export const KickoffDetailsModal = ({
             accessories_sale: (accessoriesSaleData.length > 0 ? accessoriesSaleData : null) as any,
           },
           { onConflict: "sale_summary_id", ignoreDuplicates: false },
-        );
+        ));
 
       if (historyError) throw historyError;
 
       // Invalidar cache imediatamente para evitar exibição de dados parciais/stale
-      await Promise.all([
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["kickoff-history"] }),
         queryClient.invalidateQueries({ queryKey: ["kickoff-data"] }),
         queryClient.invalidateQueries({ queryKey: ["kickoff-integrity"] }),
@@ -1508,10 +1523,10 @@ export const KickoffDetailsModal = ({
       // Process vehicles for homologation after kickoff completion (apenas veículos validados)
       console.log("Processing kickoff vehicles for homologation...");
       const validatedVehicleIds = Array.from(validatedPlates);
-      const processingResult = await processKickoffVehicles(saleSummaryId, validatedVehicleIds);
+      const processingResult = await withStepTimeout("enviar veículos para homologação", processKickoffVehicles(saleSummaryId, validatedVehicleIds), 45000);
 
       // Registrar log do kickoff aprovado
-      await logCreate("Kickoff", "kickoff", saleSummaryId.toString());
+      void logCreate("Kickoff", "kickoff", saleSummaryId.toString()).catch(() => {});
 
       if (!processingResult.success) {
         console.error("Errors during vehicle processing:", processingResult.errors);
@@ -1530,7 +1545,7 @@ export const KickoffDetailsModal = ({
       }
 
       // Refetch final após processamento dos veículos
-      await queryClient.invalidateQueries({ queryKey: ["kickoff-history"] });
+      void queryClient.invalidateQueries({ queryKey: ["kickoff-history"] });
 
       setConfirmOpen(false);
       if (cameraDraftKey) localStorage.removeItem(cameraDraftKey);
