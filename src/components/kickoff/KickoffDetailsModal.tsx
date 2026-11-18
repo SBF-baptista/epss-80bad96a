@@ -1230,7 +1230,27 @@ export const KickoffDetailsModal = ({
 
     setLoading(true);
 
+    // Watchdog: nunca deixar o botão girando para sempre
+    const watchdog = setTimeout(() => {
+      setLoading(false);
+      toast.error("A conclusão do Kickoff está demorando demais. Verifique sua conexão ou faça login novamente e tente de novo.");
+    }, 60000);
+
     try {
+      // Garantir sessão válida antes de gravar (sessão expirada faz as requisições travarem)
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000)),
+      ]);
+      let session = sessionResult?.data?.session ?? null;
+      if (session && session.expires_at && session.expires_at * 1000 < Date.now() + 60000) {
+        const refreshed = await supabase.auth.refreshSession();
+        session = refreshed.data.session;
+      }
+      if (!session) {
+        throw new Error("Sua sessão expirou. Faça login novamente e conclua o Kickoff.");
+      }
+
       // Filtrar apenas os veículos validados
       const validatedVehicles = vehicles.filter((v) => validatedPlates.has(v.id));
       // Save customer kickoff details
@@ -1525,6 +1545,7 @@ export const KickoffDetailsModal = ({
           : "Não foi possível salvar. Tente novamente.";
       toast.error(`Erro ao concluir Kickoff: ${message}`);
     } finally {
+      clearTimeout(watchdog);
       setLoading(false);
     }
   };
