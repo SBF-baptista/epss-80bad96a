@@ -2043,7 +2043,7 @@ export type Database = {
           shipped_by_email: string | null
           status: string
           supplies: string[] | null
-          technician_id: string | null
+          technician_id: string
           tracking_code: string | null
           tracking_code_azul: string | null
           tracking_code_correios: string | null
@@ -2094,7 +2094,7 @@ export type Database = {
           shipped_by_email?: string | null
           status?: string
           supplies?: string[] | null
-          technician_id?: string | null
+          technician_id: string
           tracking_code?: string | null
           tracking_code_azul?: string | null
           tracking_code_correios?: string | null
@@ -2145,7 +2145,7 @@ export type Database = {
           shipped_by_email?: string | null
           status?: string
           supplies?: string[] | null
-          technician_id?: string | null
+          technician_id?: string
           tracking_code?: string | null
           tracking_code_azul?: string | null
           tracking_code_correios?: string | null
@@ -3266,10 +3266,6 @@ export type Database = {
       }
       normalize_item_name: { Args: { p_value: string }; Returns: string }
       relink_homologations_to_segsale_incoming: { Args: never; Returns: number }
-      skip_homologation_to_logistics: {
-        Args: { p_card_id: string; p_kit_id: string; p_reason: string }
-        Returns: string
-      }
       sync_user_permissions_from_profile: {
         Args: { _access_profile_id: string; _user_id: string }
         Returns: undefined

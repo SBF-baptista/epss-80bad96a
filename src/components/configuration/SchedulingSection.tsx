@@ -388,7 +388,7 @@ export const SchedulingSection = ({
                                       </div>
                                       <div className="flex items-center gap-2 text-blue-700">
                                         <User className="w-3 h-3" />
-                                        <span>Técnico: {schedule.technician?.name ?? "A definir"}</span>
+                                        <span>Técnico: {schedule.technician.name}</span>
                                       </div>
                                       {schedule.notes && (
                                         <div className="flex items-start gap-2 text-blue-700 mt-2 pt-2 border-t border-blue-200">
