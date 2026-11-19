@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, TestTube, Edit, Play } from "lucide-react";
+import { Calendar, TestTube, Edit, Play, FastForward } from "lucide-react";
+import SkipToNextStageDialog from "./homologation/SkipToNextStageDialog";
 import { HomologationCard, updateHomologationNotes, updateHomologationStatus } from "@/services/homologationService";
 import { useToast } from "@/hooks/use-toast";
 import HomologationPhotos from "./HomologationPhotos";
@@ -29,6 +30,7 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
   const [showTestScheduling, setShowTestScheduling] = useState(false);
   const [showTestExecution, setShowTestExecution] = useState(false);
   const [isStartingTest, setIsStartingTest] = useState(false);
+  const [showSkip, setShowSkip] = useState(false);
   const [isExecutingTest, setIsExecutingTest] = useState(false);
 
   const handleStartTest = async () => {
@@ -244,6 +246,17 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
                   {isStartingTest ? 'Iniciando...' : 'Iniciar Teste'}
                 </Button>
               )}
+              {card.status === 'homologar' && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSkip(true)}
+                  className="flex items-center gap-2 w-full justify-start text-sm"
+                  size="sm"
+                >
+                  <FastForward className="h-4 w-4" />
+                  Próxima etapa do processo
+                </Button>
+              )}
 
               {/* Etapa 2: Botão Agendar Teste no status 'em_homologacao' */}
               {card.status === 'em_homologacao' && (
@@ -425,6 +438,12 @@ const HomologationModal = ({ card, isOpen, onClose, onUpdate }: HomologationModa
           onCloseParent={onClose}
         />
       )}
+      <SkipToNextStageDialog
+        cardId={card.id}
+        open={showSkip}
+        onOpenChange={setShowSkip}
+        onDone={() => { onUpdate(); onClose(); }}
+      />
     </Dialog>
   );
 };
