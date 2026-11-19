@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, History, Search, FileText, FlaskConical, GraduationCap, FastForward, RadioTower, Camera } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { deletePendingKickoffCard, getKickoffData, type KickoffClient } from "@/services/kickoffService";
 import { getKickoffHistory } from "@/services/kickoffHistoryService";
 import { checkKickoffIntegrity } from "@/services/kickoffIntegrityCheck";
@@ -116,6 +116,7 @@ const Kickoff = () => {
 
 
 
+  const queryClient = useQueryClient();
   const {
     data: kickoffData,
     isLoading,
@@ -469,8 +470,22 @@ const Kickoff = () => {
           companyName={selectedCompanyName}
           vehicles={kickoffData?.clients.find((c) => c.sale_summary_id === selectedSaleSummaryId)?.vehicles || []}
           onSuccess={() => {
-            refetch();
+            // Remove o card concluído na hora, sem depender do recarregamento
+            const doneId = selectedSaleSummaryId;
+            queryClient.setQueryData(["kickoff-data"], (old: any) => {
+              if (!old?.clients) return old;
+              const removed = old.clients.find((c: any) => c.sale_summary_id === doneId);
+              const clients = old.clients.filter((c: any) => c.sale_summary_id !== doneId);
+              return {
+                ...old,
+                clients,
+                total_vehicles: Math.max(0, (old.total_vehicles || 0) - (removed?.total_quantity || 0)),
+                total_companies: new Set(clients.map((c: any) => c.company_name)).size,
+              };
+            });
             refetchHistory();
+            // Recarrega depois que o banco termina de marcar os veículos
+            setTimeout(() => { refetch(); refetchHistory(); }, 2500);
           }}
         />
       )}
